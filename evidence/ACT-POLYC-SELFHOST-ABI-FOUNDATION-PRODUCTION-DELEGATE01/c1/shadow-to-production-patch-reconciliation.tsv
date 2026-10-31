@@ -1,0 +1,10 @@
+shadow_path	shadow_change	production_disposition	production_path	authorization_basis
+Makefile	adds CPA_SRC/CPA_OBJ vars + subject rule + PRODUCTION_HCC_INPUTS dependency	MIGRATE (adapted)	Makefile	ACT section 2: "Makefile # subject producer, effective prerequisites, ABI-specific gates"
+src/CMakeLists.txt	adds abi-cpa-host.c to SOURCES + selector block + subject link	MIGRATE (adapted)	src/CMakeLists.txt	ACT section 2: "src/CMakeLists.txt # selector, host TU, subject object and strict link verification"
+src/abi-cpa-host.c	new: opaque handle table, issue/lookup/retire, mechanical kind accessor	MIGRATE (adapted, v1.1 + production policy)	src/abi-cpa-host.c	ACT section 2: "src/abi-cpa-host.c # new, or established equivalent from frozen shadow patch"
+src/abi-cpa-host.h	new: ABI status codes + declarations	MIGRATE (adapted)	src/abi-cpa-host.h	ACT section 2: "src/abi-cpa-host.h # new, or established equivalent"
+src/cctrl.h	ast.h -> forward declarations of Ast/AstType	MIGRATE (adapted: production header cut)	src/cctrl.h	ACT section 2: "src/cctrl.h"; demonstrated by the shadow transitive-include cut (c1/original-layout-and-header-chain.tsv)
+src/compile.c	ast.h include removed; ON branch calls AbiCpaShouldPrintAst; OFF branch keeps legacy C predicate	MIGRATE (adapted)	src/compile.c	ACT section 2: "src/compile.c"; frozen E-TYP-0136 consumer
+src/ir-types.c	adds explicit #include "ast.h" (measured breakage repair)	MIGRATE (verbatim)	src/ir-types.c	ACT section 2: "src/ir-types.c # ONLY the missing direct ast.h inclusion, if truly required" -- measured: 20 errors, 12 AST_TYPE_* + struct AstType
+src/parser.h	ast.h -> forward declaration of Ast	MIGRATE (adapted)	src/parser.h	ACT section 2: "src/parser.h"
+tools/experimental/compile-print-ast-decision.HC	new: the PolyC decision component	MIGRATE (moved to authorized production path)	tools/bootstrap/selfhost-abi-compile-print-ast.HC	ACT section 2: "tools/bootstrap/selfhost-abi-compile-print-ast.HC # actual production PolyC component"

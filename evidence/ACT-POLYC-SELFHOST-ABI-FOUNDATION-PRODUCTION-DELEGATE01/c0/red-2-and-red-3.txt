@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=red-2-and-red-3
+#
+# RED-2: no PRODUCTION PolyC CPA producer/caller exists at entry.
+#
+# The four textual hits are STRING LITERALS inside the predecessor's verifier
+# (tools/quality/abi-foundation-implement01-verify.HC), which CHECKS the
+# predecessor's shadow build. They are NOT a production consumer, NOT a
+# producer and NOT an authority. This distinction is the PD-05 trap.
+#
+# COMMAND=grep -rn AbiCpaShouldPrintAst src/ tools/
+# tools//quality/abi-foundation-implement01-verify.HC:245:    n_call = CountOcc(cs, cs_n, "AbiCpaShouldPrintAst(");
+# tools//quality/abi-foundation-implement01-verify.HC:305:  if (o07 != NULL) { sub_def = (strstr(o07, "T _AbiCpaShouldPrintAst") != NULL); Free(o07); }
+# tools//quality/abi-foundation-implement01-verify.HC:321:  if (o08 != NULL) { cons_imp = (strstr(o08, "_AbiCpaShouldPrintAst") != NULL); Free(o08); }
+# tools//quality/abi-foundation-implement01-verify.HC:331:    bin_def = (strstr(o09, "T _AbiCpaShouldPrintAst") != NULL);
+# COMMAND=grep -rn AbiCpaShouldPrintAst src/*.c src/*.h  (production sources only)
+# 0
+# COMMAND=ls src/abi-cpa-host.c src/abi-cpa-host.h
+# ls: cannot access 'src/abi-cpa-host.c': No such file or directory
+# ls: cannot access 'src/abi-cpa-host.h': No such file or directory
+# COMMAND=ls tools/bootstrap/selfhost-abi-compile-print-ast.HC
+# ls: cannot access 'tools/bootstrap/selfhost-abi-compile-print-ast.HC': No such file or directory
+# COMMAND=nm ./hcc | grep -cE "AbiCpa|AbiRed"
+# 0
+# COMMAND=nm ./hcc | grep -c " T _Bootstrap"
+# 9
+# COMMAND=nm ./hcc | grep " T _Bootstrap"  (the nine LIVE authorities)
+# 0000000100064004 T _BootstrapAstBinOpFromToken
+# 00000001000641f4 T _BootstrapAstUnaryOpFromToken
+# 0000000100063984 T _BootstrapCalcPadding
+# 00000001000643c0 T _BootstrapCompoundBlockAppendsStatement
+# 0000000100064408 T _BootstrapDefaultArmTerminates
+# 0000000100063c34 T _BootstrapOperatorPrecedence
+# 00000001000644a4 T _BootstrapStatementDispatch
+# 000000010006430c T _BootstrapSwitchArmTerminates
+# 00000001000639fc T _BootstrapValidPostControlFlowToken
+#
+# COMMAND=grep -c "HCC_USE_SELFHOST_ABI_CPA" src/CMakeLists.txt
+# 0
+# COMMAND=grep -c "HCC_USE_SELFHOST_ABI_CPA" Makefile
+# 0
+#
+# RED-3: IMPLEMENT01 was SHADOW-ONLY; the production graph still has 135
+# mandatory edges and E-TYP-0136 is still present.
+# COMMAND=wc -l < c0/original-graph-135.tsv
+# 136
+# COMMAND=grep E-TYP-0136 c0/original-graph-135.tsv
+# E-TYP-0136	SYS-COMPILE_DRIVER	SYS-AST	TYPE_REPRESENTATION	YES	#include "ast.h" in src/compile.c	src/compile.c:1	TYPE_LAYOUT	CFG-PROD-HCC-JIT-ON	OBSERVED_LAYOUT_COUPLING	6e7d15fb4bd7aa5ae01a0002b5b15cfdb9c96b4d
+# COMMAND=grep -c E-TYP-0136 <predecessor IMPLEMENT01 c2 graph-production-shadow.tsv>
+# 2
+# COMMAND=head -2 <predecessor IMPLEMENT01 c2 graph-production-shadow.tsv>
+# edge_id	src_id	dst_id	edge_type	predecessor_cut_status	production_cut_status	production_cut_count_contribution	shadow_cut_status	shadow_evidence
+# E-TYP-0104	SYS-ASSEMBLER	SYS-CODEGEN	TYPE_REPRESENTATION	NOT_CUT	NOT_CUT	0	NOT_CUT	unchanged: no shadow consumer retired this edge
+#
+# FORGERY REJECTION: a claim of production_cut=1 at entry must be rejected
+# against the actual source/object evidence above.
+# COMMAND=grep -n "PRODUCTION_CUT" <predecessor c3 recompute>

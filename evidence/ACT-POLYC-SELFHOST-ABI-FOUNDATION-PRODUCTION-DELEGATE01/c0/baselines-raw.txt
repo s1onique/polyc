@@ -1,0 +1,65 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baselines-raw
+#
+# Raw command transcripts for the C0 baseline. All compiler activity was
+# SERIALIZED (the shared /tmp/holyc-asm.s temporary is a known race).
+#
+# ==== COMMAND=make unit-test ====
+# EXIT=0
+# AGGREGATE PASSED=376 TOTAL=376
+# ASSERTION_SEQUENCE_MD5=# b6f117eb1386ca80f81bc06226e2a741
+# FILE_COUNT=# 90
+# FAILED_LINES=# 0
+#
+# ==== COMMAND=make lexer07-direct-differential ====
+# EXIT=0
+# ACT_SELFHOST_LEXER02_DIRECT_DIFF_CASES=89
+# ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89
+# ACT_SELFHOST_LEXER02_DIRECT_DIFF_FAIL=0
+#
+# ==== COMMAND=make lexer08-direct-differential ====
+# EXIT=0
+# DIRECT_DIFFERENTIAL_TOTAL=45
+# DIRECT_DIFFERENTIAL_PASS=45
+# DIRECT_DIFFERENTIAL_FAIL=0
+#
+# ==== COMMAND=make lexer09-direct-differential ====
+# EXIT=0
+# DIRECT_DIFFERENTIAL_TOTAL=23
+# DIRECT_DIFFERENTIAL_PASS=23
+# DIRECT_DIFFERENTIAL_FAIL=0
+#
+# ==== COMMAND=make lexer07-broad-corpus-4-stage ====
+# EXIT=2 (known FAIL baseline)
+# TOTAL=181
+# REGRESSION=0
+# DIVERGED=0
+# PASS_MISMATCH=9
+# BYTE_IDENTICAL_4=166
+# STATUS=FAIL
+# FAILURE_IDENTITY_MD5=# 7ee761440de83552e751e3c3976c1683
+#
+# ==== COMMAND=cd src/tests && ./test-runner --target=aarch64-apple-darwin | grep -c "Failed to open file" ====
+# 67
+#
+# ==== COMMAND=sh scripts/quality/factory-no-python-check.sh ====
+# STATUS=FAIL (12 historical violations, zero new)
+# F_POLYC_TOOLS=UNAVAILABLE (tools/factory/factory-polyc-tools-check.HC still absent)
+#
+# ==== COMMAND=sh scripts/quality/gate-fast.sh ====
+# VERDICT=PASS
+#
+# ==== COMMAND=sh scripts/quality/gate-push.sh HEAD ====
+# VERDICT=PASS
+# CHECK=aot STATUS=PASS
+# CHECK=build STATUS=PASS
+# CHECK=diff-check STATUS=PASS
+# CHECK=gep01 STATUS=PASS
+# CHECK=install STATUS=PASS
+# CHECK=jit STATUS=PASS
+# CHECK=lsp STATUS=PASS
+#
+# ==== COMMAND=git apply --check shadow.patch (in /tmp/pd01/applytest at ENTRY_HEAD) ====
+# error: patch failed: Makefile:7719   (third hunk only)
+# 8 of 9 paths apply; the two load-bearing Makefile hunks apply cleanly

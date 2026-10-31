@@ -1,0 +1,88 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=red-4-and-red-5
+#
+# RED-4: a real C-only hcc -ast witness demonstrates BOTH a suppressed kind
+# and a printed kind, and an adverse incorrect visibility rule is DETECTED.
+#
+# PREREQ: the pristine C-only oracle is the entry tree built in an isolated
+# detached worktree: /tmp/pd01/g0 (git worktree add --detach ENTRY_HEAD).
+# Its compiler digest and the G0 compile.c.o digest are recorded in
+# c1/g0-oracle-object-and-witnesses.tsv.
+#
+# --- 4a: a PRINTED kind is present (AST_FUNC / AST_DECL bodies are dumped) ---
+# COMMAND=g0/hcc --install-dir=g0/build/test-prefix -ast src/tests/01_pointer_simple.HC
+# AST:
+# <decl> I64 argc
+#
+# <decl> U8 **argv
+#
+# <decl> HCFs *Fs
+#
+# <function_def> U0 PrintResult(I64 correct, I64 s);
+#   ... total lines:
+#   72
+#
+# --- 4b: a SUPPRESSED kind is present (AST_EXTERN_FUNC is NOT dumped) ---
+# COMMAND=g0/hcc --install-dir=g0/build/test-prefix -ast <cases/only-externs.HC>
+# AST:
+# <decl> I64 argc
+#
+# <decl> U8 **argv
+#
+# <decl> HCFs *Fs
+#
+#   (the two extern "c" declarations produce NO node body: AST_EXTERN_FUNC is
+#    on the suppression branch. The three remaining nodes are the implicit
+#    main() parameters, which are AST_DECL.)
+#
+# --- 4c: the ADVERSE rule is DETECTED by the same real witness ---
+# Mutation: in a disposable detached worktree (/tmp/pd01/mutant) the legacy C
+# predicate lost its AST_EXTERN_FUNC comparison:
+#   -  ast->kind != AST_FUN_PROTO &&
+#   -  ast->kind != AST_EXTERN_FUNC &&
+#   +                         ast->kind != AST_ASM_FUNC_BIND)
+# COMMAND=mutant/hcc --install-dir=mutant/build/test-prefix -ast <cases/only-externs.HC>
+# AST:
+# <decl> I64 argc
+#
+# <decl> U8 **argv
+#
+# <extern_function> <fn> I32 open
+#   <extern_function_param>
+#     <lvar> U8 *__name
+#   <extern_function_param>
+#     <lvar> I32 flags
+#   <extern_function_param>
+#     <var_args>...
+#
+# <extern_function> <fn> I32 creat
+#
+# PRISTINE_MD5=b6681f1ad1db7f9d5fd41f1fb53a80f9   (only-externs.HC stdout)
+# MUTANT_MD5=a3c6d18b26e711fb8d374904b0404305
+# DETECTOR_RESULT=DIFFERENT -> the incorrect visibility rule is DETECTED
+# NOTE: src/main.c was NEVER modified; the mutation is confined to the
+# disposable mutant worktree's src/compile.c.
+#
+# RED-5: the historic BUILD/ABI hazard is reproduced with an EXACT detector.
+#
+# HAZARD: GNU Make expands a rule's PREREQUISITE list while the makefile is READ.
+# A prerequisite variable defined AFTER the consuming rule is therefore
+# SILENTLY DROPPED: the dependency is not enforced and a build with a
+# MISSING input succeeds with exit 0. This is the documented hazard that
+# the repository Makefile comments warn about for the nine parser subjects.
+#
+# --- detector shape A (hazard): prerequisite var defined AFTER the rule ---
+# COMMAND=make   (shape A)
+#   REACHED RECIPE
+   EXIT=0  (0 = the missing dependency was NOT enforced)
+#
+# --- detector shape B (correct): prerequisite var defined BEFORE the rule ---
+# COMMAND=make   (shape B)
+#   make: *** No rule to make target `missing-file.o', needed by `out'.  Stop.
+   EXIT=2  (the missing dependency IS enforced)
+#
+# DETECTOR_RESULT=SHAPES_DIFFER -> the hazard is real and the detector is exact.
+# CONSEQUENCE_FOR_THIS_ACT: the new CPA subject variable MUST be defined
+# BEFORE the $(PRODUCTION_HCC) rule, and the effective dependency graph
+# (not the += text) must be proven. See c1/selector-stage0-off-on-build-graph.md.

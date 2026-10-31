@@ -1,0 +1,24 @@
+item	value	method
+SHADOW_PATCH_ARTIFACT	evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-IMPLEMENT01/c2/shadow-patch.diff	n/a
+SHADOW_PATCH_ARTIFACT_SHA256	b1dcd41a04adb6e6d0e4565180ec507a6764b9b85ddc3531eea63ec6adbec469	shasum -a 256
+SHADOW_PATCH_DECODED_SHA256	17072ce6f475154ca6052f86dbc893e1b7b7ba46de74d73883ef54954ac5f741	sed -n "/^%PATCH-BASE64%$/,\$p" shadow-patch.diff | tail -n +2 | base64 -d | shasum -a 256
+SHADOW_PATCH_DECODED_LINES	551	wc -l
+SHADOW_PATCH_CHANGED_PATHS	9	grep -c "^diff --git" shadow.patch
+SHADOW_PATCH_PATHS	Makefile|src/CMakeLists.txt|src/abi-cpa-host.c|src/abi-cpa-host.h|src/cctrl.h|src/compile.c|src/ir-types.c|src/parser.h|tools/experimental/compile-print-ast-decision.HC	grep "^diff --git" shadow.patch
+SHADOW_POLYC_SOURCE_ORIGINAL_PATH	tools/experimental/compile-print-ast-decision.HC	tools/experimental/ does not exist in the tracked tree (shadow-only)
+SHADOW_POLYC_SOURCE_SHA256	07772883708db588f8d18dbe07455b2104deae95ec90f51aec92fc3a21faf54b	predecessor c2/producer-and-linkage.tsv line 5
+SHADOW_HOST_SOURCE_SHA256	b33d87ac05594db7e3f01f41fb9e4e81c1357fff8b179462f7ca460abafcb146	predecessor c2/producer-and-linkage.tsv line 15
+SHADOW_HOST_OBJECT_SHA256	23a9940c7a53c4c1d61b54fb82daae1624163b8160e878738270eda06676353d	predecessor c2/producer-and-linkage.tsv line 16
+SHADOW_SUBJECT_OBJECT_SHA256	f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799	predecessor c2/producer-and-linkage.tsv line 7
+SHADOW_PRODUCER_STAGE0_SHA256	0e4fe8ff3b6dda63c1e073573cf859cb209305382f7e2267fa073d031a8b2e1a	predecessor c2/producer-and-linkage.tsv line 9
+ENTRY_SELECTED_SOURCE_SHA256	07fb25024ff058b2c0dbbeaa33cd7af827650e796e7dd7e7a3176cb88101c39b	shasum -a 256 src/compile.c
+ENTRY_SELECTED_SOURCE_MATCHES_FROZEN	YES	src/compile.c sha256 equals predecessor c1 SELECTED_SOURCE_SHA256
+PATCH_APPLIES_TO_ENTRY	SEE c2/effective-make-and-cmake-prerequisites.txt	git apply --check against the entry tree
+item	value	method
+PATCH_FULL_APPLY_TO_ENTRY	FAIL (Makefile third hunk only)	git apply --check shadow.patch in /tmp/pd01/applytest at ENTRY_HEAD
+PATCH_APPLY_EXCLUDING_MAKEFILE	PASS (8 of 9 paths)	git apply --check --exclude=Makefile shadow.patch => EXIT=0
+PATCH_APPLY_MAKEFILE_HUNKS_1_AND_2	PASS	git apply --check on the first two Makefile hunks => EXIT=0
+FAILING_HUNK	Makefile third hunk (@@ -7719,3 +7733,38 @@ abi-foundation-recon01-verify)	anchored at the end of the file
+FAILURE_CAUSE	The IMPLEMENT01 ACT appended its own Makefile block AFTER the patch anchor (the entry Makefile has 7755 lines; the patch expected 7719)	comparing entry Makefile tail with the patch context
+RECOVERABILITY	RECOVERABLE	The two SEMANTICALLY LOAD-BEARING hunks (the CPA_SRC/CPA_OBJ variable declarations at @@596 and the PRODUCTION_HCC_INPUTS += dependency at @@605) apply cleanly; only the trailing append conflicts
+CONSEQUENCE	The production Makefile rules are written from the frozen recipe CONTENT, not applied mechanically; the effective dependency graph is proven by make -n and by the C3 causal mutation, not by the patch applying	see c1/selector-stage0-off-on-build-graph.md and c3/
