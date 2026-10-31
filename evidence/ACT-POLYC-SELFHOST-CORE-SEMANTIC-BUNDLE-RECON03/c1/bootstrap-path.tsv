@@ -1,0 +1,45 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=bootstrap-path
+#
+# THE OBSERVED BUILD STAGES, THE REAL PRODUCERS, AND THE M1/M2
+# DEPENDENCY EVIDENCE.
+#
+# The stage chain is re-read from the FRESH build's own link.txt and
+# from the committed compiler-generation-chain ledger. The M2 row
+# is the decisive one: the producer of the first genuinely
+# self-compiled compiler does NOT exist in this tree, so no candidate
+# can be on an observed M2-critical path.
+#
+stage_id	producer	input_closure	input_language	output	compiles_whole_compiler_source	evidence
+GC-01	/usr/bin/gcc	46 C translation units + headers	C	build/host-stage0/hcc	NO	evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1/build-configs.tsv
+GC-02..GC-10	build/host-stage0/hcc	one tools/bootstrap/selfhost-*.HC each	PolyC	9 PolyC subject objects	NO	evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1/polyc-subject-manifest.tsv
+GC-11	linker (ld via gcc)	46 C objects + 9 PolyC subject objects + 9 libtasm members + libm + libSystem	mixed	./hcc	NO	/tmp/recon03/wt-c1/build/CMakeFiles/hcc.dir/link.txt
+GC-12	./hcc (production)	tools/quality/*.HC, tools/bootstrap/*.HC	PolyC	build/<tool>.o + build/<tool>	NO	c0/nine-authorities-object-proof.tsv
+GC-13	build/hcc-bootstrap02	46 C TUs + 5 lexer PolyC objects	mixed	build/hcc-bootstrap02	NO	evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1/build-configs.tsv
+GC-14	NONE	no PolyC-authored compiler source set exists in this tree	-	NONE	NO	evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c2/first-generation-feasibility.md
+#
+# THE M2 FINDING, STATED ONCE.
+#
+# The first genuinely self-compiled compiler generation requires a
+# PolyC-authored SOURCE SET for the whole compiler. No such source
+# set exists in this tree: the compiler's own body is 46 C
+# translation units plus 9 PolyC COMPONENT objects, not a
+# PolyC-authored compiler. The stage-0 producer is the HOST C
+# compiler (/usr/bin/gcc), and the PolyC components are compiled BY
+# that host compiler, not by a self-compiled compiler.
+#
+# CONSEQUENCE FOR R0: no candidate can be shown to be on an
+# observed M2-CRITICAL path, because no observed M2 path exists. The
+# maximum honest R0 for ANY candidate is 1 (compiler-core semantic
+# progress that is not demonstrated M2-critical). R0=2 is NOT available
+# to any candidate, and no candidate is labelled R0=2 merely for
+# being inside the 19-subsystem SCC.
+#
+M2_PRODUCER_ABSENT=YES
+M2_CRITICAL_PATH_OBSERVED=NO
+MAX_HONEST_R0=1
+M1_PROGRESS_DEMONSTRABLE=YES (the compiler's semantic core is C-authoritative today; migrating a coherent bundle is M1 progress)
+M2_CRITICALITY_CLAIMED_FOR_ANY_CANDIDATE=NO
+SELFHOST_M2_ACHIEVED=NO
+SLICE10_AUTHORIZED=NO

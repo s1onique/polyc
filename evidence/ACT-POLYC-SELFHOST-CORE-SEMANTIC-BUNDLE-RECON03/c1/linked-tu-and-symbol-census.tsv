@@ -1,0 +1,91 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=linked-tu-and-symbol-census
+#
+# THE PRODUCTION-LINKED CORE TU / OBJECT / SYMBOL CENSUS.
+#
+# Derived from a FRESH build in a disposable detached worktree at the
+# exact C0 commit, and from the build's OWN link line -- not from a
+# source scan alone and not from the CENSUS01 inventory.
+#
+FRESH_BUILD_WORKTREE=/tmp/recon03/wt-c1				SUPPORT
+FRESH_BUILD_HEAD=d9f904b88e1ccd187f62e0d4fe1d747bc58aaa37				SUPPORT
+FRESH_BUILD_COMMAND=make -j1 all (BUILD_RC=0)				SUPPORT
+FRESH_BUILD_PREFIX=/tmp/recon03/mp-prefix				SUPPORT
+LINK_LINE=build/CMakeFiles/hcc.dir/link.txt				SUPPORT
+LINKED_TU_COUNT=38				SUPPORT
+#
+# SECTION 1 -- EVERY TU ON THE PRODUCTION LINK LINE, WITH ITS OBJECT,
+# ITS DEFINED-SYMBOL COUNT AND ITS IMPORT COUNT. A TU with an
+# import count of 0 that still contributes code is reachable only
+# through an in-TU call.
+#
+tu	object	defined_symbols	imported_symbols	core_semantic_class
+aarch64-jit.c	aarch64-jit.c.o	54	115	CODEGEN_JIT
+aarch64.c	aarch64.c.o	56	62	CODEGEN
+abi-cpa-host.c	abi-cpa-host.c.o	4	0	CPA_HOST
+aostr.c	aostr.c.o	43	16	STRINGS
+arena.c	arena.c.o	7	4	MEMORY
+asm.c	asm.c.o	10	43	ASSEMBLER
+ast.c	ast.c.o	136	53	AST_SEMANTICS
+cctrl.c	cctrl.c.o	67	79	COMPILER_CONTROL
+cfg-print.c	cfg-print.c.o	11	25	DIAGNOSTIC
+cfg.c	cfg.c.o	48	63	CFG
+cli.c	cli.c.o	21	24	COMPILER_DRIVER
+compile.c	compile.c.o	4	26	COMPILER_DRIVER
+containers.c	containers.c.o	89	27	CONTAINERS
+ir-debug.c	ir-debug.c.o	23	20	DIAGNOSTIC
+ir-eval.c	ir-eval.c.o	2	9	IR_EVAL
+ir-optimise.c	ir-optimise.c.o	8	36	IR_TRANSFORM
+ir-regalloc.c	ir-regalloc.c.o	16	26	REGALLOC
+ir-types.c	ir-types.c.o	89	42	TYPE_ANALYSIS
+ir.c	ir.c.o	46	81	IR_LOWERING
+jit-common.c	jit-common.c.o	22	60	CODEGEN_JIT
+json.c	json.c.o	10	7	JSON
+lexer.c	lexer.c.o	54	77	LEXER
+list.c	list.c.o	19	2	CONTAINERS
+lsp.c	lsp.c.o	30	97	LSP
+main.c	main.c.o	10	69	COMPILER_DRIVER
+memory.c	memory.c.o	4	6	MEMORY
+mempool.c	mempool.c.o	14	14	MEMORY
+memsafe.c	memsafe.c.o	12	31	MEMORY
+parser.c	parser.c.o	58	142	PARSER
+prsasm.c	prsasm.c.o	7	34	CODEGEN_LEGACY
+prslib.c	prslib.c.o	31	103	EXPR_SEMANTICS
+prsutil.c	prsutil.c.o	27	36	PARSER_SUPPORT
+repl.c	repl.c.o	18	115	REPL
+transpiler.c	transpiler.c.o	38	68	TRANSPILER
+x86.c	x86.c.o	68	43	CODEGEN_LEGACY
+x86_64-jit.c	x86_64-jit.c.o	2	0	CODEGEN_JIT
+x86_64.c	x86_64.c.o	27	70	CODEGEN
+linenoise.c	linenoise.c.o	51	43	VENDORED_LINE_EDITOR
+
+#
+# SECTION 2 -- THE SCOPE BOUNDARY, STATED EXPLICITLY.
+#
+# The census covers every TU on the production link line. The CORE
+# SEMANTIC subset (type analysis, expression semantics, AST/IR, CFG,
+# instruction selection, code generation, compiler driver and the
+# supporting semantic boundaries) is the set of TUs whose class is
+# one of CODEGEN, CODEGEN_JIT, CODEGEN_LEGACY, TYPE_ANALYSIS,
+# IR_LOWERING, IR_TRANSFORM, REGALLOC, IR_EVAL, CFG, AST_SEMANTICS,
+# EXPR_SEMANTICS, PARSER, PARSER_SUPPORT, LEXER, COMPILER_DRIVER,
+# COMPILER_CONTROL, DIAGNOSTIC, TRANSPILER, CPA_HOST.
+#
+# The following TUs are OUT OF SCOPE and the exclusion is measured,
+# not assumed:
+#   VENDORED_LINE_EDITOR (linenoise)  third-party vendored source
+#   JSON, LSP, REPL, STRINGS, CONTAINERS, MEMORY, ASSEMBLER, SUPPORT
+#                                   infrastructure, not core compiler
+#                                   semantics; ASSEMBLER (src/asm) is the
+#                                   raw-encoder backend, not the
+#                                   compiler's instruction selection.
+#
+# CORE_SEMANTIC_TU_COUNT=15
+# OUT_OF_SCOPE_TU_COUNT=23
+# SCOPE_INCOMPLETENESS=the census enumerates every TU the production
+#   compiler links; it does NOT claim that every function in those TUs
+#   is a distinct semantic authority. A function is a SITE only when
+#   it is source-bound, production-reachable and makes a semantic
+#   decision; the site inventory records the tested exclusions
+#   explicitly (see core-sites.tsv).

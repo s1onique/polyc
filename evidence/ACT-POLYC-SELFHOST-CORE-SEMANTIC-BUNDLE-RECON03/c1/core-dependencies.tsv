@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=core-dependencies
+#
+# THE TYPED CORE DEPENDENCY GRAPH. Every included edge is backed
+# by a source or object witness.
+#
+# edge_id	src_node	dst_node	dependency_type	is_mandatory	production_status	witness
+E-TYP-0104	SYS-ASSEMBLER	SYS-CODEGEN	TYPE_REPRESENTATION	YES	NOT_CUT	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/c0/baseline-graph.tsv
+E-TYP-0114	SYS-AST	SYS-LEXER	TYPE_REPRESENTATION	YES	NOT_CUT	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/c0/baseline-graph.tsv
+E-TYP-0116	SYS-AST	SYS-CONTAINERS	CALLBACK	YES	NOT_CUT	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/c0/baseline-graph.tsv
+E-TYP-0136	SYS-COMPILE_DRIVER	SYS-AST	TYPE_REPRESENTATION	YES	CUT_PROVEN_BY_EXECUTION	evidence/ACT-POLYC-SELFHOST-ABI-FOUNDATION-RECON01/c2/graph-cut-ledger.tsv
+E-MUT-0137	SYS-AST	SYS-MEMORY	MUTABLE_STATE	YES	UNSUPPORTED_WITNESS	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/c1/edge-mut-0137-audit.tsv
+#
+# SECTION 2 -- THE TYPE-ANALYSIS AND CODEGEN EDGES WHOSE SOURCE
+# WITNESS IS ONE OF THE CANDIDATE SITES. These are counted for
+# R4 as POTENTIAL_ONLY. No edge is a proven cut here.
+#
+potential_edge_id	src_site_id	dst_node	dependency_type	status	witness
+POT-TYPE-IRISFLOAT	SITE-IR-ISFLOAT	SYS-IR, SYS-CODEGEN	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/ir-types.c.o defines irIsFloat; imported by aarch64-jit.c.o, aarch64.c.o, ir-optimise.c.o, ir.c.o, x86_64.c.o
+POT-TYPE-IRISINT	SITE-IR-ISINT	SYS-IR	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/ir-types.c.o defines irIsInt; imported by ir.c.o
+POT-TYPE-CONVERT	SITE-IR-CONVERTTYPE	SYS-IR	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/ir-types.c.o defines irConvertType; imported by ir.c.o
+POT-TYPE-OPISCMP	SITE-IR-OPISCMP	SYS-IR	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/ir-types.c.o defines irOpIsCmp; imported by ir.c.o
+POT-CG-X86CC	SITE-X86-CC-FOR,SITE-X86-CC-INV,SITE-X86-SETCC	SYS-CODEGEN	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/x86_64.c.o; the emitted jl/jle/jg/je/jne suffixes are observed in the entry compiler's own assembly output
+POT-CG-A64CC	SITE-A64-CC-FOR,SITE-A64-CC-INV,SITE-A64-CSET	SYS-CODEGEN	TYPE_REPRESENTATION	POTENTIAL_ONLY	build/CMakeFiles/hcc.dir/aarch64.c.o; the emitted b.lt/b.le/b.gt/b.eq/b.ne suffixes are observed in the entry compiler's own assembly output
+#
+# SECTION 3 -- THE E-MUT-0137 RE-AUDIT (AC15).
+#
+# E-MUT-0137 is re-audited at this ACT and remains
+# UNSUPPORTED_WITNESS. Its declared consumer is src/compile.c, which
+# has zero reads and zero object references of the five globals the
+# edge names; the real consumers are the cctrl/parser path. The
+# edge therefore does not describe an observed dependency, and it is
+# NOT weighted in R4 and NOT credited as a cut.
+#
+E_MUT_0137_STATUS=UNSUPPORTED_WITNESS
+E_MUT_0137_WEIGHTED_IN_R4=NO
+E_MUT_0137_CREDITED_AS_CUT=NO
+PRODUCTION_GRAPH_NODES=52
+PRODUCTION_ACTIVE_MANDATORY_EDGES=134
+PRODUCTION_PROVEN_CUT_COUNT=1
+PRODUCTION_PROVEN_CUT_EDGE_ID=E-TYP-0136
+NEW_PROVEN_GRAPH_CUTS=0
+SPECULATIVE_GRAPH_CUT_CLAIMED=NO
+SCC_COUNT=34
+SCC_LARGEST=19

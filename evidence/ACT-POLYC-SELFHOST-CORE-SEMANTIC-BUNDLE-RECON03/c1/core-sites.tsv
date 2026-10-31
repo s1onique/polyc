@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=core-sites
+#
+# EVERY PRODUCTION-REACHABLE, UNMIGRATED C SEMANTIC DECISION IN THE
+# SCOPED CORE, PLUS THE EXPLICITLY TESTED EXCLUSIONS.
+#
+# A row is a SITE only when it is source-bound, production-reachable
+# and makes a semantic decision. A function that is merely a helper,
+# a container operation, a diagnostic printer or a DORMANT predicate
+# is NOT counted as an authority; the dormant ones are listed in the
+# EXCLUSIONS section with the measurement that excluded them.
+#
+# REACHABILITY MEASUREMENT: the number of production objects that
+# IMPORT the symbol (nm ' U _<sym>'). A static function has internal
+# linkage and is reached within its own TU; that is recorded as
+# IN_TU. A symbol with zero importers and no in-TU caller is DORMANT.
+#
+site_id	source_path	git_blob_oid	source_byte_range	source_sha256	symbol	linkage	reachability	production_caller_or_tu	semantic_class	semantic_channel	in_scope
+SITE-X86-CC-FOR	src/x86_64.c	771047daabe1c954be6641b75f712df0865aad11	26669..27067	15de57a651bf7cc1015b8f0790f37da5318d5e01faef26543d64b75909b9b686	x86_64CcFor	STATIC	IN_TU	build/CMakeFiles/hcc.dir/x86_64.c.o	CODEGEN_COMPARISON_CONDITION_CODE	IR_ASSEMBLY_OBJECT	YES
+SITE-X86-CC-INV	src/x86_64.c	771047daabe1c954be6641b75f712df0865aad11	27575..27976	e380fff1905f5005866caac2e6559535ffbb96469c56a8cd3799655c83154930	x86_64CcInvFor	STATIC	IN_TU	build/CMakeFiles/hcc.dir/x86_64.c.o	CODEGEN_COMPARISON_CONDITION_CODE_INVERSE	IR_ASSEMBLY_OBJECT	YES
+SITE-X86-SETCC	src/x86_64.c	771047daabe1c954be6641b75f712df0865aad11	28599..28849	9aab19a43d74bf0ec2c73079f61751dcc03cd52f812df046bfc4910cac2b81b2	x86_64EmitSetCC	STATIC	IN_TU	build/CMakeFiles/hcc.dir/x86_64.c.o	CODEGEN_BOOLEAN_MATERIALISATION	IR_ASSEMBLY_OBJECT	YES
+SITE-X86-FSETCC	src/x86_64.c	771047daabe1c954be6641b75f712df0865aad11	30439..31653	b18cf21d5b3ced9cdf98e79103b71d376f02f0768b5a8bb28bbeb6adfb5e1a5d	x86_64EmitFloatSetCC	STATIC	IN_TU	build/CMakeFiles/hcc.dir/x86_64.c.o	CODEGEN_ORDERED_FLOAT_COMPARISON	IR_ASSEMBLY_OBJECT	YES
+SITE-A64-CC-FOR	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	35517..36100	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	aarch64CcFor	STATIC	IN_TU	build/CMakeFiles/hcc.dir/aarch64.c.o	CODEGEN_COMPARISON_CONDITION_CODE	IR_ASSEMBLY_OBJECT	YES
+SITE-A64-CC-INV	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	36577..37019	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	aarch64CcInvFor	STATIC	IN_TU	build/CMakeFiles/hcc.dir/aarch64.c.o	CODEGEN_COMPARISON_CONDITION_CODE_INVERSE	IR_ASSEMBLY_OBJECT	YES
+SITE-A64-CSET	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	37566..37718	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	aarch64EmitCSet	STATIC	IN_TU	build/CMakeFiles/hcc.dir/aarch64.c.o	CODEGEN_BOOLEAN_MATERIALISATION	IR_ASSEMBLY_OBJECT	YES
+SITE-IR-ISFLOAT	src/ir-types.c	6cef39a027ebabeab210dbef5d0b34353ad456a4	5458..5547	3a8bb6db0fd6e7281bc26dad078a28f199ef00ca30e9e68e5a26f1d067585a3f	irIsFloat	EXTERNAL	5_IMPORTERS	aarch64-jit.c.o,aarch64.c.o,ir-optimise.c.o,ir.c.o,x86_64.c.o	TYPE_ANALYSIS	IR_ASSEMBLY_OBJECT	YES
+SITE-IR-ISINT	src/ir-types.c	6cef39a027ebabeab210dbef5d0b34353ad456a4	5549..5714	8407e0a3efa5746afb544e6094959bda548227c321ec5b8a2212640189dd66a3	irIsInt	EXTERNAL	1_IMPORTER	ir.c.o	TYPE_ANALYSIS	IR_ASSEMBLY_OBJECT	YES
+SITE-IR-CONVERTTYPE	src/ir-types.c	6cef39a027ebabeab210dbef5d0b34353ad456a4	7889..8450	0662533b3261d982cf6b412ac07916f51f3517dc5c579dcac1f146eebba57642	irConvertType	EXTERNAL	1_IMPORTER	ir.c.o	TYPE_ANALYSIS	IR_ASSEMBLY_OBJECT	YES
+SITE-IR-OPISCMP	src/ir-types.c	6cef39a027ebabeab210dbef5d0b34353ad456a4	5339..5440	6831d31a7b4aa1e1b8583c738655eb918dc10cbf1b47eeb1c241600a4e8bb5c0	irOpIsCmp	EXTERNAL	1_IMPORTER	ir.c.o	TYPE_ANALYSIS	IR_ASSEMBLY_OBJECT	YES
+#
+# THE TESTED EXCLUSIONS. Each exclusion is a MEASUREMENT, not an
+# assumption. The exclusion reason is the clause it fails.
+#
+EXCL-IR-ISSTRUCT	src/ir-types.c	5800..5888	6743eccf0fa6f24553b71529e1b089eb7e47a5df69b4b294ff3cbe67431c30c8	irIsStruct	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-ISPTR	src/ir-types.c	5890..5972	40df86c1373439d05e34abf84f203c676443949afd0c3b40e69099cdddcd7dad	irIsPtr	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-TYPEISSCALAR	src/ir-types.c	6435..6546	bea5281f412a499736ea4dba8a667ef4b8d4d71095364203b2a4dd658f5d7af7	irTypeIsScalar	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-GETINTSIZE	src/ir-types.c	6548..6848	2109a58ffb034984cde67b40d1862b8e628d2dd409bea3c9139a336ba072b80a	irGetIntSize	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-COMPATCMP	src/ir-types.c	7357..7658	94ae68837e005ba070ad40590247fa4cb3965c66219bb735666cdcff34e407c2	irAreCompatibleCmpTypes	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-ISSTORE	src/ir-types.c	-	-	irIsStore	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+EXCL-IR-ISLOAD	src/ir-types.c	-	-	irIsLoad	EXTERNAL	0_IMPORTERS	(none)	TYPE_ANALYSIS	-	E04/E05
+#
+# THE EXCLUSION MEASUREMENT, STATED ONCE.
+#
+# The five EXCL-IR-* type predicates above ARE DEFINED in the production
+# object ir-types.c.o, but NO production object IMPORTS them and the
+# source grep finds only their own definition and their own header
+# declaration. They are DORMANT: they make no decision that can reach
+# the emitted assembly, the emitted object or a compiled program's
+# behaviour. A dormant predicate therefore fails E04 (it is not a
+# semantic decision affecting compilation acceptance, IR/assembly/object
+# or runtime behaviour) and E05 (no discriminating compiler witness can
+# exist for it). They are NOT candidates.
+#
+# EXCLUDED_SITE_COUNT=7
+# IN_SCOPE_SITE_COUNT=11

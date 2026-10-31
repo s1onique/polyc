@@ -1,0 +1,75 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=source-enum-and-abi-facts
+#
+# THE SOURCE-DERIVED ENUM DOMAINS AND ABI FACTS (AC16, AC20).
+#
+# Every value below is read from the LIVE source, not from a
+# record. The IMPLICIT ZERO enumerators are the ones a careless
+# reading would miss, so they are called out explicitly.
+#
+enum_name	enumerator	value	implicit_zero	source
+IrValueType	IR_TYPE_VOID	0	YES (the first enumerator, no explicit value)	src/ir-types.h:171
+IrValueType	IR_TYPE_I8	1	NO	src/ir-types.h:173
+IrValueType	IR_TYPE_I16	2	NO	src/ir-types.h:174
+IrValueType	IR_TYPE_I32	3	NO	src/ir-types.h:175
+IrValueType	IR_TYPE_I64	4	NO	src/ir-types.h:176
+IrValueType	IR_TYPE_F32	5	NO	src/ir-types.h:177
+IrValueType	IR_TYPE_F64	6	NO	src/ir-types.h:178
+IrValueType	IR_TYPE_PTR	7	NO	src/ir-types.h:179
+IrValueType	IR_TYPE_ARRAY	8	NO	src/ir-types.h:180
+IrValueType	IR_TYPE_ARRAY_INIT	9	NO	src/ir-types.h:181
+IrValueType	IR_TYPE_STRUCT	10	NO	src/ir-types.h:182
+IrValueType	IR_TYPE_FUNCTION	11	NO	src/ir-types.h:183
+IrValueType	IR_TYPE_ASM_FUNCTION	12	NO	src/ir-types.h:184
+IrValueType	IR_TYPE_LABEL	13	NO	src/ir-types.h:186
+IrCmpKind	IR_CMP_INVALID	-1	NO (explicit)	src/ir-types.h:221
+IrCmpKind	IR_CMP_EQ	0	YES (the first enumerator after the explicit -1; it is the ZERO of the enum)	src/ir-types.h:222
+IrCmpKind	IR_CMP_NE	1	NO	src/ir-types.h:223
+IrCmpKind	IR_CMP_LT	2	NO	src/ir-types.h:224
+IrCmpKind	IR_CMP_LE	3	NO	src/ir-types.h:225
+IrCmpKind	IR_CMP_GT	4	NO	src/ir-types.h:226
+IrCmpKind	IR_CMP_GE	5	NO	src/ir-types.h:227
+IrCmpKind	IR_CMP_ULT	6	NO	src/ir-types.h:228
+IrCmpKind	IR_CMP_ULE	7	NO	src/ir-types.h:229
+IrCmpKind	IR_CMP_UGT	8	NO	src/ir-types.h:230
+IrCmpKind	IR_CMP_UGE	9	NO	src/ir-types.h:231
+IrCmpKind	IR_CMP_OEQ	10	NO	src/ir-types.h:232
+IrCmpKind	IR_CMP_ONE	11	NO	src/ir-types.h:233
+IrCmpKind	IR_CMP_OLT	12	NO	src/ir-types.h:234
+IrCmpKind	IR_CMP_OLE	13	NO	src/ir-types.h:235
+IrCmpKind	IR_CMP_OGT	14	NO	src/ir-types.h:236
+IrCmpKind	IR_CMP_OGE	15	NO	src/ir-types.h:237
+IrCmpKind	IR_CMP_UNO	16	NO	src/ir-types.h:238
+IrCmpKind	IR_CMP_ORD	17	NO	src/ir-types.h:239
+AstType	AST_TYPE_VOID	0	YES (the first enumerator, explicitly valued 0)	src/ast.h:87
+AstType	AST_TYPE_INT	1	NO	src/ast.h:88
+AstType	AST_TYPE_FLOAT	2	NO	src/ast.h:89
+AstType	AST_TYPE_CHAR	3	NO	src/ast.h:90
+AstType	AST_TYPE_ARRAY	4	NO	src/ast.h:91
+AstType	AST_TYPE_POINTER	5	NO	src/ast.h:92
+AstType	AST_TYPE_FUNC	6	NO	src/ast.h:93
+AstType	AST_TYPE_CLASS	7	NO	src/ast.h:94
+AstType	AST_TYPE_VIS_MODIFIER	8	NO	src/ast.h:95
+AstType	AST_TYPE_INLINE	9	NO	src/ast.h:96
+AstType	AST_TYPE_UNION	10	NO	src/ast.h:97
+AstType	AST_TYPE_AUTO	11	NO	src/ast.h:98
+#
+# THE IMPLICIT-ZERO FINDING, STATED ONCE.
+#
+# IR_TYPE_VOID is the ZERO of IrValueType and IR_CMP_EQ is the
+# ZERO of IrCmpKind. A zero discriminant is therefore a LEGITIMATE
+# input value, and a status/data separation that used zero as a
+# failure marker would collide with it. This is the concrete
+# reason clause E15 requires an explicit status/data separation
+# for any candidate whose ABI carries a discriminant.
+#
+# THE ABI FACTS (AC20).
+#
+abi_fact	value	consequence
+CMP_ABI_INPUT_DOMAIN	I64 IrCmpKind x I64 is_float (a bounded, copied scalar pair)	NO pointer crosses the seam; the seam carries scalars only
+CMP_ABI_OUTPUT_DOMAIN	a bounded copied code string, or an explicit NULL for an out-of-domain kind	the output is an immutable literal owned by the PolyC side; the host never frees it and never writes through it
+CMP_ABI_STATUS_DOMAIN	the x86_64 tables return NULL for an unsupported kind and the CALLER turns that into an explicit panic; the AArch64 tables PANIC in the default arm	a negative status is NOT used, so a legitimate zero discriminant (IR_CMP_EQ) can never be confused with a failure
+CMP_ABI_UNKNOWN_INPUT	TOTAL: the domain is closed over the enum; an out-of-domain kind fails loudly, never silently
+TYPE_ABI_INPUT_DOMAIN	a copied scalar IrValueType (or a copied scalar AST-type descriptor for irConvertType)	NO pointer crosses the seam; the AST type is projected to scalars BEFORE the call
+TYPE_ABI_OUTPUT_DOMAIN	I64 (a classification) or I64 (the projected IR value type)	bounded, copied, and total over the source-derived domain

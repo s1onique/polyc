@@ -1,0 +1,26 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=core-candidates
+#
+# THE COHERENT PROSPECTIVE 2-6 SITE BUNDLES CONSIDERED.
+#
+# A candidate is a NAMED, COHERENT group of sites related by a shared
+# semantic invariant / operator family, not by proximity in the source.
+# Every candidate that was considered is listed here, including the
+# ones that will be excluded, so that the exclusion ledger is complete
+# and transparent.
+#
+# The candidate identity is stable and deterministic: the family name
+# plus the member set. Two candidates never share a member set.
+#
+# columns: candidate_id | family | member_site_ids (semicolon
+# separated) | member_count | named_invariant | per_member_witness_plan
+#          | abi_shape | state
+#
+candidate_id	family	member_site_ids	member_count	named_invariant	per_member_witness_plan	abi_shape	state
+CAND-CMP-CC-X86	X86_64_COMPARISON_CONDITION_CODE	SITE-X86-CC-FOR;SITE-X86-CC-INV;SITE-X86-SETCC	3	X86_64_COMPARISON_CONDITION_CODE_AND_BOOLEAN_MATERIALISATION: one IrCmpKind maps to exactly one machine condition-code suffix and one inverse suffix, and the same mapping decides the SETcc materialisation	W-X86-CC-LT (a<b emits jl); W-X86-CC-LE (a<=b emits jle); W-X86-CC-GT (a>b emits jg); W-X86-CC-EQ (a==b emits je); W-X86-CC-NE (a!=b emits jne); W-X86-CC-INV (the false-side suffix); W-X86-SETCC (a comparison assigned to a variable emits set<cc> plus movzbq)	BOUNDED_SCALAR_OUT	CONSIDERED
+CAND-CMP-CC-A64	AARCH64_COMPARISON_CONDITION_CODE	SITE-A64-CC-FOR;SITE-A64-CC-INV;SITE-A64-CSET	3	AARCH64_COMPARISON_CONDITION_CODE_AND_BOOLEAN_MATERIALISATION: the same IrCmpKind family maps to one AArch64 condition suffix, its inverse, and the cset materialisation	W-A64-CC-LT (a<b emits b.lt); W-A64-CC-LE (a<=b emits b.le); W-A64-CC-GT (a>b emits b.gt); W-A64-CC-EQ (a==b emits b.eq); W-A64-CC-NE (a!=b emits b.ne); W-A64-CC-INV (the false-side suffix); W-A64-CSET (a comparison assigned to a variable emits cset)	BOUNDED_SCALAR_OUT	CONSIDERED
+CAND-CMP-CC-BOTH	TARGET_AGNOSTIC_COMPARISON_CONDITION_CODE	SITE-X86-CC-FOR;SITE-X86-CC-INV;SITE-A64-CC-FOR;SITE-A64-CC-INV	4	TARGET_AGNOSTIC_COMPARISON_CONDITION_CODE_FAMILY: one IrCmpKind-to-condition-code decision, expressed once per backend, with the two backends' tables as parallel instances of one invariant	as CAND-CMP-CC-X86 and CAND-CMP-CC-A64, per backend	TWO_TARGET_ABI_PROJECTS	CONSIDERED
+CAND-TYPE-CLASS	IR_VALUE_TYPE_CLASSIFICATION	SITE-IR-ISFLOAT;SITE-IR-ISINT	2	IR_VALUE_TYPE_CLASSIFICATION: the IrValueType domain partitions into float and integer classes, and every backend and lowering step asks that partition	W-IR-FLOAT-ISFLOAT (a float value reaches the float path); W-IR-INT-ISINT (an integer value reaches the integer path)	BOUNDED_SCALAR_OUT	CONSIDERED
+CAND-TYPE-MAP	IR_TYPE_PROJECTION	SITE-IR-CONVERTTYPE;SITE-IR-OPISCMP	2	IR_TYPE_PROJECTION: the AST type domain projects onto the IR value-type domain, and the IR opcode domain is classified into comparison opcodes	W-IR-CONVERT (an int, char, float or pointer AST type projects to the matching IR value type); W-IR-OPISCMP (an IR_ICMP opcode is recognised as a comparison)	BOUNDED_SCALAR_OUT	CONSIDERED
+CAND-TYPE-FULL	IR_TYPE_ANALYSIS_FAMILY	SITE-IR-ISFLOAT;SITE-IR-ISINT;SITE-IR-CONVERTTYPE;SITE-IR-OPISCMP	4	IR_TYPE_ANALYSIS_FAMILY: the type-classification and type-projection decisions that every lowering and backend step consults	as CAND-TYPE-CLASS and CAND-TYPE-MAP	BOUNDED_SCALAR_OUT	CONSIDERED

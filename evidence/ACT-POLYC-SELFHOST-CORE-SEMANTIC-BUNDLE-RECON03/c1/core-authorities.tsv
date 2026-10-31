@@ -1,0 +1,32 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=core-authorities
+#
+# THE ACCOUNTING UNITS, KEPT DISJOINT (AC13).
+#
+# A SOURCE FUNCTION, a COMPILED SYMBOL, a DECISION SITE, an
+# AUTHORITY and a GRAPH EDGE are five DIFFERENT accounting units.
+# This file records the counts of each, computed separately, and
+# never substitutes one for another.
+#
+accounting_unit	count	definition	evidence
+POLYC_AUTHORITIES	13	a PolyC-owned decision site that is defined once and imported by exactly one production caller object	c0/existing-authorities.tsv
+C_SEMANTIC_SITES_IN_SCOPE	11	a production-reachable, source-bound, C-owned semantic decision in the scoped core	c1/core-sites.tsv
+DORMANT_C_PREDICATES	7	a C-owned predicate that is defined in a production object but has NO production importer and no source caller	c1/core-sites.tsv (the EXCL section)
+SOURCE_FUNCTIONS_IN_SCOPED_TUS	872	the top-level function definitions across the 15 core-semantic TUs, counted by the same rule (a definition line begins at column 0)	for the fresh source tree: ast.c 161, prslib.c 43, ir.c 71, ir-types.c 90, ir-optimise.c 37, ir-regalloc.c 20, cfg.c 79, x86_64.c 59, aarch64.c 102, parser.c 77, prsutil.c 27, compile.c 5, cctrl.c 72, ir-eval.c 6, ir-debug.c 23
+GRAPH_NODES	52	a node of the production mandatory dependency graph	evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1/graph-nodes.tsv
+GRAPH_ACTIVE_MANDATORY_EDGES	134	a mandatory edge that is not cut	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-CONSUMER-RECON01/c0/baseline-graph.tsv
+GRAPH_PROVEN_CUTS	1	an edge whose cut was PROVEN BY EXECUTION	E-TYP-0136
+#
+# THE DISJOINTNESS, STATED ONCE.
+#
+# The 13 PolyC authorities and the 11 in-scope C sites are
+# DISJOINT: no PolyC authority appears in the C-site roster, and
+# no C site appears in the PolyC authority roster. The C-site
+# roster's members are all C-owned; the PolyC roster's members are
+# all PolyC-owned. A site that were both would be counted
+# twice, which the disjointness check prevents.
+#
+POLYC_AND_C_SITE_INTERSECTION=0
+SITE_COUNT_EQUALS_AUTHORITY_COUNT=NO (11 C sites, 13 PolyC authorities, 7 dormant predicates: three DIFFERENT numbers for three DIFFERENT units)
+SYMBOL_COUNT_EQUALS_AUTHORITY_COUNT=NO (a symbol count is not a causal count; see c3/authority-conservation)

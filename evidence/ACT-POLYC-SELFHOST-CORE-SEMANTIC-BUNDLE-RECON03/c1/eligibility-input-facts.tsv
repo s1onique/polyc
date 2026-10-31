@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=eligibility-input-facts
+#
+# THE SOURCE-DERIVED FACTS THE ELIGIBILITY CHECKER CONSUMES.
+#
+# Every fact below is DERIVED FROM SOURCE OR FROM THE OBJECT
+# GRAPH. There is NO manually supplied eligible flag anywhere in
+# this file: the eligible column belongs to the C2 checker, which
+# recomputes it from these facts.
+#
+# column meanings:
+#   c_authoritative   the site is a C-authoritative decision in the
+#                     LINKED production compiler (not PolyC-owned)
+#   semantic_channel  the OBSERVED channel in which the site influences
+#                     the compilation (measured, not predicted)
+#   discriminating    a distinct, discriminating witness exists
+#   host_state_writes the number of mutable host/global writes the site
+#                     performs (0 = a pure read-only classification)
+#   recovery_crossing the site crosses a recovery frame (0 = no)
+#   ptr_derefs       the number of pointer dereferences of caller-owned
+#                     data (0 = the site reads only copied scalars)
+#   enum_domain      the complete source-derived input domain
+#
+site_id	c_authoritative	semantic_channel	discriminating	host_state_writes	recovery_crossing	ptr_derefs	enum_domain	single_abi_fits_all_members	unknown_input_handling
+SITE-X86-CC-FOR	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind = {INVALID=-1,EQ=0,NE=1,LT=2,LE=3,GT=4,GE=5,ULT=6,ULE=7,UGT=8,UGE=9,OEQ=10,ONE=11,OLT=12,OLE=13,OGT=14,OGE=15,UNO=16,ORD=17} x {float=0,int=1}	YES	TOTAL: the default arm returns NULL, and the caller turns a NULL into an explicit panic, so an out-of-domain kind fails loudly rather than silently
+SITE-X86-CC-INV	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind x {float=0,int=1}	YES	TOTAL: the default arm returns NULL and the caller panics
+SITE-X86-SETCC	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind x {float=0,int=1}	YES	TOTAL: a NULL condition makes the site panic before emitting
+SITE-X86-FSETCC	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind restricted to the float set {EQ,NE,LT,LE,GT,GE}; the default arm panics	YES	TOTAL: the default arm panics with the cmp kind name
+SITE-A64-CC-FOR	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind x {float=0,int=1}	YES	TOTAL: the default arm panics
+SITE-A64-CC-INV	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind x {float=0,int=1}	YES	TOTAL: the default arm panics
+SITE-A64-CSET	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrCmpKind x {float=0,int=1}	YES	TOTAL: a NULL condition makes the site panic before emitting
+SITE-IR-ISFLOAT	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrValueType = {VOID=0,I8=1,I16=2,I32=3,I64=4,F32=5,F64=6,PTR=7,ARRAY=8,ARRAY_INIT=9,STRUCT=10,FUNCTION=11,ASM_FUNCTION=12,LABEL=13}	YES	TOTAL: every value outside {F32,F64} returns 0
+SITE-IR-ISINT	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrValueType as above	YES	TOTAL: every value outside {I8,I16,I32,I64} returns 0
+SITE-IR-CONVERTTYPE	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	AstType kind = {VOID=0,INT=1,FLOAT=2,CHAR=3,ARRAY=4,POINTER=5,FUNC=6,CLASS=7,VIS_MODIFIER=8,INLINE=9,UNION=10,AUTO=11} x the INT size domain {1,2,4,8}	YES	TOTAL: the default arm panics with the type name; an INT with an unsupported size panics
+SITE-IR-OPISCMP	YES	IR_ASSEMBLY_OBJECT	YES	0	0	0	IrOp = {IR_ICMP,IR_FCMP} within the full IrOp domain	YES	TOTAL: every other opcode returns 0

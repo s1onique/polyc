@@ -1,0 +1,27 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=candidate-exclusions
+#
+# THE EXCLUSION LEDGER. Every candidate that was considered and every
+# site that was considered is accounted for, with the reason
+# SPECIFIC exclusion id it fails. Nothing is dropped silently.
+#
+# An excluded candidate CANNOT be promoted by editing an input
+# eligible flag: the C2 eligibility checker recomputes eligibility
+# from the C1 source facts, and an excluded candidate is one of the
+# adverse controls (NC11).
+#
+excluded_item	candidate_id_or_site_id	failed_clauses	reason	measured_evidence
+EXCL-SITE-ISSTRUCT	SITE-IR-ISSTRUCT	E04;E05	DORMANT: the predicate is defined in the production object but NO production object imports it and the source has no caller, so it makes no decision that reaches the emitted assembly, the emitted object or a compiled program's behaviour; no discriminating witness can exist	nm over the fresh build: defined=1 imported=0 in_hcc=0; source grep finds only the definition and the header declaration
+EXCL-SITE-ISPTR	SITE-IR-ISPTR	E04;E05	DORMANT, same measurement as EXCL-SITE-ISSTRUCT	nm: defined=1 imported=0 in_hcc=0
+EXCL-SITE-TYPEISSCALAR	SITE-IR-TYPEISSCALAR	E04;E05	DORMANT, same measurement	nm: defined=1 imported=0 in_hcc=0
+EXCL-SITE-GETINTSIZE	SITE-IR-GETINTSIZE	E04;E05	DORMANT, same measurement	nm: defined=1 imported=0 in_hcc=0
+EXCL-SITE-COMPATCMP	SITE-IR-COMPATCMP	E04;E05	DORMANT, same measurement	nm: defined=1 imported=0 in_hcc=0
+EXCL-SITE-ISSTORE	SITE-IR-ISSTORE	E04;E05	DORMANT, and additionally the site assigns instead of comparing its argument (opcode = IR_STORE), so it can never answer the question it is named for	nm: defined=1 imported=0 in_hcc=0; src/ir-types.c:250
+EXCL-SITE-ISLOAD	SITE-IR-ISLOAD	E04;E05	DORMANT, same measurement	nm: defined=1 imported=0 in_hcc=0
+EXCL-CAND-TYPE-FULL	CAND-TYPE-FULL	E06	The four members are a UNION of two distinct families (a value-type CLASSIFICATION and a type PROJECTION); E06 requires a named shared invariant, and "IR type analysis" is a category rather than an invariant	the two families have disjoint input domains: IrValueType in, AstType in; no single named invariant binds them	INCLUDED_AS_TWO_SEPARATE_CANDIDATES
+EXCL-CAND-CMP-CC-BOTH	CAND-CMP-CC-BOTH	E08;E16	The two backends are different TARGET ABIs (x86_64 SysV vs AArch64), so a single seam would need one ABI per target ABI: the ABI is not single, and the build prerequisites would differ per target	the x86_64 and aarch64 backends are selected by separate --target= triples and compile to different machine ABIs	INCLUDED_AS_TWO_SEPARATE_CANDIDATES
+#
+EXCLUDED_SITE_COUNT=7
+EXCLUDED_CANDIDATE_COUNT=2
+EXCLUSION_LEDGER_COMPLETE=YES

@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=ownership-recovery-witnesses
+#
+# THE OWNERSHIP, LIFETIME, ALIASING, CALLBACK, RECOVERY AND
+# MUTATION-ORDER SURFACES (AC19), DERIVED FROM SOURCE.
+#
+site_id	ownership_surface	lifetime	aliasing	callback_surface	recovery_crossing	mutation_order	state_writes	ptr_derefs	evidence
+SITE-X86-CC-FOR	the returned string is an IMMUTABLE LITERAL owned by the PolyC component; the host only READS it and passes it to aoStrCatFmt	the literal lives for the whole program; the host's copy is a borrow that is consumed within the same expression	NO aliasing: the host never writes through the returned pointer, and the literal is not writable memory	NONE: the site calls no function pointer and takes no callback	a ZERO-FRAME site: it does not setjmp, does not longjmp, and does not unwind; it returns to its caller	NO MUTABLE HOST STATE: the site reads its two scalar arguments and returns a constant	0	the site reads only its two copied scalars; it dereferences no caller-owned pointer	src/x86_64.c:26669..27067
+SITE-X86-CC-INV	same as SITE-X86-CC-FOR: an immutable literal, borrowed read-only by the host	same	same	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	same	src/x86_64.c:27575..27976
+SITE-X86-SETCC	the site only READS the borrowed condition string and APPENDS a formatted fragment to the host's assembly buffer	the host's assembly buffer is owned by the host and outlives the call	NO aliasing: the appended bytes are new	a ZERO-FRAME site	NO MUTABLE HOST STATE beyond the host's own assembly buffer, which the host owns	0	same	src/x86_64.c:28599..28849
+SITE-X86-FSETCC	same as SITE-X86-SETCC	same	same	a ZERO-FRAME site	NO MUTABLE HOST STATE beyond the host's own assembly buffer	0	same	src/x86_64.c:30439..31653
+SITE-A64-CC-FOR	an IMMUTABLE LITERAL owned by the PolyC component, borrowed read-only by the host	the literal outlives the call	NO aliasing	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	reads only copied scalars	src/aarch64.c:35517..36100
+SITE-A64-CC-INV	same as SITE-A64-CC-FOR	same	same	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	same	src/aarch64.c:36577..37019
+SITE-A64-CSET	same as SITE-X86-SETCC	same	same	a ZERO-FRAME site	NO MUTABLE HOST STATE beyond the host's own assembly buffer	0	same	src/aarch64.c:37566..37718
+SITE-IR-ISFLOAT	NO ownership transfer: the site returns a classification scalar	the classification outlives the call as a scalar	NO aliasing	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	reads only its copied scalar	src/ir-types.c:5458..5547
+SITE-IR-ISINT	same as SITE-IR-ISFLOAT	same	same	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	same	src/ir-types.c:5549..5714
+SITE-IR-CONVERTTYPE	NO ownership transfer: the site READS the AST type's kind and size scalars and returns a classification scalar; it does not retain the AstType pointer	the returned classification is a scalar; the AstType stays owned by the caller	NO aliasing: the site does not store the pointer	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	the site reads the AstType's kind and size FIELDS but does not retain or mutate the pointed-to struct	src/ir-types.c:7889..8450
+SITE-IR-OPISCMP	same as SITE-IR-ISFLOAT	same	same	NONE	a ZERO-FRAME site	NO MUTABLE HOST STATE	0	same	src/ir-types.c:5339..5440
+#
+# THE RECOVERY FINDING (E10), STATED ONCE.
+#
+# None of the eleven in-scope sites performs a cross-frame
+# setjmp/longjmp, an unbounded recursive recovery transfer or any
+# exception-like escape. Every one of them is a straight-line
+# function that returns to its caller. The panic in the default
+# arms of the condition-code tables is a HOST panic (loggerPanic),
+# which terminates the process; it is not an exception that would
+# cross the PolyC/C seam.
+#
+SITES_CROSSING_A_RECOVERY_FRAME=0
+SITES_WITH_AN_EXCEPTION_LIKE_ESCAPE=0
+PANIC_PATH_IS_HOST_TERMINATION_NOT_A_SEAM_CROSSING=YES
+SEAM_OWNERSHIP_LEAKS=0 (no candidate member's seam transfers ownership of AST/IR/token/container data)
