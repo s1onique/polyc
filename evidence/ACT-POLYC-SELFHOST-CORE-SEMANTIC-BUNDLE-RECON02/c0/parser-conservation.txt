@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=parser-conservation
+#
+# FRESHLY MEASURED AT THE ENTRY TREE, in the canonical checkout, with an
+# isolated install/test prefix. No production source was modified.
+#
+COMMAND=make INSTALL_PREFIX=/tmp/recon02/mp-prefix TEST_PREFIX=/tmp/recon02/mp-prefix unit-test
+UNIT_TEST_RC=0
+ASSERTIONS_PASSED=376
+ASSERTIONS_TOTAL=376
+TEST_BLOCKS=90
+FAILED_LINES=0
+COMPILE_FAILURES=0
+#
+# The assertion-sequence identity check:
+COMMAND=grep -o "PASSED: [0-9]*/[0-9]*" <log> | md5 -q
+  md5=b6f117eb1386ca80f81bc06226e2a741
+#
+PARSER_HOST_ARCH_ASSERTIONS=376/376
+PARSER_HOST_ARCH_TESTFILES=90
+PARSER_HOST_ARCH_FAILURE_IDENTITIES=0
+PARSER_HOST_ARCH_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_HOST_ARCH_MD5_MATCHES_HISTORICAL=YES
+NEW_PARSER_FAILURE_IDENTITIES=0
+PARSER_CONSERVATION_STATUS=PASS
+#
+# AN OBSERVED ENVIRONMENT HAZARD (recorded, NOT fixed here; out of scope)
+#
+# The `unit-test` target's exit code does NOT fail when the hermetic prefix
+# is not populated. Measured in a disposable detached worktree whose
+# lib-tos producer could not reproduce the authorized bootstrap SHA:
+#   unit-test returned RC=0 while EVERY test file reported
+#   "Failed to compile: <file>" and the assertion sequence was EMPTY
+#   (md5 d41d8cd98f00b204e9800998ecf8427e = md5 of the empty string).
+# The parser conservation measurement above was therefore taken in the
+# canonical checkout, where build/runtime-producer/hcc-bootstrap04 carries
+# the authorized SHA 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+# and the hermetic prefix installs correctly.
+#
+# This is a fail-open EXIT-CODE contract in the `unit-test` target, not a
+# semantic regression. It is recorded as residue for a separately authorized
+# ACT. It is NOT repaired by this reconnaissance (F7/F15).
+#
+# A consumer of this evidence MUST NOT treat "unit-test RC=0" alone as a
+# green parser baseline; the assertion sequence MD5 must be non-empty and
+# must equal b6f117eb1386ca80f81bc06226e2a741.

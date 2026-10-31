@@ -1,0 +1,14 @@
+red_id	unmet_property_at_entry	detector	execution_id	negative_control_result	positive_control_result	detector_is_sensitive	status
+RED-01	No RECON02 fresh source/object core bundle roster (c1/production-core-source-roster.tsv, c1/semantic-sites.tsv, c1/bundle-registry.tsv)	red01: all three C1 roster files must exist and be non-empty	EXEC-RED-01	PROPERTY_UNMET (red CONFIRMED)	PROPERTY_MET (the same detector accepts a tree that has them)	YES	RED_CONFIRMED
+RED-02	No selected RECON02 migration successor (no c2/selected-bundle.tsv with SELECTED_BUNDLE_ID / SELECTED_SITE_IDS)	red02: a non-empty selected-bundle.tsv carrying both frozen IDs	EXEC-RED-02	PROPERTY_UNMET (red CONFIRMED)	PROPERTY_MET	YES	RED_CONFIRMED
+RED-03	No independently qualified all-site core semantic causal evidence for a future bundle (no c2/real-c-mutant-executions.tsv with per-site EXEC-/SITE- rows)	red03: every data row must carry a non-empty EXEC- execution id and a non-empty SITE- site id	EXEC-RED-03	PROPERTY_UNMET (red CONFIRMED)	PROPERTY_MET	YES	RED_CONFIRMED
+RED-04	No ABI/ownership cut contract for a new candidate (no c2/selected-abi.tsv binding ownership/atomicity/lifetime/recovery)	red04: every ABI data row must bind columns 3..7 (ownership, allocation, atomicity, lifetime, recovery)	EXEC-RED-04	PROPERTY_UNMET (red CONFIRMED)	PROPERTY_MET	YES	RED_CONFIRMED
+RED-05	No new bootstrap-criticality/graph-impact justification (no c1/bootstrap-reachability.tsv with machine-joined artifact paths)	red05: at least one reachability row with a non-empty joined artifact path	EXEC-RED-05	PROPERTY_UNMET (red CONFIRMED)	PROPERTY_MET	YES	RED_CONFIRMED
+
+# EXECUTION
+#   command: sh evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02/c0/probes/red-detectors.sh .
+#   transcript: c0/probes/red-detectors.out
+#   The negative control is the real RECON02 evidence tree; the positive
+#   control is a synthetic tree in which all five properties hold.
+#   All five detectors change their answer between the two, so none of
+#   them is a no-op.

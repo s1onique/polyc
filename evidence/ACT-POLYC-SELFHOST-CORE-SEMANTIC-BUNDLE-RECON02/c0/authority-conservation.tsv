@@ -1,0 +1,28 @@
+authority_id	symbol	classification	production_defined_count	caller_import_count	subject_object_sha256	causal_experiment_executed	experiment_attribution_status	verdict
+AUTH-01	_BootstrapCalcPadding	PARSER_DECISION	1	1	187a4de9465e8dbe3c640484b05540daaad4a3267dd1543a169e3c304b02d5b1	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-02	_BootstrapValidPostControlFlowToken	PARSER_DECISION	1	1	078f708d05474430cb3d5c6fc17c0a3d327ab81b74cb24e32512475050723018	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-03	_BootstrapOperatorPrecedence	PARSER_DECISION	1	1	1a932394ba209267ab3a119137f844682f1a12ceeaaca0cde4feaeaa0f8f62f8	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-04	_BootstrapAstBinOpFromToken	PARSER_DECISION	1	1	6d598bc7f0b00ac47642ec06b8cceba641d55a8cfe5498e0a6a995c40f2e054d	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-05	_BootstrapAstUnaryOpFromToken	PARSER_DECISION	1	1	27075194e1d3ff94703b51459cc3e5c8ea472747ea1f255a451a97f44b416e72	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-06	_BootstrapSwitchArmTerminates	PARSER_DECISION	1	1	848866e9fea389d574b3cb3e39b54b62fc0c744fe707fcf7c4184714017467f0	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	PARSER_DECISION	1	1	e2dfbcfcb78261957fb9188916705dcc86d589e82a9d9e169f6ae8118237487c	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-08	_BootstrapDefaultArmTerminates	PARSER_DECISION	1	1	d72cee87ccff4b5c1b801c5d1420d5267809e9214526720800010ff591cba22b	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-09	_BootstrapStatementDispatch	PARSER_DECISION	1	1	f9d9c05eaf9c8cb4d2821b9c2c6d59e10116eacdfc3197150855aaef693c1c3d	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-10	_AbiCpaShouldPrintAst	NON_PARSER_CPA_DECISION	1	1	f5dfc1644b4f133a4bfa972e4988231b5eb3ed77ad52a7617093798c8a04d799	YES (predecessor CSCR chain)	CONSISTENT	PASS
+AUTH-11	_AbiCoreClassifyCompoundAssign	NEW_CORE_OPERATOR_DECISION	1	1	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	YES (M-POLYC-CA, reproduced bit-for-bit)	CONFIRMED	PASS
+AUTH-12	_AbiCoreIsValidPointerOperator	NEW_CORE_OPERATOR_DECISION	1	1	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	YES (M-POLYC-PO, reproduced bit-for-bit)	CONFIRMED	PASS
+AUTH-13	_AbiCoreIsRangeOperator	NEW_CORE_OPERATOR_DECISION	1	1	b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756	NO	MISATTRIBUTED: the recorded M-POLYC-RO experiment physically mutated AbiCoreIsValidPointerOperator (AUTH-12), not this function. This site has NO executed causal experiment in the predecessor.	FAIL_CAUSAL_EVIDENCE_ABSENT
+
+# COUNTING NOTE
+# 13 decision sites are structurally reachable and active in the freshly built production
+# compiler (each defined exactly once, imported by exactly one caller object).
+# 12 of 13 have their own executed causal experiment.
+# 1 of 13 (AUTH-13, SITE-RANGE-OPERATOR) does NOT: its recorded experiment mutated a
+# different function. The site IS genuinely live (proved independently by the discriminating
+# chained-range witness W-RO-DISCRIM), so this is a MISSING EVIDENCE defect, not a dead site.
+#
+PRODUCTION_POLYC_AUTHORITIES_STRUCTURALLY_ACTIVE=13
+PRODUCTION_POLYC_AUTHORITIES_WITH_CAUSAL_EVIDENCE=12
+PRODUCTION_POLYC_AUTHORITIES_WITHOUT_CAUSAL_EVIDENCE=1
+BASELINE_13_AUTHORITY_CLAIM=PARTIALLY_UNPROVEN (the count 13 is structurally verified; the per-site causal backing of AUTH-13 is NOT)
+AUTHORITY_CONSERVATION_STATUS=FAIL (AC08/AC05 cannot PASS as recorded)

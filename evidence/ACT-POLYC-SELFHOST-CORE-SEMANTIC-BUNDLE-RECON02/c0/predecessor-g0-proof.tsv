@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=predecessor-g0-proof
+#
+# INDEPENDENT RECONSTRUCTION: the selector-OFF whole production compiler
+# is the stage0 build (Makefile target bootstrap-stage0), configured with
+#   -DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF
+# It is a REAL whole production compiler binary, not a copied C oracle.
+#
+G0_ARTIFACT=build/host-stage0/hcc
+G0_BUILD_TARGET=bootstrap-stage0
+G0_SELECTOR=HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF
+G0_BINARY_SHA256=87b9ff9de5aac28d55473d6f402c48f8f576a4baa3b0814885026eeb36be53ce
+G0_BINARY_SIZE_BYTES=741568
+G0_POLYC_SUBJECT_SYMBOL_COUNT=0
+G0_C_PREDICATE_SYMBOLS=_astIsRangeOperator,_astIsValidPointerOp (both PRESENT)
+G0_IS_WHOLE_PRODUCTION_COMPILER=YES (full driver, parser, IR, backend and JIT in one binary)
+G0_COPIED_ORACLE_SUBSTITUTED=NO
+#
+# THE PRODUCTION BUILD (selector ON)
+PROD_ARTIFACT=./hcc
+PROD_SELECTOR=HCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON
+PROD_BINARY_SHA256=a9f33ee1b2968bfed0386ed2e2f0d6d9099fc874179a1c0a294ece93f6c2e163
+PROD_POLYC_SUBJECT_SYMBOL_COUNT=3
+PROD_SUBJECT_SYMBOLS=_AbiCoreClassifyCompoundAssign,_AbiCoreIsValidPointerOperator,_AbiCoreIsRangeOperator
+PROD_C_PREDICATE_DEFINITIONS_IN_ast.c.o=0 (the legacy C tables are compiled out)
+#
+# THE SEMANTIC CHANNEL: the selector-OFF whole compiler and the selector-ON
+# production compiler agree on EVERY witness, including the discriminating
+# chained-range witness W-RO-DISCRIM (both EXIT=0).
+G0_WITNESS_AGREEMENT=7/7 witnesses identical between selector-OFF and selector-ON
+G0_WITNESS_LIST=W-CA=30,W-PO-AND=1,W-PO-LT=0,W-RO-RANGE=1,W-RO-DISCRIM=0,W-RO-NEG=1,W-PO-NEG=COMPILE_FAILED
+#
+PREDECESSOR_G0_WHOLE_COMPILER=VERIFIED
+PREDECESSOR_G0_NOT_PRODUCTION=NO
+PREDECESSOR_G0_PROOF_STATUS=PASS
