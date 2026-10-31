@@ -1,0 +1,32 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=warm-vs-fresh-tree
+#
+# F9 FINDING: the canonical checkout carries WARM build artifacts that do
+# NOT correspond to the current entry source. Every producer identity in
+# this ACT is therefore taken from a FRESHLY BUILT tree.
+#
+# COMMAND=shasum -a 256 build/host-stage0/hcc   (canonical checkout, warm)
+# 4264610a6286f603503a69ad57411910fe4207db9eade6915be675a38444fd02  build/host-stage0/hcc
+# COMMAND=shasum -a 256 /tmp/pd01/g0/build/host-stage0/hcc   (fresh build of ENTRY_HEAD)
+# ef510616f0cb15aeb00531883e293612aba08e143bd916d47ecc2ee10e923b72  /tmp/pd01/g0/build/host-stage0/hcc
+#
+# COMMAND=shasum -a 256 hcc   (canonical checkout, warm)
+# 9e50565b9235ae2939b2333580b45956c3589dddc972e9f4bf6b8cbd2563d90a  hcc
+# COMMAND=shasum -a 256 /tmp/pd01/g0/hcc   (fresh build of ENTRY_HEAD)
+# c10034ee7f028cd1d0ad2f32805e496277d0a93a5c4b5e80e3d8a5c6b47f14bc  /tmp/pd01/g0/hcc
+#
+# CONSEQUENCE: the C0 RED object-level evidence (0x2401 mask, ldr w8,[x21])
+# was taken from the warm canonical build. The SAME disassembly shape is
+# confirmed on the FRESH G0 build, so the RED is not a warm-tree artifact:
+#   fresh G0 build/CMakeFiles/hcc.dir/compile.c.o
+#   303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877  /tmp/pd01/g0/build/CMakeFiles/hcc.dir/compile.c.o
+#   fresh G0 compilePrintAst:
+#     0000000000000040	mov	w24, #0x2401
+#     0000000000000048	ldr	w8, [x21]
+#     000000000000004c	sub	w8, w8, #0x114
+#     0000000000000050	cmp	w8, #0xd
+#
+# The fresh G0 compile.c.o digest 303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877
+# is IDENTICAL to the predecessor c1 frozen G0_COMPILE_C_O_SHA256, so the
+# legacy C decision object is bit-reproducible across independent builds.

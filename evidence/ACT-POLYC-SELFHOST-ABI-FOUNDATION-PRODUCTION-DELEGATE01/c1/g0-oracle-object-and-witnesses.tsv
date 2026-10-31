@@ -1,0 +1,16 @@
+item	value	method
+G0_WORKTREE	/tmp/pd01/g0	git worktree add --detach 1d9f0e0646e603861d761c9af6343396fb738b88
+G0_HEAD	1d9f0e0646e603861d761c9af6343396fb738b88	git -C /tmp/pd01/g0 rev-parse HEAD
+G0_BUILD_COMMAND	make production-hcc	c1 raw log
+G0_HCC_SHA256	c10034ee7f028cd1d0ad2f32805e496277d0a93a5c4b5e80e3d8a5c6b47f14bc	shasum -a 256 hcc
+G0_STAGE0_HCC_SHA256	ef510616f0cb15aeb00531883e293612aba08e143bd916d47ecc2ee10e923b72	shasum -a 256 build/host-stage0/hcc
+G0_COMPILE_C_O_SHA256	303aa783e68a767f2ac2bab7cfad26d18bc7bf1d81f8f6d9256e84f9dc58f877	shasum -a 256 build/CMakeFiles/hcc.dir/compile.c.o
+G0_LIBTOS_A_SHA256	3ed5e273dc0bcbbca1ef038299ad2e3ba91f7ff7e45220510dd2d060e5395285	shasum -a 256 build/test-prefix/lib/libtos.a
+G0_NEW_CPA_SYMBOL_COUNT	0	nm ./hcc | grep -cE "AbiCpa|AbiRed"
+G0_NINE_AUTHORITIES	9	nm ./hcc | grep -c " T _Bootstrap"
+G0_COMPILE_C_IMPORTS_AST_TOSTRING	YES	U _astToString
+G0_COMPILE_C_AST_KIND_OFFSET	0	ldr w8,[x21]
+G0_COMPILE_C_LEGACY_MASK	0x2401	over span 0x114..0x121 = {276,286,289}
+G0_CPA_SOURCE_PRESENT	NO	src/abi-cpa-host.c absent
+G0_SELECTOR_ABSENT	NO HCC_USE_SELFHOST_ABI_CPA in the CMake cache	grep -c HCC_USE_SELFHOST_ABI_CPA build/CMakeCache.txt
+G0_SUBJECT_ABSENT	NO build/selfhost-abi-cpa-subject.o	ls build/*cpa* 2>&1
