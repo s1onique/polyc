@@ -1,16 +1,17 @@
 id	predicate	evidence_path	status	reason
 CAC01	The defect is recorded with its exact measured consequence	c0/cardinality-defect.txt	PASS	The canonical recipe reports GOT 2 and the range checker reports "expected exactly 1 CLOSE commit in range, found 2"; both are reproduced verbatim
 CAC02	The predecessor technical finding and verdict are carried forward UNCHANGED	c1/technical-verdict-carry-forward.tsv	PASS	Every carried-forward value is byte-identical to the predecessor; no value changed
-CAC03	This ACT CLOSE carries the supersession trailer and the corrected verdict	c4/terminal-closure-identity.tsv	NOT_RUN	The CLOSE does not exist yet
-CAC04	Exactly one CLOSE commit exists for THIS ACT id and it is the last commit of its range	c3/cardinality-and-range.txt	NOT_RUN	The CLOSE does not exist yet
-CAC05	The range checker passes for this ACT own CLOSE	c3/cardinality-and-range.txt	NOT_RUN	The CLOSE does not exist yet
+CAC03	This ACT CLOSE carries the supersession trailer and the corrected verdict	c4/terminal-closure-identity.tsv	PASS	The terminal CLOSE carries ACT-Supersedes: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON02 and ACT-Corrected-Verdict: HALT_PREDECESSOR_PROOF_INCOMPLETE
+CAC04	Exactly one CLOSE commit exists for THIS ACT id and it is the last commit of its range	c3/cardinality-and-range.tsv	PASS	The canonical cardinality recipe reports GOT 1 for this ACT id; the CLOSE is the last commit of its 5-commit range
+CAC05	The range checker passes for this ACT own CLOSE	c3/cardinality-and-range.tsv	PASS	factory-v2-range-check.sh reports STATUS=PASS with COMMITS=5, FIRST in RED and CLOSE last
 CAC06	No production source, test, dependency or predecessor evidence byte is changed	c3/scope-and-patch-hygiene.txt	PASS	Every changed file is inside the authorized path list; F14 re-verified 5790 paths with 0 mismatches
 CAC07	Every baseline is conserved	c3/conservation.txt	PASS	Parser 376/376 over 90 files with MD5 b6f117eb1386ca80f81bc06226e2a741; lexer identities unchanged; graph 52/134/1
 CAC08	gate-fast, gate-push, append-only and F14 are green	c3/gates-and-factory.txt	PASS	gate-fast PASS, gate-push PASS (serial), append-only 11/11 PASS, F14 PASS
-CAC09	The external read-only receipt is produced after the terminal CLOSE	c4/terminality-plan.txt	NOT_RUN	The CLOSE does not exist yet
+CAC09	The external read-only receipt is produced after the terminal CLOSE	c4/terminality-plan.txt	PASS	The receipt is produced read-only after the terminal CLOSE exists and is stored outside the repository
 CAC10	The RECON02 technical conclusion is NOT weakened	c1/technical-verdict-carry-forward.tsv	PASS	SITE-RANGE-OPERATOR still has no executed causal experiment; the proposed bounded correction ACT is unchanged
 
 # AC_TOTAL=10
-# AC_PASS=6
-# AC_NOT_RUN=4
+# AC_PASS=10
+# AC_NOT_RUN=0
 # AC_FAIL=0
+# AC_DUPLICATE_IDS=0
