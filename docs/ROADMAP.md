@@ -8852,3 +8852,96 @@ IMPLEMENT02, and it was not.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md`
 and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02/`.
+
+## RECON03 contract correction — the AArch64 comparison-condition-code bundle is TWO authorities, not three
+
+`ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01`
+closed with **PASS / PASS_CORRECTED_TWO_PLUS_ADAPTER**. It is a
+forward-only correction of the successor contract that
+`ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02` found unimplementable;
+it changes no historical record.
+
+**The three findings.**
+
+1. The three whole definitions were re-derived by two methods that
+   share no code — a compiled PolyC byte-level lexical scanner and a
+   POSIX `grep`/`wc`/`awk`/`dd`/`shasum` scanner — which agree
+   byte-for-byte: `aarch64CcFor` at `[35517,36575)` size 1058 with
+   `6ad4b25d…`, `aarch64CcInvFor` at `[36577,37494)` size 917 with
+   `56ee5cf2…`, and `aarch64EmitCSet` at `[37566,37718)` size 152 with
+   `8a1f2573…`. The convention is frozen as zero-based half-open with
+   the closing brace as the last byte of the range. The historical C1
+   digests reproduce exactly and are relabelled `C1_PARTIAL_INTERVAL`,
+   which shows that the C1 interval for CSET coincides with its whole
+   definition while the C1 intervals for FOR and INV are strict
+   prefixes; the historical C2 ranges are rehashed and all three
+   mismatch the digests the contract paired with them.
+
+2. `aarch64EmitCSet` is a **C-OWNED MECHANICAL ADAPTER**, not a third
+   semantic authority. Its whole 152-byte definition contains zero
+   `switch`, zero `case ` and zero `IR_CMP_` references; its only
+   decision input is `aarch64CcFor`'s return value. A mutation
+   confined entirely to the FOR table changes the `cset` emission from
+   `lt` to `ge` **while the CSET site stays byte-identical**. A
+   CSET-only mutation proves only that the emitter is live. RECON03's
+   own records agree: its CSET mutation "replaces the call to
+   `aarch64CcFor` with a constant", and its FOR record says the CSET
+   witness "shares the `aarch64CcFor` table and is therefore NOT an
+   isolation control for this site".
+
+   ```
+   BUNDLE_MODE                  = TWO_PLUS_ADAPTER
+   FUTURE_NEW_POLYC_AUTHORITIES = 2
+   FUTURE_TOTAL_AUTHORITIES     = 15
+   ```
+
+   The three original physical site IDs and the selected bundle ID are
+   preserved verbatim; RECON03's recorded selection is neither erased
+   nor relabelled.
+
+3. The corrected ABI **`ABI-A64-CMP-CC-2`** has two exports —
+   `AbiA64CcForV2` and `AbiA64CcInvForV2` — and **no third export**.
+   The inert `U0 AbiA64CmpCcEmitCSet(I64,I64)` is removed rather than
+   repaired. The ABI was proven implementable and observable through
+   the real seam: a disposable prototype compiled by the production
+   `./hcc` for `aarch64-apple-darwin`, exported from a Mach-O arm64
+   object and linked into a disposable C host, with **28 checks and 0
+   failures** covering the zero discriminant, the borrowed lifetime,
+   every invalid and unsupported kind failing closed, the real compiled
+   PolyC result feeding the unchanged host `cset` formatting, and a
+   host-only formatting anti-control. All twelve AArch64 suffixes
+   assemble against the real assembler and the invalid suffix is
+   rejected. The producer DAG is named unambiguously as `C_TOOLCHAIN`
+   and `POLYC_PRODUCER_1..5`, with six distinct executable digests and
+   an explicit crosswalk away from the predecessor's self-referential
+   `G0`/`G1`/`G2`/`G3` labels; the 12 ordered `PAIR` stream comparisons
+   and the 12 heterogeneous `FROZEN` invariants remain two distinct
+   rosters.
+
+**Conservation.** RECON03 remains `PASS`, IMPLEMENT02 remains `HALT`,
+the original contract's digest `77e2a0d5…` is re-derived from the live
+blob and unchanged, the 523-path F14 freeze re-verifies with zero
+mismatches, all 13 production PolyC authorities are linked with the
+historical 12/13-at-IMPLEMENT01-CLOSE count kept separate from the
+13/13 correction-inclusive count, the graph is conserved at
+52/134/34/19 with `E-TYP-0136` the sole proven cut, and there is **no
+production semantic delta**. All 24 negative controls execute
+pristine → adverse → restored with 24 distinct reason tokens.
+`F-NO-PYTHON` remains honestly FAIL at the same 12 violations and
+`F-POLYC-TOOLS` remains honestly UNAVAILABLE; the broad LEXER07 corpus
+and the cross-target prefix are recorded as NOT_REMEASURED rather than
+relabelled.
+
+**The next ACT is proposed, not created:**
+`ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01`, with
+`ABI-A64-CMP-CC-2` as its sole binding contract and a target of
+**13 → 15**.
+
+```
+NEXT_TARGET_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED   = NO
+SLICE10_AUTHORIZED     = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01/`.
