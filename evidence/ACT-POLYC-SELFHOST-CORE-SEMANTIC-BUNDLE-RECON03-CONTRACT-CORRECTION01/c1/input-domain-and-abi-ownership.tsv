@@ -1,0 +1,129 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=input-domain-and-abi-ownership
+#
+# THE CORRECTED ABI'S INPUT DOMAIN, ITS FAIL-CLOSED PARTITIONS, AND
+# THE OWNERSHIP OF EVERY OPERATION.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE LIVE IrCmpKind DOMAIN, DERIVED BY PARSING
+#
+# Derived by the compiled PolyC detector from the LIVE
+# src/ir-types.h, NOT asserted.
+#
+kind	value	derivation
+IR_CMP_INVALID	-1	explicit `= -1`
+IR_CMP_EQ	0	implicit, first after the explicit one
+IR_CMP_NE	1	implicit
+IR_CMP_LT	2	implicit
+IR_CMP_LE	3	implicit
+IR_CMP_GT	4	implicit
+IR_CMP_GE	5	implicit
+IR_CMP_ULT	6	implicit
+IR_CMP_ULE	7	implicit
+IR_CMP_UGT	8	implicit
+IR_CMP_UGE	9	implicit
+IR_CMP_OEQ	10	implicit
+IR_CMP_ONE	11	implicit
+IR_CMP_OLT	12	implicit
+IR_CMP_OLE	13	implicit
+IR_CMP_OGT	14	implicit
+IR_CMP_OGE	15	implicit
+IR_CMP_UNO	16	implicit
+IR_CMP_ORD	17	implicit
+ENUMERATOR_COUNT=19
+ZERO_DISCRIMINANT_KIND=IR_CMP_EQ (value 0)
+NEGATIVE_KIND=IR_CMP_INVALID (value -1)
+STATUS_IS_A_POINTER=YES -- the failure signal is a NULL pointer, never a negative numeric status, so the zero discriminant can NEVER collide with a failure
+ZERO_DISCRIMINANT_COLLISION_POSSIBLE=NO
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE PARTITIONS, MEASURED AGAINST THE LIVE SWITCHES
+#
+# The FOR definition's float switch has 6 cases and its integer switch
+# has 10 cases; the same counts hold for INV. The kinds
+# IR_CMP_OEQ..IR_CMP_ORD (10..17) have NO case in EITHER switch.
+#
+kind	value	is_float_partition	FOR_integer_suffix	FOR_float_suffix	INV_integer_suffix	INV_float_suffix	disposition
+IR_CMP_EQ	0	integer	eq	eq	ne	ne	SUPPORTED
+IR_CMP_NE	1	integer	ne	ne	eq	eq	SUPPORTED
+IR_CMP_LT	2	integer	lt	mi	ge	pl	SUPPORTED
+IR_CMP_LE	3	integer	le	ls	gt	hi	SUPPORTED
+IR_CMP_GT	4	integer	gt	gt	le	le	SUPPORTED
+IR_CMP_GE	5	integer	ge	ge	lt	lt	SUPPORTED
+IR_CMP_ULT	6	integer	lo	(none)	hs	(none)	SUPPORTED_INTEGER_ONLY
+IR_CMP_ULE	7	integer	ls	(none)	hi	(none)	SUPPORTED_INTEGER_ONLY
+IR_CMP_UGT	8	integer	hi	(none)	ls	(none)	SUPPORTED_INTEGER_ONLY
+IR_CMP_UGE	9	integer	hs	(none)	lo	(none)	SUPPORTED_INTEGER_ONLY
+IR_CMP_OEQ	10	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_ONE	11	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_OLT	12	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_OLE	13	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_OGT	14	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_OGE	15	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_UNO	16	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_ORD	17	float	(none)	(none)	(none)	(none)	UNSUPPORTED_FAIL_CLOSED
+IR_CMP_INVALID	-1	both	(none)	(none)	(none)	(none)	INVALID_FAIL_CLOSED
+#
+# The historical observation that IR_CMP_OEQ..IR_CMP_ORD have no
+# matching suffix in the existing switches is VERIFIED against the
+# live bytes: the whole FOR definition contains exactly 16 IR_CMP_
+# references and all 16 are the ten integer kinds plus the six float
+# kinds (EQ, NE, LT, LE, GT, GE), with the ten ordered/unordered kinds
+# absent from BOTH switches.
+#
+SUPPORTED_INTEGER_KINDS=10
+SUPPORTED_FLOAT_KINDS=6
+UNSUPPORTED_ORDERED_UNORDERED_KINDS=8
+NO_DEFAULT_SUFFIX_ON_UNKNOWN_KIND=YES -- both switches end in `default: loggerPanic(...)`
+HOST_PANIC_MECHANISM=loggerPanic expands to fprintf(stderr,...) followed by exit(EXIT_FAILURE); it is a host process termination, not a cross-seam escape (no setjmp/longjmp)
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE CORRECTED ABI v2 SIGNATURES AND THEIR OBSERVABILITY
+#
+export	parameters	return	observable_channel	borrowed	ownership
+AbiA64CcForV2	(I64 comparison_kind, I64 is_float)	U8 * (borrowed suffix)	YES -- a NUL-terminated suffix pointer the host reads	YES -- a static string literal	The host MUST NOT free it and MUST NOT write through it
+AbiA64CcInvForV2	(I64 comparison_kind, I64 is_float)	U8 * (borrowed suffix)	YES -- a NUL-terminated suffix pointer the host reads	YES -- a static string literal	The host MUST NOT free it and MUST NOT write through it
+#
+# NO THIRD EXPORT EXISTS UNDER THE TWO_PLUS_ADAPTER DISPOSITION.
+#
+THIRD_EXPORT_COUNT=0
+ORIGINAL_U0_CSET_EXPORT_REUSED=NO -- the frozen U0 AbiA64CmpCcEmitCSet(I64,I64) is NEVER used, because it has no observable output channel (IMPLEMENT02's binding negative result)
+#
+# ---------------------------------------------------------------------------
+# PART 4: WHAT THE HOST KEEPS (C-OWNED, NOT MIGRATED)
+#
+operation	owner	note
+IrCgCtx construction and lifetime	C	unchanged
+AoStr assembly buffer	C	unchanged
+aoStrCatFmt formatting and the "cset    x0, %s\n\t" literal	C	unchanged; this is the MECHANICAL ADAPTER's fixed formatting
+the cset instruction selection	C	the emitter stays in C; only the SUFFIX comes from PolyC
+register names (x0, x1, ...)	C	unchanged
+emission sequencing	C	unchanged
+diagnostics (loggerPanic and friends)	C	unchanged
+allocation and recovery	C	unchanged
+process termination on a panic	C	unchanged
+OPAQUE_MUTABLE_STATE_CROSSING_THE_SEAM=NO
+POINTER_TO_MUTABLE_IR_OR_AST_STATE_CROSSING_THE_SEAM=NO
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE FAIL-CLOSED CONTRACT
+#
+case	behaviour
+a valid integer kind, is_float=0	the corresponding integer suffix is returned as a borrowed literal
+a valid float kind, is_float=1	the corresponding float suffix is returned as a borrowed literal
+an integer-only kind with is_float=1	NULL (fail closed); the host turns NULL into its own explicit panic
+IR_CMP_OEQ..IR_CMP_ORD on either path	NULL (fail closed); these kinds have no suffix in either switch
+IR_CMP_INVALID (-1)	NULL (fail closed)
+any other value	NULL (fail closed); there is NO default suffix
+NO_DEFAULT_CONDITION_SUFFIX_ON_UNKNOWN_KIND=YES
+NULL_MEANS_FAIL_CLOSED=YES -- the failure signal is a NULL POINTER, never a numeric status, so IR_CMP_EQ == 0 can never be confused with an error
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+#
+INPUT_DOMAIN_DERIVED_FROM_LIVE_SOURCE=YES
+ZERO_AND_INVALID_PARTITIONS_ENUMERATED=YES
+FAIL_CLOSED_ON_EVERY_OUT_OF_DOMAIN_COMBINATION=YES
+HOST_OWNERSHIP_UNCHANGED=YES
+OBSERVABLE_CHANNEL_FOR_EVERY_CLAIMED_AUTHORITY=YES (2 authorities, 2 exports)

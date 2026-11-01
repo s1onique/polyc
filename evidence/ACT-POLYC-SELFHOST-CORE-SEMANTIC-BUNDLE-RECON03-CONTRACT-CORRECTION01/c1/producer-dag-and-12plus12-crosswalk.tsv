@@ -1,0 +1,133 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=producer-dag-and-12plus12-crosswalk
+#
+# THE PRODUCER DAG, MEASURED FROM THE LIVE BUILD RULES, AND THE
+# EXPLICIT CROSSWALK AWAY FROM THE PREDECESSOR'S AMBIGUOUS G0/G1/G2/G3
+# LABELS.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE PRODUCER EXECUTABLES, WITH LIVE DIGESTS
+#
+producer_id	executable_path	sha256	role	produced_before_its_output
+C_TOOLCHAIN	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	the HOST C compiler; it builds the production C translation units, NOT the PolyC subject	YES
+POLYC_PRODUCER_1	build/host-stage0/hcc	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	the ISOLATED legacy stage0 PolyC compiler; it compiles the PolyC component source into the subject objects	YES
+POLYC_PRODUCER_2	./hcc	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	the PRODUCTION compiler (the production C TUs plus the PolyC subject objects linked in)	YES
+POLYC_PRODUCER_3	./build/hcc-bootstrap02	99788f5273c734d387afa99a4c220de7033631d90bba8d02e56e36f51c7d5533	the stage-2 compiler	YES
+POLYC_PRODUCER_4	./build/hcc-bootstrap03	3fc016cb9292b9e4d1cd3e6e90370a96fe21a1a135b0da3e85a6f5d172df94b8	the stage-3 compiler	YES
+POLYC_PRODUCER_5	./build/hcc-bootstrap04	e6bae180f2779b89c51370974a47ec323b6a5292230d8cfdb2a24ada0461c8e2	the stage-4 compiler	YES
+DISTINCT_PRODUCER_EXECUTABLE_DIGESTS=6
+PAIRWISE_DISTINCT=YES
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE SUBJECT-PRODUCTION RULES, READ FROM THE REAL BUILD FILES
+#
+# Every production PolyC subject object is produced by ONE producer:
+# $(BOOTSTRAP_STAGE0_HCC) = build/host-stage0/hcc.
+#
+subject_object	source	rule_producer	producer_id
+./build/parser-padding-subject.o	tools/bootstrap/selfhost-parser-padding.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-control-flow-token-subject.o	tools/bootstrap/selfhost-parser-control-flow-token.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-operator-precedence-subject.o	tools/bootstrap/selfhost-parser-operator-precedence.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-ast-binop-subject.o	tools/bootstrap/selfhost-parser-slice04.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-ast-unary-subject.o	tools/bootstrap/selfhost-parser-slice05.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-switch-arm-subject.o	tools/bootstrap/selfhost-parser-slice06.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-compound-block-subject.o	tools/bootstrap/selfhost-parser-slice07.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-default-arm-subject.o	tools/bootstrap/selfhost-parser-slice08.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/parser-statement-dispatch-subject.o	tools/bootstrap/selfhost-parser-slice09.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/selfhost-abi-cpa-subject.o	tools/bootstrap/selfhost-abi-compile-print-ast.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+./build/core-operator-subject.o	tools/bootstrap/selfhost-core-operator.HC	$(BOOTSTRAP_STAGE0_HCC)	POLYC_PRODUCER_1
+#
+# THE CHRONOLOGY
+#
+stage	producer	produces
+1	C_TOOLCHAIN (/usr/bin/gcc)	build/host-stage0/hcc (the isolated stage0 compiler)
+2	POLYC_PRODUCER_1 (build/host-stage0/hcc)	every build/*-subject.o PolyC subject object
+3	C_TOOLCHAIN + the subject objects	./hcc (the production compiler, linked with the PolyC subjects)
+4	POLYC_PRODUCER_2/3/4	the stage-2/3/4 compilers, each able to recompile the subject
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE CROSSWALK FROM THE PREDECESSOR'S AMBIGUOUS LABELS
+#
+# The RECON03 contract called BOTH /usr/bin/gcc AND build/host-stage0/hcc
+# "G0", and it named G1, G2 and G3 WITHOUT naming any executable for
+# them. This ACT's successor names every executable explicitly and
+# NEVER reuses G0 for two executables.
+#
+historical_label	historical_meaning	ambiguous	resolved_role
+G0	"the baseline compiler"	YES -- the label was applied to BOTH /usr/bin/gcc and build/host-stage0/hcc	C_TOOLCHAIN (the C oracle) and POLYC_PRODUCER_1 (the stage0 PolyC compiler) are DISTINCT roles with DISTINCT digests
+G1	"the next generation"	YES -- no executable was named	POLYC_PRODUCER_2 (./hcc) for the first generation subject, then POLYC_PRODUCER_3 (./build/hcc-bootstrap02) for the second
+G2	"the generation after that"	YES -- no executable was named	POLYC_PRODUCER_4 (./build/hcc-bootstrap03)
+G3	"the last generation"	YES -- no executable was named	POLYC_PRODUCER_5 (./build/hcc-bootstrap04)
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE TWO 12-CHECK ROSTERS ARE DISTINCT SCHEMAS
+#
+# A count of 12 in one roster NEVER discharges the other. They have
+# different cardinalities, different directions, different subjects and
+# different kinds.
+#
+# ROSTER A: the 12 ORDERED STREAM comparisons (PAIR-01..PAIR-12)
+#
+pair_id	from	to	kind
+PAIR-01	G0	G1	STREAM_AGREEMENT
+PAIR-02	G0	G2	STREAM_AGREEMENT
+PAIR-03	G0	G3	STREAM_AGREEMENT
+PAIR-04	G1	G0	STREAM_AGREEMENT
+PAIR-05	G1	G2	STREAM_AGREEMENT
+PAIR-06	G1	G3	STREAM_AGREEMENT
+PAIR-07	G2	G0	STREAM_AGREEMENT
+PAIR-08	G2	G1	STREAM_AGREEMENT
+PAIR-09	G2	G3	STREAM_AGREEMENT
+PAIR-10	G3	G0	STREAM_AGREEMENT
+PAIR-11	G3	G1	STREAM_AGREEMENT
+PAIR-12	G3	G2	STREAM_AGREEMENT
+#
+# ROSTER B: the 12 HETEROGENEOUS invariants (FROZEN-01..12)
+#
+frozen_id	predicate	kind
+FROZEN-01	G0 subject == G1 subject (byte identity of the .o)	OBJECT_BYTE_IDENTITY
+FROZEN-02	G0 subject == G2 subject	OBJECT_BYTE_IDENTITY
+FROZEN-03	G0 subject == G3 subject	OBJECT_BYTE_IDENTITY
+FROZEN-04	G1 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-05	G2 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-06	G3 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-07	G1 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-08	G2 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-09	G3 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-10	G1..G3 executables produce the same PROGRAM OUTPUT as G0	PROGRAM_OUTPUT_EQUALITY
+FROZEN-11	G1..G3 executables produce the same EXIT STATUS as G0	EXIT_STATUS_EQUALITY
+FROZEN-12	the legacy C oracle (selector-OFF) and the PolyC subject agree on every fixture case	ORACLE_AGREEMENT
+#
+# THE DISTINCTNESS
+#
+PAIR_AND_FROZEN_ARE_DISTINCT_ROSTERS=YES
+PAIR_ROSTER_SIZE=12
+FROZEN_ROSTER_SIZE=12
+PAIR_ROSTER_KINDS=STREAM_AGREEMENT (all 12)
+FROZEN_ROSTER_KINDS=OBJECT_BYTE_IDENTITY (3), ASSEMBLY_EQUALITY (3), OBJECT_EQUALITY_ON_FIXTURES (3), PROGRAM_OUTPUT_EQUALITY (1), EXIT_STATUS_EQUALITY (1), ORACLE_AGREEMENT (1)
+PAIR_ROSTER_IS_ORDERED_AND_DIRECTED=YES (all 12 ordered pairs of 4 streams)
+FROZEN_ROSTER_IS_ORDERED_AND_DIRECTED=NO
+DIFFERENTIAL_SCHEMA_CONFLATION=NO
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE OBLIGATIONS THE SUCCESSOR MUST CARRY
+#
+# The future implementation ACT must satisfy BOTH rosters independently.
+#
+OBLIGATION_1=one genuine selector-OFF C production oracle, verified to import NO PolyC subject symbol
+OBLIGATION_2=three pairwise-distinct PolyC subject producers (distinct executable digests)
+OBLIGATION_3=four separately observed semantic result streams
+OBLIGATION_4=all 12 ordered stream comparisons (PAIR-01..12) pass
+OBLIGATION_5=all 12 heterogeneous invariants (FROZEN-01..12) pass, tracked as a DIFFERENT roster
+OBLIGATION_6=the PAIR count of 12 NEVER discharges the FROZEN count of 12, and vice versa
+OBLIGATION_7=one post-migration causal experiment PER ACTUAL AUTHORITY (2 under TWO_PLUS_ADAPTER, not 3)
+OBLIGATION_8=the legacy C body is shown DORMANT in the selector-ON build for each migrated authority
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+#
+PRODUCER_DAG_RESOLVED_FROM_REAL_RULES=YES
+PRODUCER_LABELS_UNAMBIGUOUS=YES
+PRODUCER_ALIAS=NO (6 executables, 6 distinct digests)
+PAIR12_VS_FROZEN12_DISTINCT=YES

@@ -1,0 +1,102 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=partial-vs-whole-digest-audit
+#
+# THE CENTRAL AUDIT: FOUR DISTINCT DIGEST CONCEPTS, NEVER CONFLATED.
+#
+# (1) WHOLE_FUNCTION      -- the digest of the complete definition.
+# (2) C1_PARTIAL_INTERVAL -- the digest of the historical RECON03 C1
+#                            interval, which for FOR and INV is a
+#                            PREFIX of the definition and for CSET
+#                            happens to BE the whole definition.
+# (3) C2_CLAIMED_RANGE_RECOMPUTED -- the digest actually produced by
+#                            the historical RECON03 C2 contract's
+#                            claimed range. It matches NOTHING.
+# (4) THE RECORDED CLAIM   -- what the historical documents assert.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE WHOLE-FUNCTION DIGESTS (Convention A)
+#
+site_id	function	whole_range	size	whole_sha256	recorded_as_whole_by
+SITE-A64-CC-FOR	aarch64CcFor	[35517,36575)	1058	6ad4b25dc0473eeb2665690c7eff0d45100c6d184f1fff04bc374bf415a7e617	THIS ACT (generated, not copied)
+SITE-A64-CC-INV	aarch64CcInvFor	[36577,37494)	917	56ee5cf27e10e4a0919588713ef77a481017a2962bf713cc3f51796d8c53b7cc	THIS ACT (generated, not copied)
+SITE-A64-CSET	aarch64EmitCSet	[37566,37718)	152	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	THIS ACT (generated, not copied)
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE C1 PARTIAL INTERVALS, REPRODUCED EXACTLY
+#
+# The C1 digests are VALID for their C1 intervals. They are never
+# relabelled as whole-definition digests. For CSET the C1 interval
+# COINCIDES with the whole definition (the function is only 152 bytes),
+# so the C1 digest IS the whole-function digest there -- a fact the
+# historical records never stated, and one this ACT now states
+# explicitly rather than leaving it to be misread.
+#
+site_id	c1_interval	c1_size	c1_sha256	reproduced_exactly	is_the_whole_definition	c1_label_corrected_to
+SITE-A64-CC-FOR	[35517,36100)	583	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	YES	NO (a 583-byte PREFIX of the 1058-byte definition)	C1_PARTIAL_INTERVAL
+SITE-A64-CC-INV	[36577,37019)	442	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	YES	NO (a 442-byte PREFIX of the 917-byte definition)	C1_PARTIAL_INTERVAL
+SITE-A64-CSET	[37566,37718)	152	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	YES	YES (the C1 interval IS the whole definition for this site)	C1_PARTIAL_INTERVAL (coincident with WHOLE_FUNCTION here)
+C1_PARTIAL_DIGESTS_REPRODUCED=3 of 3
+C1_TO_WHOLE_MISBIND_FOR=2 (FOR, INV)
+C1_TO_WHOLE_COINCIDENCE_FOR=1 (CSET)
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE HISTORICAL C2 CLAIMED RANGES, REHASHED
+#
+# The RECON03 C2 contract paired each member digest with a DIFFERENT
+# byte range than the C1 record used, reusing the C1 digest. Those
+# ranges hash to something else entirely. This is the C2
+# historical-range/digest mismatch, REHASHED and demonstrated.
+#
+site_id	c2_claimed_range	c2_claimed_size	c2_claimed_digest	recomputed_digest_of_that_range	matches_the_claim	mismatch_reason
+SITE-A64-CC-FOR	[35517,36576)	1059	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	49a07e6f0b76aeeac58b50e646080cc057f4cdc008f64f1f227b8b25bfa9ef6b	NO	the claimed range is ONE BYTE longer than the definition and carries a DIFFERENT digest; the recorded digest belongs to a different, much shorter interval
+SITE-A64-CC-INV	[36577,37495)	918	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	fe6fc56625c18d51151d59f0b4faa8e7e01065fc1bade1304e4f901a9004af94	NO	the claimed range is ONE BYTE longer than the definition and carries a DIFFERENT digest; the recorded digest belongs to a different, much shorter interval
+SITE-A64-CSET	[37566,37719)	153	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	f168f9afc5c0323f94e0c881653b43a1f0de6c9b96a378a0d1d0d3fbe8840a04	NO	the claimed range is ONE BYTE longer than the definition and carries a DIFFERENT digest; the recorded digest belongs to the 152-byte definition
+C2_HISTORICAL_RANGE_DIGEST_MISMATCHES=3 of 3
+C2_MISMATCH_CLASS=the C2 contract's range is the definition's range PLUS ONE BYTE, paired with the C1 digest
+#
+# ---------------------------------------------------------------------------
+# PART 4: WHAT THE HISTORICAL RECON03 C2 CONTRACT ACTUALLY SAID
+#
+# The historical contract's section 2 table (RECON03
+# c2/selected-bundle-contract.md) recorded:
+#
+#   SITE-A64-CC-FOR  src/aarch64.c 35517..36576  d22a99b3...
+#   SITE-A64-CC-INV  src/aarch64.c 36577..37495  5b08df7b...
+#   SITE-A64-CSET   src/aarch64.c 37566..37719  8a1f2573...
+#
+# The "35517..36576" notation is INCLUSIVE-ON-BOTH-ENDS as written.
+# Under that reading the C2 range covers 1060 bytes, which is one byte
+# MORE than the 1059-byte half-open [35517,36576). The C2 contract
+# is therefore internally inconsistent about its own convention. This
+# ACT does not repair the historical text; it records the ambiguity
+# and freezes an explicit, unambiguous convention for the successor.
+#
+CONVENTION_AMBIGUITY_IN_HISTORICAL_TEXT=YES (the C2 ranges are written inclusive-inclusive but the digests do not match either reading)
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE POSITIVE AND NEGATIVE CONTROLS
+#
+# The detectors discriminate, and they discriminate for the RIGHT
+# reason. Each control alters an actual source-derived fact or digest
+# and RECALCULATES INDEPENDENTLY.
+#
+control	adverse_input	expected	observed	result
+POS-01	the TRUE whole digest of FOR presented as the whole digest	FINAL=OK	FINAL=OK	PASS
+NEG-01	the C1 PARTIAL digest of FOR presented as the whole digest	FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND	FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND DETECTION=PARTIAL_DIGEST_PRESENTED_AS_WHOLE	PASS
+NEG-02	the whole range EXTENDED BY ONE BYTE with the true digest	FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE	FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE (EXTENDED_SHA256 named)	PASS
+NEG-03	the whole range TRUNCATED BY ONE BYTE with the true digest	FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE	FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE (TRUNCATED_SHA256 named)	PASS
+NEG-04	the C2 claimed range with the C1 digest	FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH	FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH	PASS
+NEG-05	a correct digest paired with a DIFFERENT source blob OID	FINAL=FAIL REASON=SOURCE_BLOB_PROVENANCE_MISMATCH	FINAL=FAIL REASON=SOURCE_BLOB_PROVENANCE_MISMATCH	PASS
+CONTROL_COUNT	6
+CONTROL_PASS	6
+CONTROL_VACUITY=NONE (each control's adverse input is a distinct, real, source-derived fact)
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+#
+SOURCE_PROVENANCE_VERDICT=VERIFIED
+WHOLE_DEFINITION_DIGESTS_GENERATED_NOT_COPIED=YES
+C1_DIGESTS_NEVER_RELABELLED=YES
+C2_MISMATCHES_DEMONSTRATED=3
+PARTIAL_VS_WHOLE_CONCEPTS_SEPARATED=YES

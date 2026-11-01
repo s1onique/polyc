@@ -1,0 +1,84 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c-only-mutants-and-site-isolation
+#
+# THE THREE C-SOURCE CAUSAL EXPERIMENTS, WITH THEIR PHYSICAL
+# EXECUTION IDS, THEIR OBSERVED RESULTS AND THEIR RESTORATION.
+#
+# EVERY MUTATION WAS APPLIED IN A DISPOSABLE, DETACHED, ISOLATED
+# WORKTREE (git worktree add --detach) OUTSIDE the tracked repository.
+# The canonical tree was NEVER modified. Every worktree was REMOVED
+# after its terminal observations were consumed.
+#
+# ---------------------------------------------------------------------------
+# THE WORKTREES
+#
+worktree_id	location	head	build_chain	result
+WT-A64CORR-CSET	/tmp/a64corr/wt-cset	500d2fce (detached)	make bootstrap-stage0 -> make bootstrap-prefix -> make parser-padding-subject -> make all (the canonical production chain)	the full production compiler was built; the PolyC parser-padding subject was produced by the stage0 compiler
+WT-A64CORR-FOR	(the same disposable worktree, sequentially)	500d2fce (detached)	same chain, rebuilt after each mutation	one full production compiler per mutant
+WT-A64CORR-INV	(the same disposable worktree, sequentially)	500d2fce (detached)	same chain, rebuilt after each mutation	one full production compiler per mutant
+WORKTREES_REMAINING=0 (all removed with `git worktree remove --force`)
+CANONICAL_TREE_MODIFIED=NO
+#
+# ---------------------------------------------------------------------------
+# THE WITNESS
+#
+# The witness reproduces the historical seam exactly: RECON03 recorded
+# the pristine emission as "cset x0, lt", and this witness produces
+# "cset x0, lt" from the pristine compiler.
+#
+witness_id	source	shape	reason_for_the_shape
+W-A64CORR-CSET	/tmp/a64corr/wit/cset_witness.HC	a comparison whose result has TWO uses	an IR_ICMP whose result has exactly ONE use is fused by irOptPinResultReg into IR_CMP_BR, which takes the BRANCH path; with TWO uses the IR_ICMP survives and the emitter takes the IR_ICMP/cset path
+W-A64CORR-INV	/tmp/a64corr/wit/inv_witness.HC	a single-use comparison that is immediately branched	on the IR_CMP_BR path, which is where aarch64CcInvFor is called
+WITNESS_PRISTINE_CSET_EMISSION=cset x0, lt
+WITNESS_PRISTINE_INV_EMISSION=b.ge
+PRISTINE_MATCHES_HISTORICAL_RECON03_OBSERVATION=YES
+#
+# ---------------------------------------------------------------------------
+# THE THREE EXPERIMENTS
+#
+execution_id	site_id	mutation	bytes_changed	other_sites_byte_identical	observed_emission	observed_verdict	restoration
+EXEC-A64CORR-CSET-MUTANT	SITE-A64-CSET	replace the call `aarch64CcFor(cmp, is_float)` with the literal `"ne"` inside aarch64EmitCSet only	26 (the FOR table's 1058-byte digest 6ad4b25d... and the INV table's 917-byte digest 56ee5cf2... were BOTH unchanged)	cset x0, ne	EMITTER_LIVE (the cset emission changed); the INV witness was UNCHANGED (b.ge)	SILENT: the source was restored and the compiler rebuilt
+EXEC-A64CORR-FOR-MUTANT	SITE-A64-CC-FOR	change `case IR_CMP_LT: return "lt";` to `return "ge";` in aarch64CcFor only	1 line	YES: the CSET 152-byte definition was byte-identical (digest 8a1f2573...) and the INV table was byte-identical	cset x0, ge	FOR_IS_CAUSAL_FOR_THE_CSET_EMISSION; the INV witness was UNCHANGED (b.ge)	SILENT: the source was restored and the compiler rebuilt
+EXEC-A64CORR-INV-MUTANT	SITE-A64-CC-INV	change `case IR_CMP_LT: return "ge";` to `return "lt";` in aarch64CcInvFor only	1 line	YES: the FOR table and the CSET definition were byte-identical	b.ge -> b.lt	INV_IS_CAUSAL_AND_ISOLATED; the CSET emission was UNCHANGED (cset x0, lt)	SILENT: the source was restored and the compiler rebuilt
+#
+# ---------------------------------------------------------------------------
+# THE FULL ISOLATION MATRIX, AS OBSERVED
+#
+compiler	CSET witness emission	INV witness emission	interpretation
+pristine	cset x0, lt	b.ge	the baseline
+CSET-mutant (FOR table INTACT)	cset x0, ne	b.ge	the CSET site is LIVE and its mutation is LOCAL
+FOR-mutant (CSET site BYTE-IDENTICAL)	cset x0, ge	b.ge	the CSET OUTPUT IS FULLY DETERMINED BY FOR
+INV-mutant	cset x0, lt	b.lt	FOR and INV are SEPARATELY ATTRIBUTABLE
+#
+# ---------------------------------------------------------------------------
+# THE ASSEMBLY-OUTPUT DIGEST CORROBORATION
+#
+# The eight witness assembly files were digested as whole files, so
+# the matrix is corroborated by digests and not only by text.
+#
+assembly_digest_identity	meaning
+m_pristine_cset.s == m_mutant-inv_cset.s	the INV mutation does not change the cset emission
+m_pristine_inv.s == m_cset_inv.s == m_mutant-for_inv.s	the CSET mutation and the FOR mutation do not change the inverse branch
+m_cset_cset.s != m_pristine_cset.s	the CSET site is live
+m_mutant-for_cset.s != m_pristine_cset.s	the FOR site drives the cset emission
+m_mutant-inv_inv.s != m_pristine_inv.s	the INV site is live
+#
+# ---------------------------------------------------------------------------
+# THE RESTORATION PROOF
+#
+RESTORED_SOURCE_SHA256=98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d
+RESTORED_SOURCE_BYTES=101705
+RESTORED_SOURCE_MATCHES_ENTRY=YES
+RESTORED_COMPILER_OBSERVATION=cset x0, lt and b.ge (the pristine emissions)
+RESTORATION_VERDICT=PASS -- every source was restored byte-identically and every restored compiler reproduced the pristine observations
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+#
+FOR_CAUSAL_AND_ISOLATED=YES
+INV_CAUSAL_AND_ISOLATED=YES
+CSET_EMITTER_LIVE=YES
+CSET_OWN_INDEPENDENT_CONDITION_SELECTION=NO
+CAUSAL_SITE_DOUBLE_COUNT=NO
+MUTANT_WORKTREES_LEFT_BEHIND=0

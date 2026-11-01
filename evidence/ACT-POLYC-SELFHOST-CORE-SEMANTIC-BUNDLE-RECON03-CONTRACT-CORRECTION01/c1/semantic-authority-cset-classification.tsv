@@ -1,0 +1,154 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=semantic-authority-cset-classification
+#
+# THE DECISION: DOES aarch64EmitCSet OWN AN INDEPENDENT SEMANTIC
+# DECISION, OR IS IT A C-OWNED MECHANICAL ADAPTER?
+#
+# THE ANSWER IS MEASURED, NOT ASSUMED. The ACT explicitly forbids
+# inferring a third authority from the fact that CSET produces
+# observable assembly, and equally forbids predeclaring two
+# authorities without checking all the original emission semantics.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE SOURCE-LEVEL DECISION-CONTENT CENSUS
+#
+# The compiled PolyC detector counts, inside each function's whole
+# definition, the occurrences of the constructs that could carry a
+# CONDITION SELECTION.
+#
+site_id	function	switch_count	case_count	IR_CMP_references	calls_aarch64CcFor	calls_aarch64CcInvFor	carries_a_condition_selection_of_its_own
+SITE-A64-CC-FOR	aarch64CcFor	2	16	16	0	0	YES -- two switches (float and integer) selecting among the suffixes
+SITE-A64-CC-INV	aarch64CcInvFor	2	16	16	0	0	YES -- two switches (float and integer) selecting among the INVERSE suffixes
+SITE-A64-CSET	aarch64EmitCSet	0	0	0	1	0	NO -- no switch, no case, no IR_CMP reference; its entire semantic content is ONE call to aarch64CcFor
+#
+# The CSET whole definition, byte for byte, is:
+#
+#   static void aarch64EmitCSet(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
+#       aoStrCatFmt(ctx->buf, "cset    x0, %s\n\t", aarch64CcFor(cmp, is_float));
+#   }
+#
+# The decision the site makes is: WHICH SUFFIX STRING is formatted
+# into the host's assembly buffer. That decision is FULLY DETERMINED
+# by aarch64CcFor's output. The remaining content -- the literal
+# format string "cset    x0, %s\n\t", the register x0 and the
+# separator -- is FIXED MECHANICAL FORMATTING with no condition in it.
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE EMPIRICAL CAUSAL EXPERIMENTS
+#
+# Three disposable detached worktrees, each with a full production
+# compiler rebuild (the canonical `make all` bootstrap chain: stage0
+# -> parser-padding subject -> production hcc). The witness is a real
+# AArch64 emission: a comparison whose result has TWO uses, so the
+# optimiser does NOT fuse it into IR_CMP_BR and the emitter takes the
+# cset path. The pristine compiler emits exactly the assembly RECON03
+# recorded ("cset x0, lt"), which reproduces the historical seam.
+#
+# THE ISOLATION MATRIX (each cell is the observed emitted suffix):
+#
+compiler			CSET witness		INV witness
+pristine			cset x0, lt	b.ge
+CSET-mutant (FOR table intact)	cset x0, ne	b.ge
+FOR-mutant (CSET site byte-identical)	cset x0, ge	b.ge
+INV-mutant			cset x0, lt	b.lt
+#
+# WHAT THIS PROVES:
+#
+#   * A mutation confined ENTIRELY to the FOR table changes the CSET
+#     emission (lt -> ge) while the CSET site itself is BYTE-IDENTICAL
+#     (its 152-byte digest d915e499... / 8a1f2573... is unchanged).
+#     Therefore the CSET output is FULLY DETERMINED by FOR's suffix:
+#     the CSET site owns NO independent condition-code selection.
+#
+#   * A mutation confined ENTIRELY to the CSET site changes the CSET
+#     emission (lt -> ne) while leaving the INV witness untouched.
+#     This proves the CSET EMITTER PATH IS LIVE -- and nothing more.
+#     It is exactly the "substituting a literal for the aarch64CcFor
+#     call" case, which the ACT says proves emitter liveness and NOT
+#     an independent condition-code selection.
+#
+#   * A mutation confined ENTIRELY to the INV table changes ONLY the
+#     inverse branch (b.ge -> b.lt) and leaves the CSET emission
+#     unchanged. FOR and INV are therefore SEPARATELY ATTRIBUTABLE.
+#
+# The assembly-file digests of the eight witness outputs corroborate
+# the matrix independently of the text extraction:
+#   m_pristine_cset.s    == m_mutant-inv_cset.s   (the INV mutation
+#                                                    does not affect cset)
+#   m_pristine_inv.s     == m_cset_inv.s == m_mutant-for_inv.s
+#   m_cset_cset.s        != m_pristine_cset.s      (CSET is live)
+#   m_mutant-for_cset.s  != m_pristine_cset.s      (FOR drives cset)
+#   m_mutant-inv_inv.s   != m_pristine_inv.s       (INV is live)
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE PREDECESSOR'S OWN RECORDS AGREE
+#
+# RECON03's own evidence corroborates the classification, and this ACT
+# quotes it rather than re-deriving it by assertion:
+#
+#   RECON03 c2/causal-experiments/SITE-A64-CC-CSET/site-isolation.tsv:
+#     "ISOLATED (this site's mutation replaces the call to
+#      aarch64CcFor with a constant, so the aarch64CcFor TABLE itself
+#      is unchanged and the FOR site still emits cset x0, lt)"
+#
+#   RECON03 c2/causal-experiments/SITE-A64-CC-FOR/source-and-build.tsv:
+#     "ADJACENT_SITE_CONTROL_OUTCOMES=... W-A64-CC-CSET CHANGED
+#      (cset x0, ge, CMP_BAD) -- the CSET witness shares the
+#      aarch64CcFor table and is therefore NOT an isolation control
+#      for this site"
+#
+# The predecessor itself recorded that (a) the CSET mutation was a
+# literal substitution for the FOR call, and (b) the CSET witness is
+# COUPLED to the FOR table and is therefore not an isolation control.
+# A witness that cannot isolate a site cannot establish that site as
+# an independent authority.
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE SEMANTIC_DECISION_UNIQUE TEST
+#
+# The ACT requires a SEMANTIC_DECISION_UNIQUE=YES witness showing a
+# source-backed choice distinguishable from FOR under FIXED FOR output.
+#
+site_id	semantic_decision_unique	evidence
+SITE-A64-CC-FOR	YES	its own two switches select the suffix; a FOR mutation changes the cset emission
+SITE-A64-CC-INV	YES	its own two switches select the INVERSE suffix; an INV mutation changes only the inverse branch
+SITE-A64-CSET	NO	(1) zero switches, zero cases, zero IR_CMP references in its 152-byte definition; (2) its only decision input is aarch64CcFor's return value; (3) a FOR-only mutation changes its output with the CSET site byte-identical; (4) RECON03's own CSET mutation was a literal substitution for the FOR call; (5) RECON03's own FOR record says the CSET witness shares the FOR table and is not an isolation control
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE CLASSIFICATION AND THE DECISION RULE
+#
+CSET_SEMANTIC_CLASSIFICATION=C_MECHANICAL_ADAPTER
+CSET_DISTINCT_SOURCE_POLICY_PROVEN=NO
+CSET_ORIGINAL_U0_INERT=YES (binding negative result from IMPLEMENT02; not reopened)
+FOR_INDEPENDENTLY_QUALIFIED=YES
+INV_INDEPENDENTLY_QUALIFIED=YES
+CSET_SOURCE_BACKED_INDEPENDENT_SEMANTIC_POLICY=NO
+#
+# The ACT's decision rule, EXECUTED:
+#
+#   FOR independently qualified = YES AND INV independently qualified = YES
+#   AND CSET source-backed independent semantic policy = NO
+#     => BUNDLE_MODE=TWO_PLUS_ADAPTER; FUTURE_NEW_POLYC_AUTHORITIES=2;
+#        FUTURE_TOTAL=15
+#
+BUNDLE_MODE=TWO_PLUS_ADAPTER
+FUTURE_NEW_POLYC_AUTHORITIES=2
+FUTURE_TOTAL_AUTHORITIES=15
+HALT_AUTHORITY_CLASSIFICATION=NOT_TRIGGERED
+#
+# ---------------------------------------------------------------------------
+# PART 6: WHAT IS AND IS NOT ERASED
+#
+# The three ORIGINAL PHYSICAL SITE IDs are preserved verbatim for
+# historical traceability, and the selected bundle ID is preserved.
+# RECON03's recorded selection is NOT erased; it is RELABELLED in the
+# successor with a measured classification.
+#
+ORIGINAL_SITE_IDS_PRESERVED=SITE-A64-CC-FOR; SITE-A64-CC-INV; SITE-A64-CSET
+ORIGINAL_BUNDLE_ID_PRESERVED=CAND-CMP-CC-A64
+ORIGINAL_RECON03_SELECTION_ERASED=NO
+ORIGINAL_RECON03_VERDICT_ERASED=NO
+NEW_CLASSIFICATION=SITE-A64-CSET is C_MECHANICAL_ADAPTER (the emitter stays in C; its SUFFIX comes from the FOR PolyC decision)
+PHYSICAL_SITES_IN_BUNDLE=3
+SEMANTIC_AUTHORITIES_IN_BUNDLE=2
