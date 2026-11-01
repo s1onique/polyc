@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=corrected-producer-dag
+#
+# THE PRODUCER DAG FOR THE FUTURE IMPLEMENTATION, WITH UNAMBIGUOUS
+# IDENTITIES AND THE EXPLICIT CROSSWALK AWAY FROM THE PREDECESSOR'S
+# AMBIGUOUS G0/G1/G2/G3 LABELS.
+#
+producer_id	executable_path	sha256	role	produced_before_its_output	historical_label_crosswalk
+C_TOOLCHAIN	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	the HOST C compiler; it builds the production C translation units; it is the SELECTOR-OFF C ORACLE	YES	G0 (the first of the two executables the predecessor also called "G0")
+POLYC_PRODUCER_1	build/host-stage0/hcc	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	the ISOLATED legacy stage0 PolyC compiler; it compiles the PolyC component source into the subject objects	YES	G0 (the SECOND executable the predecessor also called "G0") and the producer the predecessor's "G1" was defined in terms of
+POLYC_PRODUCER_2	./hcc	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	the PRODUCTION compiler (the production C TUs plus the PolyC subject objects linked in)	YES	G1
+POLYC_PRODUCER_3	./build/hcc-bootstrap02	99788f5273c734d387afa99a4c220de7033631d90bba8d02e56e36f51c7d5533	the stage-2 compiler	YES	G2
+POLYC_PRODUCER_4	./build/hcc-bootstrap03	3fc016cb9292b9e4d1cd3e6e90370a96fe21a1a135b0da3e85a6f5d172df94b8	the stage-3 compiler	YES	G3
+POLYC_PRODUCER_5	./build/hcc-bootstrap04	e6bae180f2779b89c51370974a47ec323b6a5292230d8cfdb2a24ada0461c8e2	the stage-4 compiler	YES	(none)
+#
+DISTINCT_PRODUCER_EXECUTABLE_DIGESTS=6
+PAIRWISE_DISTINCT=YES
+PRODUCER_ALIAS=NO
+G0_REUSED_FOR_TWO_EXECUTABLES=NO -- the successor's labels are unique
+#
+# ---------------------------------------------------------------------------
+# THE FUTURE SUBJECT-PRODUCTION RULE
+#
+# The future implementation's PolyC subject will be produced by ONE
+# producer, exactly like every existing production PolyC subject:
+#
+#   $(BOOTSTRAP_STAGE0_HCC) = build/host-stage0/hcc   (POLYC_PRODUCER_1)
+#
+# The subject's source will be a NEW file under tools/bootstrap/. The
+# subject's object will be a NEW file under build/. It will be linked
+# into the production compiler by a NEW CMake rule that is SCHEDULED
+# by the build graph (not left to a manual prerequisite command).
+#
+# ---------------------------------------------------------------------------
+# THE CHRONOLOGY
+#
+stage	producer	produces
+1	C_TOOLCHAIN	build/host-stage0/hcc
+2	POLYC_PRODUCER_1	build/<new>-subject.o and every other PolyC subject object
+3	C_TOOLCHAIN + the subject objects	./hcc (the production compiler, with the PolyC subjects linked in)
+4	POLYC_PRODUCER_2/3/4/5	the stage-2..5 compilers, each able to recompile the subject
+#
+# ---------------------------------------------------------------------------
+# THE TWO SEPARATE 12-CHECK ROSTERS
+#
+ROSTER_A_IDS=PAIR-01..PAIR-12 (12 ORDERED STREAM comparisons among four streams)
+ROSTER_B_IDS=FROZEN-01..FROZEN-12 (12 HETEROGENEOUS invariants)
+ROSTER_A_AND_B_ARE_DISTINCT=YES
+ROSTER_A_KINDS=STREAM_AGREEMENT (all 12)
+ROSTER_B_KINDS=OBJECT_BYTE_IDENTITY (3), ASSEMBLY_EQUALITY (3), OBJECT_EQUALITY_ON_FIXTURES (3), PROGRAM_OUTPUT_EQUALITY (1), EXIT_STATUS_EQUALITY (1), ORACLE_AGREEMENT (1)
+ROSTER_A_IS_ORDERED_AND_DIRECTED=YES
+ROSTER_B_IS_ORDERED_AND_DIRECTED=NO
+A_COUNT_OF_12_NEVER_DISCHARGES_THE_OTHER=YES

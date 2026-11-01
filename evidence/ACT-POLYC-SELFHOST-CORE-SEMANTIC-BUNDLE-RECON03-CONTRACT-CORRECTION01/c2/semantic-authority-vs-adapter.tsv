@@ -1,0 +1,33 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=semantic-authority-vs-adapter
+#
+# THE AUTHORITY CLASSIFICATION, IN ITS FINAL FORM.
+#
+site_id	function	decision_the_site_owns	inputs	live_C_branch_switch_table	output	callers	downstream_use	transitive_call_through_another_selected_site	semantic_decision_ownership	counts_as_a_polyc_authority
+SITE-A64-CC-FOR	aarch64CcFor	which AArch64 condition suffix a comparison means	(IrCmpKind cmp, int is_float)	two switches: a float table of 6 cases and an integer table of 10 cases, both ending in a loggerPanic default	a borrowed const char * suffix	aarch64EmitCSet (via the adapter), and the IR_CMP_BR branch path directly	the emitted branch condition and the emitted cset condition	NONE -- FOR calls nothing	OWNED	YES
+SITE-A64-CC-INV	aarch64CcInvFor	which AArch64 condition suffix the INVERSE of a comparison means	(IrCmpKind cmp, int is_float)	two switches: a float table of 6 cases and an integer table of 10 cases, both ending in a loggerPanic default	a borrowed const char * suffix	the IR_CMP_BR branch path	the emitted false-side branch condition	NONE -- INV calls nothing	OWNED	YES
+SITE-A64-CSET	aarch64EmitCSet	NONE of its own -- it formats a FIXED string with a suffix it does not choose	(IrCgCtx *ctx, IrCmpKind cmp, int is_float)	NONE -- zero switches, zero cases, zero IR_CMP references in its 152-byte definition	a formatted cset instruction in the host's assembly buffer	the IR_ICMP and IR_FCMP lowering paths	the emitted cset instruction	YES -- it calls aarch64CcFor and inherits its decision	NOT OWNED -- C_MECHANICAL_ADAPTER	NO
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+#
+PHYSICAL_SITES=3
+SEMANTIC_AUTHORITIES=2
+AUTHORITY_SITES=SITE-A64-CC-FOR;SITE-A64-CC-INV
+ADAPTER_SITES=SITE-A64-CSET
+CSET_SEMANTIC_CLASSIFICATION=C_MECHANICAL_ADAPTER
+CSET_DISTINCT_SOURCE_POLICY_PROVEN=NO
+CSET_ORIGINAL_U0_INERT=YES
+BUNDLE_MODE=TWO_PLUS_ADAPTER
+FUTURE_NEW_POLYC_AUTHORITIES=2
+FUTURE_TOTAL_AUTHORITIES=15
+#
+# ---------------------------------------------------------------------------
+# THE ADAPTER IS STILL PRESERVED
+#
+ADAPTER_CALL_SITE_PRESERVED=YES -- aarch64EmitCSet keeps its call to the condition decision
+ADAPTER_EMITTER_STAYS_IN_C=YES -- the instruction selection and the fixed format string remain C
+ADAPTER_SUFFIX_SOURCE_AFTER_MIGRATION=the FOR PolyC decision (AbiA64CcForV2)
+ADAPTER_CONTRIBUTION_IS_FIXED=YES -- "cset    x0, %s\n\t" contains no condition
+ADAPTER_ANTI_CONTROL=the host-only formatting produces a byte-identical result, which proves the adapter contributes no independent decision

@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=contract-correction-join
+#
+# THE JOIN BETWEEN THE HISTORICAL CONTRACT AND THE CORRECTED ONE,
+# BY SOURCE-IDENTIFIED FACT. Every row names the source from which
+# each side's value was DERIVED.
+#
+join_id	fact	historical_value	historical_source	corrected_value	corrected_source	agreement
+JOIN-01	the source blob under examination	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229 (101705 bytes)	IMPLEMENT02 c0/source-interval-independent-rehash.tsv	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229 (101705 bytes)	git rev-parse HEAD:src/aarch64.c and git cat-file -p	IDENTICAL
+JOIN-02	the FOR function's declaration start	35517	RECON03 c1/core-sites.tsv	35517	polyc scanner AND posix scanner, independently	IDENTICAL
+JOIN-03	the FOR function's whole-definition end	36576 (as claimed)	RECON03 c2/selected-bundle-contract.md	36575	polyc scanner AND posix scanner, independently	DIFFERENT -- the historical claim is one byte past the closing brace
+JOIN-04	the FOR function's whole-definition digest	d22a99b3... (a 583-byte partial interval)	RECON03 c1/core-sites.tsv	6ad4b25d... (the 1058-byte whole definition)	generated from the committed blob	DIFFERENT BY CONSTRUCTION -- the historical value was a partial interval
+JOIN-05	the INV function's declaration start	36577	RECON03 c1/core-sites.tsv	36577	polyc scanner AND posix scanner	IDENTICAL
+JOIN-06	the INV function's whole-definition end	37495 (as claimed)	RECON03 c2/selected-bundle-contract.md	37494	polyc scanner AND posix scanner	DIFFERENT -- one byte past the closing brace
+JOIN-07	the INV function's whole-definition digest	5b08df7b... (a 442-byte partial interval)	RECON03 c1/core-sites.tsv	56ee5cf2... (the 917-byte whole definition)	generated from the committed blob	DIFFERENT BY CONSTRUCTION
+JOIN-08	the CSET function's declaration start	37566	RECON03 c1/core-sites.tsv	37566	polyc scanner AND posix scanner	IDENTICAL
+JOIN-09	the CSET function's whole-definition end	37719 (as claimed)	RECON03 c2/selected-bundle-contract.md	37718	polyc scanner AND posix scanner	DIFFERENT -- one byte past the closing brace
+JOIN-10	the CSET function's whole-definition digest	8a1f2573...	RECON03 c1/core-sites.tsv	8a1f2573...	generated from the committed blob	IDENTICAL -- the C1 interval for CSET coincides with its whole definition
+JOIN-11	the C1 partial interval digests are valid for their intervals	3 digests	RECON03 c1/core-sites.tsv	3 of 3 reproduced exactly	c1/partial-vs-whole-digest-audit.tsv	IDENTICAL
+JOIN-12	the C2 contract ranges do NOT hash to their claimed digests	3 pairs	RECON03 c2/selected-bundle-contract.md	3 of 3 rehashed and mismatched	c1/partial-vs-whole-digest-audit.tsv	IDENTICAL (the defect is CONFIRMED, not disputed)
+JOIN-13	the number of semantic authorities in the bundle	3	RECON03 c2/selected-bundle-contract.md section 1	2	c1/semantic-authority-cset-classification.tsv	DIFFERENT -- MEASURED, with a source-level and an empirical basis
+JOIN-14	the CSET site's own decision content	(a third distinct decision)	RECON03 c1/core-candidates.tsv	zero switches, zero cases, zero IR_CMP references; the suffix comes from aarch64CcFor	c1/semantic-authority-cset-classification.tsv, machine-checked by the compiled PolyC detector	DIFFERENT
+JOIN-15	the CSET site's own decision content	(a third distinct decision)	RECON03 c1/core-candidates.tsv	a FOR-only mutation changes the CSET emission with the CSET site byte-identical	c1/c-only-mutants-and-site-isolation.tsv	DIFFERENT
+JOIN-16	the CSET mutation's method	(replaces the aarch64CcFor call with a constant)	RECON03 c2/causal-experiments/SITE-A64-CC-CSET/site-isolation.tsv	confirms emitter LIVENESS only, never an independent selection	c1/semantic-authority-cset-classification.tsv	IDENTICAL -- the predecessor's own record agrees
+JOIN-17	the CSET witness's independence as an isolation control	(an independent control)	RECON03 c2/causal-experiments/SITE-A64-CC-FOR/source-and-build.tsv	"the CSET witness shares the aarch64CcFor table and is therefore NOT an isolation control"	c1/semantic-authority-cset-classification.tsv	IDENTICAL -- the predecessor's own record agrees
+JOIN-18	the third export's observability	NONE	IMPLEMENT02 c0/cset-output-channel-proof.tsv	NONE -- REMOVED from the corrected ABI, NOT repaired	c2/corrected-abi-v2.md	IDENTICAL (a binding negative result, not reopened)
+JOIN-19	the number of ABI exports	3	RECON03 c2/selected-bundle-contract.md section 3	2	c2/corrected-abi-v2.md	DIFFERENT -- the third is REMOVED
+JOIN-20	the IrCmpKind domain	19 enumerators, EQ=0, INVALID=-1	IMPLEMENT02 c0/producer-contract-reconciliation.tsv	19 enumerators, EQ=0, INVALID=-1, derived by parsing the live header	c1/input-domain-and-abi-ownership.tsv	IDENTICAL
+JOIN-21	the number of distinct producer executables	6	IMPLEMENT02 c0/producer-contract-reconciliation.tsv	6 with 6 distinct digests, under unambiguous names	c1/producer-dag-and-12plus12-crosswalk.tsv	IDENTICAL
+JOIN-22	the producer label scheme	G0 (used twice), G1, G2, G3 (unnamed executables)	RECON03 c2/selected-bundle-contract.md section 4	C_TOOLCHAIN and POLYC_PRODUCER_1..5, with an explicit crosswalk	c1/producer-dag-and-12plus12-crosswalk.tsv	DIFFERENT -- the ambiguity is RESOLVED
+JOIN-23	the two 12-check rosters are distinct	distinct but conflatable	IMPLEMENT02 c0/producer-contract-reconciliation.tsv	distinct, with their kinds and their cardinality recorded separately	c1/producer-dag-and-12plus12-crosswalk.tsv	IDENTICAL
+JOIN-24	the production authority count	13	IMPLEMENT02 c0/entry-13-authorities.tsv	13, re-censused fresh over the live object graph	c0/thirteen-authorities.tsv	IDENTICAL
+JOIN-25	the production graph baseline	52/134/34/19, sole cut E-TYP-0136	IMPLEMENT02 c0/entry-baselines.txt	52/134/34/19, sole cut E-TYP-0136, new cuts = 0	c0/thirteen-authorities.tsv	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+#
+JOIN_ROWS=25
+JOIN_AGREEMENTS=15
+JOIN_MEASURED_DIFFERENCES=10
+UNEXPECTED_DIFFERENCES=0 -- every difference is either a MEASURED correction with a stated basis, or the REMOVAL of the impossible third export
+HISTORICAL_FACTS_ERASED=0
+HISTORICAL_VERDICTS_UNCHANGED=YES

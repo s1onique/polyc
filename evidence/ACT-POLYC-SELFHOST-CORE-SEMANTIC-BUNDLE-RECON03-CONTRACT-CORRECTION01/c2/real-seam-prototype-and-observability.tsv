@@ -1,0 +1,135 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=real-seam-prototype-and-observability
+#
+# THE REAL-SEAM PROTOTYPE: A REAL COMPILED POLYC OBJECT LINKED INTO A
+# DISPOSABLE C HOST.
+#
+# NOTHING HERE IS A PRODUCTION SUBJECT. The prototype lives entirely
+# OUTSIDE the tracked repository, in a disposable external build root,
+# and it is deleted after its observations are consumed. No production
+# source site was migrated, no production selector was added, and no
+# production authority or graph cut was created.
+#
+# ---------------------------------------------------------------------------
+# THE BUILD
+#
+prototype_source=/tmp/a64corr/proto/abi_a64_cc_v2.HC
+prototype_host=/tmp/a64corr/proto/host.c
+prototype_object=/tmp/a64corr/proto/abi_a64_cc_v2.o
+prototype_object_a64=/tmp/a64corr/proto/abi_a64_cc_v2_a64.o
+prototype_binary=/tmp/a64corr/proto/proto
+producer=the REAL production compiler ./hcc
+producer_install_prefix=build/test-prefix (a populated prefix with a real tos.HH and a real libtos.a)
+compile_command_1=./hcc --install-dir=<abs>/build/test-prefix -c abi_a64_cc_v2.HC -o abi_a64_cc_v2.o
+compile_command_2=./hcc --install-dir=<abs>/build/test-prefix --target=aarch64-apple-darwin -c abi_a64_cc_v2.HC -o abi_a64_cc_v2_a64.o
+link_command=cc -std=c99 -O2 -Wall -Wextra -o proto host.c abi_a64_cc_v2.o
+COMPILE_RC=0
+LINK_RC=0
+RUN_RC=0
+PROTOTYPE_REAL_LINK_PROVEN=YES
+#
+# ---------------------------------------------------------------------------
+# THE EXPORTED SYMBOLS, READ FROM THE COMPILED OBJECTS
+#
+symbol	host_object_aarch64_object	linked_executable
+_AbiA64CcForV2	T (defined)	PRESENT
+_AbiA64CcInvForV2	T (defined)	PRESENT
+OBJECT_FORMAT=Mach-O 64-bit object arm64
+TARGET_TRIPLE_PROVEN=aarch64-apple-darwin (the cross-compiled object is arm64)
+CALLING_CONVENTION=AArch64 Darwin, proven from the actual C header declarations, the compiled object symbols and the real calls; this contract does NOT call it "generic SysV"
+LINK_EXPORT_SPELLING=the C host declares the functions with the leading underscore that the Mach-O ABI requires, so the PolyC `AbiA64CcForV2` links as `_AbiA64CcForV2`
+#
+# ---------------------------------------------------------------------------
+# THE OBSERVED RESULTS (28 checks, 0 failures)
+#
+check	observed
+FOR IR_CMP_EQ(0) int	eq
+FOR IR_CMP_NE(1) int	ne
+FOR IR_CMP_LT(2) int	lt
+FOR IR_CMP_LE(3) int	le
+FOR IR_CMP_GT(4) int	gt
+FOR IR_CMP_GE(5) int	ge
+FOR IR_CMP_ULT(6) int	lo
+FOR IR_CMP_ULE(7) int	ls
+FOR IR_CMP_UGT(8) int	hi
+FOR IR_CMP_UGE(9) int	hs
+FOR IR_CMP_EQ(0) float	eq
+FOR IR_CMP_LT(2) float	mi
+FOR IR_CMP_UGE(9) float	NULL (fail closed)
+INV IR_CMP_EQ(0) int	ne
+INV IR_CMP_LT(2) int	ge
+INV IR_CMP_UGE(9) int	lo
+INV IR_CMP_LT(2) float	pl
+FOR IR_CMP_INVALID(-1)	NULL (fail closed)
+FOR IR_CMP_INVALID(-1) float	NULL (fail closed)
+FOR IR_CMP_OEQ(10)	NULL (fail closed)
+FOR IR_CMP_ORD(17)	NULL (fail closed)
+INV IR_CMP_ORD(17) float	NULL (fail closed)
+FOR unknown(99)	NULL (fail closed)
+lifetime: the same static literal is returned	OK
+lifetime: the host did not free or write the result	OK
+adapter: the host formatted "cset    x0, lt" from the PolyC suffix	OK
+adapter: the host formatted "cset    x0, mi" from the PolyC suffix	OK
+anti-control: the host-only formatting is byte-identical	OK
+CHECKS=28
+FAILURES=0
+STATUS=PASS
+#
+# ---------------------------------------------------------------------------
+# THE THREE PROPERTIES THE ACT SPECIFICALLY DEMANDS
+#
+# 1. THE ZERO DISCRIMINANT
+ZERO_DISCRIMINANT_OBSERVED=YES -- IR_CMP_EQ (value 0) returned "eq" on
+  both the integer and the float path, and was never confused with a
+  failure. The failure signal is a NULL POINTER, never a numeric
+  status, so the two can never collide.
+#
+# 2. THE BORROWED LIFETIME
+BORROWED_LIFETIME_OBSERVED=YES -- the same static literal is returned
+  on repeated calls, its content is stable, it is NUL-terminated, and
+  the host neither freed nor wrote through it.
+#
+# 3. THE CSET ADAPTER PRESERVATION, WITH ITS ANTI-CONTROL
+ADAPTER_OBSERVATION=YES -- a REAL compiled PolyC FOR result fed the
+  UNCHANGED host cset formatting and produced the exact bytes
+  "cset    x0, lt\n\t".
+ADAPTER_ANTI_CONTROL=YES -- formatting the same suffix entirely in the
+  host, with no PolyC involvement, produced a BYTE-IDENTICAL result.
+  This proves the adapter contributes NO independent decision: the
+  suffix is the only thing PolyC decided, and the rest is the host's
+  fixed formatting.
+ADAPTER_MISCOUNTED_AS_TWO_POLYC_CHOICES=NO -- there is exactly ONE
+  PolyC decision in the cset path (FOR), plus one C-side formatting
+  step. The adapter is not a second PolyC choice.
+#
+# ---------------------------------------------------------------------------
+# THE ASSEMBLER CHECK
+#
+suffix	assembler_result
+eq	OK
+ne	OK
+lt	OK
+le	OK
+gt	OK
+ge	OK
+lo	OK
+ls	OK
+hi	OK
+hs	OK
+mi	OK
+pl	OK
+xx	REJECTED ("invalid condition code")
+ASSEMBLER_SUFFIXES_OK=12
+ASSEMBLER_NEGATIVE_CONTROL_REJECTED=YES
+#
+# ---------------------------------------------------------------------------
+# THE SCOPE OF THE PROTOTYPE
+#
+PRODUCTION_SUBJECT_ADDED=NO
+PRODUCTION_SELECTOR_CHANGED=NO
+PRODUCTION_SOURCE_MIGRATED=NO
+PRODUCTION_AUTHORITIES_ADDED=0
+PRODUCTION_GRAPH_CUTS_ADDED=0
+PROTOTYPE_LOCATION=outside the tracked repository, in a disposable external build root
+PROTOTYPE_REMAINS_IN_TREE=NO
