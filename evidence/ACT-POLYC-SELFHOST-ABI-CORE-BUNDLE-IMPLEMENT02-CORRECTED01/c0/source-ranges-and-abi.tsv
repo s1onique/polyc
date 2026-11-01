@@ -1,0 +1,93 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=source-ranges-and-abi
+#
+# FOUR DISTINCT DIGEST CONCEPTS, NEVER CONFLATED. Two independent
+# derivation methods: M1=genuine compiled PolyC byte-level lexical scanner
+# (tools/quality/a64-cmp-cc-implement02-corrected01-scan-ranges.HC),
+# M2=Git blob + POSIX dd byte slicing + shasum. The two methods share
+# NO code. The historical RECON03 C1 partial intervals and the historical
+# RECON03 C2 claimed ranges are reproduced as FROZEN NEGATIVE EVIDENCE.
+#
+# CONVENTION=zero-based half-open [start,end); the closing brace is the
+# LAST byte of the range; the following line terminator is NOT included.
+#
+# --- PART 1: WHOLE_DEFINITION (the ranges this ACT implements against) ---
+# site_id	function	range	size	sha256	M1_polyc_scanner	M2_git_posix	agreement
+SITE-A64-CC-FOR	aarch64CcFor	[35517,36575)	1058	6ad4b25dc0473eeb2665690c7eff0d45100c6d184f1fff04bc374bf415a7e617	IDENTICAL	IDENTICAL	IDENTICAL
+SITE-A64-CC-INV	aarch64CcInvFor	[36577,37494)	917	56ee5cf27e10e4a0919588713ef77a481017a2962bf713cc3f51796d8c53b7cc	IDENTICAL	IDENTICAL	IDENTICAL
+SITE-A64-CSET	aarch64EmitCSet	[37566,37718)	152	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	IDENTICAL	IDENTICAL	IDENTICAL
+
+SOURCE_BLOB_OID=6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229
+SOURCE_BLOB_BYTES=101705
+SOURCE_BLOB_SHA256=98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d
+M1_SCANNER_BINARY=build/a64-cmp-cc-scan-ranges
+M1_SCANNER_SOURCE=tools/quality/a64-cmp-cc-implement02-corrected01-scan-ranges.HC
+M1_SCANNER_SOURCE_SHA256=becee468e6cc9ecc7784887eb2ffc747cf9ee51981854544a6dff29a2c804d0a
+
+# --- PART 2: C1_PARTIAL_INTERVAL (historical RECON03 C1, reproduced exactly, NEVER relabelled whole) ---
+# site_id	c1_interval	c1_size	c1_sha256	is_the_whole_definition	label
+SITE-A64-CC-FOR	[35517,36100)	583	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	NO (583-byte PREFIX of the 1058-byte definition)	C1_PARTIAL_INTERVAL
+SITE-A64-CC-INV	[36577,37019)	442	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	NO (442-byte PREFIX of the 917-byte definition)	C1_PARTIAL_INTERVAL
+SITE-A64-CSET	[37566,37718)	152	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	YES (coincident with the whole definition)	C1_PARTIAL_INTERVAL
+C1_PARTIAL_DIGESTS_REPRODUCED=3 of 3
+C1_TO_WHOLE_MISBIND_FOR=2 (FOR, INV)
+C1_TO_WHOLE_COINCIDENCE_FOR=1 (CSET)
+
+# --- PART 3: C2_CLAIMED_RANGE_RECOMPUTED (historical RECON03 C2 bad pairs, frozen negative evidence) ---
+# site_id	c2_claimed_range	c2_claimed_size	recomputed_digest_of_that_range	matches_the_claimed_digest
+SITE-A64-CC-FOR	[35517,36576)	1059	49a07e6f0b76aeeac58b50e646080cc057f4cdc008f64f1f227b8b25bfa9ef6b	NO (the claimed range is ONE BYTE longer than the definition)
+SITE-A64-CC-INV	[36577,37495)	918	fe6fc56625c18d51151d59f0b4faa8e7e01065fc1bade1304e4f901a9004af94	NO (the claimed range is ONE BYTE longer than the definition)
+SITE-A64-CSET	[37566,37719)	153	f168f9afc5c0323f94e0c881653b43a1f0de6c9b96a378a0d1d0d3fbe8840a04	NO (the claimed range is ONE BYTE longer than the definition)
+C2_HISTORICAL_RANGE_DIGEST_MISMATCHES=3 of 3
+C2_MISMATCH_CLASS=the historical C2 range is the definition range PLUS ONE BYTE
+
+# --- PART 4: CSET ADAPTER ROLE, POSITIVELY PROVEN FROM THE 152-BYTE DEFINITION ---
+CSET_switch_count=0
+CSET_case_count=0
+CSET_IR_CMP_references=0
+CSET_calls_aarch64CcFor=1
+CSET_calls_aarch64CcInvFor=0
+CSET_CLASS=C_MECHANICAL_ADAPTER
+CSET_IS_AN_INDEPENDENT_SEMANTIC_AUTHORITY=NO
+
+# --- PART 5: LIVE IrCmpKind ENUM, re-derived from src/ir-types.h at the entry commit ---
+IR_CMP_INVALID=-1
+IR_CMP_EQ=0
+IR_CMP_NE=1
+IR_CMP_LT=2
+IR_CMP_LE=3
+IR_CMP_GT=4
+IR_CMP_GE=5
+IR_CMP_ULT=6
+IR_CMP_ULE=7
+IR_CMP_UGT=8
+IR_CMP_UGE=9
+IR_CMP_OEQ=10
+IR_CMP_ONE=11
+IR_CMP_OLT=12
+IR_CMP_OLE=13
+IR_CMP_OGT=14
+IR_CMP_OGE=15
+IR_CMP_UNO=16
+IR_CMP_ORD=17
+ENUM_TOTAL=19
+VALID_INTEGER_KINDS=0..9 (10 kinds)
+VALID_FLOAT_KINDS=0..5 (6 kinds)
+UNSUPPORTED_ORDERED_UNORDERED=10..17 (8 kinds, fail closed on both paths)
+
+# --- PART 6: BINDING ABI ---
+BINDING_ABI_VERSION=ABI-A64-CMP-CC-2
+ABI_PROTOTYPE_FOR=const unsigned char *AbiA64CcForV2(int64_t comparison_kind, int64_t is_float);
+ABI_PROTOTYPE_INV=const unsigned char *AbiA64CcInvForV2(int64_t comparison_kind, int64_t is_float);
+ABI_EXPORT_COUNT=2
+ABI_FORBIDDEN_THIRD_EXPORT=AbiA64CmpCcEmitCSet (any signature) -- the historical inert U0(I64,I64) v1 export is FORBIDDEN
+ABI_RESULT_CHANNEL=borrowed immutable NUL-terminated static suffix pointer; NULL means invalid/unsupported
+ABI_NUMERIC_ZERO_IS_VALID=IR_CMP_EQ == 0 must produce "eq" as FOR and "ne" as INV
+ABI_NO_STATE_CROSSES=No IrCgCtx*, no mutable IR/AST state, no AoStr*, no callbacks, no hidden globals, no recovery continuations, no longjmp
+
+SOURCE_RANGES_VERDICT=VERIFIED
+WHOLE_DEFINITION_DIGESTS_GENERATED_NOT_COPIED=YES
+C1_DIGESTS_NEVER_RELABELLED=YES
+C2_MISMATCHES_DEMONSTRATED=3
+PARTIAL_VS_WHOLE_CONCEPTS_SEPARATED=YES

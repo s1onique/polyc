@@ -1,0 +1,32 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=red-executions
+#
+# THE FIVE MANDATORY RED EXPERIMENTS, EACH A REAL PRISTINE -> ADVERSE
+# -> RESTORED CYCLE AGAINST A REAL SOURCE-DERIVED FACT.
+#
+# The detector is the compiled PolyC verifier
+# tools/quality/a64-cmp-cc-implement02-corrected01-red-verify.HC,
+# built by the real stage0 compiler and linked against the real libtos.
+# It never echoes a status field: it recomputes the fact and names the
+# SPECIFIC defect it observed.
+#
+red_id	adverse_case	detector_mode	pristine_result	pristine_reason	adverse_result	adverse_reason	restored_result	restored_reason	adverse_material_sha256	restored_material_sha256
+RED01_SOURCE	the C1 PARTIAL digest presented as the whole FOR definition	partial-as-whole	OK	(NO_REASON_ON_SUCCESS)	FAIL	PARTIAL_SOURCE_RANGE_AS_WHOLE	OK	(NO_REASON_ON_SUCCESS)	35e5233c08faacb757ac4e12fa541463e54726430c006f5f69faf801257fff7a	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601
+RED02_ABI	the zero discriminant declared to be an error status	abi-zero	OK	(NO_REASON_ON_SUCCESS)	FAIL	ABI_ZERO_INVALID_MISCLASSIFIED	OK	(NO_REASON_ON_SUCCESS)	35e5233c08faacb757ac4e12fa541463e54726430c006f5f69faf801257fff7a	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601
+RED03_EXPORT	the inert v1 CSET emitter export reintroduced as a declaration	third-export	OK	(NO_REASON_ON_SUCCESS)	FAIL	FORBIDDEN_THIRD_EXPORT	OK	(NO_REASON_ON_SUCCESS)	100e707ddcc10fcc29c2143d4803941bb352fcbe9fc1735573f46af6ee7b43f6	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601
+RED04_PRODUCER	a PolyC producer digest aliased to another producer	producer-alias	OK	(NO_REASON_ON_SUCCESS)	FAIL	PRODUCER_ALIAS_OR_MISSING_EDGE	OK	(NO_REASON_ON_SUCCESS)	aae2202b996b21102a297886ab56492026d09b63ad120f4cd3ca720648c62c8f	0c8e504b7fb883865d7ac3f6430fc3666515e6f5f9532a8425abbf7ac7b99441
+RED05_EVIDENCE	a frozen predecessor evidence blob replaced by a tampered copy	f14-freeze	OK	(NO_REASON_ON_SUCCESS)	FAIL	HISTORICAL_F14_REWRITE	OK	(NO_REASON_ON_SUCCESS)	ee9e73c53789ca2ca11262a0e2c7e7f51c39247666c039dd1c0578ef403c0596	bb521e45bcd5768b770bac438581138ea54355616dfb054b311a8d2f73135de8
+
+RED_COUNT=5
+RED_PRISTINE_PASS=5
+RED_ADVERSE_FIRED=5
+RED_RESTORED_PASS=5
+RED_DISTINCT_REASON_TOKENS=5
+RED_REASON_TOKENS=PARTIAL_SOURCE_RANGE_AS_WHOLE;ABI_ZERO_INVALID_MISCLASSIFIED;FORBIDDEN_THIRD_EXPORT;PRODUCER_ALIAS_OR_MISSING_EDGE;HISTORICAL_F14_REWRITE
+RED_VACUITY=NONE (each adverse case alters an actual source-derived fact or digest and the detector RECOMPUTES that fact; no case merely edits a status word)
+RED_DETECTOR=build/a64-cmp-cc-red-verify (compiled PolyC, linked against the real libtos)
+RED_DETECTOR_SOURCE=tools/quality/a64-cmp-cc-implement02-corrected01-red-verify.HC
+RED_DETECTOR_SOURCE_SHA256=044493ac7452a89662c1a3d22a82723a624a6d4ffb6117be04d46422739e972d
+RED_SOURCE_BLOB_OID=6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229
+RED_SOURCE_BLOB_BYTES=101705

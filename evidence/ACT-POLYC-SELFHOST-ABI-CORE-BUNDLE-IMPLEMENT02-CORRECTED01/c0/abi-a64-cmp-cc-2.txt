@@ -1,0 +1,116 @@
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+BINDING_ABI_VERSION=ABI-A64-CMP-CC-2
+PHASE=C0-RED
+
+THE BINDING ABI CONTRACT FOR THE TWO AARCH64 CONDITION-CODE DECISIONS.
+
+This is the C-facing ABI declaration that the compiled PolyC subject
+exports and that src/aarch64.c consumes. It is derived from the
+correction's frozen c2/corrected-abi-v2.md, whose SHA-256 is
+b4231a00f4180c5cfba496312394333f90054e4ee1bc22e31dc87b6e939bca9c.
+
+C-FACING DECLARATIONS
+======================
+
+const unsigned char *AbiA64CcForV2(int64_t comparison_kind, int64_t is_float);
+const unsigned char *AbiA64CcInvForV2(int64_t comparison_kind, int64_t is_float);
+
+Exactly TWO exports exist. There is NO CSET emitter export of any
+signature. The historical inert v1 CSET emitter export, whose return type
+was the void-like U0 and whose two parameters were the two I64 scalars, is
+FORBIDDEN and is not part of this ABI.
+
+THE C DECLARATION SPELLING
+==========================
+
+The C source declares the functions WITHOUT a leading underscore:
+`AbiA64CcForV2` and `AbiA64CcInvForV2`. The Mach-O ABI prefixes the
+external symbol with an underscore, so the LINKED symbol on
+arm64-apple-darwin is `_AbiA64CcForV2` and `_AbiA64CcInvForV2`. The
+leading underscore is a LINKER-level property of the Mach-O object
+format, NOT part of the C identifier. Writing `_AbiA64CcForV2` in the C
+source would declare a DIFFERENT C identifier that binds to the Mach-O
+symbol `__AbiA64CcForV2`, which does not exist.
+
+INPUT DOMAIN
+============
+
+comparison_kind is an IrCmpKind value. Its live numeric values are:
+
+  IR_CMP_INVALID = -1
+  IR_CMP_EQ      =  0
+  IR_CMP_NE      =  1
+  IR_CMP_LT      =  2
+  IR_CMP_LE      =  3
+  IR_CMP_GT      =  4
+  IR_CMP_GE      =  5
+  IR_CMP_ULT     =  6
+  IR_CMP_ULE     =  7
+  IR_CMP_UGT     =  8
+  IR_CMP_UGE     =  9
+  IR_CMP_OEQ     = 10
+  IR_CMP_ONE     = 11
+  IR_CMP_OLT     = 12
+  IR_CMP_OLE     = 13
+  IR_CMP_OGT     = 14
+  IR_CMP_OGE     = 15
+  IR_CMP_UNO     = 16
+  IR_CMP_ORD     = 17
+
+is_float is normalised to 0 for the integer table and 1 for the float
+table. Any other is_float value is out of domain.
+
+The valid partitions are:
+  - integer path (is_float == 0): IR_CMP_EQ .. IR_CMP_UGE, that is the
+    ten kinds 0..9;
+  - float path (is_float == 1): IR_CMP_EQ .. IR_CMP_GE, that is the six
+    kinds 0..5;
+  - every other kind, on either path, is UNSUPPORTED and fails closed.
+
+RESULT CHANNEL AND OWNERSHIP
+============================
+
+The result is a BORROWED, IMMUTABLE, NUL-terminated string literal owned
+by the PolyC component's static data. It is stable for the lifetime of
+the process. The host MUST NOT free it and MUST NOT write through it.
+The host MUST NOT reinterpret it as an allocation.
+
+An unsupported (kind,is_float) combination returns NULL. NULL is a
+POINTER status, never a numeric status. The failure channel is
+therefore incapable of colliding with any numeric discriminant.
+
+THE ZERO DISCRIMINANT
+=====================
+
+IR_CMP_EQ == 0 is a VALID kind. It MUST produce the suffix "eq" through
+AbiA64CcForV2 and the suffix "ne" through AbiA64CcInvForV2. The numeric
+value zero MUST NOT be used as an error signal anywhere in this ABI. A
+status that is numerically zero is FORBIDDEN, and no_default_suffix is
+FORBIDDEN: an unsupported kind yields NULL and never a suffix.
+
+THE HOST-SIDE FAIL-CLOSED TRANSLATION
+=====================================
+
+The legacy C tables terminated on an unsupported case through
+loggerPanic. Under this ABI the PolyC subject returns NULL and the C
+wrapper MUST translate that NULL into equivalent fail-closed
+termination, so that the observable process behaviour is conserved.
+
+THE C MECHANICAL ADAPTER
+========================
+
+aarch64EmitCSet remains a C-owned function. It formats the suffix
+returned by the FOR decision with its ORIGINAL fixed format string:
+
+  "cset    x0, %s\n\t"
+
+It carries NO independent condition selection. It is not a third
+authority and it does not receive its own PolyC export.
+
+WHAT DOES NOT CROSS THE SEAM
+============================
+
+No IrCgCtx pointer, no mutable IR or AST state, no AoStr pointer, no
+callback, no hidden global, no recovery continuation and no longjmp
+crosses this ABI. The seam carries exactly two copied integer scalars
+in and one borrowed pointer out.

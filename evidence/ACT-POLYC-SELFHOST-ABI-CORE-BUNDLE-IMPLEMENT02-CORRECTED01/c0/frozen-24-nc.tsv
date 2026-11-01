@@ -1,0 +1,46 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-24-nc
+#
+# THE FROZEN NEGATIVE CONTROLS NC01..NC24.
+#
+# Each control requires its own physical execution ID, independently
+# derived adverse material, a reason-specific detector, a full
+# PRISTINE=SILENT -> ADVERSE=FIRED(reason) -> RESTORED=SILENT sequence,
+# a restored-byte digest and an absence-of-vacuity assertion. A control
+# that simply edits the word PASS is not an experiment.
+#
+# The detector is the compiled PolyC verifier
+# tools/quality/a64-cmp-cc-implement02-corrected01-red-verify.HC, whose
+# modes are listed below. The detector RECOMPUTES the fact it checks.
+#
+# nc_id	adverse_condition	required_reason	detector_mode
+NC01	Wrong HEAD/tree/branch accepted	ENTRY_IDENTITY_MISMATCH	entry-identity
+NC02	Predecessor correction contract or CLOSE blob changed and accepted	HISTORICAL_F14_REWRITE	f14-freeze
+NC03	C1 partial-function digest presented as whole source function digest	PARTIAL_SOURCE_RANGE_AS_WHOLE	partial-as-whole
+NC04	One-byte source-boundary shift or incorrect source blob OID accepted	SOURCE_BOUNDARY_OR_BLOB_MISMATCH	source-range
+NC05	Invalid ABI v1 third `U0` CSET export reintroduced	FORBIDDEN_THIRD_EXPORT	third-export
+NC06	CSET adapter counted as independent semantic authority	CSET_SEMANTIC_DOUBLE_COUNT	cset-double-count
+NC07	`IR_CMP_EQ` zero treated as failure or wrong suffix	ABI_ZERO_INVALID_MISCLASSIFIED	abi-zero
+NC08	Unsupported/invalid comparison falls back to arbitrary suffix	INVALID_SUFFIX_NOT_FAIL_CLOSED	fail-closed
+NC09	Borrowed string not NUL-terminated or mutated/freed by host	BORROWED_LITERAL_LIFETIME	borrowed-lifetime
+NC10	Target ABI C declaration and Mach-O symbol/relocation mismatch	ABI_SYMBOL_BINDING_MISMATCH	symbol-binding
+NC11	G0 selector-OFF object imports either new A64 PolyC export	C_ONLY_A64_ORACLE_CONTAMINATION	oracle-contamination
+NC12	G0 legacy C tables removed or dormant when selector OFF	LEGACY_C_ORACLE_NOT_LIVE	legacy-live
+NC13	PolyC subject missing effective prerequisite or produced by wrong compiler	MISSING_EFFECTIVE_SUBJECT_PRODUCER	subject-producer
+NC14	CMake option lost by shell continuation and ignored exit 127	CONFIGURATION_FAIL_OPEN	fail-open
+NC15	New A64 subject defined but never imported by actual production caller	LINKED_BUT_DORMANT_POLYC_SUBJECT	dormant-subject
+NC16	Selector-ON production retains C table deciding FOR or INV	LEGACY_C_AUTHORITY_ACTIVE	legacy-live
+NC17	Reused producer digest, swapped producer identity or same stream paired with itself	PRODUCER_ALIAS_OR_SELF_COMPARISON	producer-alias
+NC18	PAIR12 substituted for FROZEN12 obligations or missing member	TWO_ROSTERS_CONFLATED	two-rosters
+NC19	Single fixture row changed, duplicated, deleted or re-ordered	FIXTURE_DIFFERENTIAL_NOT_SENSITIVE	fixture-rows
+NC20	Only FOR mutated yet INV causal proof claimed	WRONG_SITE_CAUSAL_ATTRIBUTION	wrong-site
+NC21	Legacy C mutant changes selector-ON behavior or is dormant under selector OFF	C_DORMANCY_ANTI_CONTROL_FAILURE	dormant-counter
+NC22	CSET formatting changed or false extra third authority asserted	CSET_ADAPTER_NOT_PRESERVED	cset-preserved
+NC23	Acceptance/control ID omitted, duplicated or forged PASS despite missing observation	LEDGER_FALSE_PASS	ac-ledger
+NC24	AC50 terminality claimed before CLOSE or from different HEAD/TREE	PREMATURE_OR_MISBOUND_TERMINALITY	terminality
+
+NC_COUNT=24
+NC_DETECTOR=build/a64-cmp-cc-red-verify (compiled PolyC, linked against the real libtos)
+NC_DETECTOR_SOURCE=tools/quality/a64-cmp-cc-implement02-corrected01-red-verify.HC
+NC_REASON_TOKENS_DISTINCT=24

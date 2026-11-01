@@ -1,0 +1,71 @@
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+PHASE: C0-RED
+EVIDENCE_KIND: baseline-non-green
+
+THE NON-GREEN BASELINES, FRESHLY MEASURED. A historical failure is
+NEVER relabelled as PASS. Where a baseline was not run, it is
+labelled NOT_REMEASURED and its historical identity is preserved.
+
+--------------------------------------------------------------------------
+LEXER07 BROAD CORPUS -- FRESHLY MEASURED, HISTORICAL IDENTITY CONSERVED
+--------------------------------------------------------------------------
+LEXER07_BROAD_STATUS=FAIL_KNOWN_BASELINE
+LEXER07_BROAD_COMMAND=make lexer07-broad-corpus-4-stage
+LEXER07_BROAD_EXIT=2 (make reported Error 1 for the target)
+LEXER07_BROAD_S0_FAILURES=15
+LEXER07_BROAD_S1_FAILURES=6
+LEXER07_BROAD_S2_FAILURES=6
+LEXER07_BROAD_S3_FAILURES=6
+LEXER07_BROAD_REGRESSION=0
+LEXER07_BROAD_DIVERGED=0
+LEXER07_BROAD_HISTORICAL_S0_FALLBACKS_USED=0
+LEXER07_BROAD_FAILURE_TABLE=build/lexer07-c01-out/corpus-failures.tsv
+LEXER07_BROAD_FAILURE_IDENTITY_MD5=7ee761440de83552e751e3c3976c1683
+LEXER07_BROAD_FAILURE_MD5_MATCHES_HISTORICAL=YES (byte-identical)
+LEXER07_BROAD_NEW_FAILURE_IDENTITIES=0
+
+The 15 S0 failure identities are exactly the historical 15, and the
+failure table digest is byte-identical to the historical digest. The
+status stays FAIL_KNOWN_BASELINE. It is NOT a PASS.
+
+--------------------------------------------------------------------------
+CROSS-TARGET PREFIX -- NOT_REMEASURED
+--------------------------------------------------------------------------
+CROSS_TARGET_PREFIX_STATUS=NOT_REMEASURED
+HISTORICAL_IDENTITY=FAIL_ENVIRONMENT_PREFIX, 67
+NOTE=This ACT does not change any target backend or any cross-target
+  rule, so the historical cross-target identity is carried forward
+  unchanged and explicitly marked NOT_REMEASURED. It is NOT a PASS.
+
+--------------------------------------------------------------------------
+F-NO-PYTHON -- FRESHLY MEASURED, HISTORICAL BASELINE CONSERVED
+--------------------------------------------------------------------------
+F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE
+F_NO_PYTHON_COMMAND=bash scripts/quality/factory-no-python-check.sh
+F_NO_PYTHON_EXIT=1
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=6607
+POLYC_TOOLS_TRACKED_PASSES=6600
+NEW_VIOLATIONS_INTRODUCED_BY_THIS_ACT=0
+F_NO_PYTHON_FAILURE_PATHS=scripts/quality/llvm-byte-memory01-test.sh, scripts/quality/llvm-cap-table-verifier.py, scripts/quality/llvm-intops01-test.sh, scripts/quality/llvm-memory01-red-test.sh, scripts/quality/llvm-spike-test.sh, tools/quality/bootstrap02-corpus-runner.py, tools/quality/bootstrap02-error-corpus.py, tools/quality/bootstrap03-corpus-runner.py, tools/quality/bootstrap03-error-corpus.py, tools/quality/bootstrap04-corpus-runner.py, tools/quality/bootstrap04-error-corpus.py, tools/quality/llvm-gep01-test.HC
+F_NO_PYTHON_FAILURE_IDENTITY=the same 12 paths as the historical baseline; zero new
+
+--------------------------------------------------------------------------
+F-POLYC-TOOLS -- UNAVAILABLE, NOT GREENWASHED
+--------------------------------------------------------------------------
+AUTHORITATIVE_CHECKER=tools/factory/factory-polyc-tools-check.HC
+CHECKER_EXISTS=NO (the path does not exist in this tree)
+CHECKER_RUNS=NO
+F_POLYC_TOOLS_STATUS=UNAVAILABLE
+NOTE=The AGENTS.md pointer records the contract; the checker has NOT
+  landed and the invariant is NOT enforced. This ACT does not land it
+  (out of scope) and does not claim it passes.
+
+--------------------------------------------------------------------------
+THE SHARED-SCRATCH RACE -- WORKED AROUND, NOT FIXED
+--------------------------------------------------------------------------
+SHARED_SCRATCH_RACE=/tmp/holyc-asm.s is a hard-coded global temporary
+  shared by concurrent compiler invocations. It is NOT fixed by this
+  ACT. All compiler invocations in this ACT were SERIALIZED, each with
+  its own isolated TMPDIR, so the race was avoided by execution
+  discipline only. It remains OPEN residue.

@@ -1,0 +1,24 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=producer-dag
+#
+# THE PRODUCER IDENTITIES, NAMED UNAMBIGUOUSLY.
+#
+# The predecessor's self-referential G0/G1/G2/G3 labels assigned the
+# label G0 to two DIFFERENT executables. This ACT names the C toolchain
+# C_TOOLCHAIN and the PolyC compilers POLYC_PRODUCER_1..5, and it
+# records the REAL executable digest of each. The four semantic result
+# streams G0..G3 of section 3 are a SEPARATE axis: a stream names a
+# RESULT, a producer names an EXECUTABLE.
+#
+producer_id	kind	executable_path	executable_sha256	role
+C_TOOLCHAIN	C	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	the C toolchain; it compiles the C translation units and must NEVER compile the PolyC subject
+POLYC_PRODUCER_1	POLYC	build/host-stage0/hcc	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	the stage0 compiler; it is the intended producer of the new A64 subject in the production build
+POLYC_PRODUCER_2	POLYC	./hcc	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	the production compiler; it is a distinct executable from the stage0 compiler
+POLYC_PRODUCER_3	POLYC	./build/hcc-bootstrap02	c0bc92c9f422bf6ae79d76609261906d67486cc1c36532738b9a7e6f1cebf2fc	the first bootstrap generation
+POLYC_PRODUCER_4	POLYC	./build/hcc-bootstrap03	79939fa516cd6145a88723aec07d502c44d33ad85f0bf9beb5311f853796cc6e	the second bootstrap generation
+POLYC_PRODUCER_5	POLYC	./build/hcc-bootstrap04	d4a94c2585f93424dd82b00749557911499d9365f0436b98b4b0caf703c48d95	the third bootstrap generation
+DISTINCT_POLYC_PRODUCER_DIGESTS=5
+POLYC_PRODUCER_DIGEST_COLLISIONS=0
+C_TOOLCHAIN_DIGEST_DISTINCT_FROM_ALL_POLYC=YES
+REQUIRE_AT_LEAST_THREE_DISTINCT_POLYC_PRODUCERS=YES
