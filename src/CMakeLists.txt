@@ -381,6 +381,107 @@ else()
     message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: selector OFF, the legacy C core-operator predicates are active and no PolyC subject is linked")
 endif()
 
+# ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01:
+#
+# The production migration of the TWO selected AArch64 comparison
+# condition-code decisions of BUNDLE CAND-CMP-CC-A64:
+#
+#   SITE-A64-CC-FOR  src/aarch64.c  aarch64CcFor
+#   SITE-A64-CC-INV  src/aarch64.c  aarch64CcInvFor
+#
+# The compiled PolyC component
+# (tools/bootstrap/selfhost-a64-cmp-cc-v2.HC) owns the decisions; the C
+# side keeps every other responsibility (register allocation, emission
+# sequencing, assembly buffers, diagnostics and recovery).
+#
+# The THIRD selected site, SITE-A64-CSET (aarch64EmitCSet), is a
+# C-OWNED MECHANICAL ADAPTER and stays in C. It owns no condition
+# selection of its own: its whole definition is ONE call to
+# aarch64CcFor plus a fixed format string. It is NOT migrated and it
+# does NOT receive a PolyC export. The number of new production
+# authorities is therefore TWO, not three.
+#
+# The dedicated selector `HCC_USE_SELFHOST_A64_CMP_CC` is used, and it
+# is INDEPENDENT of the thirteen existing authorities: coupling a
+# fourteenth authority to `HCC_USE_SELFHOST_COMPONENTS` or to any
+# `HCC_USE_SELFHOST_PARSER_*` selector would make the authority
+# accounting ambiguous.
+#
+# Configurations:
+#   OFF -> the legacy C comparison tables stay active in src/aarch64.c
+#          and the subject is NOT linked, so the resulting binary is a
+#          genuinely independent C oracle for the two A64 seams.
+#   ON  -> the compiled PolyC decisions are authoritative and the
+#          legacy C comparison tables are COMPILED OUT of
+#          src/aarch64.c. A missing subject is a HARD configure error;
+#          there is no path on which the production compiler silently
+#          falls back to the C table while claiming the PolyC
+#          authority.
+#
+# Default: OFF, so a bare `cmake -S ./src -B ./build` never depends on
+# a subject object that may not exist. The production ./hcc turns it ON
+# explicitly from the Makefile, which also SCHEDULES the subject's
+# production.
+#
+# This block is placed AFTER `add_executable(hcc ${SOURCES} ...)` because it
+# links an already-declared target.
+option(HCC_USE_SELFHOST_A64_CMP_CC
+       "Link the compiled PolyC AArch64 condition-code decisions into hcc and enable the production A64 delegation. ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01."
+       OFF)
+
+if (HCC_USE_SELFHOST_A64_CMP_CC)
+    if (NOT A64_CMP_CC_OBJECT)
+        set(A64_CMP_CC_OBJECT "${CMAKE_SOURCE_DIR}/../build/a64-cmp-cc-subject.o")
+    endif()
+    # Same fail-closed contract as the CPA and core-operator subjects: if
+    # a producer is declared, CMake SCHEDULES the subject's production; if
+    # not, the object must already exist and a missing object is a hard
+    # configure error naming the exact command. In BOTH cases the object
+    # is REQUIRED -- there is no silent fallback to the C table.
+    if (A64_CMP_CC_PRODUCER)
+        if (NOT EXISTS "${A64_CMP_CC_PRODUCER}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: the declared "
+                "A64 condition-code producer does not exist: ${A64_CMP_CC_PRODUCER}. "
+                "The production hcc CANNOT be built without a real PolyC producer.")
+        endif()
+        if (NOT EXISTS "${A64_CMP_CC_SOURCE}")
+            message(FATAL_ERROR
+                "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: the declared "
+                "A64 condition-code SOURCE does not exist: ${A64_CMP_CC_SOURCE}. "
+                "The production hcc CANNOT be built without the real PolyC source.")
+        endif()
+        get_filename_component(_a64_source_dir "${A64_CMP_CC_SOURCE}" DIRECTORY)
+        get_filename_component(_a64_object_dir "${A64_CMP_CC_OBJECT}" DIRECTORY)
+        add_custom_command(
+            OUTPUT "${A64_CMP_CC_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "${_a64_object_dir}"
+            COMMAND "${A64_CMP_CC_PRODUCER}"
+                    --install-dir=${A64_CMP_CC_PREFIX}
+                    -c "${A64_CMP_CC_SOURCE}"
+                    -o "${A64_CMP_CC_OBJECT}"
+            DEPENDS "${A64_CMP_CC_SOURCE}" "${A64_CMP_CC_PRODUCER}"
+            WORKING_DIRECTORY "${_a64_source_dir}"
+            COMMENT "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: producing the compiled PolyC A64 condition-code subject ${A64_CMP_CC_OBJECT}"
+            VERBATIM)
+        add_custom_target(hcc-a64-cmp-cc-subject DEPENDS "${A64_CMP_CC_OBJECT}")
+        add_dependencies(hcc hcc-a64-cmp-cc-subject)
+        message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc SCHEDULES the PolyC A64 condition-code subject: ${A64_CMP_CC_OBJECT}")
+    elseif (NOT EXISTS "${A64_CMP_CC_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: required compiled "
+            "PolyC A64 condition-code subject missing at ${A64_CMP_CC_OBJECT}. "
+            "Build it with the stage0 hcc: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-a64-cmp-cc-v2.HC -o ${A64_CMP_CC_OBJECT}. "
+            "Or configure with -DA64_CMP_CC_PRODUCER=<stage0 hcc> to have the build graph produce it.")
+    endif()
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_A64_CMP_CC)
+    target_link_libraries(hcc "${A64_CMP_CC_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc links the compiled PolyC A64 condition-code decisions: ${A64_CMP_CC_OBJECT}")
+else()
+    message(STATUS "ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: selector OFF, the legacy C A64 comparison tables are active and no PolyC subject is linked")
+endif()
+
 # ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01 C2 IMPL:
 # Link the qualified PolyC BootstrapCalcPadding component into the
 # production hcc binary so the parser delegates padding calculation

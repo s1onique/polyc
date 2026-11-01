@@ -12,7 +12,7 @@ HCC_ENABLE_LLVM ?= OFF
 
 default: all
 
-.PHONY: all parser-surface-recon08-verify-selftest formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control parser-slice03-corr01-g0-provenance parser-slice03-corr01-test
+.PHONY: all a64-cmp-cc-subject parser-surface-recon08-verify-selftest formal-dafny gate-fast gate-push install-hooks static-function-linkage-test factory-closure-status-test factory-closure-status-test-binary llvm-all llvm-spike-test test-prefix-install llvm-gep01-test bootstrap-stage0 bootstrap-prefix parser-padding-subject production-hcc runtime-producer bootstrap01-test bootstrap01-oracle bootstrap02-test bootstrap02-stage1 bootstrap02-cursor-test bootstrap02-lexer-seam-test bootstrap03-component-build bootstrap03-stage2 bootstrap03-test bootstrap03-lexer-seam-test bootstrap04-component-build bootstrap04-stage3 bootstrap04-test bootstrap04-cursor-test bootstrap04-lexer-seam-test selfhost-component-binary selfhost-component-build selfhost-component-test selfhost-component-selftest selfhost-registry-validate factory-halt-classification-binary factory-halt-classification-selftest bootstrap06-component-build bootstrap06-operator-classify-oracle bootstrap06-direct-differential bootstrap06-component-stage1 bootstrap06-component-stage2 bootstrap06-component-stage3 bootstrap06-lexer-seam-stage1 lexer07-component-build lexer07-scalar-literal-oracle lexer07-direct-differential lexer07-component-stage1 lexer07-component-stage2 lexer07-component-stage3 lexer07-lexer-seam-stage0 lexer07-lexer-seam-stage1 lexer07-lexer-seam-stage2 lexer07-lexer-seam-stage3 lexer07-lexer-seam-stage2-from-objs lexer07-lexer-seam-stage3-from-objs lexer07-lexer-seam-all-stages lexer07-fixture-inventory lexer07-broad-corpus-4-stage lexer07-correction02-all lexer07-baseline-authority-verify lexer08-component-build lexer08-trivia-oracle lexer08-direct-differential lexer08-fixture-inventory lexer08-broad-corpus-4-stage lexer08-lexer-seam-stage0 lexer08-lexer-seam-stage1 lexer08-lexer-seam-all-stages lexer08-trivia-fixedpoint-g0 lexer08-trivia-fixedpoint-g1 lexer08-trivia-fixedpoint-g2 lexer08-trivia-fixedpoint-g3 lexer08-trivia-fixedpoint-build lexer08-trivia-fixedpoint-verify lexer08-trivia-fixedpoint lexer09-link-component-build lexer09-link-oracle-build lexer09-direct-differential lexer09-lexer-seam-stage0 lexer09-lexer-seam-stage1 lexer09-lexer-seam-all-stages lexer09-link-fixedpoint-g0 lexer09-link-fixedpoint-g1 lexer09-link-fixedpoint-g2 lexer09-link-fixedpoint-g3 lexer09-link-fixedpoint-build lexer09-link-fixedpoint-verify lexer09-link-fixedpoint lexer09-link-negative-control lexer09-link-determinism lexer09-link-broad-corpus-4-stage lib-tos runtime-contract-test libtos-n02-isolate parser-padding-component parser-padding-oracle parser-padding-differential parser-padding-gen-matrix-fixture parser-padding-gen-large-fixture parser-padding-fixedpoint-g0 parser-padding-fixedpoint-g1 parser-padding-fixedpoint-g2 parser-padding-fixedpoint-g3 parser-padding-fixedpoint-build parser-padding-fixedpoint-verify parser-padding-fixedpoint parser-padding-fixedpoint-negative-control parser-padding-mutation-m1 parser-padding-mutation-m2 parser-padding-mutation-m3 parser-padding-mutation-m4 parser-padding-mutation-test parser-padding-test parser-padding-algebraic-invariants parser-padding-is-terminal-stub parser-padding-legacy parser-padding-legacy-server parser-padding-legacy-verify parser-control-flow-token-component parser-control-flow-token-differential parser-control-flow-token-int-bounds parser-control-flow-token-harden-test parser-control-flow-token-negative-controls parser-slice-recon03-tools parser-slice-recon03-eligibility parser-slice-recon03-eligibility-controls parser-slice-recon03-ranking parser-slice03-contract-requalify parser-slice03-fixture-integrity parser-slice03-fixture-integrity-controls parser-slice03-differential parser-slice03-differential-negative-control parser-operator-precedence-component parser-slice03-generations parser-slice03-generation-pairs parser-slice03-copy-forgery-control parser-slice03-production-generations parser-slice03-production-semantic-pairs parser-slice03-corr01-fixture parser-slice03-corr01-coverage parser-slice03-corr01-differential parser-slice03-corr01-controls parser-slice03-corr01-producer-control parser-slice03-corr01-g0-provenance parser-slice03-corr01-test
 
 # To add sqlite3 support add -DHCC_LINK_SQLITE3=1 to the below like so:
 #```
@@ -169,6 +169,24 @@ ABI_CPA_OBJ = ./build/selfhost-abi-cpa-subject.o
 CORE_OPERATOR_SRC = tools/bootstrap/selfhost-core-operator.HC
 CORE_OPERATOR_OBJ = ./build/core-operator-subject.o
 
+# ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+#
+# The compiled PolyC AArch64 condition-code subject and its PolyC source.
+#
+# The VARIABLES are defined HERE, next to the CORE_OPERATOR ones, for
+# the SAME reason: the PRODUCTION_HCC rule PREREQUISITE list is
+# expanded when the rule is READ, and a variable defined later in the
+# file would be EMPTY at that point -- which would silently drop the
+# subject from the build graph and leave the new authority DORMANT.
+#
+# The subject PolyC source is the ONE coherent component that owns the
+# TWO selected AArch64 comparison condition-code decisions of BUNDLE
+# CAND-CMP-CC-A64: SITE-A64-CC-FOR and SITE-A64-CC-INV. The third
+# selected site, SITE-A64-CSET, is a C-OWNED MECHANICAL ADAPTER and
+# stays in C; it owns no condition selection and gets no export.
+A64_CMP_CC_SRC = tools/bootstrap/selfhost-a64-cmp-cc-v2.HC
+A64_CMP_CC_OBJ = ./build/a64-cmp-cc-subject.o
+
 # The stage0 compiler's own sources. A change to any of them must
 # invalidate the stage0 compiler, which in turn invalidates the
 # padding subject.
@@ -206,6 +224,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
 		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
 		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -684,6 +703,43 @@ $(CORE_OPERATOR_OBJ): $(CORE_OPERATOR_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_P
 
 core-operator-subject: $(CORE_OPERATOR_OBJ)
 
+# ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+#
+# The compiled PolyC AArch64 condition-code subject.
+#
+# It is produced by the SAME digest-bound stage0 producer that builds
+# the thirteen existing production subjects, from real PolyC source,
+# and it is linked into the production ./hcc by src/CMakeLists.txt.
+#
+# The object is verified for BOTH of its exported symbols AND its
+# architecture. A missing symbol or a wrong-architecture object is
+# REJECTED, never linked. A producer that exits 0 without producing the
+# object is a hard error, never a silent fallback to the legacy C
+# tables. A stale object is never reused: the rule always removes the
+# previous one first.
+$(A64_CMP_CC_OBJ): $(A64_CMP_CC_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(A64_CMP_CC_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "a64-cmp-cc-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@nm $@ | grep -q '_AbiA64CcForV2' \
+		|| { echo "a64-cmp-cc-subject: symbol _AbiA64CcForV2 not found in $@" >&2; exit 1; }
+	@nm $@ | grep -q '_AbiA64CcInvForV2' \
+		|| { echo "a64-cmp-cc-subject: symbol _AbiA64CcInvForV2 not found in $@" >&2; exit 1; }
+	@if nm $@ | grep -q '_AbiA64CmpCcEmitCSet'; then \
+		echo "a64-cmp-cc-subject: FORBIDDEN third export _AbiA64CmpCcEmitCSet present in $@" >&2; exit 1; \
+	fi
+	@echo "A64_CMP_CC_SUBJECT=$@"
+	@echo "A64_CMP_CC_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+	@echo "A64_CMP_CC_SUBJECT_SHA256=$$(shasum -a 256 "$@" | cut -d' ' -f1)"
+
+a64-cmp-cc-subject: $(A64_CMP_CC_OBJ)
+
 # The production compiler.
 #
 # The CMake configure is handed the DECLARED producer of the padding
@@ -706,6 +762,7 @@ PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OB
 	$(SLICE09_STATEMENT_DISPATCH_OBJ) \
 	$(ABI_CPA_OBJ) \
 	$(CORE_OPERATOR_OBJ) \
+	$(A64_CMP_CC_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -775,6 +832,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
 		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=$(CURDIR)/$(A64_CMP_CC_OBJ) \
+		-DA64_CMP_CC_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
+		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build -j2
 	@if [ ! -x ./hcc ]; then \
@@ -797,6 +859,10 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		|| { echo "production-hcc: symbol _BootstrapSwitchArmTerminates not linked into ./hcc" >&2; exit 1; }
 	@nm ./hcc | grep -q '_BootstrapStatementDispatch' \
 		|| { echo "production-hcc: symbol _BootstrapStatementDispatch not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_AbiA64CcForV2' \
+		|| { echo "production-hcc: symbol _AbiA64CcForV2 not linked into ./hcc" >&2; exit 1; }
+	@nm ./hcc | grep -q '_AbiA64CcInvForV2' \
+		|| { echo "production-hcc: symbol _AbiA64CcInvForV2 not linked into ./hcc" >&2; exit 1; }
 	@echo "PRODUCTION_HCC=./hcc"
 	@echo "PRODUCTION_PADDING_AUTHORITY=POLYC"
 	@echo "PRODUCTION_AST_BINOP_AUTHORITY=POLYC"
@@ -879,6 +945,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
 		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=$(CURDIR)/$(A64_CMP_CC_OBJ) \
+		-DA64_CMP_CC_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
+		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_BOOTSTRAP_EXPECTED_SHA=$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)
 	$(MAKE) -C ./build/llvm -j2
 	@if [ ! -x ./hcc ]; then \
@@ -1028,7 +1099,12 @@ test-prefix-install: production-hcc runtime-producer
 		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
 		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
-		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=$(CURDIR)/$(A64_CMP_CC_OBJ) \
+		-DA64_CMP_CC_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
+		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 	@# ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: FAIL-CLOSED CONFIGURATION CHECK.
 	@#
 	@# The recipe's cmake invocation is ONE shell command: every -D flag

@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=two-export-subject-build
+#
+# THE NEW POLYC SUBJECT: EXACTLY TWO PUBLIC SEMANTIC EXPORTS.
+#
+fact	value
+COMPONENT_PATH	tools/bootstrap/selfhost-a64-cmp-cc-v2.HC
+COMPONENT_SHA256	5c406a5bd6d6dc4a04fc12fe7d92c55b13b182e82317fc7d5aad6b9fd93cde9e; echo COMPONENT_LOC "$(grep -c  tools/bootstrap/selfhost-a64-cmp-cc-v2.HC)"
+EXPORT_1	AbiA64CcForV2 (U8 *AbiA64CcForV2(I64 comparison_kind, I64 is_float))
+EXPORT_2	AbiA64CcInvForV2 (U8 *AbiA64CcInvForV2(I64 comparison_kind, I64 is_float))
+EXPORT_COUNT	2
+THIRD_EXPORT_COUNT	0
+FORBIDDEN_EXPORT_AbiA64CmpCcEmitCSet	ABSENT from the component source and from the compiled object
+MACH_O_SYMBOLS	_AbiA64CcForV2, _AbiA64CcInvForV2
+SUBJECT_UNDEFINED_IMPORTS	0 (the component imports nothing; it has no host dependency)
+PRODUCER	build/host-stage0/hcc (POLYC_PRODUCER_1)
+PRODUCER_SHA256	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085; echo SUBJECT_OBJECT build/a64-cmp-cc-subject.o; echo SUBJECT_OBJECT_SHA256 "$(shasum -a 256 build/a64-cmp-cc-subject.o|cut -d  -f1)"
+SUBJECT_OBJECT_ARCH	arm64
+SUBJECT_LITERAL_COUNT	13 (the twelve condition suffixes plus the NULL path)
+
+# --- THE ABI IS PROVEN ON THE REAL TARGET ---
+# A disposable Mach-O arm64 object was compiled by the production
+# compiler for --target=aarch64-apple-darwin and linked into a
+# disposable C host that DECLARED the two exports WITHOUT a leading
+# underscore. The linked symbols were _AbiA64CcForV2 and
+# _AbiA64CcInvForV2, and the host observed 110 checks with 0
+# failures. The Mach-O ABI prefixes the EXTERNAL symbol with one
+# underscore; the C identifier does not carry it.
+ABI_PROTOTYPE_REVERIFIED	YES
+ABI_ZERO_DISCRIMINANT	IR_CMP_EQ == 0 produced "eq" as FOR and "ne" as INV
+ABI_FAIL_CLOSED_CHANNEL	NULL (a POINTER status, never a numeric status)
+ABI_BORROWED_LIFETIME	the same pointer is returned on every call and it is NUL-terminated
+ABI_HOST_CHECKS	110
+ABI_HOST_FAILURES	0
+ABI_HOST_STATUS	PASS

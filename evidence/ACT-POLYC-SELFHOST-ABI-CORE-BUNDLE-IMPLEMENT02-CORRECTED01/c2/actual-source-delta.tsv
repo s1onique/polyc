@@ -1,0 +1,78 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=actual-source-delta
+#
+# THE EXACT SOURCE DELTA, AND THE BEFORE/AFTER SEMANTIC ASSOCIATION.
+#
+# The pre-edit whole-definition boundaries SHIFTED because the
+# migration added lines above them. The OLD offsets are NOT required
+# to remain valid after the edit; what is recorded here is the
+# BEFORE/AFTER SEMANTIC ASSOCIATION of each site.
+#
+# --- THE AUTHORISED PATH DIFFSTAT ---
+#
+file	insertions	deletions
+Makefile	78	2
+src/CMakeLists.txt	101	0
+src/aarch64.c	88	1
+
+# --- THE SITE BOUNDARIES, BEFORE AND AFTER ---
+# site_id	pre_edit_range	pre_edit_sha256	post_edit_range	post_edit_sha256	semantic_association
+SITE-A64-CC-FOR	[35517,36575)	6ad4b25dc0473eeb2665690c7eff0d45100c6d184f1fff04bc374bf415a7e617	see post_edit_ranges.tsv	see post_edit_ranges.tsv	the FOR decision, now delegated to the compiled PolyC AbiA64CcForV2
+SITE-A64-CC-INV	[36577,37494)	56ee5cf27e10e4a0919588713ef77a481017a2962bf713cc3f51796d8c53b7cc	see post_edit_ranges.tsv	see post_edit_ranges.tsv	the INV decision, now delegated to the compiled PolyC AbiA64CcInvForV2
+SITE-A64-CSET	[37566,37718)	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	see post_edit_ranges.tsv	see post_edit_ranges.tsv	UNCHANGED: the C mechanical adapter, its call to aarch64CcFor and its format string are conserved verbatim
+
+# --- WHAT CHANGED IN EACH SEAM ---
+#
+# SITE-A64-CC-FOR:
+#   - the legacy C comparison table is now inside an #else branch, so it
+#     is COMPILED OUT of the selector-ON production object;
+#   - the selector-ON arm is a PURE call to AbiA64CcForV2 plus the
+#     authorized host NULL guard, which calls loggerPanic and does NOT
+#     select a suffix;
+#   - the legacy table is retained in the selector-OFF arm so that the G0
+#     C oracle remains a genuine independent authority.
+#
+# SITE-A64-CC-INV: the same shape, with AbiA64CcInvForV2.
+#
+# SITE-A64-CSET: NOT MODIFIED in any decision-bearing way. Its
+#   definition still reads:
+#
+#       static void aarch64EmitCSet(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
+#           aoStrCatFmt(ctx->buf, "cset    x0, %s\n\t", aarch64CcFor(cmp, is_float));
+#       }
+#
+#   Only a provenance comment was added above it. The call route is
+#   unchanged: it still calls aarch64CcFor, which is now the delegating
+#   wrapper.
+
+# --- THE ABI DECLARATION ---
+# The C declaration of the two exports was added to src/aarch64.c
+# INSIDE the #ifdef HCC_USE_SELFHOST_A64_CMP_CC guard, because BOTH
+# migrated seams and the C mechanical adapter live in that ONE
+# translation unit and a new header file would be OUTSIDE the
+# authorised path list.
+# THE POST-EDIT WHOLE-DEFINITION BOUNDARIES, re-derived by the SAME
+# compiled PolyC lexical scanner from the edited working tree.
+#
+# site_id	function	post_edit_range	size	post_edit_sha256	semantic_association
+SITE-A64-CC-FOR	aarch64CcFor	[36844,39097)	2253	237fd8229e874860b58dc6153c3cbb75aefcc6a2170d30d659e7db5fa97aa5a5	the FOR seam: the selector-ON arm delegates to the compiled PolyC AbiA64CcForV2, the selector-OFF arm retains the legacy C table for the G0 oracle
+SITE-A64-CC-INV	aarch64CcInvFor	[39099,41216)	2117	b4e95a2ac43d8a5bd86804e49aecea7287e05dc813de31f833294c01c4830dcd	the INV seam: the selector-ON arm delegates to the compiled PolyC AbiA64CcInvForV2, the selector-OFF arm retains the legacy C table for the G0 oracle
+SITE-A64-CSET	aarch64EmitCSet	[41630,41782)	152	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	UNCHANGED: the post-edit whole definition has the EXACT SAME 152-byte length and the EXACT SAME SHA-256 as the pre-edit one, which proves the C mechanical adapter was not modified in any byte
+
+POST_EDIT_SOURCE_BLOB_SHA256=f7e18406b2193163a3eaa3d1d35c4a1d4d0afc427c91af13d3ecba6bc7fe371a
+POST_EDIT_SOURCE_BLOB_BYTES=105769
+PRE_EDIT_SOURCE_BLOB_SHA256=98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d
+PRE_EDIT_SOURCE_BLOB_BYTES=101705
+POST_EDIT_SOURCE_BLOB_OID=(the Git blob OID is assigned when the C2 change is committed)
+
+# THE CSET ADAPTER IS PROVEN BYTE-IDENTICAL. Its post-edit whole
+# definition digest equals its pre-edit whole definition digest
+# exactly: 8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540.
+CSET_ADAPTER_BYTE_IDENTICAL=YES
+
+# The FOR and INV ranges grew because BOTH selector arms now live
+# in the source: the selector-ON delegating arm and the selector-OFF
+# legacy table. The old offsets are NOT required to remain valid after
+# the edit; the BEFORE/AFTER semantic association is recorded in
+# actual-source-delta.tsv.

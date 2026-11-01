@@ -1,0 +1,40 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=production-link-and-relocations
+#
+# THE PRODUCTION LINK GRAPH, MEASURED ON THE REAL OBJECTS AND THE
+# REAL LINKED EXECUTABLE.
+#
+# fact	value
+PRODUCTION_EXECUTABLE	./hcc
+PRODUCTION_EXECUTABLE_SHA256	a7f05aaa086abc2b6f42f49ff3a31a0263c74f5ea76c5c4acd3465a390afe96b
+PRODUCTION_SUBJECT_OBJECT	build/a64-cmp-cc-subject.o
+PRODUCTION_SUBJECT_SHA256	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22; echo PRODUCTION_SUBJECT_ARCH arm64; echo PRODUCTION_CALLER_OBJECT build/CMakeFiles/hcc.dir/aarch64.c.o; echo PRODUCTION_CALLER_OBJECT_SHA256 "$(shasum -a 256 build/CMakeFiles/hcc.dir/aarch64.c.o|cut -d  -f1)"
+SUBJECT_IS_A_LINK_INPUT	YES (build/CMakeFiles/hcc.dir/link.txt names build/a64-cmp-cc-subject.o)
+
+# --- THE TWO DISTINCT IMPORTED SYMBOLS IN THE PRODUCTION CALLER ---
+CALLER_IMPORTS	_AbiA64CcForV2
+CALLER_IMPORTS	_AbiA64CcInvForV2
+CALLER_IMPORT_COUNT	2
+SUBJECT_DEFINES	_AbiA64CcForV2 (T)
+SUBJECT_DEFINES	_AbiA64CcInvForV2 (T)
+FINAL_EXECUTABLE_DEFINES	_AbiA64CcForV2 (T)
+FINAL_EXECUTABLE_DEFINES	_AbiA64CcInvForV2 (T)
+FINAL_EXECUTABLE_IMPORTS_NONE_OF_THEM	YES (both are DEFINED, not imported)
+
+# --- NO THIRD EXPORT, NO LEGACY C TABLE, NO DEAD SUBJECT ---
+THIRD_EXPORT_COUNT	0
+FORBIDDEN_AbiA64CmpCcEmitCSet_PRESENT	NO (absent from the subject, from the caller and from the executable)
+SELECTOR_ON_LEGACY_C_SUFFIX_LITERALS	0 (the strings eq ne mi pl ls lo hi hs ge gt le lt are ABSENT from the production aarch64.c.o)
+SELECTOR_OFF_LEGACY_C_SUFFIX_LITERALS	12 (eq ne mi pl ls lo hi hs ge gt le lt are PRESENT in the selector-OFF aarch64.c.o)
+CSET_FORMAT_STRING_IN_PRODUCTION_OBJECT	cset    x0, %s (PRESENT -- the CSET adapter stays C-owned)
+DEAD_OR_LINK_ONLY_SUBJECT	NO (the production caller IMPORTS both symbols, so the subject is load-bearing)
+
+# --- THE SELECTOR TABLE ---
+selector_state	subject_linked	a64_symbols_in_binary	c_tables	a64_authority
+host-stage0	NO	NO	LIVE in C	THE C TABLES (the stage0 compiler is a pure C A64 authority)
+G0_oracle	NO	NO	LIVE in C	THE C TABLES (the genuine independent C oracle)
+production	YES	YES	COMPILED OUT	THE COMPILED POLYC SUBJECT
+G1	YES	YES	COMPILED OUT	THE COMPILED POLYC SUBJECT
+G2	YES	YES	COMPILED OUT	THE COMPILED POLYC SUBJECT
+G3	YES	YES	COMPILED OUT	THE COMPILED POLYC SUBJECT

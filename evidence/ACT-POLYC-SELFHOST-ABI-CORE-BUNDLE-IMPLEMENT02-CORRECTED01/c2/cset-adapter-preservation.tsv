@@ -1,0 +1,27 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=cset-adapter-preservation
+#
+# SITE-A64-CSET IS PRESERVED AS A C-OWNED MECHANICAL ADAPTER.
+#
+fact	value
+CSET_SITE_ID	SITE-A64-CSET
+CSET_CLASS	C_MECHANICAL_ADAPTER
+CSET_FUNCTION	aarch64EmitCSet
+CSET_STAYS_IN_C	YES (no selector, no export, no separate object)
+CSET_FORMAT_STRING	"cset    x0, %s\n\t" (UNCHANGED)
+CSET_FORMAT_STRING_IN_PRODUCTION_OBJECT	PRESENT
+CSET_CALLS_aarch64CcFor	1
+CSET_SWITCH_COUNT	0
+CSET_CASE_COUNT	0
+CSET_IR_CMP_REFERENCES	0
+CSET_INDEPENDENT_DECISION	NO
+CSET_COUNTS_AS_AN_AUTHORITY	NO
+THIRD_EXPORT_COUNT	0
+
+# --- THE ADAPTER ACTUALLY CONSUMES THE POLYC RESULT ---
+# The production compiler emitted the exact bytes "cset    x0, lt"
+# for the two-use witness, and that suffix came from the compiled
+# PolyC FOR decision through the delegated aarch64CcFor wrapper.
+PRODUCTION_EMITTED_BYTES	cset    x0, lt
+PRODUCTION_EMITTED_BYTES_MATCHES_THE_G0_C_ORACLE	YES (the two assembly outputs are byte-identical apart from the .ident line)

@@ -859,9 +859,62 @@ static const char *aarch64IdxReg(IrCgCtx *ctx, IrInstr *instr) {
     return "x2";
 }
 
+/* ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+ *
+ * The C-facing ABI declaration of the compiled PolyC AArch64
+ * condition-code component (ABI-A64-CMP-CC-2).
+ *
+ * The C identifier carries NO leading underscore. The Mach-O ABI
+ * prefixes the EXTERNAL symbol with one, so the linked symbol is
+ * _AbiA64CcForV2 and _AbiA64CcInvForV2. Writing a leading underscore
+ * here would declare a DIFFERENT C identifier that would bind to the
+ * Mach-O symbol __AbiA64CcForV2, which does not exist.
+ *
+ * The declaration lives here rather than in a separate header because
+ * BOTH migrated seams and the C mechanical adapter are in this ONE
+ * translation unit.
+ *
+ * The result is a BORROWED, IMMUTABLE, NUL-terminated string literal
+ * owned by the PolyC component. The host MUST NOT free it and MUST NOT
+ * write through it. NULL denotes an unsupported or out-of-domain input
+ * and is a POINTER status, so it can never collide with the numeric
+ * IR_CMP_EQ == 0 discriminant. The exact contract is frozen in
+ * evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/
+ * c0/abi-a64-cmp-cc-2.txt. */
+#ifdef HCC_USE_SELFHOST_A64_CMP_CC
+const unsigned char *AbiA64CcForV2(int64_t comparison_kind, int64_t is_float);
+const unsigned char *AbiA64CcInvForV2(int64_t comparison_kind, int64_t is_float);
+#endif
+
 /* Condition codes for branches. AArch64 uses the same suffixes as
  * x86's jCC; mapping is straightforward. */
 static const char *aarch64CcFor(IrCmpKind cmp, int is_float) {
+#ifdef HCC_USE_SELFHOST_A64_CMP_CC
+    /* ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+     *
+     * SITE-A64-CC-FOR is migrated. The decision is made EXCLUSIVELY by
+     * the compiled PolyC subject
+     * (tools/bootstrap/selfhost-a64-cmp-cc-v2.HC). The legacy C
+     * comparison table below is COMPILED OUT of this translation unit
+     * when the selector is ON: there is no active C copy of this
+     * decision, no fallback table and no alternate decision.
+     *
+     * The subject receives ONLY the numeric kind and the normalized
+     * float flag. It never sees an IrCmpKind layout, an IrCgCtx or any
+     * other host state.
+     *
+     * The ONLY branch left in this function is the authorized host
+     * NULL guard, which reproduces the fail-closed termination that the
+     * legacy table reached through loggerPanic. It is not a condition
+     * mapping: it does not select a suffix.
+     */
+    const unsigned char *suffix = AbiA64CcForV2((int64_t)cmp,
+                                                (int64_t)(is_float ? 1 : 0));
+    if (suffix == NULL) {
+        loggerPanic("ir-cg-aarch64: cmp %d\n", cmp);
+    }
+    return (const char *)suffix;
+#else
     if (is_float) {
         /* FP unordered compares use the "mi"/"pl"/"gt"/"ge" variants;
          * we treat NaN like x86's unordered (most ops fall through). */
@@ -888,9 +941,36 @@ static const char *aarch64CcFor(IrCmpKind cmp, int is_float) {
         case IR_CMP_UGE: return "hs";
         default: loggerPanic("ir-cg-aarch64: cmp %d\n", cmp);
     }
+#endif
 }
 
 static const char *aarch64CcInvFor(IrCmpKind cmp, int is_float) {
+#ifdef HCC_USE_SELFHOST_A64_CMP_CC
+    /* ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+     *
+     * SITE-A64-CC-INV is migrated. The decision is made EXCLUSIVELY by
+     * the compiled PolyC subject
+     * (tools/bootstrap/selfhost-a64-cmp-cc-v2.HC). The legacy C
+     * comparison table below is COMPILED OUT of this translation unit
+     * when the selector is ON: there is no active C copy of this
+     * decision, no fallback table and no alternate decision.
+     *
+     * The subject receives ONLY the numeric kind and the normalized
+     * float flag. It never sees an IrCmpKind layout, an IrCgCtx or any
+     * other host state.
+     *
+     * The ONLY branch left in this function is the authorized host
+     * NULL guard, which reproduces the fail-closed termination that the
+     * legacy table reached through loggerPanic. It is not a condition
+     * mapping: it does not select a suffix.
+     */
+    const unsigned char *suffix = AbiA64CcInvForV2((int64_t)cmp,
+                                                  (int64_t)(is_float ? 1 : 0));
+    if (suffix == NULL) {
+        loggerPanic("ir-cg-aarch64: cmp %d\n", cmp);
+    }
+    return (const char *)suffix;
+#else
     if (is_float) {
         switch (cmp) {
             case IR_CMP_EQ:  return "ne";
@@ -915,9 +995,16 @@ static const char *aarch64CcInvFor(IrCmpKind cmp, int is_float) {
         case IR_CMP_UGE: return "lo";
         default: loggerPanic("ir-cg-aarch64: cmp %d\n", cmp);
     }
+#endif
 }
 
-/* Emit a cset into x0 setting it to 1 or 0 based on the last cmp. */
+/* Emit a cset into x0 setting it to 1 or 0 based on the last cmp.
+ *
+ * ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01:
+ * SITE-A64-CSET is a C-OWNED MECHANICAL ADAPTER. It is NOT migrated.
+ * It owns no condition selection of its own: its whole definition is
+ * ONE call to aarch64CcFor plus the fixed format string below. The
+ * format string and the emission semantics are CONSERVED verbatim. */
 static void aarch64EmitCSet(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
     aoStrCatFmt(ctx->buf, "cset    x0, %s\n\t", aarch64CcFor(cmp, is_float));
 }
