@@ -1,0 +1,63 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-executions
+#
+# THE FIVE REQUIRED REDs, EACH EXECUTED AS A GENUINE
+# PRISTINE -> ADVERSE -> RESTORED CYCLE AGAINST A REAL COMPILED POLYC
+# DETECTOR.
+#
+# THE DETECTOR IS A REAL COMPILED POLYC BINARY:
+#   tools/quality/a64-cmp-cc-contract-correction01-verify.HC
+#   built by the production ./hcc and linked against libtos.
+#
+# It computes its own SHA-256 digests, parses the LIVE source bytes
+# and the LIVE enum header, and never reads a claimed PASS field. Its
+# SHA-256 implementation is self-tested against three FIPS 180-4
+# vectors BEFORE any digest is trusted, and the self-test itself is an
+# observed run.
+#
+# EVERY ADVERSE CONTROL BELOW IS AN ISOLATED COPY IN /tmp. The
+# canonical tree was never modified.
+#
+red_id	adverse_condition	detector_reason_class	pristine_observation	adverse_observation	restored_observation	nonvacuous_verdict
+RED-01	the C1 PARTIAL-interval digest presented as the whole-function digest	RANGE_SEMANTIC_MISBIND	SILENT (FINAL=OK): the TRUE whole-definition digest 6ad4b25d... for FOR [35517,36575) is accepted as the whole digest	FIRED (FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND, DETECTION=PARTIAL_DIGEST_PRESENTED_AS_WHOLE): the C1 partial digest d22a99b3... for [35517,36100) is rejected as a whole-definition digest	SILENT (FINAL=OK) again for the true whole digest	PASS -- the detector compares two INDEPENDENTLY recomputed digests, and it is not a blanket failure
+RED-02	a one-byte off-by-one source range	SOURCE_RANGE_OFF_BY_ONE	SILENT (FINAL=OK): the exact range [35517,36575) with digest 6ad4b25d...	FIRED (FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE) for BOTH the extended range [35517,36576) and the truncated range [35517,36574); the detector names WHICH direction the error lies (EXTENDED_SHA256 / TRUNCATED_SHA256)	SILENT (FINAL=OK) again for the exact range	PASS -- the detector discriminates one byte in BOTH directions
+RED-03	the original U0(I64,I64) CSET export counted as an observable independent authority	INERT_CSET_ABI	SILENT (FINAL=OK): an OBSERVABLE CSET export (a U8* return) is accepted, and the corrected v2 FOR export is accepted by the unobservable-abi detector	FIRED (FINAL=FAIL REASON=INERT_CSET_ABI, CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO) on the FROZEN v1 declaration; and FIRED (FINAL=FAIL REASON=UNOBSERVABLE_CORRECTED_ABI) on the same declaration by the unobservable-abi detector	SILENT (FINAL=OK) again for the observable CSET export and the corrected v2 FOR export	PASS -- the detector is not a blanket "U0 is inert" rule
+RED-04	a CSET wrapper that imports FOR's decision counted twice under two site IDs	DUPLICATE_SEMANTIC_AUTHORITY	SILENT (FINAL=OK): the honest table (CSET_CLAIMS_INDEPENDENT=NO, CSET_SOURCES_SUFFIX_FROM_FOR=YES) is accepted	FIRED (FINAL=FAIL REASON=DUPLICATE_SEMANTIC_AUTHORITY, DETECTION=FOR_DECISION_COUNTED_UNDER_TWO_SITE_IDS) when the CSET row additionally claims INDEPENDENT_SEMANTIC_DECISION=YES while still sourcing its suffix from aarch64CcFor	SILENT (FINAL=OK) again for the honest table	PASS -- the detector reads the ACTUAL classification and source fields, not a PASS label
+RED-05	a fabricated producer alias	PRODUCER_ALIAS	SILENT (FINAL=OK): the four-row producer table with four distinct executable digests is accepted	FIRED (FINAL=FAIL REASON=PRODUCER_ALIAS, ALIASED_PRODUCER_1=POLYC_PRODUCER_1 ALIASED_PRODUCER_2=POLYC_PRODUCER_2 SHARED_DIGEST=f5a3e543...) when a second producer label claims the first one's executable digest	SILENT (FINAL=OK) again for the honest producer table	PASS -- the detector compares the digests themselves
+#
+# ---------------------------------------------------------------------------
+# THE ADVERSE CONTROLS THAT WERE ACTUALLY EXECUTED
+#
+# The exact commands and their observed outputs. Every one of these was
+# run against the compiled PolyC detector; the RC values are real.
+#
+command	observed_output	rc
+./build/a64-cmp-cc-contract-correction01-verify selftest	SELFTESTOK / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify c1-misbind src/aarch64.c 35517 36575 6ad4b25d...	WHOLE_SHA256=6ad4b25d... C1_SHA256=6ad4b25d... / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify c1-misbind src/aarch64.c 35517 36575 d22a99b3...	WHOLE_SHA256=6ad4b25d... C1_SHA256=d22a99b3... DETECTION=PARTIAL_DIGEST_PRESENTED_AS_WHOLE / FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND	1
+./build/a64-cmp-cc-contract-correction01-verify off-by-one src/aarch64.c 35517 36575 6ad4b25d...	EXACT_SHA256=6ad4b25d... / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify off-by-one src/aarch64.c 35517 36576 6ad4b25d...	EXACT_SHA256=49a07e6f... EXTENDED_SHA256=1ef65c64... TRUNCATED_SHA256=6ad4b25d... / FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE	1
+./build/a64-cmp-cc-contract-correction01-verify off-by-one src/aarch64.c 35517 36574 6ad4b25d...	EXACT_SHA256=bfc25f16... EXTENDED_SHA256=6ad4b25d... / FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE	1
+./build/a64-cmp-cc-contract-correction01-verify cset-inert <abi with observable CSET>	CSET_RETURN_IS_VOID=NO CSET_HAS_POINTER_PARAM=NO / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify cset-inert <the frozen v1 declaration>	CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO / FINAL=FAIL REASON=INERT_CSET_ABI	1
+./build/a64-cmp-cc-contract-correction01-verify unobservable-abi <the frozen v1 declaration> AbiA64CmpCcEmitCSet	EXPORT_RETURN_IS_VOID=YES EXPORT_HAS_POINTER_PARAM=NO DETECTION=NO_OBSERVABLE_OUTPUT_CHANNEL / FINAL=FAIL REASON=UNOBSERVABLE_CORRECTED_ABI	1
+./build/a64-cmp-cc-contract-correction01-verify unobservable-abi <the corrected v2 declaration> AbiA64CmpCcForV2	EXPORT_RETURN_IS_VOID=NO EXPORT_HAS_POINTER_PARAM=NO / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify cset-duplicate <the honest authority table>	CSET_CLAIMS_INDEPENDENT=NO CSET_SOURCES_SUFFIX_FROM_FOR=YES / FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify cset-duplicate <the double-counted authority table>	CSET_CLAIMS_INDEPENDENT=YES CSET_SOURCES_SUFFIX_FROM_FOR=YES DETECTION=FOR_DECISION_COUNTED_UNDER_TWO_SITE_IDS / FINAL=FAIL REASON=DUPLICATE_SEMANTIC_AUTHORITY	1
+./build/a64-cmp-cc-contract-correction01-verify producer-alias <the honest producer table>	FINAL=OK	0
+./build/a64-cmp-cc-contract-correction01-verify producer-alias <the aliased producer table>	ALIASED_PRODUCER_1=POLYC_PRODUCER_1 ALIASED_PRODUCER_2=POLYC_PRODUCER_2 SHARED_DIGEST=f5a3e543... / FINAL=FAIL REASON=PRODUCER_ALIAS	1
+#
+# ---------------------------------------------------------------------------
+# THE RESTORATION PROOF
+#
+# The adverse controls ran against ISOLATED COPIES in /tmp/a64corr/reds.
+# The canonical tree's src/aarch64.c was never modified, and its
+# digest was re-read after the RED cycle:
+#
+RESTORED_SOURCE_PATH=src/aarch64.c
+RESTORED_SOURCE_SHA256=98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d
+RESTORED_SOURCE_MATCHES_ENTRY=YES
+RESTORED_SOURCE_BYTES=101705
+RED_CYCLE_TOUCHED_CANONICAL_TREE=NO
+RED_CYCLE_VERDICT=PASS

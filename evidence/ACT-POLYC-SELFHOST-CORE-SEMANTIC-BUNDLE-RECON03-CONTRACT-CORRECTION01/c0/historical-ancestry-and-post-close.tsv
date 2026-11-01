@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=historical-ancestry-and-post-close
+#
+# THE PREDECESSOR RANGE, LOCATED BY TRAILER AND NOT BY COUNTING BACK
+# FROM HEAD.
+#
+# RECON03's CLOSE is 4a380e6a93c98736facf6d82fe3dd14cbc0a8728 and
+# IMPLEMENT02's CLOSE is 500d2fce1259b03bad7f10795c11346dadcc70d0,
+# which is this ACT's own entry.
+#
+role	sha	act_phase	act_verdict	located_by
+ORIGINAL_RECON03_RED	d9f904b88e1ccd187f62e0d4fe1d747bc58aaa37	RED	-	git log --format trailers
+ORIGINAL_RECON03_EVIDENCE_1	fd66b1efcc9bcfc65da48eab2ca6602dfa283c3c	EVIDENCE	-	git log --format trailers
+ORIGINAL_RECON03_IMPL	b566017d97c16bce3ae03c1148179005051f2a5e	IMPL	-	git log --format trailers
+ORIGINAL_RECON03_EVIDENCE_2	8dff40cfe02adeabd733a9b181a6c669a2cc5e93	EVIDENCE	-	git log --format trailers
+ORIGINAL_RECON03_CLOSE	4a380e6a93c98736facf6d82fe3dd14cbc0a8728	CLOSE	PASS	git log --format trailers
+POST_CLOSE_ORDINARY_1	58ecb99e978faeaff07a8717fc36ff0055cf5ff4	(none)	(none)	git log --format trailers
+POST_CLOSE_ORDINARY_2	fd8d32e2a295f1a4b9239f552d20f12f416b33f0	(none)	(none)	git log --format trailers
+IMPLEMENT02_RED	7fc45394cdf63adcb0f2c60003631970a2eca0e4	RED	-	git log --format trailers
+IMPLEMENT02_CLOSE	500d2fce1259b03bad7f10795c11346dadcc70d0	CLOSE	HALT	git log --format trailers
+# ---------------------------------------------------------------------------
+# THE POST-CLOSE ORDINARY COMMITS, ENUMERATED EXACTLY
+#
+# These two commits are BETWEEN RECON03's CLOSE and this ACT's entry.
+# They carry NO ACT trailers, so they are ordinary commits, not ACT
+# continuations. They are a PRE-ENTRY FACT: they existed before this
+# ACT started and this ACT neither created nor extends them.
+#
+commit	paths_changed	paths
+POST_CLOSE_ORDINARY_1	4	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03.md; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.sha256; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-causal-join.tsv
+POST_CLOSE_ORDINARY_2	1	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c4/external-terminality-receipt-substance.txt
+POST_CLOSE_ACT_COMMITS	0	(none: no commit after 4a380e6a carries an ACT trailer other than IMPLEMENT02's own C0 and CLOSE)
+POST_CLOSE_ALL_COMMITS	2	58ecb99e978faeaff07a8717fc36ff0055cf5ff4; fd8d32e2a295f1a4b9239f552d20f12f416b33f0
+APPEND_ONLY_CONTINUITY	YES	Every commit from 500d2fce back to baf5dbd77cf89330699685dffd932c54031c815c is an ancestor of the entry; no amend, rebase, reset or force-update occurred.
+IMPLEMENT02_RANGE_COMMIT_COUNT	2	7fc45394cdf63adcb0f2c60003631970a2eca0e4; 500d2fce1259b03bad7f10795c11346dadcc70d0
+IMPLEMENT02_RANGE_CONTAINS_LATER_ACT_CONTINUATION	NO

@@ -1,0 +1,67 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=thirteen-authorities
+#
+# THE 13 EXISTING PRODUCTION POLYC AUTHORITIES, RE-CENSUSED FRESH AT
+# THIS ACT's ENTRY OVER THE PRODUCTION OBJECT GRAPH.
+#
+# The census was taken from the CURRENT production build's own object
+# graph, NOT copied from a predecessor table. For each symbol:
+#   - DEFINED: the number of objects under build/ that define it as a
+#     global text symbol;
+#   - LINKED: whether the symbol is present in the final linked
+#     production executable build/hcc.
+#
+# The three AbiCore* symbols are defined in FOUR objects because the
+# build tree also holds the G1/G2/G3 generation objects that define the
+# same symbol for the fixed-point comparison. Only ONE of those is the
+# production subject object; the production subject is the one linked
+# into build/hcc.
+#
+authority_id	symbol	defining_objects_in_build	linked_in_build_hcc	production_subject_object	classification	historical_causal_backing	correction_inclusive_causal_backing	verdict
+AUTH-01	_BootstrapCalcPadding	1	YES	build/parser-padding-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-02	_BootstrapValidPostControlFlowToken	1	YES	build/parser-control-flow-token-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-03	_BootstrapOperatorPrecedence	1	YES	build/parser-operator-precedence-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-04	_BootstrapAstBinOpFromToken	1	YES	build/parser-ast-binop-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-05	_BootstrapAstUnaryOpFromToken	1	YES	build/parser-ast-unary-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-06	_BootstrapSwitchArmTerminates	1	YES	build/parser-switch-arm-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	1	YES	build/parser-compound-block-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-08	_BootstrapDefaultArmTerminates	1	YES	build/parser-default-arm-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-09	_BootstrapStatementDispatch	1	YES	build/parser-statement-dispatch-subject.o	PARSER_DECISION	YES	YES	VERIFIED
+AUTH-10	_AbiCpaShouldPrintAst	1	YES	build/selfhost-abi-cpa-subject.o	NON_PARSER_CPA_DECISION	YES	YES	VERIFIED
+AUTH-11	_AbiCoreClassifyCompoundAssign	4 (1 production + 3 generation objects)	YES	build/core-operator-subject.o	NEW_CORE_OPERATOR_DECISION	YES	YES	VERIFIED
+AUTH-12	_AbiCoreIsValidPointerOperator	4 (1 production + 3 generation objects)	YES	build/core-operator-subject.o	NEW_CORE_OPERATOR_DECISION	YES	YES	VERIFIED
+AUTH-13	_AbiCoreIsRangeOperator	4 (1 production + 3 generation objects)	YES	build/core-operator-subject.o	NEW_CORE_OPERATOR_DECISION	NO (the historical M-POLYC-RO misattribution)	YES (the separate correction ACT executed its own experiment)	VERIFIED
+#
+# ---------------------------------------------------------------------------
+# THE TWO CAUSAL COUNTS ARE NEVER COLLAPSED INTO ONE.
+#
+# At the ORIGINAL IMPLEMENT01 CLOSE, 12 of the 13 had causal evidence
+# and 1 (AUTH-13) did not. The separate correction ACT
+# (ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01) executed its
+# OWN experiment for AUTH-13, so the CORRECTION-INCLUSIVE causal count
+# is 13 of 13. Both counts are recorded, and the historical 12/13 is
+# NOT retroactively rewritten to 13/13.
+#
+PRODUCTION_POLYC_AUTHORITIES_STRUCTURALLY_ACTIVE=13
+PRODUCTION_POLYC_AUTHORITIES_CAUSALLY_BACKED_AT_IMPLEMENT01_CLOSE=12
+PRODUCTION_POLYC_AUTHORITIES_CAUSALLY_BACKED_CORRECTION_INCLUSIVE=13
+AUTHORITIES_LOST_BY_THIS_ACT=0
+AUTHORITIES_ADDED_BY_THIS_ACT=0
+AUTHORITY_COUNT_VERDICT=VERIFIED_13
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCTION GRAPH BASELINE
+#
+# The baseline is the frozen one: 52 nodes, 134 mandatory edges, 34
+# SCCs, largest 19, with E-TYP-0136 the sole proven cut. This ACT is
+# documentation-and-evidence only: it changes no production source, no
+# selector, no linked object and no production edge, so the baseline
+# is CONSERVED BY CONSTRUCTION and is re-verified independently at C3.
+#
+GRAPH_NODES=52
+GRAPH_MANDATORY_EDGES=134
+GRAPH_SCCS=34
+GRAPH_LARGEST_SCC=19
+GRAPH_SOLE_PROVEN_CUT=E-TYP-0136
+NEW_PROVEN_GRAPH_CUTS=0

@@ -1,0 +1,61 @@
+ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+PHASE: C0-RED
+EVIDENCE_KIND: baseline-non-green
+
+HISTORICAL NON-GREEN BASELINES ARE CARRIED HONESTLY. They are NOT
+relabelled green, and a status that was NOT re-measured in this ACT
+is reported as NOT_REMEASURED, never as PASS.
+
+--------------------------------------------------------------------------
+F-NO-PYTHON -- FRESHLY MEASURED, STILL FAIL AT THE SAME 12
+--------------------------------------------------------------------------
+COMMAND=./build/factory-no-python-check <(git ls-files -z)
+RC=1
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=6569
+POLYC_TOOLS_TRACKED_PASSES=6562
+STATUS=FAIL
+NEW_VIOLATIONS_INTRODUCED_BY_THIS_ACT=0
+F_NO_PYTHON_STATUS=FAIL_KNOWN_BASELINE (the 12 historical violations are
+unchanged; this ACT adds no Python source, no Python shebang and no
+Python invocation)
+
+--------------------------------------------------------------------------
+F-POLYC-TOOLS -- UNAVAILABLE, NOT GREENWASHED
+--------------------------------------------------------------------------
+AUTHORITATIVE_CHECKER=tools/factory/factory-polyc-tools-check.HC
+CHECKER_EXISTS=NO (the path does not exist in this tree)
+CHECKER_RUNS=NO
+F_POLYC_TOOLS_STATUS=UNAVAILABLE
+NOTE=The AGENTS.md pointer records the contract; the checker has NOT
+landed and the invariant is NOT enforced. This ACT does not land it
+(that is out of this ACT's authorized scope) and does not claim it
+passes.
+
+--------------------------------------------------------------------------
+LEXER07 BROAD CORPUS -- NOT REMEASURED IN THIS ACT
+--------------------------------------------------------------------------
+LEXER07_BROAD_STATUS=NOT_REMEASURED
+HISTORICAL_IDENTITY=FAIL_KNOWN_BASELINE, 15 S0 failure identities,
+  failure-identity MD5 7ee761440de83552e751e3c3976c1683
+NOTE=This ACT is a contract-correction ACT. It neither runs the broad
+  corpus nor modifies any lexer, so the historical identity is carried
+  forward unchanged and explicitly marked NOT_REMEASURED.
+
+--------------------------------------------------------------------------
+CROSS-TARGET PREFIX -- NOT_REMEASURED IN THIS ACT
+--------------------------------------------------------------------------
+CROSS_TARGET_PREFIX_STATUS=NOT_REMEASURED
+HISTORICAL_IDENTITY=the historical cross-target prefix status is
+  carried forward unchanged. This ACT changes no target backend and
+  no cross-target rule.
+
+--------------------------------------------------------------------------
+THE SHARED-SCRATCH RACE
+--------------------------------------------------------------------------
+/tmp/holyc-asm.s race=OPEN (known, pre-existing, unchanged)
+NOTE=Every compiler invocation in this ACT was SERIALIZED, and every
+  run used a stable TMPDIR, so no observed failure in this ACT is
+  attributable to this race. A failure caused by a DISAPPEARING
+  SANDBOX TMPDIR would be reported separately from this race; no such
+  failure occurred in this ACT.

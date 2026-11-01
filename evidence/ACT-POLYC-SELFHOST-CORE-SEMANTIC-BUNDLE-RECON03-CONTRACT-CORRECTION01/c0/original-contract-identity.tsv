@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=original-contract-identity
+#
+# THE HISTORICAL RECON03 CONTRACT, BOUND TO GIT OBJECTS.
+#
+# The contract was reported to carry SHA-256
+# 77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681.
+# That value was RE-DERIVED from the live Git blob. It was NEVER
+# altered to make the assertion true.
+#
+# The contract's blob CHANGED between RECON03's CLOSE and this ACT's
+# entry, because one of the two ordinary post-CLOSE commits edited it.
+# BOTH versions are recorded. No history is erased.
+#
+artifact	git_blob_oid_at_RECON03_CLOSE	git_blob_oid_at_entry	sha256_at_entry	identity_verdict
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md	2cc39dc93eaa06d57b17cbb30a5dc121b1b7801b	341d7394858aff9ca1747305333db8251cce37d9	77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681	REPORTED_VALUE_CONFIRMED against the live blob
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.sha256	(not separately frozen at CLOSE)	(see below)	(see below)	the sidecar is INTACT and unchanged by this ACT
+#
+# ---------------------------------------------------------------------------
+# THE PUBLISHED SIDECAR, AS IT STANDS AT ENTRY
+#
+# The sidecar's own token is the recorded contract digest. It was read,
+# not written. This ACT does not modify it.
+#
+sidecar_path	recorded_token	agrees_with_live_blob
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.sha256	contract_sha256=77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681	YES
+#
+# ---------------------------------------------------------------------------
+# THE HISTORICAL SOURCE BLOB
+#
+item	value	source_of_measurement
+SOURCE_PATH	src/aarch64.c
+SOURCE_BLOB_OID	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	git rev-parse HEAD:src/aarch64.c
+SOURCE_BLOB_BYTES	101705	git cat-file -p HEAD:src/aarch64.c | wc -c
+SOURCE_BLOB_SHA256	98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d	shasum -a 256 over the blob bytes
+REPORTED_OID_MATCHES	YES	the ACT and IMPLEMENT02 both reported 6a53ac8f...
+REPORTED_BYTES_MATCHES	YES	the ACT and IMPLEMENT02 both reported 101705
+RANGE_CONVENTION	zero-based half-open [start,end) over the blob bytes
+#
+# ---------------------------------------------------------------------------
+# THE HISTORICAL VERDICTS, WHICH THIS ACT DOES NOT RELABEL
+#
+act	verdict	trailer_phase	source
+ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03	PASS	CLOSE	git log --format trailers
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02	HALT	CLOSE	git log --format trailers
+HISTORICAL_RECON03_VERDICT_UNCHANGED=YES
+HISTORICAL_IMPLEMENT02_VERDICT_UNCHANGED=YES
+ABI_A64_CMP_CC_1_STATUS=historically contradictory; INVALID FOR IMPLEMENTATION; immutable history
