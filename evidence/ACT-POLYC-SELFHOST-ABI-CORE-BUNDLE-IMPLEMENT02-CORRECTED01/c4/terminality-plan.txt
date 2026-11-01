@@ -1,0 +1,166 @@
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+PHASE: C4-CLOSE
+EVIDENCE_KIND: terminality-plan
+
+DOCUMENT_KIND: PLAN
+THIS IS NOT A RECEIPT.
+
+This document is the PLAN for the external, read-only, post-CLOSE
+terminality audit. It is written BEFORE the CLOSE commit exists and it
+is NOT backdated. The actual receipt is created AFTER the CLOSE commit,
+OUTSIDE the Git tree, bound to the exact terminal HEAD and TREE, and it
+is the ONLY thing that discharges AC50.
+
+--------------------------------------------------------------------------
+WHAT THE RECEIPT MUST VERIFY
+--------------------------------------------------------------------------
+The receipt is produced by an auditor that runs the following checks
+against the terminal repository state. The receipt records the OBSERVED
+value of each check and the command that produced it.
+
+1. THE TERMINAL IDENTITY
+   - git rev-parse HEAD          (the terminal HEAD)
+   - git rev-parse HEAD^{tree}   (the terminal TREE)
+   - git branch --show-current   (the branch)
+   - git replace -l              (must be EMPTY)
+   The receipt's HEAD and TREE must equal the CLOSE commit's HEAD and
+   TREE. A receipt bound to a different HEAD or TREE is a
+   MISBOUND receipt and discharges NOTHING.
+
+2. THE FACTORY RANGE
+   - git log --format='%H %(trailers:key=ACT,key=ACT-Phase,key=ACT-Verdict,valueonly)'
+     over the contiguous backwards run carrying this ACT's id.
+   - sh scripts/quality/factory-v2-range-check.sh <ACT-ID> HEAD
+   Every commit must carry ACT=<id> with a valid ACT-Phase, the FIRST
+   must be RED, exactly one CLOSE must exist and it must be the LAST,
+   and no commit after the CLOSE may carry the ACT id.
+
+3. THE DISPOSABLE MUTANT WORKTREES
+   - git worktree list
+   Every worktree created by this ACT's mutation experiments
+   (/tmp/a64cc-mut-for, /tmp/a64cc-mut-inv, /tmp/a64cc-cset,
+   /tmp/a64cc-dorm-for, /tmp/a64cc-dorm-inv) must be REMOVED before
+   the receipt is taken, and the receipt must record the remaining
+   worktree list.
+
+4. THE PRODUCTION SOURCE AND LINK GRAPH
+   - git diff --stat <ENTRY_HEAD> -- src/ tools/bootstrap/ Makefile
+       src/CMakeLists.txt tests/ scripts/
+   Exactly FOUR paths may differ, all inside the ACT's authorised list:
+   Makefile, src/CMakeLists.txt, src/aarch64.c and
+   tools/bootstrap/selfhost-a64-cmp-cc-v2.HC.
+   - nm ./hcc | grep _AbiA64Cc
+   Both _AbiA64CcForV2 and _AbiA64CcInvForV2 must be DEFINED, and the
+   forbidden third export must be ABSENT.
+   - build/CMakeFiles/hcc.dir/link.txt must name
+     build/a64-cmp-cc-subject.o as a real link input.
+   - the selector-ON aarch64.c.o must carry ZERO of the twelve legacy
+     condition-suffix literals, and the selector-OFF object must carry
+     ALL TWELVE.
+
+
+6. THE TWENTY-FOUR NEGATIVE CONTROLS
+   Every control must have fired with ITS OWN named reason in a real
+   pristine-to-adverse-to-restored cycle, and every restoration must be
+   byte-identical.
+
+7. THE ACCEPTANCE LEDGER
+   AC01..AC49 must be PASS and AC50 must be DEFERRED in the COMMITTED
+   ledger. The receipt discharges AC50 by observing the terminal state;
+   it does NOT edit the committed ledger.
+
+8. THE TWO ROSTERS
+   All TWELVE PAIR comparisons and all TWELVE FROZEN obligations must
+   be discharged, and the two rosters must remain DISTINCT.
+
+9. THE CONSERVATION AND THE SCOPE
+   The parser at 376/376 over 90 blocks with the ordered sequence MD5
+   b6f117eb1386ca80f81bc06226e2a741, the direct lexers at 89/89,
+   45/45 and 23/23, the historical F14 freeze with its ONE accounted
+   delta, the append-only suite at 11/11, the closure-status check at
+   59/59, gate-fast and the serialized gate-push with all seven checks,
+   and patch hygiene.
+
+10. NO CONTINUATION AND NO PUSH
+    - git log --oneline <CLOSE>..HEAD   (must be EMPTY)
+    - git status --porcelain             (must be EMPTY)
+    - the receipt must record that NO push was performed.
+
+--------------------------------------------------------------------------
+THE KNOWN DEVIATIONS THE RECEIPT MUST RECORD HONESTLY
+--------------------------------------------------------------------------
+These are NOT hidden by the receipt. The receipt records them verbatim.
+
+DEVIATION-01  THE COMMIT-PHASE SHAPE
+  The ACT's section 6 states the expected successful range as
+  "C0 RED -> C1 EVIDENCE -> C2 IMPL -> C3 EVIDENCE -> C4 CLOSE (five
+  commits)". The ACT's ACTUAL committed range is RED, IMPL, EVIDENCE,
+  CLOSE: the C1 EVIDENCE phase's evidence files were committed
+  together with the C3 EVIDENCE phase's files in the C3 commit, so the
+  C1 phase has NO commit of its own.
+  WHY IT WAS NOT REPAIRED: the repository's authoritative history is
+  append-only from baf5dbd77cf89330699685dffd932c54031c815c, and a
+  commit that already exists is immutable evidence. Inserting a C1
+  commit BEFORE the C2 IMPL commit would require rewriting history,
+  which the append-only invariant and the pre-push hook forbid.
+  WHY IT IS NOT A HALT: the canonical Factory-v2 range checker, which
+  the ACT names as its authority, has NO numeric commit-count rule and
+  enforces only that the range be contiguous, that every commit carry
+  the ACT id with a valid phase, that FIRST be RED, that exactly one
+  CLOSE exist and be last, and that no commit after CLOSE carry the
+  id. The ACT's committed range satisfies every one of those rules,
+  and every commit's ACT-Phase trailer honestly classifies what that
+  commit actually contains: the C3 commit contains evidence and is
+  classified EVIDENCE.
+  WHAT THE RECEIPT MUST DO: record the ACTUAL phase sequence, the
+  ACTUAL commit count, and this deviation. It must NOT report five
+  commits, because five commits were not made.
+
+DEVIATION-02  THE PREDECESSOR'S F14 FREEZE HAS ONE ACCOUNTED DELTA
+  The predecessor's 523-path freeze records
+  docs/factory/act-handoff-map.tsv at its C3 digest, and the
+  predecessor's OWN C4 added exactly one handoff-map row to that file.
+  The delta is one insertion and zero deletions, introduced by the
+  entry commit 23546c7c, and this ACT never touched that path. The
+  strict result is 522 of 523; the authorised-exception result is
+  522 of 523 plus this ACT's own ONE authorised append, which is
+  recorded separately and is NOT folded into the strict figure.
+
+DEVIATION-03  THE HISTORICAL NON-GREEN BASELINES
+  F-NO-PYTHON is FAIL at the SAME 12 paths with zero new violations.
+  F-POLYC-TOOLS is UNAVAILABLE because the canonical checker does not
+  exist. The cross-target baseline is NOT_REMEASURED with its
+  historical FAIL_ENVIRONMENT_PREFIX identity preserved. None of these
+  is relabelled as a PASS.
+
+DEVIATION-04  THE COMPARATOR'S ONE INTENTIONAL NARROWING
+  The corrected ABI normalises is_float to {0,1} while the legacy C
+  table tested its truthiness. The G0 oracle therefore rejects an
+  is_float outside {0,1} with NULL, so that the G0 stream and the
+  G1..G3 streams are compared over the SAME admissible domain. The
+  narrowing is the corrected contract's, and the fixture contract's
+  OUT_OF_DOMAIN_IS_FLOAT partition expects (null) accordingly.
+
+--------------------------------------------------------------------------
+THE RECEIPT'S SHAPE
+--------------------------------------------------------------------------
+The receipt is a plain-text file OUTSIDE the Git tree. It states the
+ACT id, the terminal HEAD and TREE it is bound to, the date and the
+auditor, and then one line per check with the command, the exit code
+and the observed output. It ends with an explicit statement of which
+acceptance criteria it discharges.
+
+It is NEVER committed. No ordinary compensating commit is made after
+the CLOSE. The receipt is not backdated and it does not claim the
+SHA of a commit that contains it.
+
+--------------------------------------------------------------------------
+THE TERMINALITY GATE
+--------------------------------------------------------------------------
+The receipt exists and is bound to the exact terminal HEAD and TREE
+=> AC50 is discharged and the ACT is TERMINAL.
+
+The receipt does NOT exist, or is bound to a different HEAD or TREE
+=> AC50 stays DEFERRED, the ACT is NOT terminal, and the correct
+   operator action is to re-run the audit against the terminal state,
+   NOT to amend the CLOSE and NOT to fabricate a receipt.

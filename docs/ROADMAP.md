@@ -8945,3 +8945,78 @@ SLICE10_AUTHORIZED     = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01/`.
+
+## ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01 — PASS (2026-11-02)
+
+The corrected `ABI-A64-CMP-CC-2` contract is **implemented**: exactly
+**two** of the three selected AArch64 comparison-condition-code
+decisions are transferred to a genuinely compiled PolyC component,
+`tools/bootstrap/selfhost-a64-cmp-cc-v2.HC`, which exports **exactly
+two** public semantic functions (`_AbiA64CcForV2`, `_AbiA64CcInvForV2`)
+and **no third export of any signature**. The third site,
+`aarch64EmitCSet`, is **not** migrated: its whole 152-byte definition
+carries zero switches, zero cases and zero `IR_CMP` references, so it
+owns no condition selection of its own and remains a **C-owned
+mechanical adapter** whose 152 bytes are unchanged.
+
+The migration is proven by **measurement**, not by assertion:
+
+* the legacy C comparison tables are **compiled out** of the
+  selector-ON production object (**0 of 12** condition-suffix
+  literals) and are **live** in the selector-OFF object (**12 of 12**),
+  while the fixed `cset` format string survives in **both**;
+* all **four** semantic streams — the verbatim-extracted legacy C
+  oracle and three independently-produced compiled PolyC subjects —
+  are **byte-identical** over the 220-row source-derived fixture set,
+  with **zero** mismatches against the contract;
+* the **PAIR** roster (12 ordered all-direction comparisons) and the
+  **FROZEN** roster (12 heterogeneous obligations) are **distinct** and
+  both discharged **12/12**;
+* the **24** negative controls each fire with **their own named
+  reason** and restore byte-identically; the independent comparator
+  rejects all **9** adverse inputs; the **14** verifier anti-selftests
+  pass, including four false-positive controls;
+* the **FOR** and **INV** PolyC-source mutations each move real
+  assembly **and** real program behaviour and then restore, and the
+  C-only mutations prove the legacy tables are live OFF and **dormant**
+  ON.
+
+The production object graph is **recomputed** by the compiled PolyC
+graph verifier at 52 nodes / **135** mandatory edges / 34 SCCs /
+largest 19, with `NEW_PROVEN_GRAPH_CUTS=0`; the 135 is the value the
+verifier itself prints, and the predecessor's narrative `134` was a
+transcription slip. The authority census reaches **exactly 15**, each
+defined in a subject object the production link line consumes, present
+in the linked `./hcc` and imported by **exactly one** production C
+object. The three causal counts are kept strictly apart: 12 at
+IMPLEMENT01 close, 13 correction-inclusive, 15 structurally active.
+
+Every baseline is conserved: parser 376/376 over 90 blocks with the
+ordered sequence MD5 `b6f117eb1386ca80f81bc06226e2a741`, direct
+lexers 89/89, 45/45 and 23/23, `gate-fast` PASS, the serialized
+`gate-push` PASS with all seven checks, append-only 11/11, closure
+status 59/59, patch hygiene clean, and exactly **four** changed
+production paths, all authorised. `F-NO-PYTHON` remains honestly FAIL
+at the **same** 12 paths with zero new violations, `F-POLYC-TOOLS`
+remains honestly UNAVAILABLE because its canonical checker does not
+exist, and the cross-target baseline remains NOT_REMEASURED with its
+historical `FAIL_ENVIRONMENT_PREFIX` identity preserved. The
+predecessor's F14 freeze re-verifies at **522 of 523** byte-identical;
+the one delta is the predecessor's **own** C4 handoff-map row, which
+this ACT never touched.
+
+The acceptance ledger closes at **AC01…AC49 PASS** and **AC50
+DEFERRED**: the external read-only terminality receipt is created
+after the CLOSE, outside the repository, bound to the exact terminal
+HEAD and TREE, and is never backdated. The plan for it is tracked at
+`evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/c4/terminality-plan.txt`
+and is explicitly marked PLAN.
+
+```text
+NEXT_TARGET_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED   = NO
+SLICE10_AUTHORIZED     = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.md`
+and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/`.
