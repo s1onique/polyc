@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=negative-controls-executed
+#
+# THE TWENTY-FOUR FROZEN NEGATIVE CONTROLS, EACH EXECUTED AS A FULL
+# PRISTINE=SILENT -> ADVERSE=FIRED(reason) -> RESTORED=SILENT CYCLE.
+#
+# Each control has its own physical execution ID, independently
+# derived adverse material, a reason-specific detector, the restored
+# material digest and an absence-of-vacuity assertion.
+#
+# nc_id	adverse_case	detector_mode	expected_reason	pristine_result	adverse_result	adverse_reason	restored_result	restored_material_sha256	absence_of_vacuity
+NC01	the recorded HEAD replaced by a wrong value	entry-identity	ENTRY_IDENTITY_MISMATCH	OK|-	FAIL|ENTRY_IDENTITY_MISMATCH	OK|-	b55a44d7da7db1841dd1c2d2e572c3df6ad9ecf1e7dde4e4cefa6c9ff71d3c4a	the detector recomputes the recorded value and compares it with the expected HEAD; it is not a status echo
+NC02	a frozen predecessor evidence blob replaced by a tampered copy	f14-freeze	HISTORICAL_F14_REWRITE	OK|-	FAIL|HISTORICAL_F14_REWRITE	OK|-	bb521e45bcd5768b770bac438581138ea54355616dfb054b311a8d2f73135de8	the detector recomputes each frozen path's SHA-256 from the file ACTUAL bytes
+NC03	the C1 partial digest presented as the whole FOR definition	partial-as-whole	PARTIAL_SOURCE_RANGE_AS_WHOLE	OK|-	FAIL|PARTIAL_SOURCE_RANGE_AS_WHOLE	OK|-	98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d	the detector recomputes the whole digest and then checks every strict prefix; the adverse digest is a real prefix digest
+NC04	the whole range extended by ONE byte	source-range	SOURCE_BOUNDARY_OR_BLOB_MISMATCH	OK|-	FAIL|SOURCE_BOUNDARY_OR_BLOB_MISMATCH	OK|-	98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d	the detector recomputes the digest of the exact interval and of the one-byte extended and one-byte truncated intervals
+NC05	the inert v1 CSET emitter export reintroduced as a declaration	third-export	FORBIDDEN_THIRD_EXPORT	OK|-	FAIL|FORBIDDEN_THIRD_EXPORT	OK|-	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601	the detector scans the ABI for a forbidden export DECLARATION and also requires both authorised exports to be present
+NC06	the CSET site counted as an independent semantic authority	cset-double-count	CSET_SEMANTIC_DOUBLE_COUNT	OK|-	FAIL|CSET_SEMANTIC_DOUBLE_COUNT	OK|-	286e8490418cf1ad384c4c2445299dd16f0696b5ea2a9db9bdf7345763b4b686	the detector parses the authority table and rejects a CSET row whose counts_as_authority is YES
+NC07	the zero discriminant declared to be an error status	abi-zero	ABI_ZERO_INVALID_MISCLASSIFIED	OK|-	FAIL|ABI_ZERO_INVALID_MISCLASSIFIED	OK|-	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601	the detector requires the ABI to name IR_CMP_EQ as VALID and to forbid a numeric-zero error status
+NC08	the no-default-suffix guarantee withdrawn from the ABI	fail-closed	INVALID_SUFFIX_NOT_FAIL_CLOSED	OK|-	FAIL|INVALID_SUFFIX_NOT_FAIL_CLOSED	OK|-	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601	the detector requires the ABI to state that unsupported kinds yield NULL and that no default suffix exists
+NC09	the ABI permitting the host to free the borrowed result	borrowed-lifetime	BORROWED_LITERAL_LIFETIME	OK|-	FAIL|BORROWED_LITERAL_LIFETIME	OK|-	a98686bd613804c4bc04cbdc56cfd52d98ce8df16130c0a0e372b04f855cb601	the detector requires the ABI to state BORROWED, the MUST NOT free rule and the NUL-termination
+NC10	an expected symbol that the object does not define	symbol-binding	ABI_SYMBOL_BINDING_MISMATCH	OK|-	FAIL|ABI_SYMBOL_BINDING_MISMATCH	OK|-	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	the detector reads the object's OWN nm symbol table and requires a global text definition
+NC11	the selector-ON production object asserted to be the clean C oracle	oracle-contamination	C_ONLY_A64_ORACLE_CONTAMINATION	OK|-	FAIL|C_ONLY_A64_ORACLE_CONTAMINATION	OK|-	461c6a25790fa4961e2043ddd35f3b695cd9b7e7493a0b53b18f686a8dbf693a	the detector runs the REAL nm -u over the object and rejects either A64 import
+NC12	the selector-OFF G0 oracle object asserted to carry NO legacy C table	legacy-live	LEGACY_C_ORACLE_NOT_LIVE	OK|-	FAIL|LEGACY_C_ORACLE_NOT_LIVE	OK|-	461c6a25790fa4961e2043ddd35f3b695cd9b7e7493a0b53b18f686a8dbf693a	the detector reads the object's OWN strings; the LIVE expectation requires the legacy literal to be present
+NC13	the subject object asserted to define a symbol it does not	subject-producer	MISSING_EFFECTIVE_SUBJECT_PRODUCER	OK|-	FAIL|MISSING_EFFECTIVE_SUBJECT_PRODUCER	OK|-	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	the detector reads the object's OWN nm symbol table and requires the definition
+NC14	an ignored Error 127 from a lost shell continuation	fail-open	CONFIGURATION_FAIL_OPEN	OK|-	FAIL|CONFIGURATION_FAIL_OPEN	OK|-	b37b78827255f9588ddc40540a9d785f417261843c53fb7a29a1738e617a4350	the detector rejects a log carrying a command-not-found marker and requires the expected marker to be present
+NC15	a subject asserted to be imported by a caller that does not import it	dormant-subject	LINKED_BUT_DORMANT_POLYC_SUBJECT	OK|-	FAIL|LINKED_BUT_DORMANT_POLYC_SUBJECT	OK|-	df6cad0de086530d1809f6b3d08f91f6c04231e00a49c18b3b5b3a7cc3352e6d	the detector runs the REAL nm -u over the CALLER object and requires the import
+NC16	the selector-ON production object asserted to still carry the legacy C table	legacy-live	LEGACY_C_AUTHORITY_ACTIVE	OK|-	FAIL|LEGACY_C_AUTHORITY_ACTIVE	OK|-	df6cad0de086530d1809f6b3d08f91f6c04231e00a49c18b3b5b3a7cc3352e6d	the detector reads the object's OWN strings; the DORMANT expectation requires the legacy literal to be ABSENT
+NC17	a PolyC producer digest aliased to another producer	producer-alias	PRODUCER_ALIAS_OR_SELF_COMPARISON	OK|-	FAIL|PRODUCER_ALIAS_OR_SELF_COMPARISON	OK|-	0c8e504b7fb883865d7ac3f6430fc3666515e6f5f9532a8425abbf7ac7b99441	the detector parses the producer table and rejects two rows with the SAME digest
+NC18	the PAIR roster replaced by a second copy of the FROZEN roster	two-rosters	TWO_ROSTERS_CONFLATED	OK|-	FAIL|TWO_ROSTERS_CONFLATED	OK|-	235218950dd95c647830bdd4537b55a72969b94e40323e16a4beb36fcc912089	the detector requires a roster column, exactly 12 PAIR members, exactly 12 FROZEN members and NO shared id
+NC19	a single fixture row deleted from the derived fixture set	fixture-rows	FIXTURE_DIFFERENTIAL_NOT_SENSITIVE	OK|-	FAIL|FIXTURE_DIFFERENTIAL_NOT_SENSITIVE	OK|-	cd1a75fe59c2a330c832ce965fd07138c0c14c9624e5de7c7764375ea3d0832b	the detector recomputes the row count, requires every id to be UNIQUE and requires both the FOR and the INV role partitions
+NC20	the FOR causal evidence claimed for the INV site	wrong-site	WRONG_SITE_CAUSAL_ATTRIBUTION	OK|-	FAIL|WRONG_SITE_CAUSAL_ATTRIBUTION	OK|-	b79ff812730763b27fff3d290cd9efc18875a8401bf8896ff7213881b6ac9e65	the detector requires the evidence file to name the REQUIRED site id
+NC21	the FOR dormancy evidence claimed for the INV site	dormant-counter	C_DORMANCY_ANTI_CONTROL_FAILURE	OK|-	FAIL|C_DORMANCY_ANTI_CONTROL_FAILURE	OK|-	ff4e8a6478db4c55cd139aaa47b358563be08b95e678d458e60f77a87d38a53d	the detector requires the evidence to name the site id AND to record both the OFF and the ON observations
+NC22	the CSET adapter's fixed format changed	cset-preserved	CSET_ADAPTER_NOT_PRESERVED	OK|-	FAIL|CSET_ADAPTER_NOT_PRESERVED	OK|-	f7e18406b2193163a3eaa3d1d35c4a1d4d0afc427c91af13d3ecba6bc7fe371a	the detector extracts the named function's WHOLE body from the live source and requires the token
+NC23	an acceptance id dropped from the ledger	ac-ledger	LEDGER_FALSE_PASS	OK|-	FAIL|LEDGER_FALSE_PASS	OK|-	a91d688373e468612c3f59973202b00a19cfee4e73f5e847a69498d16a5a91f4	the detector rejects a MISSING id, a DUPLICATED id, an UNKNOWN id, an illegal status and a PASS row with no evidence reference
+NC24	AC50 claimed PASS before the external receipt exists	terminality	PREMATURE_OR_MISBOUND_TERMINALITY	OK|-	FAIL|PREMATURE_OR_MISBOUND_TERMINALITY	OK|-	9d10ce0690685921a54cdb515b07d669f8cd4740cad0360786dd1a9ca7c88bd8	the detector requires an AC50 PASS to carry an external-receipt reference bound to the exact expected HEAD and TREE
+
+NC_COUNT=24
+NC_PASS=24
+NC_FAIL=0
+NC_UNPROVEN=0
+NC_NOT_RUN=0
+NC_DISTINCT_REASON_TOKENS=24
+NC_REASON_TOKENS=ENTRY_IDENTITY_MISMATCH;HISTORICAL_F14_REWRITE;PARTIAL_SOURCE_RANGE_AS_WHOLE;SOURCE_BOUNDARY_OR_BLOB_MISMATCH;FORBIDDEN_THIRD_EXPORT;CSET_SEMANTIC_DOUBLE_COUNT;ABI_ZERO_INVALID_MISCLASSIFIED;INVALID_SUFFIX_NOT_FAIL_CLOSED;BORROWED_LITERAL_LIFETIME;ABI_SYMBOL_BINDING_MISMATCH;C_ONLY_A64_ORACLE_CONTAMINATION;LEGACY_C_ORACLE_NOT_LIVE;MISSING_EFFECTIVE_SUBJECT_PRODUCER;CONFIGURATION_FAIL_OPEN;LINKED_BUT_DORMANT_POLYC_SUBJECT;LEGACY_C_AUTHORITY_ACTIVE;PRODUCER_ALIAS_OR_SELF_COMPARISON;TWO_ROSTERS_CONFLATED;FIXTURE_DIFFERENTIAL_NOT_SENSITIVE;WRONG_SITE_CAUSAL_ATTRIBUTION;C_DORMANCY_ANTI_CONTROL_FAILURE;CSET_ADAPTER_NOT_PRESERVED;LEDGER_FALSE_PASS;PREMATURE_OR_MISBOUND_TERMINALITY
+NC_VACUITY=NONE (every control alters a real source-derived fact, a real object, a real ledger or a real build graph, and the detector RECOMPUTES that fact; no control edits a status word)
+NC_DETECTOR=build/a64-cmp-cc-red-verify (compiled PolyC, linked against the real libtos)
+NC_DETECTOR_SOURCE_SHA256=c447c1a3b49c2fe64486659837622263f67597ddb32a32fb4e79a0f0f0aab5d2

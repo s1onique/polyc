@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=effective-build-prerequisites
+#
+# THE EFFECTIVE BUILD PREREQUISITES AND THE FAIL-CLOSED BEHAVIOUR.
+#
+# Every prerequisite below is an EFFECTIVE prerequisite of the
+# production build, not a nominal one: if it is missing, the build
+# FAILS LOUDLY and NAMES the exact missing thing.
+#
+# field	value
+SUBJECT_SOURCE	tools/bootstrap/selfhost-a64-cmp-cc-v2.HC
+SUBJECT_OBJECT	build/a64-cmp-cc-subject.o
+SUBJECT_PRODUCER	build/host-stage0/hcc
+SUBJECT_PREFIX	build/bootstrap-prefix
+SUBJECT_PREFIX_HEADER	build/bootstrap-prefix/include/tos.HH
+SELECTOR	HCC_USE_SELFHOST_A64_CMP_CC
+SELECTOR_DEFAULT	OFF (a bare configure never depends on a subject object that may not exist)
+PRODUCTION_SELECTOR_VALUE	ON (the production build turns it ON explicitly)
+THE_OPTION_REACHED_THE_CONFIGURE	YES (HCC_USE_SELFHOST_A64_CMP_CC:BOOL=ON in build/CMakeCache.txt)
+
+# --- THE MAKEFILE SUBJECT RULE ---
+# The rule ALWAYS removes a stale object first, so a stale object can
+# never masquerade as a freshly produced one.
+MAKE_RULE_REMOVES_A_STALE_OBJECT	YES
+MAKE_RULE_VERIFIES_BOTH_EXPORTED_SYMBOLS	YES (_AbiA64CcForV2 and _AbiA64CcInvForV2)
+MAKE_RULE_REJECTS_A_FORBIDDEN_THIRD_EXPORT	YES (the exact forbidden name is named in the error message)
+MAKE_RULE_PRODUCER_IS_THE_DIGEST_BOUND_STAGE0	YES
+MAKE_RULE_PREFIX_IS_THE_BOOTSTRAP_PREFIX	YES
+
+# --- THE CMAKE FAIL-CLOSED BEHAVIOUR ---
+CMAKE_SCHEDULES_THE_SUBJECT_THROUGH_THE_BOUND_PRODUCER	YES
+CMAKE_ON_A_MISSING_SUBJECT	FAILS AT CONFIGURE TIME with a hard error naming the exact command
+CMAKE_ON_A_MISSING_PRODUCER	FAILS AT CONFIGURE TIME with a hard error naming the exact command
+CMAKE_ON_A_MISSING_SOURCE	FAILS AT CONFIGURE TIME with a hard error naming the exact command
+CMAKE_NEVER_FALLS_BACK_TO_ANOTHER_PRODUCER	YES
+CMAKE_NEVER_FALLS_BACK_TO_A_C_ORACLE	YES
+
+# --- THE OBSERVED FAIL-CLOSED EVIDENCE ---
+THE_MISSING_SUBJECT_PRODUCES_A_NAMED_ERROR	YES
+THE_MISSING_PRODUCER_PRODUCES_A_NAMED_ERROR	YES
+THE_MISSING_SOURCE_PRODUCES_A_NAMED_ERROR	YES
+THE_COMMAND_127_CASEOF_A_MISSING_PREFIX	VERIFIED (the shell reports 127 for a command that cannot be found, and the build's own error names the missing path)
+NO_FAIL_OPEN_PATH_EXISTS	YES (there is no path on which a missing prerequisite silently produces a build with a DIFFERENT decision)

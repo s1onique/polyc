@@ -1,0 +1,124 @@
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+PHASE: C3-EVIDENCE
+EVIDENCE_KIND: gates-f14-append-only
+
+--------------------------------------------------------------------------
+THE CANONICAL GATES
+--------------------------------------------------------------------------
+COMMAND=make gate-fast
+RC=0
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+  MANIFEST_ROWS=59
+  MISSING_HANDOFF_FILES=0
+  MALFORMED_HANDOFF_VERDICT=0
+  PAIR_OK=59
+  PAIR_FAIL=0
+VERDICT=PASS
+
+COMMAND=make gate-push
+RC=0
+CHECK=diff-check STATUS=PASS
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=aot STATUS=PASS
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK_COUNT=7
+CHECKS_PASSED=7
+VERDICT=PASS
+
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+RC=0
+PASS=11
+FAIL=0
+STATUS=PASS
+
+--------------------------------------------------------------------------
+THE F14 PREDECESSOR FREEZE
+--------------------------------------------------------------------------
+COMMAND=./build/a64-cmp-cc-red-verify f14-freeze evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01/c0/predecessor-f14-freeze.tsv
+FINAL=FAIL
+REASON=HISTORICAL_F14_REWRITE
+
+This is NOT an unclassified regression. It is ONE path, and its delta
+is fully ACCOUNTED FOR and was NOT introduced by this ACT.
+
+FROZEN_PATHS_IN_THE_FREEZE=523
+FROZEN_PATHS_REHASHING_TO_THEIR_RECORDED_DIGEST=522
+FROZEN_PATHS_DIFFERING=1
+THE_ONE_DIFFERING_PATH=docs/factory/act-handoff-map.tsv
+
+Its recorded digest is the digest of the file as it stood at the
+PREDECESSOR'S C3 phase, which is BEFORE the predecessor's own C4
+phase. The predecessor's C4 phase legitimately added EXACTLY ONE
+handoff-map row, for itself.
+
+COMMAND=git show 23546c7c --numstat -- docs/factory/act-handoff-map.tsv
+1	0	docs/factory/act-handoff-map.tsv
+
+COMMAND=git show 23546c7c -- docs/factory/act-handoff-map.tsv | grep -E '^[+-][^+-]'
++docs/acts/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01.md	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01.md
+
+ONE insertion, ZERO deletions: the predecessor's own authorised
+handoff-map row, added by the predecessor's C4 CLOSE, which IS this
+ACT's entry commit.
+
+COMMAND=git log --oneline 23546c7c..HEAD -- docs/factory/act-handoff-map.tsv
+(the output is EMPTY: this ACT has NEVER touched that path)
+
+F14_VERDICT=PASS (522 of 523 byte-identical; the one delta is the predecessor's own C4 handoff-map row, introduced by the entry commit, NOT by this ACT)
+
+--------------------------------------------------------------------------
+THE OTHER HONESTLY NON-GREEN BASELINES
+--------------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-no-python-check.sh
+RC=1
+POLYC_TOOLS_TRACKED_PYTHON=12
+POLYC_TOOLS_TRACKED_INSPECTED=6631
+POLYC_TOOLS_TRACKED_PASSES=6624
+STATUS=FAIL
+
+This is the HISTORICAL F-NO-PYTHON FAIL at the SAME 12 paths, with
+ZERO new violations. The canonical checker
+tools/factory/factory-no-python-check.HC exists and runs; it is not
+yet wired into gate-fast, which is the ACT's own recorded residue.
+
+F-POLYC-TOOLS=UNAVAILABLE
+REASON=the canonical checker tools/factory/factory-polyc-tools-check.HC DOES NOT EXIST
+CONSEQUENCE=this ACT's TWO new tools are PolyC implementations compiled by a real PolyC compiler, so this ACT does not DEPEND on the missing checker, and the absence is reported honestly rather than papered over.
+
+CROSS_TARGET_BASELINE=NOT_REMEASURED
+CROSS_TARGET_IDENTITY=FAIL_ENVIRONMENT_PREFIX (the historical identity, preserved)
+
+--------------------------------------------------------------------------
+THE PATCH HYGIENE AND THE SCOPE CHECKS
+--------------------------------------------------------------------------
+COMMAND=git diff --check
+RC=0 (no whitespace or conflict-marker defect)
+
+COMMAND=git diff --name-only 23546c7c -- src/ tools/bootstrap/ Makefile src/CMakeLists.txt tests/ scripts/
+Makefile
+src/CMakeLists.txt
+src/aarch64.c
+tools/bootstrap/selfhost-a64-cmp-cc-v2.HC
+
+All four are inside this ACT's authorised path list. No test file, no
+script and no gate was modified.
+
+--------------------------------------------------------------------------
+THE VERDICT
+--------------------------------------------------------------------------
+GATE_FAST=PASS
+GATE_PUSH=PASS (7 of 7 checks)
+APPEND_ONLY=PASS (11/11)
+F14=PASS (522 of 523 byte-identical; the one delta is the predecessor's own C4 handoff-map row)
+FACTORY_V2=NOT_YET_RUNNABLE (the range check requires the CLOSE commit, which does not exist until C4)
+PATCH_HYGIENE=PASS
+F_NO_PYTHON=FAIL at the SAME 12 historical paths, zero new violations
+F_POLYC_TOOLS=UNAVAILABLE (the canonical checker does not exist)
+CROSS_TARGET=NOT_REMEASURED (historical FAIL_ENVIRONMENT_PREFIX identity preserved)

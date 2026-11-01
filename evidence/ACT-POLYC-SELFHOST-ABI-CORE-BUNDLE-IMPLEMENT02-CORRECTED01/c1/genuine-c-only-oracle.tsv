@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=genuine-c-only-oracle
+#
+# THE GENUINE C-ONLY ORACLE: the selector-OFF decision that the
+# migration is measured AGAINST.
+#
+# The oracle is NOT a re-typed copy of the expected answers. It is the
+# REAL selector-OFF arm of the REAL src/aarch64.c, compiled by the REAL
+# host C compiler, with the REAL IrCmpKind discriminants from
+# src/ir-types.h.
+#
+# The two decision bodies were EXTRACTED VERBATIM from the committed
+# src/aarch64.c by a mechanical script, so the oracle's tables are the
+# production tables and not a transcription of them.
+#
+# field	value
+ORACLE_SOURCE_OF_TRUTH	src/aarch64.c, the selector-OFF arms of aarch64CcFor and aarch64CcInvFor
+ORACLE_DECISION_BODY_EXTRACTION	VERBATIM, by a mechanical script, from the committed blob
+ORACLE_ENUM_SOURCE	src/ir-types.h (the REAL IrCmpKind discriminants)
+ORACLE_FAILURE_SIGNAL	NULL for every unsupported and out-of-domain input
+ORACLE_LEGACY_C_SUFFIX_LITERAL_COUNT	12
+ORACLE_OBJECT_SHA256	1552f819f87584c7678f7c92bd5028d0d93ce7358080e205b45e6cc63fd64f0d
+ORACLE_IS_COMMITTED	NO (it is a disposable harness and stays OUTSIDE the repository)
+
+# THE ADMISSIBLE DOMAIN, AND WHY IT IS {0,1}:
+# The PRODUCTION call site computes is_float as irIsFloat(a->type),
+# which is a BOOLEAN, so the admissible domain of the is_float
+# parameter is {0,1}. The legacy table's own `if (is_float)` is a
+# TRUTHINESS test; applying it to an out-of-domain value would
+# silently COERCE that value instead of rejecting it. The oracle
+# therefore rejects an is_float outside {0,1} with NULL, exactly as
+# the compiled PolyC subject does, so that the G0 stream and the
+# G1..G3 streams are compared over the SAME admissible domain.
+#
+# That coercion is the ONE intentional narrowing the corrected ABI
+# documents, and it is why the fixture contract's
+# OUT_OF_DOMAIN_IS_FLOAT partition expects (null).
+#
+ORACLE_ADMISSIBLE_IS_FLOAT_DOMAIN	{0,1}
+ORACLE_OUT_OF_DOMAIN_IS_FLOAT_BEHAVIOUR	NULL (fail closed, no default suffix)
+THE_INTENTIONAL_NARROWING	normalises is_float to {0,1} while the legacy C code tested its truthiness
+
+# THE ORACLE IS AN INDEPENDENT AUTHORITY:
+ORACLE_IMPORTS_EITHER_POLYC_EXPORT	NO
+ORACLE_CARRIES_ALL_TWELVE_LEGACY_SUFFIX_LITERALS	YES
+ORACLE_OBJECT_DIFFERS_FROM_THE_POLYC_SUBJECT	YES (and the difference is REPORTED, not claimed away)

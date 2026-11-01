@@ -1,0 +1,79 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=ir-cmp-enum-and-mapping
+#
+# THE LIVE IrCmpKind ENUM AND THE CONDITION-SUFFIX MAPPING.
+#
+# The discriminants are the LIVE ones from src/ir-types.h, not
+# restated from a predecessor. The IR_CMP_EQ == 0 fact is the reason
+# the ABI's failure signal must be a NULL POINTER and not a numeric
+# status: a numeric zero status would collide with the legitimate
+# zero discriminant.
+#
+# field	value
+ENUM_SOURCE	src/ir-types.h
+ENUM_NAME	IrCmpKind
+IR_CMP_INVALID	-1
+IR_CMP_EQ	0
+IR_CMP_NE	1
+IR_CMP_LT	2
+IR_CMP_LE	3
+IR_CMP_GT	4
+IR_CMP_GE	5
+IR_CMP_ULT	6
+IR_CMP_ULE	7
+IR_CMP_UGT	8
+IR_CMP_UGE	9
+IR_CMP_OEQ	10
+IR_CMP_ONE	11
+IR_CMP_OLT	12
+IR_CMP_OLE	13
+IR_CMP_OGT	14
+IR_CMP_OGE	15
+IR_CMP_UNO	16
+IR_CMP_ORD	17
+
+# --- THE FOR MAPPING: the legacy C table, transcribed ---
+kind	name	float_for	float_inv
+-1	IR_CMP_INVALID	(null)	(null)
+0	IR_CMP_EQ	eq	ne
+1	IR_CMP_NE	ne	eq
+2	IR_CMP_LT	lt	ge
+3	IR_CMP_LE	le	gt
+4	IR_CMP_GT	gt	le
+5	IR_CMP_GE	ge	lt
+6	IR_CMP_ULT	lo	hs
+7	IR_CMP_ULE	ls	hi
+8	IR_CMP_UGT	hi	ls
+9	IR_CMP_UGE	hs	lo
+10	IR_CMP_OEQ	(null)	(null)
+11	IR_CMP_ONE	(null)	(null)
+12	IR_CMP_OLT	(null)	(null)
+13	IR_CMP_OLE	(null)	(null)
+14	IR_CMP_OGT	(null)	(null)
+15	IR_CMP_OGE	(null)	(null)
+16	IR_CMP_UNO	(null)	(null)
+17	IR_CMP_ORD	(null)	(null)
+
+# --- THE FLOAT MAPPING: the legacy C table's float arm ---
+kind	name	float_for	float_inv
+0	IR_CMP_EQ	eq	ne
+1	IR_CMP_NE	ne	eq
+2	IR_CMP_LT	mi	pl
+3	IR_CMP_LE	ls	hi
+4	IR_CMP_GT	gt	le
+5	IR_CMP_GE	ge	lt
+every other kind on the float path	(null)	(null)
+
+# --- THE DOMAIN GATE ---
+THE_ADMISSIBLE_IS_FLOAT_DOMAIN	{0,1}
+AN_IS_FLOAT_OUTSIDE_THAT_DOMAIN	(null) for BOTH decisions, with NO default suffix
+THE_OUT_OF_DOMAIN_ROWS_IN_THE_FIXTURE_SET	100 (the OUT_OF_DOMAIN_IS_FLOAT partition)
+
+# --- THE ZERO DISCRIMINANT FACT ---
+THE_ZERO_DISCRIMINANT_IS_IR_CMP_EQ	YES
+THE_ZERO_DISCRIMINANT_FOR_RESULT	eq
+THE_ZERO_DISCRIMINANT_INV_RESULT	ne
+THE_ZERO_DISCRIMINANT_IS_AN_ERROR	NO
+THE_ABI_FAILURE_SIGNAL_MUST_NOT_BE_A_NUMERIC_ZERO	YES (it is a NULL POINTER)
+THE_ABI_FAILURE_SIGNAL	NULL

@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=oracle-source-and-object-dormancy
+#
+# THE ORACLE'S SOURCE-LEVEL AND OBJECT-LEVEL DORMANCY.
+#
+# The legacy C table must be LIVE in the selector-OFF build and
+# DORMANT in the selector-ON build. Both facts are MEASURED over the
+# REAL OBJECT BYTES, not asserted over the source.
+#
+# field	value
+SOURCE	src/aarch64.c
+SELECTOR	HCC_USE_SELFHOST_A64_CMP_CC
+
+# --- THE SELECTOR-ON BUILD: THE LEGACY TABLE IS COMPILED OUT ---
+SELECTOR_ON_TU	build/CMakeFiles/hcc.dir/aarch64.c.o
+SELECTOR_ON_OBJECT_SHA256	df6cad0de086530d1809f6b3d08f91f6c04231e00a49c18b3b5b3a7cc3352e6d
+SELECTOR_ON_LEGACY_C_SUFFIX_LITERAL_COUNT	0
+SELECTOR_ON_IMPORTS	_AbiA64CcForV2 (U), _AbiA64CcInvForV2 (U)
+SELECTOR_ON_CSET_FORMAT_STRING_PRESENT	YES
+THE_CSET_FORMAT_STRING_IS_NOT_A_MAPPING	IT IS A FIXED FORMAT WITH A %s VERB; the suffix it carries comes from the PolyC FOR decision
+
+# --- THE SELECTOR-OFF BUILD: THE LEGACY TABLE IS LIVE ---
+SELECTOR_OFF_TU	(the disposable selector-OFF build)
+SELECTOR_OFF_OBJECT_SHA256	461c6a25790fa4961e2043ddd35f3b695cd9b7e7493a0b53b18f686a8dbf693a
+SELECTOR_OFF_LEGACY_C_SUFFIX_LITERAL_COUNT	12
+SELECTOR_OFF_IMPORTS_ANY_A64_SYMBOL	NO
+SELECTOR_OFF_CSET_FORMAT_STRING_PRESENT	YES
+
+# --- THE OBJECT-LEVEL DORMANCY EXPERIMENTS ---
+# The C-only mutation experiments at c3/c-dormancy-for.tsv and
+# c3/c-dormancy-inv.tsv establish the LIVE/DORMANT split BEHAVIOURALLY
+# and not only by counting literals: a mutation confined to the
+# selector-OFF C table CHANGES the selector-OFF variant's emitted
+# assembly and compiled-program behaviour and does NOT change the
+# selector-ON variant's, because the selector-ON variant's decision
+# comes from the compiled PolyC subject.
+#
+SELECTOR_ON_LEGACY_TABLE_BEHAVIOURALLY_DORMANT	PROVEN (the C-only mutation changed the OFF variant and left the ON variant unchanged)
+SELECTOR_OFF_LEGACY_TABLE_BEHAVIOURALLY_LIVE	PROVEN (the same mutation changed the OFF variant)
+THE_DORMANCY_EXPERIMENTS_ARE_TWO	YES (one for SITE-A64-CC-FOR and one for SITE-A64-CC-INV)
+
+# --- THE OBJECT-DORMANCY MEASUREMENT, INDEPENDENT OF THE EXPERIMENTS ---
+THE_PRODUCTION_OBJECT_CARRIES_ZERO_LEGACY_SUFFIX_LITERALS	YES
+THE_SELECTOR_OFF_OBJECT_CARRIES_ALL_TWELVE	YES
+THE_PRODUCTION_OBJECT_IMPORTS_EXACTLY_TWO_A64_EXPORTS	YES
+THE_SELECTOR_OFF_OBJECT_IMPORTS_ZERO_A64_EXPORTS	YES

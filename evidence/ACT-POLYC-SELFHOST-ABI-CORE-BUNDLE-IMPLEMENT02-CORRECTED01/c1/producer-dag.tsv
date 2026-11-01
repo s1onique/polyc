@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=producer-dag
+#
+# THE PRODUCER DAG, NAMED INDEPENDENTLY.
+#
+# The names C_TOOLCHAIN and POLYC_PRODUCER_1..5 are this ACT's OWN
+# names. They are NOT the predecessor's self-referential G0/G1/G2/G3
+# labels, which named STAGES rather than PRODUCERS.
+#
+# field	value
+C_TOOLCHAIN	the host C compiler (/usr/bin/cc, or the measured equivalent)
+C_TOOLCHAIN_ROLE	compiles the C translation units, INCLUDING the selector-OFF legacy C oracle
+POLYC_PRODUCER_1	build/host-stage0/hcc
+POLYC_PRODUCER_1_ROLE	compiles the PolyC subject object
+POLYC_PRODUCER_2	build/hcc-bootstrap02
+POLYC_PRODUCER_2_ROLE	compiles the PolyC subject object
+POLYC_PRODUCER_3	build/hcc-bootstrap03
+POLYC_PRODUCER_3_ROLE	compiles the PolyC subject object
+POLYC_PRODUCER_4	./hcc (the production compiler)
+POLYC_PRODUCER_4_ROLE	links the production executable and IMPORTS the subject
+POLYC_PRODUCER_5	(the build/host-stage0 chain's own downstream stage)
+POLYC_PRODUCER_5_ROLE	an additional independent PolyC producer in the chain
+
+# --- THE DAG EDGES ---
+FROM	TO	EDGE
+POLYC_PRODUCER_1	subject	object
+POLYC_PRODUCER_2	subject	object
+POLYC_PRODUCER_3	subject	object
+POLYC_PRODUCER_4	executable	link (and the executable DEFINES both exports)
+C_TOOLCHAIN	production_TU	object (the C translation units)
+
+# --- THE CROSSWALK AWAY FROM THE PREDECESSOR'S LABELS ---
+# The predecessor's G0/G1/G2/G3 named STAGES. This ACT's names name
+# PRODUCERS. The crosswalk below is explicit so that no reader can
+# mistake one labelling for the other.
+PREDECESSOR_LABEL	THIS_ACTS_NAME	WHAT_IT_IS
+G0	C_TOOLCHAIN	the C oracle, that is, the legacy C decision
+G1	POLYC_PRODUCER_1	the first PolyC producer
+G2	POLYC_PRODUCER_2	the second PolyC producer
+G3	POLYC_PRODUCER_3	the third PolyC producer
+
+# --- THE MEASURED DIGESTS ---
+POLYC_PRODUCER_1_SHA256	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085
+POLYC_PRODUCER_2_SHA256	c0bc92c9f422bf6ae79d76609261906d67486cc1c36532738b9a7e6f1cebf2fc
+POLYC_PRODUCER_3_SHA256	79939fa516cd6145a88723aec07d502c44d33ad85f0bf9beb5311f853796cc6e
+THE_THREE_POLYC_PRODUCER_DIGESTS_ARE_DISTINCT	YES
+THE_THREE_SUBJECT_OBJECTS_ARE_BYTE_IDENTICAL	YES (c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22)
+THE_C_ORACLE_OBJECT_IS_DIFFERENT	YES (1552f819f87584c7678f7c92bd5028d0d93ce7358080e205b45e6cc63fd64f0d)
+THE_DIFFERENCE_IS_REPORTED_NOT_CLAIMED_AWAY	YES

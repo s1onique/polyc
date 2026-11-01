@@ -1015,26 +1015,26 @@ public U0 ModeProducerAlias(U8 *prodfile)
   c_digest = ColByName("executable_sha256");
   if (c_digest < 0) c_digest = ColByName("sha256");
   c_kind = ColByName("kind");
-  if (c_digest < 0) RedFail("PRODUCER_ALIAS_OR_MISSING_EDGE");
+  if (c_digest < 0) RedFail("PRODUCER_ALIAS_OR_SELF_COMPARISON");
   for (I64 r = 0; r < NROW && n < 64; r++) {
     U8 *dg = Cell(r, c_digest);
     if (dg == NULL) continue;
-    if (StrLen(dg) == 0) RedFail("PRODUCER_ALIAS_OR_MISSING_EDGE");
+    if (StrLen(dg) == 0) RedFail("PRODUCER_ALIAS_OR_SELF_COMPARISON");
     // A PolyC producer must not be the C toolchain.
     if (c_kind >= 0) {
       U8 *kd = Cell(r, c_kind);
       if (kd != NULL && StrCmp(kd, "POLYC") == 0) {
         if (StrFind(dg, "gcc") != NULL || StrFind(dg, "clang") != NULL)
-          RedFail("PRODUCER_ALIAS_OR_MISSING_EDGE");
+          RedFail("PRODUCER_ALIAS_OR_SELF_COMPARISON");
       }
     }
     for (I64 q = 0; q < n; q++) {
-      if (StrCmp(seen[q], dg) == 0) RedFail("PRODUCER_ALIAS_OR_MISSING_EDGE");
+      if (StrCmp(seen[q], dg) == 0) RedFail("PRODUCER_ALIAS_OR_SELF_COMPARISON");
     }
     MemCpy(seen[n], dg, StrLen(dg) + 1);
     n++;
   }
-  if (n == 0) RedFail("PRODUCER_ALIAS_OR_MISSING_EDGE");
+  if (n == 0) RedFail("PRODUCER_ALIAS_OR_SELF_COMPARISON");
   RedOk("EVERY_PRODUCER_HAS_A_DISTINCT_NON_EMPTY_DIGEST");
 }
 
@@ -1385,20 +1385,48 @@ public U0 ModeDormantCounter(U8 *evfile, U8 *site)
 // C table is live); a selector-ON object MUST NOT contain it (the C
 // table is compiled out).
 // ---------------------------------------------------------------------------
-public U0 ModeLegacyLive(U8 *objfile, U8 *token, U8 *expect)
+public U0 ModeLegacyLive(U8 *objfile, U8 *token, U8 *expect, U8 *mode)
 {
   U8 *cmd;
   U8 *out;
   I64 found = 0;
-  cmd = StrPrint(NULL, "strings -a %s > /tmp/a64cc-red-strings.txt 2>/dev/null", objfile);
+  // The minimum string length is 2, because the AArch64 condition
+  // suffixes are TWO characters long ("eq", "ne", "lt", ...) and the
+  // default minimum of 4 would filter every one of them out.
+  cmd = StrPrint(NULL, "strings -a -n 2 %s > /tmp/a64cc-red-strings.txt 2>/dev/null", objfile);
   System(cmd);
   out = FileRead("/tmp/a64cc-red-strings.txt", NULL);
   if (out == NULL) RedFail("LEGACY_C_ORACLE_NOT_LIVE");
   if (StrFind(out, token) != NULL) found = 1;
-  if (StrCmp(expect, "LIVE") == 0) {
+  // The EXPECTATION direction selects the reason, because the two
+  // controls are DIFFERENT defects:
+  //
+  //   LIVE expected but the legacy table is ABSENT
+  //       -> the C oracle is not live            (NC12)
+  //   DORMANT expected but the legacy table is PRESENT
+  //       -> the C table is still active          (NC16)
+  //
+  // The MODE takes a THIRD argument that names which defect is being
+  // checked, so that the reason is never ambiguous.
+  // The MODE names WHICH defect is being checked, so the reason is
+  // never ambiguous:
+  //
+  //   legacy-live-oracle    (NC12): the C ORACLE must carry the legacy
+  //                           table. A missing table means the oracle
+  //                           is not live.
+  //   legacy-live-authority (NC16): the SELECTOR-ON production object
+  //                           must NOT carry the legacy table. A
+  //                           present table means the C authority is
+  //                           still active.
+  //
+  // In both modes the EXPECTATION argument states what the caller
+  // asserts, so an assertion that contradicts the object fires the
+  // detector with the reason that names THAT defect.
+  if (StrCmp(mode, "legacy-live-oracle") == 0) {
     if (!found) RedFail("LEGACY_C_ORACLE_NOT_LIVE");
     RedOk("THE_LEGACY_C_TABLE_IS_LIVE_IN_THIS_OBJECT");
   }
+  // legacy-live-authority: the object must be dormant.
   if (!found) RedOk("THE_LEGACY_C_TABLE_IS_COMPILED_OUT_OF_THIS_OBJECT");
   RedFail("LEGACY_C_AUTHORITY_ACTIVE");
 }
@@ -1420,9 +1448,32 @@ public U0 ModeExportCount(U8 *srcfile)
   I64 n_inv = 0;
   I64 n_other = 0;
   if (txt == NULL) RedFail("FORBIDDEN_THIRD_EXPORT");
-  if (StrFind(txt, "AbiA64CmpCcEmitCSet") != NULL) RedFail("FORBIDDEN_THIRD_EXPORT");
-  if (StrFind(txt, "AbiA64CmpCcFor") != NULL) RedFail("FORBIDDEN_THIRD_EXPORT");
-  if (StrFind(txt, "AbiA64CmpCcInvFor") != NULL) RedFail("FORBIDDEN_THIRD_EXPORT");
+  // The forbidden names are detected as DECLARATIONS, exactly as
+  // ModeThirdExport does it: a name inside a prose comment is prose,
+  // and the prohibition may be STATED in prose. What is forbidden is
+  // the export itself, that is, a declaration of the name.
+  //
+  // A raw substring search is NOT used here, because the real subject
+  // source STATES the prohibition in a comment and a substring search
+  // would reject the very source it is meant to accept.
+  {
+    U8 *p = txt;
+    while (*p != 0) {
+      U8 *eol = StrFind(p, "\n");
+      U8 *end = p;
+      if (eol != NULL) end = eol;
+      U8 *q = p;
+      while (q < end && (*q == ' ' || *q == '\t')) q++;
+      if (StrFind(p, "AbiA64CmpCcEmitCSet(") != NULL && StrFind(p, "AbiA64CmpCcEmitCSet(") < end)
+        RedFail("FORBIDDEN_THIRD_EXPORT");
+      if (StrFind(p, "AbiA64CmpCcFor(") != NULL && StrFind(p, "AbiA64CmpCcFor(") < end)
+        RedFail("FORBIDDEN_THIRD_EXPORT");
+      if (StrFind(p, "AbiA64CmpCcInvFor(") != NULL && StrFind(p, "AbiA64CmpCcInvFor(") < end)
+        RedFail("FORBIDDEN_THIRD_EXPORT");
+      if (eol == NULL) break;
+      p = eol + 1;
+    }
+  }
   n_for = CountOcc(txt, "AbiA64CcForV2");
   n_inv = CountOcc(txt, "AbiA64CcInvForV2");
   // Each authorised export must be DEFINED (a definition line, i.e. the
@@ -1623,7 +1674,8 @@ I32 Main(I32 argc, U8 **argv)
   }
   if (StrCmp(mode, "legacy-live") == 0) {
     if (argc < 5) RedFail("BAD_ARGUMENTS");
-    ModeLegacyLive(argv[2], argv[3], argv[4]);
+    if (argc < 6) RedFail("BAD_ARGUMENTS");
+    ModeLegacyLive(argv[2], argv[3], argv[4], argv[5]);
     return 0;
   }
 

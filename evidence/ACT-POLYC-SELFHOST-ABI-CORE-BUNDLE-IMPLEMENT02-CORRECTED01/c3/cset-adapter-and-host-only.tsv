@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=cset-adapter-and-host-only
+#
+# THE CSET ADAPTER PRESERVATION AND THE HOST-ONLY ANTI-CONTROL.
+#
+field	value
+CSET_SITE_ID	SITE-A64-CSET
+CSET_CLASS	C_MECHANICAL_ADAPTER
+CSET_COUNTS_AS_AN_AUTHORITY	NO
+THIRD_EXPORT_COUNT	0
+
+# --- THE ADAPTER ACTUALLY CONSUMES THE POLYC RESULT ---
+PRODUCTION_EMITTED_BYTES	cset    x0, lt
+PRODUCTION_EMITTED_SUFFIX_SOURCE	the compiled PolyC AbiA64CcForV2 through the delegated aarch64CcFor wrapper
+PRODUCTION_TWO_USE_WITNESS	identical to the G0 C oracle byte-for-byte apart from the .ident line
+
+# --- THE HOST-ONLY FORMATTING ANTI-CONTROL ---
+HOST_ONLY_FORMATTING_ROUTINE	a C routine with NO PolyC code, formatting the same suffix with the same fixed format string
+HOST_ONLY_OUTPUT	[cset    x0, lt\n\t]
+PRODUCTION_OUTPUT	[cset    x0, lt\n\t]
+HOST_ONLY_EQUALS_PRODUCTION	YES (byte-for-byte)
+HOST_ONLY_STATUS	PASS
+HOST_ONLY_PROVES	THE ADAPTER CONTRIBUTES NO INDEPENDENT DECISION: the only decision is the suffix, and the suffix comes from the compiled PolyC FOR decision
+
+# --- THE ADAPTER LIVENESS CONTROL ---
+# This is a CSET-ONLY formatter mutation. It proves the emitter path
+# is LIVE. It is NOT an independent third semantic authority and it
+# does NOT count as either dormancy proof.
+CSET_LIVENESS_MUTATION	the CSET literal only: "cset    x0, %s\n\t" -> "cset    y0, %s\n\t"
+CSET_LIVENESS_WORKTREE	/tmp/a64cc-cset (a disposable DETACHED worktree)
+CSET_LIVENESS_MUTATED_OUTPUT	cset    y0, lt
+CSET_LIVENESS_OBSERVATION	THE MUTATED REGISTER APPEARS, so the emitter path is live
+CSET_LIVENESS_SUFFIX	lt (UNCHANGED: the suffix still comes from the compiled PolyC decision, NOT from the CSET site)
+CSET_LIVENESS_IS_A_THIRD_AUTHORITY	NO
+CSET_LIVENESS_COUNTS_AS_A_DORMANCY_PROOF	NO
+CSET_RESTORED_SRC_SHA256	f7e18406b2193163a3eaa3d1d35c4a1d4d0afc427c91af13d3ecba6bc7fe371a (byte-identical to the pristine)
+
+CSET_ADAPTER_PRESERVED=YES
+HOST_ONLY_FORMAT_ANTICONTROL=PASS
+CSET_EMITTER_PATH_LIVE=YES
+CSET_IS_NOT_A_THIRD_AUTHORITY=YES

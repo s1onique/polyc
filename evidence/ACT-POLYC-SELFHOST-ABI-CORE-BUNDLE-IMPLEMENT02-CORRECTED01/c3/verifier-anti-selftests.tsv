@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=verifier-anti-selftests
+#
+# THE VERIFIER'S OWN ANTI-SELFTESTS: IT MUST REJECT A FALSE POSITIVE
+# AND IT MUST NOT ACCEPT A FALSE THIRD-AUTHORITY CLAIM.
+#
+# Every row below is a REAL execution of the compiled PolyC verifier
+# over a REAL adverse input. The adverse inputs alter a REAL id, a
+# REAL status, a REAL evidence reference or a REAL source declaration;
+# no status word is edited.
+#
+# The rows that EXPECT OK are the false-positive controls: they prove
+# the detector ACCEPTS the real, correct input, so a rejection of it
+# would be a false positive.
+#
+# id	what_the_adverse_input_alters	observed	verdict	expected
+VS-00	the verifier's internal selftest: the SHA-256 implementation against three FIPS 180-4 vectors and the source-aware scanner against a fixture whose body contains braces inside a string literal, a character literal, a line comment and a block comment	DETAIL=SHA256_FIPS_VECTORS_AND_SCANNER_FIXTURE_BOTH_PASS	PASS	OK
+VS-01	the ledger detector rejects a MISSING acceptance id	REASON=LEDGER_FALSE_PASS	PASS	LEDGER_FALSE_PASS
+VS-02	the ledger detector rejects a DUPLICATED acceptance id	REASON=LEDGER_FALSE_PASS	PASS	LEDGER_FALSE_PASS
+VS-03	the ledger detector rejects a PASS row that carries NO evidence reference	REASON=LEDGER_FALSE_PASS	PASS	LEDGER_FALSE_PASS
+VS-04	the ledger detector rejects an ILLEGAL status (NOT_APPLICABLE is not in the canonical vocabulary)	REASON=LEDGER_FALSE_PASS	PASS	LEDGER_FALSE_PASS
+VS-05	the ledger detector rejects a MISSING negative-control id	REASON=LEDGER_FALSE_PASS	PASS	LEDGER_FALSE_PASS
+VS-06	the export-count detector rejects a source that DOES declare the forbidden third export	REASON=FORBIDDEN_THIRD_EXPORT	PASS	FORBIDDEN_THIRD_EXPORT
+VS-07	the export-count detector ACCEPTS the real subject source, which has exactly two exports	DETAIL=BOTH_AUTHORISED_EXPORTS_ARE_PRESENT_AND_NO_THIRD_EXPORT_EXISTS	PASS	OK
+VS-08	the two-roster detector rejects rosters whose members are CONFLATED into one roster	REASON=TWO_ROSTERS_CONFLATED	PASS	TWO_ROSTERS_CONFLATED
+VS-09	the fixture-rows detector rejects a fixture set whose ROW COUNT is wrong	REASON=FIXTURE_DIFFERENTIAL_NOT_SENSITIVE	PASS	FIXTURE_DIFFERENTIAL_NOT_SENSITIVE
+VS-10	the fixture-rows detector ACCEPTS the real source-derived fixture set	DETAIL=FIXTURE_ROW_COUNT_AND_ID_UNIQUENESS_AND_ROLE_PARTITION_ALL_MATCH	PASS	OK
+VS-11	the third-export detector ACCEPTS the real subject source, which has NO third export	DETAIL=EXACTLY_TWO_EXPORTS_AND_NO_CSET_EXPORT	PASS	OK
+VS-13	the third-export detector rejects a source that really DECLARES the forbidden third export	REASON=FORBIDDEN_THIRD_EXPORT	PASS	FORBIDDEN_THIRD_EXPORT
+VS-12	the cset-double-count detector rejects CSET being counted as an authority	REASON=CSET_SEMANTIC_DOUBLE_COUNT	PASS	CSET_SEMANTIC_DOUBLE_COUNT
+
+VERIFIER_ANTISELFTESTS=14
+VERIFIER_ANTISELFTESTS_PASS=14
+VERIFIER_ANTISELFTESTS_FAIL=0
+VERIFIER_FALSE_POSITIVE_CONTROLS=4 (VS-00, VS-07, VS-10, VS-11: the detector must ACCEPT the real, correct input)
+VERIFIER_FALSE_NEGATIVE_CONTROLS=10 (the detector must REJECT the adverse input, each with its own reason)
+VERIFIER_VACUITY=NONE (every adverse input alters a REAL id, a REAL status, a REAL evidence reference, a REAL row count or a REAL source declaration, and the detector RE-READS and RE-CHECKS the fact)
+
+# A DEFECT WAS FOUND AND FIXED IN THIS PHASE, AND IT IS RECORDED
+# HONESTLY RATHER THAN QUIETLY:
+#
+# The export-count detector originally searched the subject source for
+# the forbidden names with a RAW SUBSTRING search. The real subject
+# source STATES the prohibition in a prose comment, so the raw search
+# REJECTED THE VERY SOURCE IT WAS MEANT TO ACCEPT: a false positive
+# on the real input. The detector now uses the same
+# DECLARATION-AWARE, PROSE-TOLERANT test that ModeThirdExport uses,
+# namely a name followed by an opening parenthesis inside the line.
+# After the fix the real subject source is ACCEPTED (VS-07) and a
+# source that really DECLARES the third export is still REJECTED
+# (VS-06 and VS-13). The fix is in the ACT's own verifier tool, which
+# is inside the ACT's authorised path list; no production source was
+# touched by it.

@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=four-semantic-streams
+#
+# THE FOUR SEMANTIC STREAMS, EMITTED FRESH over the SOURCE-DERIVED
+# FIXTURE SET by ONE mechanism: the compiled PolyC semantic-stream
+# emitter tools/quality/a64-cmp-cc-implement02-corrected01-semantic-stream.HC.
+#
+#   G0  the legacy C oracle: the REAL selector-OFF decision bodies of
+#       src/aarch64.c's aarch64CcFor and aarch64CcInvFor, EXTRACTED
+#       VERBATIM into a disposable, never-committed harness, with the
+#       REAL IrCmpKind discriminants from src/ir-types.h.
+#   G1  the compiled PolyC subject produced by PRODUCER 1
+#   G2  the compiled PolyC subject produced by PRODUCER 2
+#   G3  the compiled PolyC subject produced by PRODUCER 3
+#
+# The emitter CALLS each stream's decision function. The stream is the
+# decision's OWN output, not a transcription of it.
+#
+# The G0 oracle and the G1..G3 subjects are compared over the SAME
+# admissible domain. The production call site computes is_float as
+# irIsFloat(a->type), a BOOLEAN, so the admissible domain of is_float
+# is {0,1}; an is_float outside that domain is an out-of-domain INPUT
+# and both streams fail closed on it. The legacy table's own
+# `if (is_float)` is a TRUTHINESS test, and applying it to an
+# out-of-domain value would silently COERCE it. That coercion is the
+# ONE intentional narrowing the ABI documents, and it is why the
+# OUT_OF_DOMAIN_IS_FLOAT partition expects (null).
+#
+# stream	producer	producer_sha256	subject_object	subject_sha256	rows	stream_sha256
+G0	C_TOOLCHAIN	n/a (the C compiler)	n/a (the C oracle harness)	1552f819f87584c7678f7c92bd5028d0d93ce7358080e205b45e6cc63fd64f0d	220	8bbd55a6faa483da2f00f62706a7caecbaa4811b87710975073d2a6830c27f17
+G1	POLYC_PRODUCER_1	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085	build/a64cc-c3-g1-subject.o	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	220	8bbd55a6faa483da2f00f62706a7caecbaa4811b87710975073d2a6830c27f17
+G2	POLYC_PRODUCER_2	c0bc92c9f422bf6ae79d76609261906d67486cc1c36532738b9a7e6f1cebf2fc	build/a64cc-c3-g2-subject.o	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	220	8bbd55a6faa483da2f00f62706a7caecbaa4811b87710975073d2a6830c27f17
+G3	POLYC_PRODUCER_3	79939fa516cd6145a88723aec07d502c44d33ad85f0bf9beb5311f853796cc6e	build/a64cc-c3-g3-subject.o	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	220	8bbd55a6faa483da2f00f62706a7caecbaa4811b87710975073d2a6830c27f17
+
+# --- THE MEASURED RESULTS ---
+ALL_FOUR_STREAM_SHA256_IDENTICAL=YES
+ALL_FOUR_STREAM_SHA256=8bbd55a6faa483da2f00f62706a7caecbaa4811b87710975073d2a6830c27f17
+FIXTURE_ROWS=220
+FIXTURE_CONTRACT_MISMATCHES=0
+THE_THREE_POLYC_SUBJECT_OBJECTS_ARE_BYTE_IDENTICAL=YES
+THE_THREE_POLYC_SUBJECT_OBJECT_SHA256=c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22
+THE_THREE_POLYC_PRODUCER_DIGESTS_ARE_DISTINCT=YES
+FORBIDDEN_THIRD_EXPORT_IN_ANY_STREAM_SUBJECT=0

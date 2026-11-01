@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=comparator-antitests
+#
+# THE INDEPENDENT FIXTURE COMPARATOR'S ANTI-TESTS.
+#
+# The comparator is a POSIX awk program that shares NO CODE with the
+# compiled PolyC semantic-stream emitter. It re-reads the fixture
+# contract and the emitted stream from scratch and rejects a missing,
+# an extra, a duplicated or an ALTERED row, a REMAPPED producer ID, a
+# SWAPPED FOR/INV role, an INVALID failed-domain row omitted from the
+# contract, and a COMPARATOR ORDER change.
+#
+# The anti-tests below are REAL executions of that comparator over
+# REAL adverse inputs. Each adverse input alters a REAL source-derived
+# fact, and the comparator RE-COMPUTES the fact; no status word is
+# edited.
+#
+# id	adverse_condition	comparator_outcome	verdict	reason
+AT-00	the pristine fixture contract against the pristine stream	OK	PASS	(none: the pristine input is ACCEPTED)
+AT-01	a fixture row REMOVED from the contract	FAIL	PASS	FAIL:UNKNOWN_OR_REMAPPED_ROW:FX-100
+AT-02	a fixture row DUPLICATED in the contract	FAIL	PASS	FAIL:DUPLICATE_FIXTURE_ID:FX-100
+AT-03	a fixture row's EXPECTED observation ALTERED	FAIL	PASS	FAIL:ALTERED_OBSERVATION:FX-009
+AT-04	an INVALID failed-domain row omitted from the contract	FAIL	PASS	FAIL:UNKNOWN_OR_REMAPPED_ROW:FX-001
+AT-05	the FOR and INV roles SWAPPED on a fixture row	FAIL	PASS	FAIL:ROLE_SWAPPED:FX-009
+AT-06	the stream rows REORDERED relative to the contract	FAIL	PASS	FAIL:COMPARATOR_ORDER_CHANGED:at_row_2_expected_FX-002_got_FX-220
+AT-07	a stream row's PRODUCER-ID REMAPPED	FAIL	PASS	FAIL:UNKNOWN_OR_REMAPPED_ROW:FX-009X
+AT-08	an EXTRA unknown row present in the stream	FAIL	PASS	FAIL:UNKNOWN_OR_REMAPPED_ROW:FX-999
+AT-09	a stream row DUPLICATED	FAIL	PASS	FAIL:DUPLICATE_STREAM_ID:FX-009
+
+COMPARATOR_PRISTINE_CASE_ACCEPTED=YES
+COMPARATOR_ADVERSE_CASES=9
+COMPARATOR_ADVERSE_CASES_REJECTED=9
+COMPARATOR_ADVERSE_CASES_ACCEPTED=0
+COMPARATOR_DISTINCT_REASON_TOKENS=9
+COMPARATOR_REASON_TOKENS=UNKNOWN_OR_REMAPPED_ROW;DUPLICATE_FIXTURE_ID;ALTERED_OBSERVATION;UNKNOWN_OR_REMAPPED_ROW;ROLE_SWAPPED;COMPARATOR_ORDER_CHANGED;UNKNOWN_OR_REMAPPED_ROW;UNKNOWN_OR_REMAPPED_ROW;DUPLICATE_STREAM_ID
+COMPARATOR_VACUITY=NONE (every adverse input alters a REAL row, a REAL id, a REAL role or the REAL row order, and the comparator RE-READS and RE-COMPARES both files)

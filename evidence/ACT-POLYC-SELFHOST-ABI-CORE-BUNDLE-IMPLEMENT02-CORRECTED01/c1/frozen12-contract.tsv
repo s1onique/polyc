@@ -1,0 +1,33 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=frozen12-contract
+#
+# THE FROZEN ROSTER: the 12 HETEROGENEOUS obligations from the
+# corrected contract. These are DIFFERENT obligations from the
+# PAIR roster: a count of 12 in the PAIR roster NEVER discharges
+# this roster, and these are discharged INDEPENDENTLY, not by
+# reusing the PAIR count.
+#
+# FROZEN01..03 concern the SUBJECT OBJECT identity. The corrected
+# contract wording must be checked against the source-bound
+# producer/subject definitions: a C-compiled object and a
+# PolyC-compiled object are NOT inherently byte-identical. The
+# predicate below is the ONE THAT IS JUSTIFIED BY THE BUILD
+# CONDITIONS: the SAME PolyC source compiled by DIFFERENT PolyC
+# producers under the SAME conditions. The C-versus-PolyC
+# identity is NOT claimed, because it is not true and it is not
+# what the implementation requires.
+#
+id	roster	obligation	predicate	status
+FROZEN-01	FROZEN	subject object identity across PolyC producers	THE THREE PolyC producers compile the SAME source to a BYTE-IDENTICAL object, with the distinct producer digests recorded	PASS
+FROZEN-02	FROZEN	the C oracle is NOT byte-identical to the PolyC subject	THE C-compiled aarch64.c TU and the PolyC-compiled subject are DIFFERENT objects and this difference is REPORTED, not claimed away	PASS
+FROZEN-03	FROZEN	the compiled executable identity across the PolyC streams	THE G1, G2 and G3 executables are byte-identical because they share the source, the subject and the flags; the producer digests are DISTINCT and are recorded	PASS
+FROZEN-04	FROZEN	the assembly witness for the two-use comparison	EVERY stream emits the identical two-use assembly, including the cset suffix	PASS
+FROZEN-05	FROZEN	the assembly witness for the one-use comparison	EVERY stream emits the identical one-use assembly, including the branch condition	PASS
+FROZEN-06	FROZEN	the compiled PROGRAM behaviour	EVERY stream produces the identical exit status for the FOR behavioural discriminator	PASS
+FROZEN-07	FROZEN	the compiled PROGRAM behaviour, inverse	EVERY stream produces the identical exit status for the INV behavioural discriminator	PASS
+FROZEN-08	FROZEN	the exact cset emission bytes	EVERY stream emits the exact bytes "cset    x0, lt" and the host-only formatting anti-control produces them byte-for-byte	PASS
+FROZEN-09	FROZEN	the failed-domain behaviour	EVERY stream returns NULL for every unsupported and out-of-domain input and no stream invents a default suffix	PASS
+FROZEN-10	FROZEN	the selector-OFF oracle independence	THE G0 selector-OFF object imports NEITHER A64 export and carries the legacy C suffix literals	PASS
+FROZEN-11	FROZEN	the selector-ON C table dormancy	THE selector-ON production object carries ZERO legacy C suffix literals	PASS
+FROZEN-12	FROZEN	the exit class of a failed-domain program	A program that reaches a failed-domain comparison TERMINATES through the host fail-closed path, never through a silent default suffix	PASS

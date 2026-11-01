@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+# ACT_PHASE=C2-EVIDENCE
+# EVIDENCE_KIND=selector-on-off-objects
+#
+# THE SELECTOR-ON AND SELECTOR-OFF OBJECTS, MEASURED.
+#
+# The SAME source, src/aarch64.c, was compiled TWICE: once with the
+# dedicated selector HCC_USE_SELFHOST_A64_CMP_CC OFF (the legacy C
+# tables live) and once with it ON (the legacy C tables compiled out
+# and the decision delegated to the compiled PolyC subject).
+#
+# The MEASUREMENT is over the REAL OBJECT BYTES, not over the source.
+#
+# field	value
+SELECTOR	HCC_USE_SELFHOST_A64_CMP_CC
+SOURCE	src/aarch64.c
+PRODUCTION_TU	build/CMakeFiles/hcc.dir/aarch64.c.o
+SELECTOR_ON_OBJECT_SHA256	df6cad0de086530d1809f6b3d08f91f6c04231e00a49c18b3b5b3a7cc3352e6d
+SELECTOR_ON_LEGACY_C_SUFFIX_LITERAL_COUNT	0
+SELECTOR_ON_CSET_FORMAT_STRING_PRESENT	YES (the fixed string "cset    x0, %s")
+SELECTOR_ON_IMPORTS	_AbiA64CcForV2 (U), _AbiA64CcInvForV2 (U)
+SELECTOR_ON_IMPORTS_ANY_OTHER_A64_SYMBOL	NO
+
+SELECTOR_OFF_OBJECT_SHA256	461c6a25790fa4961e2043ddd35f3b695cd9b7e7493a0b53b18f686a8dbf693a
+SELECTOR_OFF_LEGACY_C_SUFFIX_LITERAL_COUNT	12
+SELECTOR_OFF_CSET_FORMAT_STRING_PRESENT	YES (the fixed string "cset    x0, %s")
+SELECTOR_OFF_IMPORTS_ANY_A64_SYMBOL	NO (neither _AbiA64CcForV2 nor _AbiA64CcInvForV2)
+
+THE_TWELVE_LEGACY_SUFFIX_LITERALS	eq ne mi pl ls lo hi hs ge gt le lt
+THE_TWELVE_ARE_COUNTED_AS_EXACT_MATCHES	YES (each is counted as a standalone two-character string in the object's string table, with strings -a -n 2; the default minimum length of 4 would filter every one of them out)
+
+# THE CONCLUSIONS, MEASURED:
+THE_LEGACY_C_TABLE_IS_COMPILED_OUT_OF_THE_PRODUCTION_OBJECT	YES (0 of 12)
+THE_LEGACY_C_TABLE_IS_LIVE_IN_THE_SELECTOR_OFF_OBJECT	YES (12 of 12)
+THE_CSET_ADAPTER_SURVIVES_IN_BOTH_OBJECTS	YES
+THE_SELECTOR_OFF_OBJECT_IS_AN_INDEPENDENT_ORACLE	YES (it imports neither PolyC export)
