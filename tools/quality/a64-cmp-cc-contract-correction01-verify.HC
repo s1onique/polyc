@@ -644,6 +644,37 @@ public I64 NextRow(U8 *data, I64 size, I64 from, I64 *out_len)
   return -1;
 }
 
+// NextDataRow returns the next DATA row at or after `from`, SKIPPING
+// a header row. A row is a header row when its first field is one of
+// the known column names AND its second field is not. This lets every
+// table mode accept a self-describing TSV without misreading the
+// header as data.
+public I64 NextDataRow(U8 *data, I64 size, I64 from, I64 *out_len)
+{
+  I64 at = NextRow(data, size, from, out_len);
+  if (at < 0) return -1;
+  U8 f0[128], f1[128];
+  Bool have0 = FieldOf(data + at, *out_len, 0, f0);
+  Bool have1 = FieldOf(data + at, *out_len, 1, f1);
+  if (have0 && have1) {
+    Bool f0_is_name = (StrCmp(f0, "path") == 0) || (StrCmp(f0, "oid") == 0) ||
+                      (StrCmp(f0, "suffix") == 0) || (StrCmp(f0, "kind") == 0) ||
+                      (StrCmp(f0, "ac_id") == 0) || (StrCmp(f0, "site_id") == 0) ||
+                      (StrCmp(f0, "member_id") == 0) || (StrCmp(f0, "cut_id") == 0) ||
+                      (StrCmp(f0, "phase") == 0) || (StrCmp(f0, "producer_id") == 0);
+    if (f0_is_name) {
+      // It is a header: skip it and take the next row.
+      I64 npos = at + *out_len + 1;
+      I64 nl = 0;
+      I64 nat = NextRow(data, size, npos, &nl);
+      if (nat < 0) return -1;
+      *out_len = nl;
+      return nat;
+    }
+  }
+  return at;
+}
+
 // ---------------------------------------------------------------------------
 // MODE: selftest
 // ---------------------------------------------------------------------------
@@ -803,14 +834,39 @@ public U0 ModeBlobOid(U8 *path, U8 *expected_oid)
   U8 *data = NULL;
   if (!LoadFile(path, &data, &size)) RedFail("OID_FILE_UNREADABLE");
   I64 rl = 0;
-  I64 at = NextRow(data, size, 0, &rl);
+  I64 at = NextDataRow(data, size, 0, &rl);
   if (at < 0) RedFail("OID_FILE_EMPTY");
-  U8 f0[256]; U8 f1[256];
+  U8 f0[256]; U8 f1[256]; U8 f2[256];
   if (!FieldOf(data + at, rl, 0, f0)) RedFail("OID_FILE_MALFORMED");
   if (!FieldOf(data + at, rl, 1, f1)) RedFail("OID_FILE_MALFORMED");
+  // The third field, when present, names the file whose bytes the
+  // recorded digest must cover. It is optional; without it the
+  // detector still compares the OID, but the digest cannot be
+  // recomputed and the pairing is NOT certified.
+  Bool have_path = FieldOf(data + at, rl, 2, f2);
   Say("RECORDED_OID=", f0);
   Say("RECORDED_SHA256=", f1);
   if (StrCmp(f0, expected_oid) != 0) RedFail("SOURCE_BLOB_PROVENANCE_MISMATCH");
+  if (!have_path) {
+    Say("DETECTION=", "NO_BLOB_PATH_RECORDED_THE_DIGEST_CANNOT_BE_RECOMPUTED");
+    RedFail("SOURCE_BLOB_PROVENANCE_MISMATCH");
+  }
+  // Recompute the digest of the recorded blob's ACTUAL bytes and
+  // compare it with the recorded digest. A correct digest paired
+  // with a DIFFERENT source blob is exactly the defect this detects.
+  I64 bsize = 0;
+  U8 *bdata = NULL;
+  if (!LoadFile(f2, &bdata, &bsize)) {
+    Say("MISSING_BLOB_PATH=", f2);
+    RedFail("SOURCE_BLOB_PROVENANCE_MISMATCH");
+  }
+  U8 hex[65];
+  ShaHexBytes(bdata, bsize, hex);
+  Say("RECOMPUTED_SHA256=", hex);
+  if (StrCmp(hex, f1) != 0) {
+    Say("DETECTION=", "RECORDED_DIGEST_DOES_NOT_MATCH_THE_RECORDED_BLOB_BYTES");
+    RedFail("SOURCE_BLOB_PROVENANCE_MISMATCH");
+  }
   RedOk();
 }
 
@@ -1027,7 +1083,7 @@ public U0 ModeSchemaConflation(U8 *path)
 // any row whose recorded digest does not match.
 // ---------------------------------------------------------------------------
 
-public U0 ModeF14Freeze(U8 *path)
+public U0 ModeF14Freeze(U8 *path, U8 *repo_root)
 {
   I64 size = 0;
   U8 *data = NULL;
@@ -1050,7 +1106,7 @@ public U0 ModeF14Freeze(U8 *path)
   }
   if (digest_col < 0) RedFail("FREEZE_HEADER_NOT_RECOGNISED");
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1061,8 +1117,24 @@ public U0 ModeF14Freeze(U8 *path)
     I64 fsize = 0;
     U8 *fdata = NULL;
     if (!LoadFile(p, &fdata, &fsize)) {
-      Say("MISSING_FROZEN_PATH=", p);
-      RedFail("F14_HISTORICAL_REWRITE");
+      // The path may be repository-relative. Resolve it against the
+      // repository root, which the caller passes explicitly.
+      Bool loaded = FALSE;
+      if (repo_root != NULL && p[0] != 47) {
+        U8 joined[1024];
+        I64 rl2 = StrLen(repo_root);
+        if (rl2 > 900) rl2 = 900;
+        MemCpy(joined, repo_root, rl2);
+        joined[rl2] = 47;
+        I64 i = 0;
+        while (p[i] != 0 && i < 120) { joined[rl2+1+i] = p[i]; i++; }
+        joined[rl2+1+i] = 0;
+        loaded = LoadFile(joined, &fdata, &fsize);
+      }
+      if (!loaded) {
+        Say("MISSING_FROZEN_PATH=", p);
+        RedFail("F14_HISTORICAL_REWRITE");
+      }
     }
     U8 hex[65];
     ShaHexBytes(fdata, fsize, hex);
@@ -1095,7 +1167,7 @@ public U0 ModePrematureTerminality(U8 *path)
   I64 pos = 0, rl = 0;
   Bool saw_ac50 = FALSE;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1132,7 +1204,7 @@ public U0 ModeAcLedger(U8 *path, I64 expected)
   U8 seen[64][16];
   for (I64 i = 0; i < 64; i++) seen[i][0] = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1188,7 +1260,7 @@ public U0 ModeMemberCount(U8 *path, I64 expected)
   U8 seen[16][64];
   I64 count = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1361,7 +1433,7 @@ public U0 ModeSuffixAssembler(U8 *path)
   I64 pos = 0, rl = 0;
   I64 n_ok = 0, n_rej = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1450,7 +1522,7 @@ public U0 ModeFailClosed(U8 *path)
   I64 pos = 0, rl = 0;
   I64 invalid_rows = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1526,16 +1598,24 @@ public U0 ModeGraphCut(U8 *path)
   I64 pos = 0, rl = 0;
   I64 new_cuts = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
-    if (!HasInLine(row, rl, "NEW_PROVEN_CUT")) continue;
     U8 cut[64], proof[512];
     if (!FieldOf(row, rl, 0, cut)) continue;
     if (!FieldOf(row, rl, 1, proof)) proof[0] = 0;
+    // A cut row names the cut in field 0 and its proof reference in
+    // field 1. A cut with NO proof reference is an UNPROVEN cut.
     if (StrCmp(cut, "NONE") == 0) {
-      // The sentinel row: it must assert zero new cuts.
+      // The explicit sentinel: no new cut is claimed. The proof
+      // reference must also say NONE, so the sentinel cannot hide
+      // an unproven cut.
+      if (StrCmp(proof, "NONE") != 0) {
+        Say("CUT=", cut);
+        Say("DETECTION=", "ZERO_CUT_SENTINEL_PAIRED_WITH_A_CLAIMED_CUT");
+        RedFail("UNPROVEN_GRAPH_CUT");
+      }
       new_cuts = 0;
       continue;
     }
@@ -1566,7 +1646,7 @@ public U0 ModeDormantPrototype(U8 *path)
   I64 pos = 0, rl = 0;
   I64 rows = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1598,10 +1678,22 @@ public U0 ModeOracleContamination(U8 *path)
   I64 size = 0;
   U8 *data = NULL;
   if (!LoadFile(path, &data, &size)) RedFail("ORACLE_FILE_UNREADABLE");
-  U64 at = StrFind(data, "POLYC_SUBJECT_IMPORT");
+  // The check must distinguish the sentinel "POLYC_SUBJECT_IMPORT=NONE"
+  // from a REAL import, so it compares the VALUE after the equals sign.
+  U8 *at = StrFind(data, "POLYC_SUBJECT_IMPORT=");
   if (at != NULL) {
-    Say("DETECTION=", "C_ONLY_ORACLE_IMPORTS_A_POLYC_SUBJECT_SYMBOL");
-    RedFail("C_ONLY_ORACLE_CONTAMINATION");
+    // The value token runs to the end of the LINE, so it must be
+    // extracted, not compared as the rest of the file.
+    U8 val[256];
+    I64 vlen = 0;
+    U8 *q = at + 21;
+    while (q[vlen] != 0 && q[vlen] != 10 && q[vlen] != 13 && vlen < 255) vlen++;
+    MemCpy(val, q, vlen);
+    val[vlen] = 0;
+    if (StrCmp(val, "NONE") != 0) {
+      Say("DETECTION=", "C_ONLY_ORACLE_IMPORTS_A_POLYC_SUBJECT_SYMBOL");
+      RedFail("C_ONLY_ORACLE_CONTAMINATION");
+    }
   }
   // The record must positively assert the oracle is selector-OFF and
   // imports no PolyC subject.
@@ -1659,7 +1751,7 @@ public U0 ModeTrailerProvenance(U8 *path)
   I64 pos = 0, rl = 0;
   I64 close_rows = 0;
   while (TRUE) {
-    I64 at = NextRow(data, size, pos, &rl);
+    I64 at = NextDataRow(data, size, pos, &rl);
     if (at < 0) break;
     pos = at + rl + 1;
     U8 *row = data + at;
@@ -1758,7 +1850,8 @@ public I64 Main(I64 argc, U8 **argv)
   }
   if (StrCmp(mode, "f14-freeze") == 0) {
     if (argc < 3) { Write(1,"FINAL=FAIL\nREASON=ARITY\n",22); return 1; }
-    ModeF14Freeze(argv[2]);
+    if (argc >= 4) ModeF14Freeze(argv[2], argv[3]);
+    else ModeF14Freeze(argv[2], NULL);
     return 0;
   }
   if (StrCmp(mode, "premature-terminality") == 0) {

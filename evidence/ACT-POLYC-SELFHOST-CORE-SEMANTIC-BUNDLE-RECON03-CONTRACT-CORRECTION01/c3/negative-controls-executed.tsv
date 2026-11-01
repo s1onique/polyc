@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=negative-controls-executed
+#
+# ALL 24 FROZEN NEGATIVE CONTROLS, EXECUTED AS GENUINE
+# PRISTINE -> ADVERSE -> RESTORED CYCLES.
+#
+# Every control was executed against the REAL compiled PolyC detector
+#   build/a64-cmp-cc-contract-correction01-verify
+# built by the production ./hcc from
+#   tools/quality/a64-cmp-cc-contract-correction01-verify.HC
+# and linked against libtos.
+#
+# EVERY ADVERSE CONTROL IS AN ISOLATED FIXTURE IN /tmp. The canonical
+# tree was NEVER modified, and every control's RESTORED run is SILENT
+# again against the pristine fixture, which proves the control is not
+# a one-way latch.
+#
+# No generic parser failure substitutes for the named reason: every
+# adverse run printed its OWN reason token, and all 24 tokens are
+# DISTINCT.
+#
+nc_id	adverse_condition	reason_token	detector_mode	pristine_rc	adverse_rc	restored_rc	pristine_observation	adverse_observation	restored_observation	nonvacuous
+NC01	wrong entry HEAD/tree/branch	ENTRY_IDENTITY_MISMATCH	entry-identity	0	1	0	FINAL=OK	FINAL=FAIL REASON=ENTRY_IDENTITY_MISMATCH	FINAL=OK	YES
+NC02	forgery or alias of an ACT CLOSE trailer	TRAILER_PROVENANCE_FAILURE	trailer-provenance	0	1	0	FINAL=OK (CLOSE_ROWS=1)	FINAL=FAIL REASON=TRAILER_PROVENANCE_FAILURE (ILLEGAL_CLOSE_VERDICT=FORGED)	FINAL=OK	YES
+NC03	historical selected-contract blob modified in place	F14_HISTORICAL_REWRITE	f14-freeze	0	1	0	FROZEN_PATHS_VERIFIED=1 FINAL=OK	FINAL=FAIL REASON=F14_HISTORICAL_REWRITE (the recorded digest does not match the file)	FROZEN_PATHS_VERIFIED=1 FINAL=OK	YES
+NC04	original C1 partial digest passed as whole definition	RANGE_SEMANTIC_MISBIND	c1-misbind	0	1	0	FINAL=OK (the true whole digest)	FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND DETECTION=PARTIAL_DIGEST_PRESENTED_AS_WHOLE	FINAL=OK	YES
+NC05	whole-definition interval extended one byte	SOURCE_RANGE_OFF_BY_ONE	off-by-one	0	1	0	FINAL=OK (exact range)	FINAL=FAIL REASON=SOURCE_RANGE_OFF_BY_ONE (both the extended and the truncated direction were detected in separate runs)	FINAL=OK	YES
+NC06	correct hash paired with a different source blob OID	SOURCE_BLOB_PROVENANCE_MISMATCH	blob-oid	0	1	0	FINAL=OK (the recorded digest matches the recorded blob's bytes)	FINAL=FAIL REASON=SOURCE_BLOB_PROVENANCE_MISMATCH (RECOMPUTED_SHA256 differs from the recorded digest)	FINAL=OK	YES
+NC07	C2 stale interval/digest reported as matching	FROZEN_RANGE_DIGEST_FALSE_PASS	range-digest	0	1	0	FINAL=OK (the true range with its true digest)	FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH (the C2 range hashes to a different digest)	FINAL=OK	YES
+NC08	one of the three member rows omitted or duplicated	MEMBER_CARDINALITY_MISMATCH	member-count	0	1	0	DISTINCT_MEMBER_IDS=3 FINAL=OK	DISTINCT_MEMBER_IDS=2 FINAL=FAIL REASON=MEMBER_CARDINALITY_MISMATCH	DISTINCT_MEMBER_IDS=3 FINAL=OK	YES
+NC09	original U0 two-scalar CSET export counted as observable	INERT_CSET_ABI	cset-inert	0	1	0	FINAL=OK (an observable CSET export is accepted)	FINAL=FAIL REASON=INERT_CSET_ABI CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO	FINAL=OK	YES
+NC10	CSET emitter activity counted as independent selection	DUPLICATE_SEMANTIC_AUTHORITY	cset-duplicate	0	1	0	FINAL=OK (CSET_CLAIMS_INDEPENDENT=NO)	FINAL=FAIL REASON=DUPLICATE_SEMANTIC_AUTHORITY DETECTION=FOR_DECISION_COUNTED_UNDER_TWO_SITE_IDS	FINAL=OK	YES
+NC11	same FOR mutation/witness reused for CSET authority	CAUSAL_SITE_DOUBLE_COUNT	causal-double-count	0	1	0	FINAL=OK	FINAL=FAIL REASON=CAUSAL_SITE_DOUBLE_COUNT (the reused execution and witness ids are named)	FINAL=OK	YES
+NC12	CSET independent policy claimed without source rule	SOURCE_RULE_ABSENT	source-rule-absent	0	1	0	FINAL=OK (FOR contains 'switch': TOKEN_OCCURRENCES=2)	FINAL=FAIL REASON=SOURCE_RULE_ABSENT (the CSET definition contains 'switch': TOKEN_OCCURRENCES=0)	FINAL=OK	YES
+NC13	no real compiled PolyC value crosses corrected ABI	UNOBSERVABLE_CORRECTED_ABI	unobservable-abi	0	1	0	FINAL=OK (the corrected FOR export returns a pointer)	FINAL=FAIL REASON=UNOBSERVABLE_CORRECTED_ABI DETECTION=NO_OBSERVABLE_OUTPUT_CHANNEL	FINAL=OK	YES
+NC14	invalid or zero IrCmpKind mapped to fake error/suffix	DOMAIN_STATUS_COLLISION	domain-collision	0	1	0	DERIVED_VALUE=0 EXPECTED_VALUE=0 FINAL=OK	DERIVED_VALUE=0 EXPECTED_VALUE=-1 FINAL=FAIL REASON=DOMAIN_STATUS_COLLISION	FINAL=OK	YES
+NC15	borrowed suffix not terminated or written/freed by host	BORROWED_LITERAL_LIFETIME_VIOLATION	borrowed-lifetime	0	1	0	EXPORT_RETURNS_POINTER=YES HOST_NON_OWNERSHIP_STATED=YES FINAL=OK	EXPORT_RETURNS_POINTER=NO FINAL=FAIL REASON=BORROWED_LITERAL_LIFETIME_VIOLATION	FINAL=OK	YES
+NC16	invalid float/integer condition accepted by default mapping	INVALID_CONDITION_NOT_FAIL_CLOSED	fail-closed	0	1	0	INVALID_PARTITION_ROWS=2 FINAL=OK	FINAL=FAIL REASON=INVALID_CONDITION_NOT_FAIL_CLOSED (the INVALID row carries a real suffix)	FINAL=OK	YES
+NC17	unassemblable suffix accepted as AArch64 condition	ASSEMBLER_SUFFIX_FALSE_PASS	suffix-assembler	0	1	0	SUFFIXES_ASSEMBLING=12 SUFFIXES_REJECTED=1 FINAL=OK	FINAL=FAIL REASON=ASSEMBLER_SUFFIX_FALSE_PASS (a non-condition suffix was recorded as assembling)	FINAL=OK	YES
+NC18	two producer labels point to same executable digest	PRODUCER_ALIAS	producer-alias	0	1	0	FINAL=OK	FINAL=FAIL REASON=PRODUCER_ALIAS (the two aliased producer ids and the shared digest are named)	FINAL=OK	YES
+NC19	PAIR12 stream comparisons conflated with FROZEN12 checks	DIFFERENTIAL_SCHEMA_CONFLATION	schema-conflation	0	1	0	FINAL=OK	FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION DETECTION=PAIR_ROSTER_CONFLATED_WITH_FROZEN_ROSTER	FINAL=OK	YES
+NC20	C-only oracle accidentally imports new PolyC subject	C_ONLY_ORACLE_CONTAMINATION	oracle-contamination	0	1	0	FINAL=OK (POLYC_SUBJECT_IMPORT=NONE)	FINAL=FAIL REASON=C_ONLY_ORACLE_CONTAMINATION DETECTION=C_ONLY_ORACLE_IMPORTS_A_POLYC_SUBJECT_SYMBOL	FINAL=OK	YES
+NC21	contract prototype object linked but caller does not read result	DORMANT_PROTOTYPE_AUTHORITY	dormant-prototype	0	1	0	PROTOTYPE_ROWS=1 FINAL=OK	FINAL=FAIL REASON=DORMANT_PROTOTYPE_AUTHORITY DETECTION=PROTOTYPE_LINKED_BUT_NO_RESULT_OBSERVED	FINAL=OK	YES
+NC22	unchanged production edge counted as a new graph cut	UNPROVEN_GRAPH_CUT	graph-cut	0	1	0	NEW_PROVEN_CUTS=0 FINAL=OK	FINAL=FAIL REASON=UNPROVEN_GRAPH_CUT DETECTION=NEW_CUT_CLAIMED_WITHOUT_PROOF_REFERENCE	NEW_PROVEN_CUTS=0 FINAL=OK	YES
+NC23	missing/duplicate acceptance ID or fabricated PASS field	AC_LEDGER_FALSE_PASS	ac-ledger	0	1	0	AC_ROWS=2 FINAL=OK	FINAL=FAIL REASON=AC_LEDGER_FALSE_PASS (the duplicated id is named)	FINAL=OK	YES
+NC24	external AC50 receipt claimed before CLOSE or from wrong tree	PREMATURE_OR_MISBOUND_TERMINALITY	premature-terminality	0	1	0	FINAL=OK (AC50 with a receipt reference)	FINAL=FAIL REASON=PREMATURE_OR_MISBOUND_TERMINALITY DETECTION=AC50_PASS_WITHOUT_EXTERNAL_RECEIPT	FINAL=OK	YES
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+#
+NC_CONTROLS_FROZEN=24
+NC_CONTROLS_EXECUTED=24
+NC_CONTROLS_PASSED=24
+NC_CONTROLS_FAILED=0
+NC_CONTROLS_NOT_RUN=0
+NC_REASON_TOKENS_DISTINCT=24 (of 24)
+EVERY_CONTROL_SILENT_ON_PRISTINE=YES
+EVERY_CONTROL_FIRED_ON_ADVERSE=YES
+EVERY_CONTROL_SILENT_ON_RESTORED=YES
+VACUOUS_CONTROLS=0
+ADVERSE_FIXTURES_ISOLATED_OUTSIDE_THE_REPOSITORY=YES
+CANONICAL_TREE_MODIFIED_BY_THE_NC_CYCLE=NO
+NC_VERDICT=PASS

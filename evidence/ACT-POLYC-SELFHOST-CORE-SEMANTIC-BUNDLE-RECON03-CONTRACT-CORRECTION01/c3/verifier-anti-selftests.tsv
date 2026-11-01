@@ -1,0 +1,117 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=verifier-anti-selftests
+#
+# THE VERIFIER'S OWN ANTI-SELFTESTS: IT MUST REJECT A FALSE POSITIVE
+# AND IT MUST NOT ACCEPT A FALSE THIRD-AUTHORITY CLAIM.
+#
+# These are the ACT's C3 requirements: "Perform a separate verifier
+# selftest that rejects dropped AC IDs, duplicated site IDs, false
+# positive whole-function hashes, and an unjustified third-authority
+# claim."
+#
+# ---------------------------------------------------------------------------
+# THE VERIFIER'S INTERNAL SELF-TEST
+#
+# The compiled detector's own `selftest` mode validates its SHA-256
+# implementation against three FIPS 180-4 vectors and validates its
+# source-aware scanner against a fixture whose body contains braces
+# inside a string literal, a character literal, a line comment and a
+# block comment. The scanner must find the TRUE closing brace.
+#
+command	observed	rc
+./build/a64-cmp-cc-contract-correction01-verify selftest	SELFTESTOK / FINAL=OK	0
+SHA256_VECTOR_abc	ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad (MATCH)
+SHA256_VECTOR_empty	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 (MATCH)
+SHA256_VECTOR_hello_world	b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9 (MATCH)
+SCANNER_FIXTURE_BRACES_IN_STRING	detected (the scanner did NOT stop at the '}' inside the string literal)
+SCANNER_FIXTURE_BRACES_IN_CHAR	detected
+SCANNER_FIXTURE_BRACES_IN_LINE_COMMENT	detected
+SCANNER_FIXTURE_BRACES_IN_BLOCK_COMMENT	detected
+SCANNER_FIXTURE_SECOND_FUNCTION_NOT_MATCHED	detected
+#
+# ---------------------------------------------------------------------------
+# THE ANTI-SELFTESTS
+#
+# ---------------------------------------------------------------------------
+# ANTI-01: A DROPPED ACCEPTANCE ID MUST BE REJECTED
+#
+# The ac-ledger detector counts the rows and compares the count with
+# the expected count, so a DROPPED id is a cardinality mismatch.
+#
+adverse_input	a_ledger_with_1_row_where_2_are_expected
+expected	FINAL=FAIL REASON=AC_LEDGER_FALSE_PASS
+observed	FINAL=FAIL REASON=AC_LEDGER_FALSE_PASS (AC_ROWS=1 EXPECTED_AC_ROWS=2)
+verdict	PASS
+#
+# ---------------------------------------------------------------------------
+# ANTI-02: A DUPLICATED SITE ID MUST BE REJECTED
+#
+adverse_input	a_members_table_whose_site_id_appears_twice
+expected	FINAL=FAIL REASON=MEMBER_CARDINALITY_MISMATCH
+observed	FINAL=FAIL REASON=MEMBER_CARDINALITY_MISMATCH
+verdict	PASS
+#
+# ---------------------------------------------------------------------------
+# ANTI-03: A FALSE-POSITIVE WHOLE-FUNCTION HASH MUST BE REJECTED
+#
+# The whole-function digest must be RECOMPUTED from the source bytes
+# over the named range. A hash that is merely asserted is not
+# accepted.
+#
+adverse_input	the C1 PARTIAL digest asserted as the whole-definition digest
+expected	FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND
+observed	FINAL=FAIL REASON=RANGE_SEMANTIC_MISBIND DETECTION=PARTIAL_DIGEST_PRESENTED_AS_WHOLE
+verdict	PASS
+#
+# ---------------------------------------------------------------------------
+# ANTI-04: AN UNJUSTIFIED THIRD-AUTHORITY CLAIM MUST BE REJECTED
+#
+# THIS IS THE MOST IMPORTANT ANTI-SELFTEST. The verifier must REJECT
+# an assertion that the CSET site is an independent semantic
+# authority, unless the source supports it.
+#
+# The source-level test: the CSET whole definition contains ZERO
+# 'switch', ZERO 'case ' and ZERO 'IR_CMP_' occurrences. The claim is
+# therefore unjustified at the SOURCE level, and the verifier rejects
+# it with SOURCE_RULE_ABSENT.
+#
+adverse_input_1	the claim "the CSET site owns an independent condition-code selection", tested against the live source
+expected	FINAL=FAIL REASON=SOURCE_RULE_ABSENT
+observed	FINAL=FAIL REASON=SOURCE_RULE_ABSENT (TOKEN_OCCURRENCES=0 for 'switch', 'case ' and 'IR_CMP_' in aarch64EmitCSet; the same probe on aarch64CcFor returns 2, 16 and 16, so the detector is not a blanket failure)
+verdict	PASS
+#
+# adverse_input_2	the claim, expressed in a table as INDEPENDENT_SEMANTIC_DECISION=YES while the suffix still comes from aarch64CcFor
+expected	FINAL=FAIL REASON=DUPLICATE_SEMANTIC_AUTHORITY
+observed	FINAL=FAIL REASON=DUPLICATE_SEMANTIC_AUTHORITY DETECTION=FOR_DECISION_COUNTED_UNDER_TWO_SITE_IDS
+verdict	PASS
+#
+# adverse_input_3	the claim, expressed as a third export that carries no observable output
+expected	FINAL=FAIL REASON=INERT_CSET_ABI
+observed	FINAL=FAIL REASON=INERT_CSET_ABI CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO
+verdict	PASS
+#
+# adverse_input_4	the claim, expressed as a reuse of FOR's execution and witness for CSET
+expected	FINAL=FAIL REASON=CAUSAL_SITE_DOUBLE_COUNT
+observed	FINAL=FAIL REASON=CAUSAL_SITE_DOUBLE_COUNT
+verdict	PASS
+#
+# ANTI-04_POSITIVE_CONTROL: THE SAME PROBE ON THE TWO SITES THAT DO
+# OWN A DECISION MUST BE SILENT.
+#
+adverse_input	the same source-rule probe on aarch64CcFor and on aarch64CcInvFor
+expected	FINAL=OK
+observed	FINAL=OK (TOKEN_OCCURRENCES: switch=2, 'case '=16, 'IR_CMP_'=16 for both sites)
+verdict	PASS -- the detector discriminates, it is not a blanket failure
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+#
+ANTI_SELFTESTS_EXECUTED=8
+ANTI_SELFTESTS_PASSED=8
+ANTI_SELFTESTS_FAILED=0
+FALSE_POSITIVE_WHOLE_FUNCTION_HASH_ACCEPTED=NO
+UNJUSTIFIED_THIRD_AUTHORITY_CLAIM_ACCEPTED=NO
+DROPPED_ACCEPTANCE_ID_ACCEPTED=NO
+DUPLICATED_SITE_ID_ACCEPTED=NO
+ANTI_SELFTEST_VERDICT=PASS

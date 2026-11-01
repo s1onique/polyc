@@ -1,0 +1,63 @@
+ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+PHASE: C4-CLOSE
+EVIDENCE_KIND: terminality-plan
+
+THIS IS A PLAN, NOT THE RECEIPT.
+
+The external, read-only terminality receipt is generated AFTER the
+CLOSE commit, by an observer that does not modify the repository. It
+is stored OUTSIDE the repository and is bound to the exact CLOSE HEAD
+SHA, the CLOSE tree, the five ACT trailers, the frozen paths, the
+acceptance and negative-control joins, the graph baseline and the
+source and ABI digests.
+
+AC50 REMAINS DEFERRED until that receipt exists. It is NOT backdated,
+and no compensating ordinary commit containing it is added.
+
+--------------------------------------------------------------------------
+THE ORDER OF OPERATIONS
+--------------------------------------------------------------------------
+1. Freeze the HANDOFF document.
+2. Append exactly ONE row to docs/factory/act-handoff-map.tsv.
+3. Append exactly ONE bounded correction section to docs/ROADMAP.md.
+4. Write this plan (and only this plan) under the tracked c4/ path.
+5. Commit exactly ONE final CLOSE with the actual PASS verdict and
+   the Factory-v2 trailers:
+       ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+       ACT-Phase: CLOSE
+       ACT-Verdict: PASS
+6. The tracked CLOSE is the LAST ACT change.
+7. Generate the external receipt, outside the repository.
+8. Verify: one CLOSE commit, no post-CLOSE ACT continuation, a clean
+   worktree, no replace refs, no ACT worktrees remaining, and no
+   push.
+
+--------------------------------------------------------------------------
+THE RECEIPT'S BINDINGS
+--------------------------------------------------------------------------
+binding	what it must check
+HEAD SHA	that it is the exact CLOSE commit of this ACT
+TREE	the exact CLOSE tree, with no later modification
+the five trailers	ACT, ACT-Phase, ACT-Verdict on every one of the five commits
+the phase sequence	RED -> EVIDENCE -> IMPL -> EVIDENCE -> CLOSE, five linear non-merge commits
+the frozen paths	that no prior ACT, HANDOFF, evidence or sidecar path differs from the entry tree
+the acceptance join	AC01..AC49 PASS, AC50 DEFERRED at C3 and satisfied by the receipt
+the NC join	NC01..NC24 PASS, each with its own reason token
+the graph	52 nodes, 134 mandatory edges, 34 SCCs, largest 19, new cuts 0
+the source digests	the three whole-function ranges and their SHA-256 values
+the ABI digests	the corrected-abi-v2.md digest from its separate sidecar
+the scope	the absence of any production semantic delta
+the publication	that nothing was pushed
+
+--------------------------------------------------------------------------
+THE SUCCESSOR
+--------------------------------------------------------------------------
+ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+
+PROPOSED ONLY. It is NOT created and NOT executed by this ACT. Its
+entry is this ACT's CLOSE and its sole binding implementation contract
+is ABI-A64-CMP-CC-2, with a target of 13 -> 15.
+
+NEXT_TARGET_AUTHORIZED=NO
+SELFHOST_M2_ACHIEVED=NO
+SLICE10_AUTHORIZED=NO

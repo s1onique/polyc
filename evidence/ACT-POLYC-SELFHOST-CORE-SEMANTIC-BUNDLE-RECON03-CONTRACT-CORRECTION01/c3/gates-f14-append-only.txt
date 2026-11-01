@@ -1,0 +1,116 @@
+ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+PHASE: C3-EVIDENCE
+EVIDENCE_KIND: gates-f14-append-only
+
+Every command below was ACTUALLY RUN against this tree. The observed
+outputs and the exit codes are the real ones.
+
+--------------------------------------------------------------------------
+THE FAST GATE
+--------------------------------------------------------------------------
+COMMAND=make gate-fast
+RC=0
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+STATUS=PASS
+VERDICT=PASS
+SKIPPED_CHECKS_RELABELLED=0
+
+--------------------------------------------------------------------------
+THE PUSH GATE (serialized, with a stable TMPDIR)
+--------------------------------------------------------------------------
+COMMAND=make gate-push
+RC=0
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK=aot STATUS=PASS
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=diff-check STATUS=PASS
+VERDICT=PASS
+GATE_PUSH_CHECK_COUNT=7
+GATE_PUSH_CHECKS_PASSED=7
+SKIPPED_CHECKS_RELABELLED=0
+
+--------------------------------------------------------------------------
+THE APPEND-ONLY SUITE
+--------------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+RC=0
+PASS=11
+FAIL=0
+STATUS=PASS
+
+--------------------------------------------------------------------------
+THE FACTORY-V2 RANGE VALIDATION
+--------------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 4a380e6a93c98736facf6d82fe3dd14cbc0a8728
+ENTRY=f850be2dbd175ed06cc8b3c6bed8ad261fbe3cbb
+FIRST=d9f904b88e1ccd187f62e0d4fe1d747bc58aaa37
+CLOSE=4a380e6a93c98736facf6d82fe3dd14cbc0a8728
+COMMITS=5
+VERDICT=PASS
+STATUS=PASS
+
+COMMAND=sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02 500d2fce1259b03bad7f10795c11346dadcc70d0
+ENTRY=fd8d32e2a295f1a4b9239f552d20f12f416b33f0
+FIRST=7fc45394cdf63adcb0f2c60003631970a2eca0e4
+CLOSE=500d2fce1259b03bad7f10795c11346dadcc70d0
+COMMITS=2
+VERDICT=HALT_SOURCE_RANGE_DIGEST
+STATUS=PASS
+
+Both predecessors' ranges validate against the Factory-v2 range
+validator, and IMPLEMENT02's historical HALT verdict is preserved.
+
+--------------------------------------------------------------------------
+THE CLOSURE STATUS CHECK
+--------------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-closure-status-check.sh
+RC=0
+MANIFEST_ROWS=58
+MISSING_ACT_FILES=0
+MISSING_HANDOFF_FILES=0
+MALFORMED_HANDOFF_VERDICT=0
+DUPLICATE_PAIR_DETECTED=NO
+PAIR_OK=58
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+
+--------------------------------------------------------------------------
+THE F14 PREDECESSOR FREEZE
+--------------------------------------------------------------------------
+COMMAND=./build/a64-cmp-cc-contract-correction01-verify f14-freeze evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01/c0/predecessor-f14-freeze.tsv <repo-root>
+FROZEN_PATHS_VERIFIED=523
+FINAL=OK
+RC=0
+FROZEN_PATH_MISMATCHES=0
+
+--------------------------------------------------------------------------
+THE PATCH HYGIENE AND THE SCOPE CHECKS
+--------------------------------------------------------------------------
+COMMAND=git diff --check
+RC=0 (no whitespace or conflict-marker defect)
+
+COMMAND=git diff --stat <entry> -- src/ tools/bootstrap/ Makefile src/CMakeLists.txt tests/ scripts/
+(the output is EMPTY: no production source, no bootstrap source, no
+Makefile, no CMake file, no test and no script was changed)
+
+COMMAND=git status --porcelain
+(the only paths are the ACT's own authorized paths)
+
+--------------------------------------------------------------------------
+THE VERDICT
+--------------------------------------------------------------------------
+GATE_FAST=PASS
+GATE_PUSH=PASS
+APPEND_ONLY=PASS (11/11)
+F14=PASS (523 paths, 0 mismatches)
+FACTORY_V2=PASS (both predecessor ranges validate)
+PATCH_HYGIENE=PASS
+GATES_VERDICT=PASS

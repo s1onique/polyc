@@ -1,0 +1,86 @@
+# ACT_ID=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-rehash-and-join
+#
+# THE INDEPENDENT RECOMPUTATION: TWO METHODS THAT SHARE NO CODE AND
+# THAT DO NOT READ EACH OTHER'S PASS COLUMNS.
+#
+# METHOD 1: the compiled PolyC verifier
+#   build/a64-cmp-cc-contract-correction01-verify
+#   (tools/quality/a64-cmp-cc-contract-correction01-verify.HC)
+#
+# METHOD 2: POSIX grep -n + wc -c + awk (masking strings and
+#   comments) + dd + shasum -a 256
+#
+# METHOD 3: git cat-file, for the blob identity and its size
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE SOURCE BLOB
+#
+item	method_1	value	method_2	value	agreement
+SOURCE_BLOB_OID	git rev-parse HEAD:src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	git cat-file -p HEAD:src/aarch64.c | git hash-object --stdin	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	IDENTICAL
+SOURCE_BLOB_BYTES	the PolyC scanner's file length	101705	wc -c over git cat-file -p	101705	IDENTICAL
+SOURCE_BLOB_SHA256	shasum over the blob	98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d	shasum over the blob	98ee2460916bd361d1c8b44e1f9d9e28e884e4ef1daf173c06e803a05e09130d	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE THREE BOUNDARIES AND DIGESTS, RECOMPUTED TWICE
+#
+site_id	function	method_1_range	method_1_sha256	method_2_range	method_2_sha256	agreement
+SITE-A64-CC-FOR	aarch64CcFor	[35517,36575)	6ad4b25dc0473eeb2665690c7eff0d45100c6d184f1fff04bc374bf415a7e617	[35517,36575)	6ad4b25dc0473eeb2665690c7eff0d45100c6d184f1fff04bc374bf415a7e617	IDENTICAL
+SITE-A64-CC-INV	aarch64CcInvFor	[36577,37494)	56ee5cf27e10e4a0919588713ef77a481017a2962bf713cc3f51796d8c53b7cc	[36577,37494)	56ee5cf27e10e4a0919588713ef77a481017a2962bf713cc3f51796d8c53b7cc	IDENTICAL
+SITE-A64-CSET	aarch64EmitCSet	[37566,37718)	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	[37566,37718)	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE SOURCE-DERIVED DOMAIN, RECOMPUTED TWICE
+#
+item	method_1	value	method_2	value	agreement
+IR_CMP_INVALID	the PolyC enum parser	-1	an independent reading of the live header	-1	IDENTICAL
+IR_CMP_EQ	the PolyC enum parser	0	an independent reading of the live header	0	IDENTICAL
+IR_CMP_ORD	the PolyC enum parser	17	an independent reading of the live header	17	IDENTICAL
+ENUMERATOR_COUNT	the PolyC enum parser	19	a count of the live enumerators	19	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE SITE SEMANTIC CLASSIFICATION, RECOMPUTED TWICE
+#
+site_id	method_1_count_of_switch_case_IR_CMP_in_the_whole_definition	method_2_the_same_counts_read_from_the_extracted_bytes	agreement
+SITE-A64-CC-FOR	2 / 16 / 16	2 / 16 / 16	IDENTICAL
+SITE-A64-CC-INV	2 / 16 / 16	2 / 16 / 16	IDENTICAL
+SITE-A64-CSET	0 / 0 / 0	0 / 0 / 0	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE PRODUCER EXECUTABLE DIGESTS
+#
+producer_id	path	method_1_sha256	method_2_sha256	agreement
+C_TOOLCHAIN	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	IDENTICAL
+POLYC_PRODUCER_1	build/host-stage0/hcc	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	IDENTICAL
+POLYC_PRODUCER_2	./hcc	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	IDENTICAL
+POLYC_PRODUCER_3	./build/hcc-bootstrap02	99788f5273c734d387afa99a4c220de7033631d90bba8d02e56e36f51c7d5533	99788f5273c734d387afa99a4c220de7033631d90bba8d02e56e36f51c7d5533	IDENTICAL
+POLYC_PRODUCER_4	./build/hcc-bootstrap03	3fc016cb9292b9e4d1cd3e6e90370a96fe21a1a135b0da3e85a6f5d172df94b8	3fc016cb9292b9e4d1cd3e6e90370a96fe21a1a135b0da3e85a6f5d172df94b8	IDENTICAL
+POLYC_PRODUCER_5	./build/hcc-bootstrap04	e6bae180f2779b89c51370974a47ec323b6a5292230d8cfdb2a24ada0461c8e2	e6bae180f2779b89c51370974a47ec323b6a5292230d8cfdb2a24ada0461c8e2	IDENTICAL
+DISTINCT_PRODUCER_DIGESTS=6
+#
+# ---------------------------------------------------------------------------
+# PART 6: THE UNIQUE SITE IDS AND THE FINAL AUTHORITY COUNT
+#
+unique_site_ids_in_the_corrected_members_table=3 (SITE-A64-CC-FOR, SITE-A64-CC-INV, SITE-A64-CSET)
+unique_site_ids_in_the_authority_count=2 (SITE-A64-CC-FOR, SITE-A64-CC-INV)
+final_authority_count=2
+bundle_mode=TWO_PLUS_ADAPTER
+future_total_authorities=15
+#
+# ---------------------------------------------------------------------------
+# PART 7: THE ANTI-CONTROLS ON THE RECOMPUTATION ITSELF
+#
+control	adverse_input	result
+ONE_BYTE_PERTURBATION	the whole range extended by one byte, with the true digest	FIRED: SOURCE_RANGE_OFF_BY_ONE (the extended digest is named)
+DIFFERENT_BLOB_ANTI_CONTROL	a correct digest paired with a different source blob's bytes	FIRED: SOURCE_BLOB_PROVENANCE_MISMATCH (the recomputed digest differs)
+THIRD_AUTHORITY_ANTI_CONTROL	the claim that the CSET site is an authority merely because its assembly output changes	REJECTED: SOURCE_RULE_ABSENT, DUPLICATE_SEMANTIC_AUTHORITY, INERT_CSET_ABI and CAUSAL_SITE_DOUBLE_COUNT all fire against the four separate expressions of that claim
+POSITIVE_CONTROL	the same probes against the two sites that DO own a decision	SILENT
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+#
+INDEPENDENT_RECOMPUTATION=YES
+DISAGREEMENTS=0
+JOINS_VERIFIED=YES
+AUTHORITY_COUNT_INDEPENDENTLY_CONFIRMED=2
