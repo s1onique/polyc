@@ -1,0 +1,85 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE (the scope and F14 checks are recorded here
+# because they apply to the whole ACT, whatever phase it ends in)
+# EVIDENCE_KIND=f14-append-only-and-scope
+#
+# ---------------------------------------------------------------------------
+# F14: THE PREDECESSOR'S PATHS ARE UNTOUCHED
+# ---------------------------------------------------------------------------
+# The freeze covers the predecessor's ENTIRE evidence tree, its ACT
+# document and its HANDOFF: 57 paths, each recorded by Git blob OID
+# and by the content SHA-256 of the blob's bytes, and each verified
+# TWICE -- once from the Git object and once from the working tree.
+#
+F14_PATHS=57
+F14_MISMATCHES=0
+F14_MISSING_OBJECTS=0
+F14_VERDICT=PASS
+#
+# The full manifest is in c0/predecessor-f14-freeze.tsv.
+#
+# ---------------------------------------------------------------------------
+# THE APPEND-ONLY INVARIANT
+# ---------------------------------------------------------------------------
+git replace -l is empty	YES (0 replace refs)
+the ACT's own commit is a single-parent, ordinary, fast-forward commit	YES
+no amend, rebase, filter-branch, filter-repo, git replace, reset+recommit, squash merge or force push was used	YES
+the predecessor's CLOSE 4a380e6a is still an ancestor of the ACT's HEAD	YES
+no ref was deleted	YES
+APPEND_ONLY_STATUS=PASS
+#
+# The repository's own permanent append-only regression suite passes
+# 11/11 (see c3/gate-fast-and-gate-push.txt).
+#
+# ---------------------------------------------------------------------------
+# THE SCOPE OF THIS ACT
+# ---------------------------------------------------------------------------
+# Every tracked path this ACT changed is inside its authorized list.
+# The production source tree is UNTOUCHED.
+#
+authorized_path	changed	note
+docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md	ADDED	the ACT document
+docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md	ADDED	the HANDOFF
+docs/factory/act-handoff-map.tsv	MODIFIED (one appended row)	the map row
+docs/ROADMAP.md	MODIFIED (one appended section)	bounded append only
+tools/quality/abi-core-bundle-implement02-contract-audit.HC	ADDED	the ACT-local PolyC verifier (matches the authorized tools/quality/abi-core-bundle-implement02-*.HC pattern)
+evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02/**	ADDED	the evidence tree
+#
+forbidden_path	changed
+src/aarch64.c	NO
+src/CMakeLists.txt	NO
+src/x86_64.c	NO
+src/asm/**	NO
+any other src/**	NO
+Makefile	NO
+tools/bootstrap/** (existing components)	NO
+any existing test	NO
+scripts/quality/** (the canonical gates)	NO
+docs/factory/DOCTRINE.md, docs/factory/GIT-METADATA.md, AGENTS.md	NO
+any historical ACT, HANDOFF or evidence file	NO
+the predecessor's frozen contract and its c1/c2/c3 evidence	NO
+#
+# The verification is mechanical:
+#   git status --porcelain=v1 -- src/ Makefile tools/bootstrap/ scripts/
+# returns EMPTY.
+#
+FORBIDDEN_PATHS_CHANGED=0
+UNAUTHORIZED_PATHS_CHANGED=0
+SCOPE_VERDICT=PASS
+#
+# ---------------------------------------------------------------------------
+# PATCH HYGIENE
+# ---------------------------------------------------------------------------
+git diff --check reports no whitespace error	YES
+no trailing whitespace introduced into the appended Markdown	YES
+the appended Markdown sections each carry their own header and are
+separated from the preceding text by a blank line	YES
+no generated build file, binary or machine-local log is tracked	YES
+PATCH_HYGIENE_VERDICT=PASS
+#
+# ---------------------------------------------------------------------------
+# NO PYTHON AND NO NEW DEPENDENCY
+# ---------------------------------------------------------------------------
+no Python source was added by this ACT	YES
+no new dependency was introduced	YES
+the ACT's only new tool is a PolyC-authored .HC file	YES

@@ -1,0 +1,152 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=cset-output-channel-proof
+#
+# C0-P2: DOES THE FROZEN THIRD EXPORT HAVE A LOAD-BEARING, OBSERVABLE
+#        OUTPUT CHANNEL UNDER ITS EXACT FROZEN RESTRICTIONS?
+#
+# THE FROZEN SIGNATURE (RECON03 c2/selected-bundle-contract.md line 74):
+#
+#     U0 AbiA64CmpCcEmitCSet(I64 comparison_kind, I64 is_float);
+#
+# THE FROZEN RESTRICTIONS (RECON03 c2/abi-and-bootstrap-successor-contract.tsv):
+#     callback_surface   NONE -- no function pointer, no callback table,
+#                              no void* crosses the seam
+#     mutable_host_state NONE -- no site writes mutable host or global
+#                              state; only the host's own assembly buffer
+#                              is written, and the host sequences it
+#     ownership          no allocation crosses the seam
+#     aliasing           none -- the suffix is not writable through the
+#                              returned pointer
+#
+# ---------------------------------------------------------------------------
+# PART 1: WHAT THE CSET SITE ACTUALLY DECIDES
+# ---------------------------------------------------------------------------
+# The live source, src/aarch64.c lines 920..923 (byte range [37566,37714)):
+#
+#     /* Emit a cset into x0 setting it to 1 or 0 based on the last cmp. */
+#     static void aarch64EmitCSet(IrCgCtx *ctx, IrCmpKind cmp, int is_float) {
+#         aoStrCatFmt(ctx->buf, "cset    x0, %s\n\t", aarch64CcFor(cmp, is_float));
+#     }
+#
+# The site has exactly ONE decision to make: WHICH SUFFIX STRING is
+# formatted into the host's assembly buffer. The host owns ctx->buf and
+# performs the formatting. The site's entire semantic content is the
+# choice of suffix.
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE ENUMERATED OUTPUT CHANNELS A U0 CALL COULD USE
+# ---------------------------------------------------------------------------
+# Every channel by which a U0 function could, in principle, affect the
+# emitted assembly was enumerated from the source and from the frozen
+# restrictions. Each is tested against the frozen contract.
+#
+channel_id	channel	present_in_frozen_abi	allowed_by_frozen_restrictions	would_be_observable_in_the_emitted_assembly	verdict
+CH-01	RETURN VALUE	NO -- the return type is U0 (void); there is nothing to return	NA	NO	UNAVAILABLE
+CH-02	OUT-PARAMETER CELL	NO -- the signature is (I64, I64) with no pointer parameter; there is no cell to write	NA	NO	UNAVAILABLE
+CH-03	HOST ASSEMBLY BUFFER POINTER	NO -- the signature carries no ctx/buf pointer	NA	NO	UNAVAILABLE
+CH-04	CALLBACK / FUNCTION POINTER	NO -- the signature carries no callback parameter	FORBIDDEN by callback_surface=NONE	NO	UNAVAILABLE
+CH-05	MUTABLE HOST OR GLOBAL STATE	NO -- the signature carries no state handle; a global would be written by the callee	FORBIDDEN by mutable_host_state=NONE	NO	UNAVAILABLE
+CH-06	RETURNED BORROWED LITERAL POINTER (as in the FOR export)	NO -- the return type is U0, not U8*; the contract forbids changing the return into a suffix pointer	FORBIDDEN: the ACT says "do not ... turn the return into a suffix pointer"	NO	UNAVAILABLE
+CH-07	RE-USE OF THE FOR EXPORT'S SUFFIX	NO -- this is the "count the FOR suffix reused by C as a third independently selected authority" case the ACT explicitly rejects; the C side would still be selecting the condition	NA	NO -- the decision would remain in C	REJECTED BY THE ACT
+CH-08	SIDE EFFECT ON A SHARED HOST STRUCTURE WITHOUT A HANDLE	NO -- the callee has no reference to any host structure	FORBIDDEN by mutable_host_state=NONE	NO	UNAVAILABLE
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE ENUMERATION IS EXHAUSTIVE
+# ---------------------------------------------------------------------------
+# The only channels by which a function can affect a caller's later
+# behaviour are: a returned value, a write through a pointer the caller
+# supplied, a write through a global, a call through a function pointer,
+# or a write through a pointer reachable from a handle the caller
+# supplied. In the frozen signature
+#     U0 f(I64 comparison_kind, I64 is_float)
+# the parameter list consists of two copied scalars. No pointer of any
+# kind is supplied. There is no global the callee is permitted to
+# write. There is no callback to invoke. The return type carries no
+# value. Therefore NO channel exists.
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE OBSERVABILITY ANTI-CONTROL
+# ---------------------------------------------------------------------------
+# The ACT requires the interpretation to be "Tested ... on an isolated
+# build with a real compiled PolyC subject, host call site and
+# output-difference anti-control" and states the interpretation must
+# NOT "merely call an inert U0 function while C continues selecting
+# the cset condition".
+#
+# A U0 export with the frozen signature and the frozen restrictions is
+# EXACTLY an inert function: the C side would have to call it and then
+# continue to obtain the suffix by some other means. The only other
+# means available in the live source is aarch64CcFor -- either the C
+# body (forbidden: the legacy decision must be compiled out in
+# selector-ON) or the PolyC FOR export (forbidden: that is the FOR
+# site's authority, and reusing it is CH-07, which the ACT rejects as
+# "counting the FOR suffix reused by C as a third independently
+# selected authority").
+#
+# Consequently: with the exact frozen ABI, the CSET decision either
+# stays in C (violating "old CSET decision retired", AC29, and
+# "No active legacy C comparison-selection code remains at the three
+# ON call sites", AC30) or it is served by the FOR export (violating
+# AC29's "CSET independently affects production output through
+# compiled PolyC" and AC40's "coupled FOR->CSET not double-counted",
+# and violating the ACT's explicit instruction not to "count the FOR
+# suffix reused by C as a third independently selected authority").
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE REPOSITORY'S OWN PRECEDENT, WHICH MAKES THE GAP
+#             UNAMBIGUOUS
+# ---------------------------------------------------------------------------
+# Every CROSS-SEAM PolyC authority in this tree returns a value or
+# writes a caller-supplied cell. There is no cross-seam U0 authority
+# with two copied scalars and no output channel.
+#
+authority	export_signature	observable_channel	verdict
+ABI-CORE-OP-1 (core-operator)	AbiCoreClassifyCompoundAssign(I64,I64,I64*)	I64 return + I64* out-cell	OBSERVABLE
+ABI-CORE-OP-1 (core-operator)	AbiCoreIsValidPointerOperator(I64)	I64 return	OBSERVABLE
+ABI-CORE-OP-1 (core-operator)	AbiCoreIsRangeOperator(I64)	I64 return	OBSERVABLE
+ABI-CPA-1 (compile-print-ast)	AbiCpaShouldPrintAst(s64)	s64 return	OBSERVABLE
+ABI-A64-CMP-CC-1 (FROZEN, proposed)	AbiA64CmpCcFor(I64)	U8* return (borrowed literal)	OBSERVABLE
+ABI-A64-CMP-CC-1 (FROZEN, proposed)	AbiA64CmpCcInvFor(I64)	U8* return (borrowed literal)	OBSERVABLE
+ABI-A64-CMP-CC-1 (FROZEN, proposed)	AbiA64CmpCcEmitCSet(I64,I64)	U0 -- NONE	NOT OBSERVABLE
+#
+# The one U0 function in tools/bootstrap (LinkAsciiLower(U8,Bool*)) is
+# an INTERNAL helper of its own component: it is never called from any
+# C translation unit, so it establishes no cross-seam U0 precedent.
+#
+# ---------------------------------------------------------------------------
+# PART 6: THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# The ACT states: "C0 must establish an executable source-bound
+# contract interpretation in the predecessor's already committed
+# evidence that gives AbiA64CmpCcEmitCSet a load-bearing observable
+# result while preserving its exact declared signature, ownership and
+# no-callback/no-state-write restrictions."
+#
+# The predecessor's committed evidence contains NO such interpretation.
+# The contract's own "Host projection semantics" table has no row
+# that gives the third export an output channel; the "Status domain"
+# row ("The return value is a POINTER, never a numeric status") does
+# not apply to a U0 export; and the contract's own comment says "The
+# host passes the borrowed suffix straight into its own formatting",
+# which describes the FOR export, not a channel for the third one.
+#
+# The predecessor's evidence DOES contain the coupling that makes the
+# gap fatal: RECON03's own CSET site-isolation record states that the
+# CSET mutation "replaces the call to aarch64CcFor with a constant",
+# i.e. the CSET site's decision is realised by choosing WHICH SUFFIX
+# the FOR table yields. A suffix choice must be transported. The
+# frozen U0 signature transports nothing.
+#
+# C0-P2 VERDICT = FAIL
+# DISPOSITION = HALT_CSET_ABI_NO_OBSERVABLE_OUTPUT
+#
+# The ACT forbids the repairs that would fix this inside IMPLEMENT02:
+# "Do not invent an output argument, turn the return into a suffix
+# pointer, add a callback, write a global, or change the semantics of
+# U0 under this ACT. Any one of those may be a sensible future
+# corrected ABI, but requires a separate forward-only contract
+# correction and then a separately authorized implementation/resume."
+# NONE of those repairs was made. No production file was modified.
+#

@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE (conservation measured at C0; the tree is
+# unchanged from entry, so the measurement is the tree's state)
+# EVIDENCE_KIND=conservation-parser-lexer
+#
+# PARSER AND LEXER CONSERVATION, MEASURED AGAINST A REAL POPULATED
+# PREFIX.
+#
+COMMAND=make INSTALL_PREFIX=/tmp/impl02/prefix3 TEST_PREFIX=/tmp/impl02/prefix3 unit-test
+UNIT_TEST_RC=0
+PARSER_ASSERTIONS_PASSED=376
+PARSER_ASSERTIONS_TOTAL=376
+PARSER_TEST_BLOCKS=90
+PARSER_FAILED_LINES=0
+PARSER_ASSERTION_SEQUENCE_MD5=b6f117eb1386ca80f81bc06226e2a741
+PARSER_ASSERTION_SEQUENCE_MD5_MATCHES_HISTORICAL=YES
+PARSER_NEW_FAILURE_IDENTITIES=0
+PARSER_PREFIX_IS_POPULATED=YES (include/tos.HH 56333 bytes + lib/libtos.a 157760 bytes)
+#
+COMMAND=make lexer07-direct-differential
+LEXER07_DIRECT_PASS=89
+LEXER07_DIRECT_FAIL=0
+LEXER07_DIRECT_STATUS=PASS
+#
+COMMAND=make lexer08-direct-differential
+LEXER08_DIRECT_PASS=45
+LEXER08_DIRECT_FAIL=0
+LEXER08_DIRECT_STATUS=PASS
+#
+COMMAND=make lexer09-direct-differential
+LEXER09_DIRECT_PASS=23
+LEXER09_DIRECT_FAIL=0
+LEXER09_DIRECT_STATUS=PASS
+#
+# The three direct lexer identities are CONSERVED at 89/89, 45/45 and
+# 23/23, exactly as the frozen baseline records them.
+#
+# A NOTE ON THE ENVIRONMENT. The first attempts at these commands
+# failed with "clang: error: unable to make temporary file: No such
+# file or directory". The root cause was isolated by a controlled
+# experiment: the session's TMPDIR pointed at a sandbox-scoped temporary
+# directory that is REMOVED underneath the build. With TMPDIR set to a
+# directory that exists for the whole run, the SAME commands pass with
+# NO repository change. The failures and their cause are recorded in
+# c0/entry-baselines.txt; they are NOT deleted from the audit trail.
+#
+PARSER_CONSERVATION_STATUS=PASS
+LEXER_DIRECT_CONSERVATION_STATUS=PASS

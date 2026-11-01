@@ -1,0 +1,99 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-50-ac
+#
+# THE FROZEN 50 ACCEPTANCE CRITERIA.
+#
+# The IDs, phases and predicates are the ACT's own, verbatim. The
+# status column records the ACTUAL state at the C0 gate. The criteria
+# that were never reached are NOT_RUN, never PASS and never waived.
+#
+# The aggregate at the bottom is machine-enforced: it is the count of
+# rows by status, and it MUST equal the sum of the per-phase counts.
+#
+ac_id	phase	predicate	evidence_file	independent_checker	status
+AC01	C0	Exact entry HEAD/tree/branch confirmed, zero replace refs, working residue classified.	c0/entry-and-predecessor-ancestry.tsv	git rev-parse / git replace -l / git status	PASS
+AC02	C0	Actual RECON03 CLOSE located by trailers and its five ACT commits validated.	c0/entry-and-predecessor-ancestry.tsv	git interpret-trailers --parse over the real range	PASS
+AC03	C0	Both ordinary post-CLOSE commits enumerated and authorized under actual doctrine/F14.	c0/predecessor-post-close-commit-audit.tsv	git diff over the CLOSE..HEAD range	PASS
+AC04	C0	Frozen RECON03 contract hash matches actual Git object and standalone .sha256.	c0/frozen-contract-identity.tsv	shasum -a 256 over the committed blob	PASS
+AC05	C0	All frozen predecessor paths rehashed; zero unauthorized modifications.	c0/predecessor-f14-freeze.tsv	git cat-file blob + shasum -a 256 per path	PASS
+AC06	C0	Existing 13 production authorities reverified, correction-inclusive causal provenance 13/13.	c0/entry-13-authorities.tsv	nm over the production object graph and the linked ./hcc	PASS
+AC07	C0	Both C1 and C2 source intervals independently rehashed against committed aarch64.c.	c0/source-interval-independent-rehash.tsv	two POSIX/Git methods plus an exhaustive SHA-256 search	FAIL
+AC08	C0	Authoritative function range/hash/boundary mapping proved without changing frozen claims.	c0/source-interval-independent-rehash.tsv	the exhaustive (start,length) SHA-256 search	FAIL
+AC09	C0	Third CSET ABI export has a proved load-bearing output channel within exact frozen restrictions.	c0/cset-output-channel-proof.tsv	the compiled PolyC detector mode red2-cset	FAIL
+AC10	C0	Genuine, distinct three-PolyC-producer DAG and nonconflated 12+12 comparison schemas frozen.	c0/producer-contract-reconciliation.tsv	the Make/CMake rules + nm digests; the detector mode red3-schema	PASS
+AC11	C0	IrCmpKind, zero, pointer-NULL status, suffix lifetime and target ABI source-derived.	c0/contract-audit.tsv	the compiled PolyC detector mode red4-zero plus a real aarch64 assembler	PASS
+AC12	C0	Five independent reason-specific REDs and 50 AC/24 NC contracts frozen and demonstrated.	c0/five-red-observations.tsv	the compiled PolyC detector, all five modes	PASS
+AC13	C1	Genuine selector-OFF complete C compiler oracle built and source/object/link proved.	c1/selector-off-c-only-oracle.tsv	NOT RUN
+AC14	C1	G0 oracle executes all three sites and conserves entry semantics.	c1/selector-off-c-only-oracle.tsv	NOT RUN
+AC15	C1	All valid/integer/float/unknown/boundary/zero fixture partitions enumerated from live source.	c1/source-derived-cmp-domain.tsv	NOT RUN
+AC16	C1	Fixture generator independently computes expected observations rather than copying PolyC table.	c1/source-derived-fixture.tsv	NOT RUN
+AC17	C1	Original true/inverse/CSET semantics with coupled call path frozen per site.	c1/site-and-coupling-contract.tsv	NOT RUN
+AC18	C1	Borrowed string ABI, NUL termination, NULL panic and data/status separation proven.	c1/host-abi-ownership.tsv	NOT RUN
+AC19	C1	C-owned buffer formatting, allocation, diagnostics and recovery remain on C side.	c1/host-abi-ownership.tsv	NOT RUN
+AC20	C1	Exact selector, build objects, make/CMake prerequisites and G0-G3 producer map frozen.	c1/producer-dag-and-12x12-contract.tsv	NOT RUN
+AC21	C1	Three distinct real program witnesses and adjacent-site isolation plans frozen.	c1/selected-site-provenance.tsv	NOT RUN
+AC22	C1	Source, C oracle and fixture provenance frozen before first production edit.	c1/selected-site-provenance.tsv	NOT RUN
+AC23	C2	Exactly one new PolyC subject implements all three authorized semantics; no forbidden paths.	c2/three-site-production-diff-and-build.tsv	NOT RUN
+AC24	C2	Three exported symbols and host declarations match the independently validated frozen ABI.	c2/three-site-production-diff-and-build.tsv	NOT RUN
+AC25	C2	Normal production selector-ON builds/links the correct PolyC subject fail-closed.	c2/three-site-production-diff-and-build.tsv	NOT RUN
+AC26	C2	Stage0 and selector-OFF remain genuine C authority without subject imports.	c2/c-only-oracle-absence-of-polyc.tsv	NOT RUN
+AC27	C2	FOR production call is load-bearing compiled PolyC; old C FOR decision retired.	c2/object-relocations-and-callers.tsv	NOT RUN
+AC28	C2	INV production call is load-bearing compiled PolyC; old C INV decision retired.	c2/object-relocations-and-callers.tsv	NOT RUN
+AC29	C2	CSET independently affects production output through compiled PolyC; old CSET decision retired.	c2/object-relocations-and-callers.tsv	NOT RUN
+AC30	C2	No active legacy C comparison-selection code remains at the three ON call sites.	c2/legacy-decision-dormancy-object.tsv	NOT RUN
+AC31	C2	Make/CMake prerequisite expansion, actual link membership and missing-subject adverse check PASS.	c2/effective-make-prerequisites.tsv	NOT RUN
+AC32	C2	All 13 preceding production PolyC authorities remain present/called/load-bearing.	c2/authority-13-to-16-proof.tsv	NOT RUN
+AC33	C3	G0 + 3 PolyC-producer semantic streams agree on every complete fixture row.	c3/all-directed-12-pair-differentials.tsv	NOT RUN
+AC34	C3	All 12 directed generation result comparisons agree with independently sensitive comparator.	c3/all-directed-12-pair-differentials.tsv	NOT RUN
+AC35	C3	All 12 heterogeneous frozen RECON03 comparison obligations discharged separately.	c3/frozen-heterogeneous-12-checks.tsv	NOT RUN
+AC36	C3	Distinct producer executable digests and object/build/provenance chain verified.	c3/physical-execution-identity-join.tsv	NOT RUN
+AC37	C3	Post-migration FOR PolyC mutation uniquely causes required assembly/runtime transition and restores.	c3/polyc-mutants/FOR/source-object-witness.tsv	NOT RUN
+AC38	C3	Post-migration INV PolyC mutation uniquely causes required assembly/runtime transition and restores.	c3/polyc-mutants/INV/source-object-witness.tsv	NOT RUN
+AC39	C3	Post-migration CSET PolyC mutation uniquely causes required assembly/runtime transition and restores.	c3/polyc-mutants/CSET/source-object-witness.tsv	NOT RUN
+AC40	C3	FOR, INV and CSET mutation site isolation proved; coupled FOR->CSET not double-counted.	c3/physical-execution-identity-join.tsv	NOT RUN
+AC41	C3	Three selector-OFF C mutants live, selector-ON legacy C rules demonstrably dormant.	c3/c-off-dormancy-mutants/FOR.tsv	NOT RUN
+AC42	C3	All 24 negative controls reason-specific and nonvacuous; verifier anti-selftests PASS.	c3/negative-controls-executed.tsv	NOT RUN
+AC43	C3	Parser 376/376 and ordered MD5 unchanged with real populated test prefix.	c3/conservation-parser-lexer.txt	the real runner against a populated prefix	PASS
+AC44	C3	Direct lexer identities preserved; broad lexer/cross-prefix/Python/checker statuses honest.	c3/known-non-green-baselines.txt	the three direct lexer differentials plus the honest statuses	PASS
+AC45	C3	Actual backend assembly and compiled program behavior conserved for all three selected decisions.	c3/fixture-value-and-failure-matrix.tsv	NOT RUN
+AC46	C3	Production graph measured from real objects; every new cut, if any, separately proven.	c3/production-graph-and-authorities.tsv	the repository's own graph tool	PASS
+AC47	C3	gate-fast, serialized gate-push, append-only, F14 and patch hygiene PASS.	c3/gate-fast-and-gate-push.txt	NOT RUN
+AC48	C3	All 50 AC IDs and 24 NC IDs joined exactly, no missing/extra/duplicate/vacuous rows.	c3/full-50-ac-ledger.tsv	NOT RUN
+AC49	C3	Exactly 16 production PolyC authorities and 3 new causally backed decisions; AC50 DEFERRED.	c3/production-graph-and-authorities.tsv	NOT RUN
+AC50	C4	External read-only terminality validates single CLOSE, full ACT range, F14, C3 evidence, final linked authority, no post-CLOSE ACT commits, and receipt bound to exact CLOSE SHA/tree.	c4/terminality-plan.txt	the external read-only receipt, which does not exist yet	DEFERRED
+#
+# THE AGGREGATE, MACHINE-ENFORCED
+#
+AC_TOTAL_ROWS=50
+AC_IDS_ARE_AC01_TO_AC50_WITH_NO_GAP=YES
+AC_PASS=12
+AC_FAIL=3
+AC_NOT_RUN=34
+AC_UNPROVEN=0
+AC_DEFERRED=1
+AC_PASS_PLUS_FAIL_PLUS_NOT_RUN_PLUS_UNPROVEN_PLUS_DEFERRED=50
+#
+# AC07, AC08 and AC09 are the FAILs. They are the C0-P1 source-range
+# and C0-P2 CSET-output-channel discrepancies, and they are BLOCKING:
+# the ACT states "This prerequisite is blocking; no C2 production
+# implementation while a C0 discrepancy remains FAIL or UNPROVEN."
+#
+# The 34 NOT_RUN criteria are the C1/C2/C3 criteria that were never
+# reached, because the C0 gate halted the ACT. They are NOT waived
+# and they are NOT counted as PASS.
+#
+# The 12 PASS criteria are the C0 criteria that were actually
+# discharged by a measurement, plus AC43, AC44 and AC46, whose
+# subject matter (the parser baseline, the direct lexer identities and
+# the production graph) was measured at C0 and is conserved.
+#
+# AC50 remains DEFERRED, correctly: the external read-only terminality
+# receipt is created AFTER the CLOSE commit, outside the repository.
+#
+# NO ACCEPTANCE CRITERION IS COUNT-ONLY: every row carries its
+# predicate, its evidence file and its independent checker.
+#
+# The counts above are machine-enforced by the row scan:
+#   grep -E '^AC[0-9][0-9]\t' frozen-50-ac.tsv | awk -F'\t' '{print $NF}' | sort | uniq -c
+# and were re-derived independently after the file was written.

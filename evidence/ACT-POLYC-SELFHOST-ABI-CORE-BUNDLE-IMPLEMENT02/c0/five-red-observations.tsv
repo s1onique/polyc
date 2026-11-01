@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-observations
+#
+# THE FIVE REQUIRED REDs, EACH EXECUTED AS A GENUINE
+# PRISTINE -> ADVERSE -> RESTORED CYCLE AGAINST THE REAL SEAM.
+#
+# THE DETECTOR IS A REAL COMPILED POLYC BINARY:
+#   tools/quality/abi-core-bundle-implement02-contract-audit.HC
+#   built by the production ./hcc and linked against libtos.
+#
+# The detector computes its own SHA-256 digests and its own enum
+# values; it never reads a claimed PASS field. Its SHA-256
+# implementation is self-tested against three FIPS 180-4 vectors
+# ("abc", the empty string, and "hello world") before any digest is
+# trusted, and the self-test itself is an observed run.
+#
+# EVERY ADVERSE CONTROL BELOW IS AN ISOLATED COPY IN /tmp. The
+# canonical predecessor tree was never modified.
+#
+red_id	adverse_condition	detector_reason_class	pristine_observation	adverse_observation	restored_observation	nonvacuous_verdict
+RED1	an altered source-range/hash binding that nevertheless repeats the expected hash	SOURCE_RANGE_SHA_MISMATCH	SILENT (FINAL=OK) for all three C1 pairs (FOR, INV, CSET): each recomputed digest equals the recorded digest exactly	FIRED (FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH) for all three C2 CONTRACT pairs: FOR 35517..36576 -> 49a07e6f..., INV 36577..37495 -> fe6fc566..., CSET 37566..37719 -> f168f9af..., each differing from the recorded digest	SILENT (FINAL=OK) again for all three C1 pairs	PASS -- the detector discriminates the two ranges and is not a no-op
+RED2	an inert U0 CSET export that is linked but cannot change the cset output	INERT_CSET_AUTHORITY	SILENT (FINAL=OK) for a U0 export WITH an out-parameter cell (CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=YES CSET_PARAM_COUNT=3) and for a U8* return variant	FIRED (FINAL=FAIL REASON=INERT_CSET_AUTHORITY) for the FROZEN contract's own declaration (CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO CSET_PARAM_COUNT=2)	SILENT (FINAL=OK) again for the out-parameter variant	PASS -- the detector is not a blanket "U0 is inert" rule
+RED3	reused compiler-producer identities, and misreported comparison kinds	PRODUCER_IDENTITY_ALIAS / DIFFERENTIAL_SCHEMA_CONFLATION	SILENT (FINAL=OK) for the six-row producer table with six distinct digests, and for a schema table whose PAIR rows are STREAM_AGREEMENT and whose FROZEN rows are not	FIRED (FINAL=FAIL REASON=PRODUCER_IDENTITY_ALIAS, ALIAS_COUNT=1) when one producer's digest is claimed by a second producer id; and FIRED (FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION) when a PAIR row carries a non-stream kind or a FROZEN row carries STREAM_AGREEMENT	SILENT (FINAL=OK) again for both the producer table and the schema table	PASS -- both sub-detectors discriminate
+RED4	IR_CMP_EQ == 0 treated as a failure, or an invalid NULL suffix	ZERO_DISCRIMINANT_COLLISION	SILENT (FINAL=OK): the LIVE src/ir-types.h is parsed independently, yielding 19 enumerators with IR_CMP_INVALID=-1, IR_CMP_EQ=0, IR_CMP_NE=1 ... IR_CMP_ORD=17, and IR_CMP_EQ is found as a LIVE value 0	FIRED (FINAL=FAIL REASON=ZERO_DISCRIMINANT_COLLISION, ENUM_VALUE_MISMATCH=YES) when IR_CMP_EQ is asserted to be -1	SILENT (FINAL=OK) again for IR_CMP_EQ == 0	PASS -- the zero discriminant is proven live by parsing, not by assertion
+RED5	ordinary post-CLOSE source/evidence edits presented as unmodified terminal state	POST_CLOSE_F14_OR_SCOPE_VIOLATION	SILENT (FINAL=OK) for a history row that records PATHS_CHANGED=4 and UNMODIFIED_TERMINAL_STATE=NO	FIRED (FINAL=FAIL REASON=POST_CLOSE_F14_OR_SCOPE_VIOLATION, OFFENDING_PATHS_CHANGED=4) for a history row that records PATHS_CHANGED=4 while claiming UNMODIFIED_TERMINAL_STATE=YES	SILENT (FINAL=OK) again for the honest row	PASS -- the detector discriminates
+#
+# ---------------------------------------------------------------------------
+# THE ADVERSE CONTROLS THAT WERE ACTUALLY EXECUTED
+# ---------------------------------------------------------------------------
+# The exact commands and their observed outputs. Every one of these was
+# run against the compiled PolyC detector; the RC values are real.
+#
+command	observed_output	rc
+./build/impl02-contract-audit selftest	SHA_SELFTEST=PASS / FINAL=OK	0
+./build/impl02-contract-audit red1-range src/aarch64.c 37566 37718 8a1f2573...	COMPUTED_SHA256=8a1f2573... / FINAL=OK	0
+./build/impl02-contract-audit red1-range src/aarch64.c 37566 37719 8a1f2573...	COMPUTED_SHA256=f168f9af... / FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH	1
+./build/impl02-contract-audit red1-range src/aarch64.c 35517 36100 d22a99b3...	COMPUTED_SHA256=d22a99b3... / FINAL=OK	0
+./build/impl02-contract-audit red1-range src/aarch64.c 35517 36576 d22a99b3...	COMPUTED_SHA256=49a07e6f... / FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH	1
+./build/impl02-contract-audit red1-range src/aarch64.c 36577 37019 5b08df7b...	COMPUTED_SHA256=5b08df7b... / FINAL=OK	0
+./build/impl02-contract-audit red1-range src/aarch64.c 36577 37495 5b08df7b...	COMPUTED_SHA256=fe6fc566... / FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH	1
+./build/impl02-contract-audit red2-cset /tmp/impl02-red/cset-observable.HC	CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=YES CSET_PARAM_COUNT=3 / FINAL=OK	0
+./build/impl02-contract-audit red2-cset <RECON03>/c2/selected-bundle-contract.md	CSET_RETURN_IS_VOID=YES CSET_HAS_POINTER_PARAM=NO CSET_PARAM_COUNT=2 / FINAL=FAIL REASON=INERT_CSET_AUTHORITY	1
+./build/impl02-contract-audit red2-cset /tmp/impl02-red/cset-suffix-return.HC	CSET_RETURN_IS_VOID=NO CSET_HAS_POINTER_PARAM=NO CSET_PARAM_COUNT=2 / FINAL=OK	0
+./build/impl02-contract-audit red3-producer /tmp/impl02-red/producers.tsv P0 f5a3e543...	FINAL=OK	0
+./build/impl02-contract-audit red3-producer /tmp/impl02-red/producers-alias.tsv P0 f5a3e543...	ALIAS_COUNT=1 / FINAL=FAIL REASON=PRODUCER_IDENTITY_ALIAS	1
+./build/impl02-contract-audit red3-schema /tmp/impl02-red/schema-ok.tsv	FINAL=OK	0
+./build/impl02-contract-audit red3-schema /tmp/impl02-red/schema-conflated.tsv	FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION	1
+./build/impl02-contract-audit red4-zero src/ir-types.h IR_CMP_EQ 0	ENUM_ENUMERATORS=19 ENUM_FOUND=YES / FINAL=OK	0
+./build/impl02-contract-audit red4-zero src/ir-types.h IR_CMP_EQ -1	ENUM_ENUMERATORS=19 ENUM_FOUND=YES ENUM_VALUE_MISMATCH=YES / FINAL=FAIL REASON=ZERO_DISCRIMINANT_COLLISION	1
+./build/impl02-contract-audit red4-zero src/ir-types.h IR_CMP_ORD 17	ENUM_ENUMERATORS=19 ENUM_FOUND=YES / FINAL=OK	0
+./build/impl02-contract-audit red4-zero src/ir-types.h IR_CMP_INVALID -1	ENUM_ENUMERATORS=19 ENUM_FOUND=YES / FINAL=OK	0
+./build/impl02-contract-audit red5-postclose /tmp/impl02-red/history-pristine.tsv	FINAL=OK	0
+./build/impl02-contract-audit red5-postclose /tmp/impl02-red/history-adverse.tsv	OFFENDING_PATHS_CHANGED=4 / FINAL=FAIL REASON=POST_CLOSE_F14_OR_SCOPE_VIOLATION	1
+#
+# ---------------------------------------------------------------------------
+# THE SEPARATE, INDEPENDENT POSIX INSTRUMENT
+# ---------------------------------------------------------------------------
+# RED1 was ALSO executed by an INDEPENDENT POSIX/Git instrument (POSIX
+# dd and Git cat-file + tail/head), with the SAME verdicts. The two
+# instruments do not share code and do not read each other's output.
+# The exhaustive whole-file SHA-256 search (a third instrument) found
+# NO interval anywhere in the committed blob matching the three C2
+# contract digests, and DID find the three C1 digests at exactly the
+# C1 offsets -- which is the scanner's own mandatory positive control.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+FIVE_REDS_EXECUTED=5
+FIVE_REDS_NONVACUOUS=5
+FIVE_REDS_RESTORED_TO_SILENT=5
+RED_COUNT_VERDICT=PASS

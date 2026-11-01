@@ -1,0 +1,95 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=predecessor-post-close-commit-audit
+#
+# AC03: THE POST-CLOSE DESCENDANT AUDIT OF THE PREDECESSOR.
+#
+# The ACT's report said "the reported final HEAD is two ordinary
+# commits after the predecessor's C4 CLOSE" and separately warned that
+# "The user report says the audit found and fixed a stale digest,
+# misnamed site and faulty measurements after CLOSE: verify whether
+# those fixes changed closed C1/C2/C3 evidence or the frozen contract,
+# not just a permitted receipt."
+#
+# This file answers that question by DIFF, not by narrative.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE TWO DESCENDANTS, IDENTIFIED BY TRAILER
+# ---------------------------------------------------------------------------
+sha	act_trailers	parent_count	paths_changed	classification
+58ecb99e978faeaff07a8717fc36ff0055cf5ff4	NONE	1	4	POST_CLOSE_ORDINARY
+fd8d32e2a295f1a4b9239f552d20f12f416b33f0	NONE	1	1	POST_CLOSE_ORDINARY
+#
+# POST_CLOSE_ALL_COMMITS  = 2
+# POST_CLOSE_ACT_COMMITS = 0
+#
+# ---------------------------------------------------------------------------
+# PART 2: WHAT COMMIT 58ecb99 ACTUALLY CHANGED, BY FILE AND BY HUNK
+# ---------------------------------------------------------------------------
+# The four paths it touched are ALL inside the predecessor's own
+# evidence/HANDOFF area. No production source, no gate, no tool and no
+# other ACT's artifact was touched.
+#
+path	change_kind	changed_the_frozen_substantive_content	detail
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md	MODIFIED	NO -- ONLY section 10 (the self-referential digest)	Section 2 (the three source ranges and digests) and section 3 (the ABI, including all three export signatures) are BYTE-IDENTICAL. The diff is exactly 1 removed line and 8 added lines, all inside the "## 10. The hashes this contract freezes" code block.
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.sha256	ADDED	NO -- it is the PUBLICATION of the digest that used to be self-referential	The file carries the digest 77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681 of the contract. Verified independently: shasum -a 256 over the contract's committed bytes equals that value.
+evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-causal-join.tsv	MODIFIED	NO -- one site-id token corrected	SITE-A64-CSET -> SITE-A64-CC-CSET in one row, making the join consistent with the experiment directory name and with the other two rows. The three rows still carry three DISTINCT physical execution ids.
+docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03.md	MODIFIED	NO -- the digest publication is mirrored into the human summary	No verdict field is added; the HANDOFF remains descriptive only.
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE EXACT, MECHANICAL ANSWER TO THE ACT'S QUESTION
+# ---------------------------------------------------------------------------
+# The ACT asked whether the post-CLOSE fixes "changed closed C1/C2/C3
+# evidence or the frozen contract, not just a permitted receipt."
+#
+# MEASURED:
+question	measured_answer	evidence
+Did the post-CLOSE commits change the C1 evidence tree?	NO	git diff <CLOSE>..HEAD -- evidence/.../c1/ is EMPTY. core-sites.tsv, source-enum-and-abi-facts.tsv, bootstrap-path.tsv and the rest of c1/ are byte-identical.
+Did the post-CLOSE commits change the ABI section of the frozen contract?	NO	the diff of selected-bundle-contract.md contains ZERO occurrences of "AbiA64CmpCc" and touches only section 10.
+Did the post-CLOSE commits change the three source ranges or digests in the frozen contract?	NO	the section 2 table is byte-identical; the diff contains no "35" range token and no "d22a99b3"/"5b08df7b"/"8a1f2573" token.
+Did the post-CLOSE commits change the machine-readable ABI contract?	NO	git diff <CLOSE>..HEAD -- evidence/.../c2/abi-and-bootstrap-successor-contract.tsv is EMPTY.
+Did the post-CLOSE commits change any C3 evidence?	NO	git diff <CLOSE>..HEAD -- evidence/.../c3/ is EMPTY.
+Did the post-CLOSE commits change any production source?	NO	git diff <CLOSE>..HEAD -- src/ is EMPTY; likewise tools/, scripts/, Makefile and src/CMakeLists.txt are all EMPTY.
+Did the post-CLOSE commits change any authority count, graph cut or acceptance-criterion status?	NO	the C3 ledger (full-50-ac-ledger.tsv) is byte-identical and still carries AC50 DEFERRED; the graph/authority record is byte-identical.
+Did the post-CLOSE commits introduce a SECOND CLOSE or a retroactive ACT claim?	NO	neither commit carries any ACT trailer; the ACT's five-commit range and its single CLOSE are untouched.
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE SCOPE AND DOCTRINE ASSESSMENT
+# ---------------------------------------------------------------------------
+# RECON03's own ACT, section 1.1, says: "An ordinary non-ACT
+# receipt/checkpoint commit is not automatically disallowed, but its
+# authorization and effect must be established from doctrine."
+#
+# The effect is established and it is benign: the change REMOVED a
+# self-referential digest from the frozen contract and PUBLISHED it in a
+# separate file. Under AGENTS.md's "No SHA-of-self claims" rule, a file
+# cannot carry its own digest; the previous in-file value was
+# necessarily stale. The commit therefore made the frozen contract
+# self-consistent and did not change any substantive frozen content.
+#
+# The one consequence THIS ACT must record honestly is that the
+# predecessor's own FROZEN CONTRACT FILE was edited AFTER the
+# predecessor's CLOSE. This is an F14 observation about the
+# predecessor, not a defect in the contract's substance. It is
+# recorded, it is not endorsed retroactively as an ACT-authorized
+# mutation, and it is NOT a reason to halt THIS ACT, because:
+#   (a) the substantive frozen content is byte-identical;
+#   (b) the digest THIS ACT binds to (77e2a0d5...) is the digest of the
+#       contract's CURRENT committed bytes, and THIS ACT re-derives it
+#       independently from the Git object;
+#   (c) no production source and no other ACT's evidence was touched.
+#
+# FINDING_CLASS = F14_POST_CLOSE_EVIDENCE_EDIT_BY_ORDINARY_COMMIT
+# FINDING_SEVERITY = RECORDED_NON_BLOCKING (substantive content unchanged)
+# FINDING_BLOCKS_THIS_ACT = NO
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE APPEND-ONLY CHECK
+# ---------------------------------------------------------------------------
+check	result
+git replace -l is empty	YES (0 replace refs)
+both descendants are single-parent fast-forward commits	YES
+neither descendant is a merge, amend, rebase or history replacement	YES
+the CLOSE commit 4a380e6a is still an ancestor of HEAD	YES
+no ref was deleted	YES
+APPEND_ONLY_STATUS = PASS

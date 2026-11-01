@@ -1,0 +1,68 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-24-nc
+#
+# THE FROZEN 24 NEGATIVE CONTROLS.
+#
+# The IDs, the adverse conditions and the required detector reason
+# classes are the ACT's own, verbatim. This file FREEZES the contract.
+# The execution record is in c3/negative-controls-executed.tsv; the
+# controls whose subject matter belongs to a phase that was never
+# reached are NOT_RUN here, with the reason stated.
+#
+# Each control requires a SILENT pristine, a FIRED adverse with its
+# OWN reason-specific token, and a SILENT restored. A generic parse
+# error is NOT a fire for any of them.
+#
+nc_id	adverse_condition	required_detector_class	physical_surface	detector_status_at_c0	executed_status	reason_or_evidence
+NC01	HEAD/tree/branch mismatch	ENTRY_IDENTITY_MISMATCH	Git object/record copy	IMPLEMENTED (red5-style identity fields are verified in c0/entry-and-predecessor-ancestry.tsv)	NOT_RUN	its subject is the C3 entry-identity control over a mutated identity record
+NC02	Replace ref or counterfeit predecessor commit	OBJECT_PROVENANCE_FAILURE	isolated ref/record, never live refs	IMPLEMENTED (the replace-ref emptiness and the object provenance are checked at C0)	NOT_RUN	its subject is a C3 control over a forged commit object
+NC03	Ordinary post-CLOSE evidence edit falsely called immutable	POST_CLOSE_F14_OR_SCOPE_VIOLATION	isolated history table	IMPLEMENTED AND EXECUTED (red5-postclose)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC04	Contract SHA-256 mismatch or stale self-digest	CONTRACT_DIGEST_MISMATCH	isolated contract copy	IMPLEMENTED (the contract digest is re-derived from the Git object at C0)	NOT_RUN	its subject is a C3 control over a stale self-digest
+NC05	C1/C2 range/hash pair accepted without rehash	SOURCE_RANGE_SHA_MISMATCH	isolated source copy	IMPLEMENTED AND EXECUTED (red1-range)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC06	Body-hash asserted as whole-function hash (or vice versa)	FUNCTION_BOUNDARY_MISBINDING	isolated source copy	IMPLEMENTED (the two concepts are distinguished by the exhaustive search)	NOT_RUN	its subject is a C3 control that swaps a body hash for a whole-function hash
+NC07	Inert U0 CSET export counted as third authority	INERT_CSET_AUTHORITY	real compiled PolyC subject	IMPLEMENTED AND EXECUTED (red2-cset)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC08	CSET output invented through unauthorized callback/global/buffer	ABI_OUTPUT_CHANNEL_VIOLATION	isolated ABI copy	IMPLEMENTED (the channel enumeration is in c0/cset-output-channel-proof.tsv)	NOT_RUN	its subject is a C3 control over an ABI with an unauthorized channel
+NC09	Same producer executable counted twice under different labels	PRODUCER_IDENTITY_ALIAS	isolated producer table	IMPLEMENTED AND EXECUTED (red3-producer)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC10	Frozen 12 heterogeneous checks relabelled as ordered pairs	DIFFERENTIAL_SCHEMA_CONFLATION	isolated schema table	IMPLEMENTED AND EXECUTED (red3-schema)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC11	IR_CMP_EQ=0 treated as failure	ZERO_DISCRIMINANT_COLLISION	live enum header	IMPLEMENTED AND EXECUTED (red4-zero)	PASS_PRISTINE_ADVERSE_RESTORED	c0/five-red-observations.tsv
+NC12	NULL failure replaced by unsafe suffix/default	INVALID_DOMAIN_NOT_FAIL_CLOSED	isolated ABI copy	IMPLEMENTED (the NULL failure signal is audited in c0/contract-audit.tsv)	NOT_RUN	its subject is a C3 control over an ABI that maps NULL to a default
+NC13	Non-NUL static suffix, write or free of borrowed pointer	BORROWED_LITERAL_ABI_VIOLATION	real compiled PolyC subject	NOT IMPLEMENTED	NOT_RUN	its subject is a C3 control that requires a real compiled subject and a live borrowed literal
+NC14	Production-ON without subject prerequisite or with ignored configure error	MISSING_EFFECTIVE_BUILD_PREREQUISITE	isolated build recipe	NOT IMPLEMENTED	NOT_RUN	its subject is the C2 build fail-closed control
+NC15	Subject linked but no load-bearing caller	DORMANT_POLYC_SUBJECT	real object graph	NOT IMPLEMENTED	NOT_RUN	its subject is the C2/C3 object-level control
+NC16	Legacy C decision still selects in ON production	ACTIVE_LEGACY_C_AUTHORITY	real object graph	NOT IMPLEMENTED	NOT_RUN	its subject is the C2/C3 dormancy control
+NC17	One row altered or reordered in G0-G3 differential	GENERATION_DIFFERENTIAL_MISMATCH	real differential streams	NOT IMPLEMENTED	NOT_RUN	its subject is the C3 comparator control
+NC18	A missing/duplicate fixture row or invalid partition	FIXTURE_SET_CORRUPTION	isolated fixture table	NOT IMPLEMENTED	NOT_RUN	its subject is the C1/C3 fixture-integrity control
+NC19	FOR PolyC mutant mislabelled as CSET mutant	CAUSAL_SITE_MISATTRIBUTION	real mutant executions	NOT IMPLEMENTED	NOT_RUN	its subject is the C3 causal attribution control
+NC20	Same physical mutant counted for FOR and CSET	CAUSAL_EXECUTION_DOUBLE_COUNT	real mutant executions	NOT IMPLEMENTED	NOT_RUN	its subject is the C3 physical-execution join control
+NC21	Mutant changed source but failed full compiler rebuild	UNQUALIFIED_MUTANT_BUILD	real mutant executions	NOT IMPLEMENTED	NOT_RUN	its subject is the C3 mutant-build control
+NC22	OFF C mutant changes ON output but is reported dormant	C_DORMANCY_FALSE_CLAIM	real mutant executions	NOT IMPLEMENTED	NOT_RUN	its subject is the C3 dormancy control
+NC23	Claimed mandatory graph cut from an unmodified edge	UNPROVEN_GRAPH_CUT	isolated graph ledger	IMPLEMENTED (the graph tool re-measures the cut set)	NOT_RUN	its subject is the C3 graph-cut control
+NC24	Missing AC ID, fabricated PASS or premature AC50	LEDGER_OR_TERMINALITY_FALSE_PASS	AC/NC ledger copy	IMPLEMENTED (the 50-row ID continuity and status scan is machine-enforced)	NOT_RUN	its subject is the C3 ledger control
+#
+# THE AGGREGATE, MACHINE-ENFORCED
+#
+NC_TOTAL_ROWS=24
+NC_IDS_ARE_NC01_TO_NC24_WITH_NO_GAP=YES
+NC_EXECUTED_AT_C0=6
+NC_EXECUTED_PASS=6
+NC_EXECUTED_FAIL=0
+NC_NOT_RUN=18
+NC_IMPLEMENTED_AT_C0=11
+NC_NOT_IMPLEMENTED=13
+NC_VACUOUS=0
+NC_COUNTED_TWICE=0
+NC_DISTINCT_EXERCISED_CONTROLS=6 (NC03, NC05, NC07, NC09, NC10, NC11)
+#
+# The five C0-executed REDs cover SIX distinct negative controls,
+# because RED3 exercises two of them:
+#   RED1 -> NC05 (SOURCE_RANGE_SHA_MISMATCH)
+#   RED2 -> NC07 (INERT_CSET_AUTHORITY)
+#   RED3 -> NC09 (PRODUCER_IDENTITY_ALIAS) and NC10
+#            (DIFFERENTIAL_SCHEMA_CONFLATION)
+#   RED4 -> NC11 (ZERO_DISCRIMINANT_COLLISION)
+#   RED5 -> NC03 (POST_CLOSE_F14_OR_SCOPE_VIOLATION)
+#
+# The remaining 18 controls belong to phases that the C0 gate halted
+# before they could be reached. They are NOT_RUN with a stated reason,
+# and they are NOT reported as PASS and NOT waived.

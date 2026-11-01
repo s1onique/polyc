@@ -8786,3 +8786,69 @@ append-only suite (11/11) pass; the F14 freeze covers 12367 paths with
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03.md`
 and `evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/`.
+
+## ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02 — C0 HALT
+
+The implementation ACT for the selected AArch64 comparison-condition-code
+bundle `CAND-CMP-CC-A64` halted at its C0 contract audit. Its
+authorization was conditional on the frozen RECON03 successor contract
+proving internally coherent, and it does not.
+
+```text
+VERDICT = HALT_SOURCE_RANGE_DIGEST
+HALT_CLASS = AUTHORIZATION
+BLOCKS_NEXT = YES
+PRODUCTION_AUTHORITIES = 13 (conserved; none added, none lost)
+NEW_PRODUCTION_AUTHORITIES = 0
+PRODUCTION_SEMANTIC_DELTA = 0
+GRAPH = 52 nodes / 134 active mandatory edges / 34 SCC / largest 19
+        (unchanged; no cut claimed)
+SELFHOST_M2_ACHIEVED = NO
+SLICE10_AUTHORIZED = NO
+```
+
+Two blocking discrepancies were measured in the FROZEN CONTRACT, before
+any production edit:
+
+1. **C0-P1, source ranges and digests.** RECON03's C1 record and its C2
+   frozen contract pair the same source digest with two different byte
+   ranges. The convention was established mechanically: the digests
+   reproduce only under zero-based half-open `[start, end)`. Under it,
+   the three C1 pairs reproduce exactly and the three C2 pairs do not.
+   An exhaustive SHA-256 search over every `(start, length)` pair of the
+   whole committed `src/aarch64.c` blob found NO interval matching the
+   three C2 digests, and DID find the three C1 digests at exactly the C1
+   offsets (the searcher's mandatory positive control). The mechanically
+   determined authoritative function-boundary table is recorded in the
+   ACT's evidence.
+
+2. **C0-P2, the third export's output channel.** The frozen
+   `U0 AbiA64CmpCcEmitCSet(I64, I64)` takes two copied scalars and
+   returns nothing; the contract forbids a callback, a global write and
+   an assembly-buffer pointer. An exhaustive enumeration of the channels
+   by which a `U0` call could affect the emitted assembly found none
+   available, so the suffix choice the site must carry cannot be
+   transported. A compiled PolyC detector fires `INERT_CSET_AUTHORITY`
+   on the frozen declaration and accepts both plausible corrected ABIs.
+
+Every baseline is conserved: parser 376/376 over 90 blocks with MD5
+`b6f117eb1386ca80f81bc06226e2a741`, lexer direct 89/89, 45/45 and
+23/23, the production graph at 52/134/34/19 with E-TYP-0136 the sole
+proven cut, and F-NO-PYTHON at 12 historical violations with 0 new. The
+broad LEXER07 corpus, the cross-target prefix and F-POLYC-TOOLS are
+recorded honestly as non-green or unavailable and are not relabelled.
+
+Five reason-specific REDs were executed as genuine pristine -> adverse
+-> restored cycles against a real compiled PolyC detector, covering six
+distinct negative controls; the other 18 controls are NOT_RUN because
+their phases were never reached.
+
+The proposed next ACT is
+`ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01`,
+a separately authorized, forward-only correction of the frozen
+contract, followed by a separately authorized implementation ACT. The
+U0 CSET output gap cannot be solved by editing the ABI inside
+IMPLEMENT02, and it was not.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md`
+and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02/`.

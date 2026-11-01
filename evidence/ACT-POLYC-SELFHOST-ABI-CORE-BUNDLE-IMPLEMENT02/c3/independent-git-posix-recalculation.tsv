@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-git-posix-recalculation
+#
+# THE SECOND, INDEPENDENT IMPLEMENTATION.
+#
+# The ACT requires two independent implementations: (A) new PolyC
+# verifier(s), and (B) a Git/POSIX/`awk` read-only verification that
+# recomputes the same facts WITHOUT reading the first verifier's
+# claimed PASS fields.
+#
+# This file records the (B) side. Its inputs are the COMMITTED BYTES
+# and the GIT GRAPH. It does not read c0/five-red-observations.tsv's
+# FINAL= lines, and it does not read the PolyC detector's output.
+#
+measurement	polyc_detector_result	git_posix_result	agree
+C1 CSET range digest	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	YES
+C1 FOR range digest	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	YES
+C1 INV range digest	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	YES
+C2 CSET contract range digest	f168f9afc5c0323f94e0c881653b43a1f0de6c9b96a378a0d1d0d3fbe8840a04	f168f9afc5c0323f94e0c881653b43a1f0de6c9b96a378a0d1d0d3fbe8840a04	YES
+C2 FOR contract range digest	49a07e6f0b76aeeac58b50e646080cc057f4cdc008f64f1f227b8b25bfa9ef6b	49a07e6f0b76aeeac58b50e646080cc057f4cdc008f64f1f227b8b25bfa9ef6b	YES
+C2 INV contract range digest	fe6fc56625c18d51151d59f0b4faa8e7e01065fc1bade1304e4f901a9004af94	fe6fc56625c18d51151d59f0b4faa8e7e01065fc1bade1304e4f901a9004af94	YES
+IrCmpKind enumerator count	19	19	YES
+IR_CMP_EQ numeric value	0	0	YES
+IR_CMP_INVALID numeric value	-1	-1	YES
+IR_CMP_ORD numeric value	17	17	YES
+frozen contract SHA-256	77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681	77e2a0d5168f02b9f8b550319e60ea32dc6a9f59064a4f54fd2b209ae735f681	YES
+F14 predecessor paths re-hashed	57	57	YES
+F14 mismatches	0	0	YES
+production graph nodes	52	52	YES
+production active mandatory edges	134	134	YES
+production SCC count	34	34	YES
+production largest SCC	19	19	YES
+proven graph cuts	1	1	YES
+#
+# THE TWO INSTRUMENTS ARE GENUINELY INDEPENDENT
+#
+instrument_a	the compiled PolyC detector tools/quality/abi-core-bundle-implement02-contract-audit.HC; it parses the live source and the live enum header with its own scanner, computes its own SHA-256, and prints its own reason tokens
+instrument_b	POSIX sh + git + shasum + awk; it reads the COMMITTED blobs with `git cat-file blob` and `git ls-tree`, slices bytes with `dd` and `tail -c | head -c`, hashes with `shasum -a 256`, and parses the enum with `awk`
+shared_code	NONE
+shared_input_files	only the committed source bytes themselves, which is the subject under test and not a derived artifact
+#
+# A THIRD INSTRUMENT was used for the exhaustive interval search: a
+# self-contained C SHA-256 scanner, validated against three FIPS 180-4
+# vectors, which enumerated EVERY (start, length) pair over the whole
+# committed src/aarch64.c blob. It found the three C1 digests at
+# exactly the C1 offsets (its positive control) and NO interval with
+# the three C2 contract digests anywhere in the file.

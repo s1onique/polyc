@@ -1,0 +1,61 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=entry-and-predecessor-ancestry
+#
+# AC01 / AC02 / AC03: the entry identity, and the predecessor's ACT
+# range located BY TRAILER (not by counting back from HEAD).
+#
+# ENTRY IDENTITY (independently confirmed from Git)
+field	expected_value	measured_value	agrees
+BRANCH	main	main	YES
+HEAD	fd8d32e2a295f1a4b9239f552d20f12f416b33f0	fd8d32e2a295f1a4b9239f552d20f12f416b33f0	YES
+TREE	cd467e521def0633d5aa88a71b97b739ccadb12b	cd467e521def0633d5aa88a71b97b739ccadb12b	YES
+REPLACE_REFS	0	0	YES
+#
+# The entry identity matches the ACT's expected values exactly.
+#
+# WORKING RESIDUE AT ENTRY (classified, independently of the ACT)
+residue_class	count	paths	explanation
+TRACKED_MODIFIED	0	(none)	the working tree had NO tracked modifications at entry
+STAGED	0	(none)	no staged changes at entry
+UNTRACKED_NON_ACT	0	(none)	no untracked files outside this ACT's own evidence directory at entry
+UNTRACKED_THIS_ACT	1	evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02/	created by THIS executor after entry; it is this ACT's own evidence tree, NOT predecessor dirt
+IGNORED	54	(build/, *.o, *.dylib, *.a and other build artifacts)	pre-existing local build residue, untracked and ignored; NOT part of the committed tree and NOT part of the F14 freeze
+#
+# ---------------------------------------------------------------------------
+# THE PREDECESSOR'S FIVE ACT COMMITS, LOCATED BY THEIR ACT TRAILERS
+# ---------------------------------------------------------------------------
+# The CLOSE is found by its ACT-Verdict trailer, NOT by HEAD~2.
+#
+order	sha	parent_sha	trailers	subject_kind
+1	d9f904b88e1ccd187f62e0d4fe1d747bc58aaa37	f850be2dbd175ed06cc8b3c6bed8ad261fbe3cbb	ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 / ACT-Phase: RED	ACT_COMMIT
+2	fd66b1efcc9bcfc65da48eab2ca6602dfa283c3c	d9f904b88e1ccd187f62e0d4fe1d747bc58aaa37	ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 / ACT-Phase: EVIDENCE	ACT_COMMIT
+3	b566017d97c16bce3ae03c1148179005051f2a5e	fd66b1efcc9bcfc65da48eab2ca6602dfa283c3c	ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 / ACT-Phase: IMPL	ACT_COMMIT
+4	8dff40cfe02adeabd733a9b181a6c669a2cc5e93	b566017d97c16bce3ae03c1148179005051f2a5e	ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 / ACT-Phase: EVIDENCE	ACT_COMMIT
+5	4a380e6a93c98736facf6d82fe3dd14cbc0a8728	8dff40cfe02adeabd733a9b181a6c669a2cc5e93	ACT: ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03 / ACT-Phase: CLOSE / ACT-Verdict: PASS	ACT_COMMIT
+#
+# RECON03_ACT_COMMIT_COUNT = 5
+# RECON03_CLOSE_SHA        = 4a380e6a93c98736facf6d82fe3dd14cbc0a8728
+# The predecessor's five phases RED/EVIDENCE/IMPL/EVIDENCE/CLOSE are
+# confirmed by trailer, and there is exactly ONE CLOSE carrying exactly
+# ONE ACT-Verdict.
+#
+# ---------------------------------------------------------------------------
+# THE TWO POST-CLOSE DESCENDANTS
+# ---------------------------------------------------------------------------
+# Both are ORDINARY commits with NO ACT trailer. They are therefore not
+# ACT continuations, but they are still subject to the append-only
+# invariant, to F14 and to the scope rules.
+#
+sha	parent_sha	act_trailers	paths_changed	tree_delta	class
+58ecb99e978faeaff07a8717fc36ff0055cf5ff4	4a380e6a93c98736facf6d82fe3dd14cbc0a8728	NONE	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03.md; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.md; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-bundle-contract.sha256; evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c2/selected-causal-join.tsv	4 files changed, 23 insertions(+), 3 deletions(-)	POST_CLOSE_ORDINARY
+fd8d32e2a295f1a4b9239f552d20f12f416b33f0	58ecb99e978faeaff07a8717fc36ff0055cf5ff4	NONE	evidence/ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03/c4/external-terminality-receipt-substance.txt	1 file changed, 74 insertions(+)	POST_CLOSE_ORDINARY
+#
+# POST_CLOSE_ALL_COMMITS    = 2
+# POST_CLOSE_ACT_COMMITS   = 0
+#
+# APPEND-ONLY STATUS: both commits are ordinary fast-forward
+# descendants; the first has exactly one parent (the CLOSE) and the
+# second has exactly one parent (the first). Neither is a merge, a
+# rebase, an amend or a history replacement. The pre-push hook's three
+# graph-property checks are satisfied by construction.

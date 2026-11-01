@@ -1,0 +1,92 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN, NOT A POST-CLOSE RECEIPT.
+#
+# The ACT reached its terminal boundary at the C0 gate, which is a
+# measured HALT. There is therefore no five-commit PASS lifecycle, and
+# this file does not pretend that there is one. It records what an
+# external, read-only terminality probe WOULD have to check, so that a
+# later, separately authorized ACT (or the external probe itself) has
+# an unambiguous target.
+#
+# ---------------------------------------------------------------------------
+# WHAT THIS ACT ACTUALLY DID
+# ---------------------------------------------------------------------------
+PHASES_EXECUTED=1 (C0 only)
+PHASES_NOT_EXECUTED=C1, C2, C3, C4-as-a-PASS-lifecycle
+ACT_COMMIT_COUNT=1 (the single C0 RED/HALT commit)
+SINGLE_CLOSE=true
+DOUBLE_CLOSE=false
+REWRITTEN_AFTER_CLOSURE=false
+#
+# ---------------------------------------------------------------------------
+# THE TERMINAL DISPOSITION
+# ---------------------------------------------------------------------------
+VERDICT=HALT_SOURCE_RANGE_DIGEST
+DISPOSITION=HALT
+HALT_CLASS=AUTHORIZATION
+BLOCKS_NEXT=YES
+#
+# HALT_CLASS=AUTHORIZATION with BLOCKS_NEXT=YES is the correct
+# classification: the ACT is blocked by the AUTHORIZATION contract it
+# was given. The frozen ABI-A64-CMP-CC-1 contract, which this ACT is
+# bound to implement verbatim, is internally inconsistent in two
+# places, and the ACT explicitly forbids repairing either one inside
+# this ACT. A successor therefore REQUIRES a separately authorized
+# contract correction before any implementation can begin.
+#
+# The second disposition token is HALT_CSET_ABI_NO_OBSERVABLE_OUTPUT;
+# it is the co-equal blocking reason and is recorded in the evidence,
+# but the CLOSE carries ONE verdict token, and HALT_SOURCE_RANGE_DIGEST
+# is the one chosen because it is the FIRST discrepancy found and the
+# one whose repair is prerequisite to re-deriving the member digests
+# that the CSET ABI must reference.
+#
+# ---------------------------------------------------------------------------
+# WHAT AN EXTERNAL READ-ONLY TERMINALITY PROBE WOULD CHECK
+# ---------------------------------------------------------------------------
+# For a HALT CLOSE the probe's job is to confirm the HONESTY of the
+# halt, not to confirm a PASS:
+#
+#   1. The terminal CLOSE commit is found by its ACT trailer, NOT by
+#      counting back from HEAD.
+#   2. The ACT range is CONTIGUOUS and every commit in it carries
+#      ACT=<this ACT id> with a valid ACT-Phase.
+#   3. There is EXACTLY ONE CLOSE, it is the last commit of the range,
+#      and it carries EXACTLY ONE ACT-Verdict.
+#   4. The ACT-Verdict matches
+#      ^(PASS(_[A-Z0-9_]+)*|HALT_[A-Z0-9_]+)$ -- here HALT_SOURCE_RANGE_DIGEST.
+#   5. A HALT CLOSE carries EXACTLY ONE HALT_CLASS and EXACTLY ONE
+#      BLOCKS_NEXT, and the pair is a permitted combination.
+#   6. No commit after the CLOSE carries this ACT's id.
+#   7. The F14 freeze re-hashes with 0 mismatches over the
+#      predecessor's 57 paths.
+#   8. The committed ledger carries 50 AC IDs AC01..AC50 with no gap,
+#      no duplicate and no extra, and 24 NC IDs NC01..NC24 likewise.
+#   9. The committed AC ledger contains NO criterion at PASS that was
+#      not measured, and AC50 is DEFERRED.
+#   10. The production source tree is UNCHANGED by this ACT, and the
+#       production authority count is still exactly 13.
+#   11. No new production graph cut is claimed.
+#   12. The receipt itself lives OUTSIDE the repository and is bound
+#       to the exact CLOSE HEAD and TREE.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE PROBE MUST NOT BE ALLOWED TO DO
+# ---------------------------------------------------------------------------
+# It must NOT create a new ordinary post-CLOSE tracked commit to fix
+# evidence or to save the receipt. Any defect it discovers requires a
+# separately authorized forward-only correction.
+#
+# ---------------------------------------------------------------------------
+# THE ACTUAL SUBSTANCE OF THIS HALT, FOR THE PROBE
+# ---------------------------------------------------------------------------
+BLOCKING_DISCREPANCY_1=C0-P1. The frozen contract's section 2 table pairs each of the three member source digests with a byte range that does NOT hash to that digest under ANY of the tested conventions, and an exhaustive search over the whole committed src/aarch64.c blob finds NO interval with those digests. The digests belong to the predecessor's C1 record's DIFFERENT byte sets (583, 442 and 152 bytes) rather than to the C2 contract's (1059, 918 and 153 bytes).
+BLOCKING_DISCREPANCY_2=C0-P2. The frozen ABI's third export, U0 AbiA64CmpCcEmitCSet(I64, I64), has no observable output channel: its parameter list carries two copied scalars, no pointer, no callback and no state handle; its return type carries no value; and the frozen contract forbids a callback, a global write, an assembly-buffer pointer and turning the return into a suffix pointer. The decision it must carry (which suffix the cset materialises) therefore cannot be transported.
+EVIDENCE_OF_RECORD=c0/contract-audit.tsv, c0/source-interval-independent-rehash.tsv, c0/cset-output-channel-proof.tsv, c0/five-red-observations.tsv
+PRODUCTION_FILES_MODIFIED=0
+NEW_PRODUCTION_AUTHORITIES=0
+NEW_PROVEN_GRAPH_CUTS=0
+NEXT_ACT_PROPOSAL=ACT-POLYC-SELFHOST-CORE-SEMANTIC-BUNDLE-RECON03-CONTRACT-CORRECTION01

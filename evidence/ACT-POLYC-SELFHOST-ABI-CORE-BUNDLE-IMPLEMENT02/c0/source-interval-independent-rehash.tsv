@@ -1,0 +1,130 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=source-interval-independent-rehash
+#
+# C0-P1: THE SOURCE INTERVAL AND DIGEST IDENTITY AUDIT.
+#
+# The committed source blob was read FROM GIT (not from the working
+# tree) and every recorded interval was rehashed by TWO INDEPENDENT
+# METHODS:
+#
+#   METHOD-A  POSIX  : dd if=<blob> bs=1 skip=<s> count=<n> | shasum -a 256
+#   METHOD-B  Git    : git cat-file blob <oid> | tail -c +<s+1> | head -c <n> | shasum -a 256
+#
+# A third independent instrument (a self-contained C SHA-256 scanner,
+# validated against the FIPS-180 "abc" vector AND against the
+# sha256("hello world") vector) searched EVERY (start,length) pair
+# over the whole file.
+#
+# THE SCANNER'S SELF-TEST IS MANDATORY AND WAS PERFORMED: the same
+# scanner MUST find the three C1 digests at exactly the C1 offsets,
+# and it DID:
+#     MATCH w=0 start=35517 len=583 end=36100
+#     MATCH w=1 start=36577 len=442 end=37019
+#     MATCH w=2 start=37566 len=152 end=37718
+# A scanner that found nothing would have been rejected as broken.
+# The scanner's argument handling was itself found and fixed during
+# this ACT (an initial run mis-parsed the window arguments and
+# searched nothing); the corrected scanner was re-validated against
+# the positive control above before the exhaustive run was trusted.
+#
+# THE INTERVAL CONVENTION WAS ESTABLISHED MECHANICALLY, NOT ASSUMED:
+# the recorded digests are reproduced ONLY by the ZERO-BASED,
+# HALF-OPEN convention [start, end) with length = end - start.
+# The one-based-inclusive and zero-based-inclusive conventions were
+# both tested and both FAIL.
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE C1 RECORD (evidence/.../RECON03/c1/core-sites.tsv)
+# ---------------------------------------------------------------------------
+# RESULT: ALL THREE C1 DIGESTS REPRODUCE EXACTLY under [start,end).
+# VERDICT: PASS
+#
+c1_site	c1_recorded_range	c1_recorded_sha256	method_a_recomputed	method_b_recomputed	method_a_agrees	method_b_agrees	convention_resolved	byte_length	verdict
+SITE-A64-CC-FOR	35517..36100	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	YES	YES	0-based half-open [start,end)	583	PASS
+SITE-A64-CC-INV	36577..37019	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	YES	YES	0-based half-open [start,end)	442	PASS
+SITE-A64-CSET	37566..37718	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	YES	YES	0-based half-open [start,end)	152	PASS
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE C2 FROZEN CONTRACT (RECON03/c2/selected-bundle-contract.md
+#          section 2, and c2/selected-bundle-members.tsv)
+# ---------------------------------------------------------------------------
+# THE C2 CONTRACT REPEATS THE SAME DIGEST AS C1 BUT NAMES A DIFFERENT
+# RANGE. The same digest cannot be produced by two different byte sets.
+#
+# RESULT: NONE of the three C2 contract ranges reproduces its recorded
+# digest under ANY tested convention, and an exhaustive search over the
+# WHOLE file finds NO interval at all with those digests.
+# VERDICT: FAIL
+#
+c2_site	c2_contract_range	c2_contract_recorded_sha256	method_a_at_0based_halfopen	method_a_at_1based_inclusive	method_a_at_0based_inclusive	exhaustive_whole_file_search	map_to_committed_bytes	verdict
+SITE-A64-CC-FOR	35517..36576	d22a99b3c85f82f12754582b63ecc0e5429b6ac3dbdff21ff2a960d4b538ccdc	49a07e6f0b76aeeac58b50e646080cc057f4cdc008f64f1f227b8b25bfa9ef6b	514b53f522e73dbe4f7c34728b2ed77a3a476667988bc945a6d37c6edfac9322	1ef65c64c0b161ef77922075c88b3822f54d69a5054ae1b69d3cfcf5da6de1cb	NO_MATCH_ANYWHERE	NO -- the digest belongs to [35517,36100), a DIFFERENT byte set of length 583, not the 1059 bytes the C2 range names	FAIL
+SITE-A64-CC-INV	36577..37495	5b08df7b9752fd70d8391a300e5d6c9f943be67779f7e75102b788eec7b5d343	fe6fc56625c18d51151d59f0b4faa8e7e01065fc1bade1304e4f901a9004af94	ccb25bb3bcedce44997a5704ccec5139a1f15f1102e70d5708df04ebfab4ed40	4b05cf77a8f64281926fe0522e0ff596de5078f5b8d8efa15c35a7d803ecdb8e	NO_MATCH_ANYWHERE	NO -- the digest belongs to [36577,37019), a DIFFERENT byte set of length 442, not the 918 bytes the C2 range names	FAIL
+SITE-A64-CSET	37566..37719	8a1f2573c7eeb598816edcd96830cdd695b733f6ad12c47f859ea46575cec540	f168f9afc5c0323f94e0c881653b43a1f0de6c9b96a378a0d1d0d3fbe8840a04	d835f828813d210e9a9550f1519b09ba3efa6204e1dd071a941ed2390b1d31ac	6f66b06f62d46ea997db45821b8f44b4fc900223ffc82c0933c5c49df20903fb	NO_MATCH_ANYWHERE	NO -- the digest belongs to [37566,37718), a DIFFERENT byte set of length 152, not the 153 bytes the C2 range names	FAIL
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE MECHANICALLY DETERMINED AUTHORITATIVE BOUNDARY TABLE
+# ---------------------------------------------------------------------------
+# Produced by the C scanner, NOT by reading the predecessor's claims.
+# The scanner enumerated every (start,length) pair over the whole
+# 101705-byte blob and reported the unique match for each digest.
+# The scanner's self-test: it MUST and DID find the three C1 digests
+# at exactly the C1 offsets. A scanner that found nothing would have
+# been rejected as broken.
+#
+# FOR and INV: the C1 ranges do NOT cover the whole function. They
+# stop at the end of the FLOAT switch. The integer switch, the other
+# half of the decision table, lies OUTSIDE the recorded range. This is
+# exactly the "body versus whole definition" distinction the ACT
+# asked to be tested, and it is confirmed:
+#   - C1 FOR range = the FLOAT SUB-TABLE ONLY (lines 864..877)
+#   - C1 INV range = the FLOAT SUB-TABLE ONLY (lines 893..904)
+#   - C1 CSET range = the WHOLE function (lines 921..923)
+# so the three C1 ranges are NOT a consistent "function boundary"
+# concept either. The C2 contract ranges ARE whole definitions (plus
+# trailing newline), so C2 and C1 describe DIFFERENT byte sets while
+# C2 REUSES C1's digests.
+#
+authoritative_site	symbol	source_path	git_blob_oid	true_whole_def_start_0based	true_whole_def_end_0based_excl	true_len	whole_definition_sha256	c1_recorded_range	c1_recorded_len	c1_covers_whole_definition	c2_contract_range	c2_contract_len	c2_covers_whole_definition	recorded_digest_actual_owner	verdict
+SITE-A64-CC-FOR	aarch64CcFor	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	35517	36571	1054	65e080c85f5b4422a3c07d8bfb408596b38d7c018025717209c58aaf0f478cf6	35517..36100	583	NO (float sub-table only; the integer switch at 36570.. is outside)	35517..36576	1059	YES (whole definition plus trailing newline)	[35517,36100) -- the C1 float sub-table	FAIL_C2_RANGE_DIGEST_MISMATCH
+SITE-A64-CC-INV	aarch64CcInvFor	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	36577	37490	913	d9851a52aeec348d75529de6d41244f77651056aa8d637345367b9255e5d554e	36577..37019	442	NO (float sub-table only; the integer switch at 37477.. is outside)	36577..37495	918	YES (whole definition plus trailing newline)	[36577,37019) -- the C1 float sub-table	FAIL_C2_RANGE_DIGEST_MISMATCH
+SITE-A64-CSET	aarch64EmitCSet	src/aarch64.c	6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229	37566	37714	148	d915e4995d88336c3e1f8f9209f5e5b22f962e71ae8dea9f79a83ccef8ad9c6c	37566..37718	152	YES (whole function, no trailing newline)	37566..37719	153	YES (whole definition plus trailing newline)	[37566,37718) -- the C1 whole function	FAIL_C2_RANGE_DIGEST_MISMATCH
+#
+# ---------------------------------------------------------------------------
+# PART 4: NO SIBLING INTERVAL OVERLAP
+# ---------------------------------------------------------------------------
+interval_family	overlap_between_sites	verdict
+C1_recorded_ranges	NO (FOR ends 36100, INV starts 36577, CSET starts 37566)	PASS
+C2_contract_ranges	NO (FOR ends 36576, INV starts 36577, CSET starts 37566)	PASS
+true_whole_definitions	NO (FOR ends 36571, INV starts 36577, CSET starts 37566)	PASS
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE CONCLUSION FOR C0-P1
+# ---------------------------------------------------------------------------
+# The ACT requires: "Accept only: one mechanically determined
+# authoritative function-boundary table, its exact bytes/hash/OID and
+# an independently demonstrated, already authorized mapping to the
+# frozen contract."
+#
+# The mechanically determined table EXISTS and is recorded above
+# (PART 3). The mapping to the frozen contract DOES NOT: the frozen
+# contract's section 2 table states a RANGE and a DIGEST that are
+# mutually inconsistent -- the named range does not hash to the named
+# digest under any convention, and the digest belongs to a different
+# byte set entirely.
+#
+# The ACT further requires: "If the binding frozen contract contains
+# invalid source-range/hash claims requiring changed bytes, no hidden
+# correction inside IMPLEMENT02: HALT_SOURCE_RANGE_DIGEST and propose
+# a forward-only RECON03-contract correction."
+#
+# C0-P1 VERDICT = FAIL
+# DISPOSITION = HALT_SOURCE_RANGE_DIGEST
+#
+# NOTE: this is NOT a label-only explanation. Part 3 shows the two
+# concepts are genuinely different byte sets (583 vs 1059 bytes for
+# FOR; 442 vs 918 for INV; 152 vs 153 for CSET), and the recorded
+# digest demonstrably belongs to the C1 byte set. A label-only
+# explanation would require the two byte sets to be equal, which they
+# are not, and which the exhaustive whole-file search independently
+# confirms cannot be equal for any interval pair.

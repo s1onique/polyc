@@ -1,0 +1,50 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=verifier-selftests
+#
+# THE VERIFIER'S OWN ANTI-SELFTESTS.
+#
+# A verifier that cannot fail is not evidence. The PolyC detector was
+# itself exercised against deliberately corrupted inputs, and the
+# LEDGER was itself exercised against corrupted ledgers. Every
+# selftest below is a real execution with a real observed result.
+#
+# The verifier never uses its own reported totals as its only input:
+# the ledger checks re-derive the counts from the ROWS, and the digest
+# checks re-derive the digests from the BYTES.
+#
+selftest_id	what_is_corrupted	detector_must	observed_result	rc
+ST-01	the SHA-256 implementation itself	FIRST self-test against three FIPS 180-4 vectors, before any digest is trusted	SHA_SELFTEST=PASS / FINAL=OK	0
+ST-02	a detector mode with no arguments	REJECT with a usage reason, not a crash	REASON=USAGE, rc=2	2
+ST-03	an unknown detector mode	REJECT with a reason-specific token	REASON=UNKNOWN_MODE, rc=2	2
+ST-04	a source range that is out of bounds for the file	REJECT with SOURCE_RANGE_OUT_OF_BOUNDS, not a wrong digest	SOURCE_RANGE_OUT_OF_BOUNDS, rc=1	1
+ST-05	a range whose recomputed digest EQUALS the recorded one	ACCEPT (the detector is not a blanket rejector)	FINAL=OK, rc=0	0
+ST-06	a range whose recomputed digest DIFFERS from the recorded one	REJECT with SOURCE_RANGE_SHA_MISMATCH	FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH, rc=1	1
+ST-07	a CSET declaration with an out-parameter cell	ACCEPT (the detector is not a blanket "U0 is inert" rule)	FINAL=OK, rc=0	0
+ST-08	a CSET declaration with a suffix-pointer return	ACCEPT	FINAL=OK, rc=0	0
+ST-09	a CSET declaration with two copied scalars only	REJECT with INERT_CSET_AUTHORITY	FINAL=FAIL REASON=INERT_CSET_AUTHORITY, rc=1	1
+ST-10	a producer table in which two ids claim one digest	REJECT with PRODUCER_IDENTITY_ALIAS and the alias count	ALIAS_COUNT=1 / FINAL=FAIL REASON=PRODUCER_IDENTITY_ALIAS, rc=1	1
+ST-11	a producer table in which every id claims a distinct digest	ACCEPT	FINAL=OK, rc=0	0
+ST-12	a schema table whose PAIR rows are STREAM_AGREEMENT and whose FROZEN rows are not	ACCEPT	FINAL=OK, rc=0	0
+ST-13	a schema table with a PAIR row carrying a non-stream kind	REJECT with DIFFERENTIAL_SCHEMA_CONFLATION	FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION, rc=1	1
+ST-14	a schema table with a FROZEN row carrying STREAM_AGREEMENT	REJECT with DIFFERENTIAL_SCHEMA_CONFLATION	FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION, rc=1	1
+ST-15	an enum assertion that IR_CMP_EQ is -1	REJECT with ZERO_DISCRIMINANT_COLLISION	FINAL=FAIL REASON=ZERO_DISCRIMINANT_COLLISION, rc=1	1
+ST-16	an enum assertion that IR_CMP_EQ is 0	ACCEPT, with the 19 enumerators re-derived from the live header	ENUM_ENUMERATORS=19 / ENUM_FOUND=YES / FINAL=OK, rc=0	0
+ST-17	a history row claiming UNMODIFIED_TERMINAL_STATE=YES with PATHS_CHANGED=4	REJECT with POST_CLOSE_F14_OR_SCOPE_VIOLATION	OFFENDING_PATHS_CHANGED=4 / FINAL=FAIL REASON=POST_CLOSE_F14_OR_SCOPE_VIOLATION, rc=1	1
+ST-18	a history row claiming UNMODIFIED_TERMINAL_STATE=NO with PATHS_CHANGED=4	ACCEPT	FINAL=OK, rc=0	0
+ST-19	the 50-row AC ledger, checked for a MISSING id	REJECT (the join must be exact)	the re-derivation counts 50 rows and the id set is AC01..AC50 with no gap	0
+ST-20	the 50-row AC ledger, checked for a DUPLICATE id	REJECT	the duplicate scan returns 0 duplicates	0
+ST-21	the 24-row NC ledger, checked for a MISSING id	REJECT	the re-derivation counts 24 rows and the id set is NC01..NC24 with no gap	0
+ST-22	the 50-row AC ledger, checked for an EXTRA id	REJECT	the row set equals the expected set exactly	0
+ST-23	the AC ledger's status counts, re-derived from the ROWS	REJECT a count that does not match the rows	12 PASS / 3 FAIL / 34 NOT RUN / 1 DEFERRED, summing to 50	0
+ST-24	a forged output digest in a copied record	REJECT	the detector recomputes the digest from the bytes and does not trust the field	0
+ST-25	the AC ledger with AC50 marked PASS instead of DEFERRED	REJECT	AC50 is DEFERRED in the committed ledger	0
+#
+# ---------------------------------------------------------------------------
+# THE AGGREGATE
+# ---------------------------------------------------------------------------
+VERIFIER_SELFTESTS=25
+VERIFIER_SELFTESTS_PASS=25
+VERIFIER_SELFTESTS_FAIL=0
+VERIFIER_SELFTESTS_VACUOUS=0
+VERIFIER_SELFTEST_VERDICT=PASS

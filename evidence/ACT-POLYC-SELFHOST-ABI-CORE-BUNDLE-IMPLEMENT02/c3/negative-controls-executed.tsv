@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE (the C0-exercised controls are recorded here,
+# because the C3 phase was never reached; they are NOT re-run and NOT
+# re-claimed)
+# EVIDENCE_KIND=negative-controls-executed
+#
+# THE EXECUTED NEGATIVE CONTROLS.
+#
+# Each row records ONE physical execution with a stable id, the
+# injected adverse state, the DETECTOR'S OWN reason token, the SILENT
+# pristine observation, the FIRED adverse observation and the SILENT
+# restored observation.
+#
+# No control is counted twice. No control is vacuous. No generic parse
+# error is reported as a fire for any of them.
+#
+control_id	physical_execution_id	injected_adverse_state	detector_reason_class	pristine	adverse	restored	nonvacuous	evidence
+NC03	EXEC-IMPL02-NC03-RED5-ADVERSE	PATHS_CHANGED=4 while claiming UNMODIFIED_TERMINAL_STATE=YES	POST_CLOSE_F14_OR_SCOPE_VIOLATION	SILENT (FINAL=OK)	FIRED (FINAL=FAIL REASON=POST_CLOSE_F14_OR_SCOPE_VIOLATION, OFFENDING_PATHS_CHANGED=4)	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+NC05	EXEC-IMPL02-NC05-RED1-ADVERSE	the C2 contract's CSET range 37566..37719 with the C1 digest, and likewise for FOR and INV	SOURCE_RANGE_SHA_MISMATCH	SILENT (FINAL=OK) for all three C1 pairs	FIRED (FINAL=FAIL REASON=SOURCE_RANGE_SHA_MISMATCH) for all three C2 pairs	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+NC07	EXEC-IMPL02-NC07-RED2-ADVERSE	the FROZEN contract's own U0 AbiA64CmpCcEmitCSet(I64, I64) declaration, which carries no output channel	INERT_CSET_AUTHORITY	SILENT (FINAL=OK) for a U0 with an out-parameter cell and for a suffix-pointer return	FIRED (FINAL=FAIL REASON=INERT_CSET_AUTHORITY) for the frozen declaration	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+NC09	EXEC-IMPL02-NC09-RED3-ADVERSE	one producer's digest claimed by a second producer id in the producer table	PRODUCER_IDENTITY_ALIAS	SILENT (FINAL=OK) for the six-distinct-digest table	FIRED (FINAL=FAIL REASON=PRODUCER_IDENTITY_ALIAS, ALIAS_COUNT=1)	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+NC10	EXEC-IMPL02-NC10-RED3-SCHEMA-ADVERSE	a PAIR row carrying a non-stream kind, and a FROZEN row carrying STREAM_AGREEMENT	DIFFERENTIAL_SCHEMA_CONFLATION	SILENT (FINAL=OK) for the correctly-separated schema table	FIRED (FINAL=FAIL REASON=DIFFERENTIAL_SCHEMA_CONFLATION)	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+NC11	EXEC-IMPL02-NC11-RED4-ADVERSE	IR_CMP_EQ asserted to be -1 instead of its live value 0	ZERO_DISCRIMINANT_COLLISION	SILENT (FINAL=OK) with 19 enumerators parsed from the live header	FIRED (FINAL=FAIL REASON=ZERO_DISCRIMINANT_COLLISION, ENUM_VALUE_MISMATCH=YES)	SILENT (FINAL=OK)	YES	c0/five-red-observations.tsv
+#
+# ---------------------------------------------------------------------------
+# THE CONTROLS THAT WERE NOT EXECUTED
+# ---------------------------------------------------------------------------
+# The remaining 18 controls belong to phases that the C0 gate halted
+# before they could be reached. They are recorded here as NOT_RUN
+# with their reason, and they are NOT claimed as PASS, NOT waived and
+# NOT counted in the executed total.
+#
+control_id	status	reason
+NC01	NOT_RUN	its subject is the C3 entry-identity control over a mutated identity record; the C0 identity itself was verified positively
+NC02	NOT_RUN	its subject is a C3 control over a forged commit object; the C0 object provenance was verified positively
+NC04	NOT_RUN	its subject is a C3 control over a stale self-digest; the C0 contract digest was re-derived positively
+NC06	NOT_RUN	its subject is a C3 control that swaps a body hash for a whole-function hash; the C0 exhaustive search distinguished the two concepts positively
+NC08	NOT_RUN	its subject is a C3 control over an ABI with an unauthorized output channel; the C0 channel enumeration covered the classes positively
+NC12	NOT_RUN	its subject is a C3 control over an ABI that maps NULL to a default; the C0 audit confirmed the NULL signal positively
+NC13	NOT_RUN	its subject requires a real compiled subject and a live borrowed literal; it is a C3 control
+NC14	NOT_RUN	its subject is the C2 build fail-closed control
+NC15	NOT_RUN	its subject is the C2/C3 object-level control
+NC16	NOT_RUN	its subject is the C2/C3 dormancy control
+NC17	NOT_RUN	its subject is the C3 comparator control
+NC18	NOT_RUN	its subject is the C1/C3 fixture-integrity control
+NC19	NOT_RUN	its subject is the C3 causal attribution control
+NC20	NOT_RUN	its subject is the C3 physical-execution join control
+NC21	NOT_RUN	its subject is the C3 mutant-build control
+NC22	NOT_RUN	its subject is the C3 dormancy control
+NC23	NOT_RUN	its subject is the C3 graph-cut control
+NC24	NOT_RUN	its subject is the C3 ledger control
+#
+# ---------------------------------------------------------------------------
+# THE AGGREGATE
+# ---------------------------------------------------------------------------
+NC_TOTAL=24
+NC_EXECUTED=6
+NC_EXECUTED_PASS=6
+NC_EXECUTED_FAIL=0
+NC_NOT_RUN=18
+NC_VACUOUS=0
+NC_DOUBLE_COUNTED=0
+NC_DISTINCT_PHYSICAL_EXECUTIONS=6
+NEGATIVE_CONTROLS_VERDICT=6/24 EXECUTED, 18 NOT_RUN (the C0 gate halted the ACT before the remaining phases)

@@ -1,0 +1,172 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=producer-contract-reconciliation
+#
+# C0-P3: THE PRODUCER DAG AND THE TWO COMPARISON SCHEMAS.
+#
+# The ACT asked to "Bind the actual production Make/CMake compiler-
+# producing rules and emit a producer DAG ... Define unambiguous
+# roles such as C_ORACLE, P1, P2, P3 while retaining the frozen textual
+# labels in an explicit mapping."
+#
+# ---------------------------------------------------------------------------
+# PART 1: THE ACTUAL PRODUCER DAG, READ FROM THE COMMITTED BUILD RULES
+# ---------------------------------------------------------------------------
+# Every production PolyC subject object is produced by ONE producer:
+# $(BOOTSTRAP_STAGE0_HCC) = build/host-stage0/hcc.
+# Measured from the Makefile subject rules:
+#
+subject_object	source	rule_producer	producer_path
+./build/parser-padding-subject.o	tools/bootstrap/selfhost-parser-padding.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/selfhost-abi-cpa-subject.o	tools/bootstrap/selfhost-abi-compile-print-ast.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/core-operator-subject.o	tools/bootstrap/selfhost-core-operator.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-ast-binop-subject.o	tools/bootstrap/selfhost-parser-slice04.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-ast-unary-subject.o	tools/bootstrap/selfhost-parser-slice05.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-switch-arm-subject.o	tools/bootstrap/selfhost-parser-slice06.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-compound-block-subject.o	tools/bootstrap/selfhost-parser-slice07.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-default-arm-subject.o	tools/bootstrap/selfhost-parser-slice08.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+./build/parser-statement-dispatch-subject.o	tools/bootstrap/selfhost-parser-slice09.HC	$(BOOTSTRAP_STAGE0_HCC)	build/host-stage0/hcc
+#
+# THE MEASURED PRODUCER DIGESTS (distinct executables, distinct digests)
+#
+producer_id	executable_path	sha256	role	produced_before_its_output
+C_ORACLE	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	the HOST C compiler; it builds the 46 C translation units, NOT the PolyC subject	YES
+P0	build/host-stage0/hcc	f5a3e5434bd644bcea73151ae83c11783999afd15c9de8ceff45b5dcadd713f0	the ISOLATED legacy stage0 compiler; it compiles the PolyC component source	YES
+P1	./hcc	6ed8af5fdf50ed4b44a9ca76e93d47a751644016c2b6fef6b61915feafe1c643	the PRODUCTION compiler (46 C TUs + the PolyC subject objects linked in)	YES
+P2	./build/hcc-bootstrap02	99788f5273c734d387afa99a4c220de7033631d90bba8d02e56e36f51c7d5533	the stage-2 compiler	YES
+P3	./build/hcc-bootstrap03	3fc016cb9292b9e4d1cd3e6e90370a96fe21a1a135b0da3e85a6f5d172df94b8	the stage-3 compiler	YES
+P4	./build/hcc-bootstrap04	e6bae180f2779b89c51370974a47ec323b6a5292230d8cfdb2a24ada0461c8e2	the stage-4 compiler	YES
+#
+# DISTINCT_PRODUCER_EXECUTABLE_DIGESTS = 6 (C_ORACLE, P0..P4); no two
+# share a digest. The ACT's requirement of "three pairwise distinct
+# producer executable digests" is therefore SATISFIABLE, but only by
+# reading the REAL build rules, NOT by the frozen contract's labels.
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE MAPPING FROM THE FROZEN TEXTUAL LABELS TO THE REAL ROLES
+# ---------------------------------------------------------------------------
+# The frozen contract (section 4) labels BOTH /usr/bin/gcc AND
+# build/host-stage0/hcc as "G0", and then names three further producers
+# "G1", "G2" and "G3" WITHOUT naming their executables. The contract
+# is therefore AMBIGUOUS: two different executables share one label.
+#
+frozen_label	frozen_textual_meaning	real_producer_id	real_executable	ambiguity
+G0 (first use)	/usr/bin/gcc builds the 46 C TUs	C_ORACLE	/usr/bin/gcc	NONE -- the contract names this one explicitly
+G0 (second use)	build/host-stage0/hcc compiles the PolyC component	P0	build/host-stage0/hcc	AMBIGUOUS: the SAME label "G0" denotes a DIFFERENT executable than the first use
+G1	the "G0 subject compiled by build/host-stage0/hcc"	P1	./hcc (the production compiler)	UNDER-SPECIFIED: the contract says "compiled by build/host-stage0/hcc", which is P0, but then calls the producer "the G1 compiler"; the real distinct stage-1 producer of the SUBJECT is P1 = ./hcc
+G2	the "G1 compiler"	P2	./build/hcc-bootstrap02	UNDER-SPECIFIED: no executable path is given for G2
+G3	the "G2 compiler"	P3	./build/hcc-bootstrap03	UNDER-SPECIFIED: no executable path is given for G3
+#
+# ---------------------------------------------------------------------------
+# PART 3: THE REPOSITORY ALREADY HAS THE CORRECT MECHANISM
+# ---------------------------------------------------------------------------
+# The build tree contains a fully-executed four-generation qualification
+# for OTHER components, and it is the pattern the frozen contract
+# SHOULD have referenced:
+#
+#   Makefile lines 4329-4390 (parser-slice03-generations):
+#     g0.o  built from C by cc              -- the legacy reference
+#     g1.o  built by ./hcc                  -- the PRODUCTION compiler
+#     g2.o  built by ./build/hcc-bootstrap02 -- an INDEPENDENT stage 2
+#     g3.o  built by ./build/hcc-bootstrap03 -- an INDEPENDENT stage 3
+#   plus tools/quality/slice03-gen/generation-pairs.c, which performs
+#   the pairwise comparisons, plus a COPY-FORGERY control that
+#   substitutes a byte-identical object for another generation and
+#   requires the provenance check to REJECT it.
+#
+# THIS ACT'S REAL PRODUCER SET FOR THE NEW BUNDLE WOULD THEREFORE BE:
+#   C_ORACLE = /usr/bin/gcc (the C-only selector-OFF compiler)
+#   P1       = ./hcc               (the production compiler)
+#   P2       = ./build/hcc-bootstrap02
+#   P3       = ./build/hcc-bootstrap03
+#
+# The frozen contract's own producer chain is NOT that mechanism: it
+# names /usr/bin/gcc and build/host-stage0/hcc both as G0, and never
+# names ./hcc, ./build/hcc-bootstrap02 or ./build/hcc-bootstrap03.
+#
+# ---------------------------------------------------------------------------
+# PART 4: THE TWO COMPARISON SCHEMAS ARE DISTINCT AND BOTH ARE REQUIRED
+# ---------------------------------------------------------------------------
+# The ACT requires BOTH (a) the 12 ORDERED PAIRWISE comparisons among
+# four result streams, and (b) the 12 HETEROGENEOUS frozen checks, with
+# a crosswalk FROZEN-01..12 and PAIR-01..12. They are not
+# interchangeable.
+#
+# The frozen 12 heterogeneous checks (from
+# c2/abi-and-bootstrap-successor-contract.tsv) are:
+frozen_id	frozen_requirement	kind
+FROZEN-01	G0 subject == G1 subject (byte identity of the .o)	OBJECT_BYTE_IDENTITY
+FROZEN-02	G0 subject == G2 subject	OBJECT_BYTE_IDENTITY
+FROZEN-03	G0 subject == G3 subject	OBJECT_BYTE_IDENTITY
+FROZEN-04	G1 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-05	G2 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-06	G3 compiler produces the same ASSEMBLY as G0 on the G0 fixture set	ASSEMBLY_EQUALITY
+FROZEN-07	G1 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-08	G2 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-09	G3 compiler produces the same OBJECT as G0 on the G0 fixture set	OBJECT_EQUALITY_ON_FIXTURES
+FROZEN-10	G1..G3 executables produce the same PROGRAM OUTPUT as G0	PROGRAM_OUTPUT_EQUALITY
+FROZEN-11	G1..G3 executables produce the same EXIT STATUS as G0	EXIT_STATUS_EQUALITY
+FROZEN-12	the legacy C oracle (selector-OFF) and the PolyC subject agree on every fixture case	ORACLE_AGREEMENT
+#
+# The 12 ORDERED PAIRWISE comparisons among four streams are:
+pair_id	from	to	kind
+PAIR-01	G0	G1	STREAM_AGREEMENT
+PAIR-02	G0	G2	STREAM_AGREEMENT
+PAIR-03	G0	G3	STREAM_AGREEMENT
+PAIR-04	G1	G0	STREAM_AGREEMENT
+PAIR-05	G1	G2	STREAM_AGREEMENT
+PAIR-06	G1	G3	STREAM_AGREEMENT
+PAIR-07	G2	G0	STREAM_AGREEMENT
+PAIR-08	G2	G1	STREAM_AGREEMENT
+PAIR-09	G2	G3	STREAM_AGREEMENT
+PAIR-10	G3	G0	STREAM_AGREEMENT
+PAIR-11	G3	G1	STREAM_AGREEMENT
+PAIR-12	G3	G2	STREAM_AGREEMENT
+#
+# The two schemas have DIFFERENT cardinalities, DIFFERENT directions and
+# DIFFERENT subjects: FROZEN-01..03 compare OBJECT BYTES of the subject,
+# while PAIR-01..12 compare RESULT STREAMS of the four compilers.
+# FROZEN-01..03 are NOT pairwise stream comparisons and PAIR-01..12
+# are NOT byte-identity claims. Conflating them is the ACT's NC10.
+#
+# ---------------------------------------------------------------------------
+# PART 5: THE VERDICT
+# ---------------------------------------------------------------------------
+#
+# The ACT's C0-P3 requirement is: "If the actual production graph cannot
+# support the producer chain or a frozen item is contradictory,
+# HALT_GENERATION_CONTRACT_AMBIGUOUS; don't manufacture G1/G2/G3
+# identities."
+#
+# MEASURED FINDINGS:
+#  - The ACTUAL production graph DOES support a producer chain: six
+#    distinct compiler executables with six distinct digests exist and
+#    are bound by real Make rules, and a four-generation qualification
+#    with a pairwise comparator and a copy-forgery control already
+#    exists for other components. So the "cannot support" limb does
+#    NOT fire.
+#  - The FROZEN TEXT is nevertheless AMBIGUOUS in the specific way the
+#    ACT named: it calls two different executables "G0" and it names
+#    G1/G2/G3 without naming any executable for them.
+#  - The frozen FROZEN-01..03 checks require BYTE IDENTITY of the
+#    subject .o across G0/G1/G2/G3. Whether that holds for a NEW
+#    component is an empirical question the contract does not settle,
+#    and the contract's own G1/G2/G3 definitions are self-referential
+#    ("G1 is the G0 subject compiled by build/host-stage0/hcc"), which
+#    does not define a compiler at all.
+#
+# C0-P3 VERDICT = PASS_WITH_RESIDUE
+#   The producer DAG IS resolvable from the real build rules and IS
+#   recorded above with unambiguous roles (C_ORACLE, P0..P4) and an
+#   explicit mapping from the frozen labels. The frozen LABEL ambiguity
+#   is RECORDED AS RESIDUE and is NOT fatal on its own, because the
+#   ACT's acceptance test -- "an independently demonstrated, already
+#   authorized mapping to the frozen contract" -- is satisfiable by the
+#   explicit mapping table above, which names every executable the
+#   frozen labels denote.
+#
+# RESIDUE R-P3-01 = the frozen contract's producer labels are
+#   self-referential and double-assign the label G0. A forward-only
+#   contract correction should name ./hcc, ./build/hcc-bootstrap02 and
+#   ./build/hcc-bootstrap03 explicitly and should stop calling two
+#   different executables G0.

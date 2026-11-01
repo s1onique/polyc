@@ -1,0 +1,97 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C3-EVIDENCE (the gate records are taken at C0 because the
+# ACT halted at C0; the gates were still run against the ACTUAL tree,
+# which no production change distinguishes from the entry tree)
+# EVIDENCE_KIND=gate-fast-and-gate-push
+#
+# THE REAL, CANONICAL GATES, RUN AGAINST THE REAL TREE.
+#
+# Neither gate was weakened, redefined or stubbed. Both were run with
+# the repository's own scripts and recipes.
+#
+# ---------------------------------------------------------------------------
+# gate-fast
+# ---------------------------------------------------------------------------
+COMMAND=make gate-fast
+GATE_FAST_RC=0
+#
+# The gate-fast log's own summary lines:
+BUILD_RUN=NO
+POLYC_GATE=factory-closure-status
+MANIFEST_ROWS=57
+MISSING_HANDOFF_FILES=0
+MALFORMED_HANDOFF_VERDICT=0
+PAIR_OK=57
+PAIR_FAIL=0
+STATUS=PASS
+VERDICT=PASS
+CHECK=factory-closure-status STATUS=PASS
+GATE_FAST_RC=0
+#
+GATE_FAST=PASS
+#
+# ---------------------------------------------------------------------------
+# gate-push (the seven standard checks, serialized)
+# ---------------------------------------------------------------------------
+COMMAND=make gate-push
+GATE_PUSH_RC=0
+CHECK=build STATUS=PASS
+CHECK=install STATUS=PASS
+CHECK=gep01 STATUS=PASS
+CHECK=aot STATUS=PASS
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=diff-check STATUS=PASS
+#
+# The lsp check's own output was 43/43 passed.
+#
+GATE_PUSH=PASS
+GATE_PUSH_CHECK_COUNT=7
+GATE_PUSH_CHECKS_PASSED=7
+#
+# ---------------------------------------------------------------------------
+# THE APPEND-ONLY SUITE
+# ---------------------------------------------------------------------------
+COMMAND=sh scripts/quality/factory-append-only-test.sh
+POLYC_GATE=factory-append-only-tests
+  PASS  NC1  rc=0
+  PASS  NC2  rc=1
+  PASS  NC3  rc=1
+  PASS  NC4  rc=0
+  PASS  NC5  rc=1
+  PASS  NC6  rc=0
+  PASS  NC7  rc=0
+  PASS  NC8  rc=1
+  PASS  NC9  rc=1
+  PASS  NC10 rc=1
+  PASS  NC11 rc=0
+--- summary ---
+PASS=11
+FAIL=0
+STATUS=PASS
+#
+APPEND_ONLY=PASS
+APPEND_ONLY_TESTS=11
+APPEND_ONLY_PASSED=11
+#
+# ---------------------------------------------------------------------------
+# THE SCOPE AND PATCH-HYGIENE CHECKS ON THE ACTUAL TREE
+# ---------------------------------------------------------------------------
+git replace -l is empty	YES (0 replace refs)
+git diff --check on the working tree	clean
+the only tracked paths changed by this ACT are the authorized ones:
+  docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md
+  docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02.md
+  docs/factory/act-handoff-map.tsv   (one appended row)
+  docs/ROADMAP.md                    (one appended section)
+  tools/quality/abi-core-bundle-implement02-contract-audit.HC
+  evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02/**
+NO production source path was touched:
+  src/**                UNCHANGED
+  src/CMakeLists.txt    UNCHANGED
+  Makefile              UNCHANGED
+  tools/bootstrap/**    UNCHANGED
+NO existing test was touched.
+NO canonical quality gate was weakened.
+NO historical ACT, HANDOFF or evidence file was modified.
+NO Python was added.

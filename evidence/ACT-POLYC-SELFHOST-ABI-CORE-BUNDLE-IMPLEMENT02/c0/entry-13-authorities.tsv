@@ -1,0 +1,59 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=entry-13-authorities
+#
+# AC06: THE 13 EXISTING PRODUCTION POLYC AUTHORITIES, RE-VERIFIED.
+#
+# The census was taken from the CURRENT production build's own object
+# graph, NOT from the predecessor's table. For each symbol the
+# verification is:
+#   - DEFINED: the number of objects in build/ that define it as a
+#     global text symbol;
+#   - IMPORTED: the number of PRODUCTION translation-unit objects
+#     (build/CMakeFiles/hcc.dir/*.o) that import it as undefined;
+#   - LINKED: whether the symbol is present in the final linked
+#     production executable ./hcc.
+#
+# The three AbiCore* symbols are defined in FOUR objects because the
+# build tree also holds the G1/G2/G3 generation objects that define the
+# same symbol for the fixed-point comparison. Only ONE of those is the
+# production subject object; the production subject is the one linked
+# into ./hcc.
+#
+authority_id	symbol	classification	subject_source	production_subject_object	defining_objects	importing_production_objects	imported_count	linked_in_hcc	historical_causal_backing	correction_inclusive_causal_backing	verdict
+AUTH-01	_BootstrapCalcPadding	PARSER_DECISION	tools/bootstrap/selfhost-parser-padding.HC	build/parser-padding-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-02	_BootstrapValidPostControlFlowToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-control-flow-token.HC	build/parser-control-flow-token-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-03	_BootstrapOperatorPrecedence	PARSER_DECISION	tools/bootstrap/selfhost-parser-operator-precedence.HC	build/parser-operator-precedence-subject.o	1	prslib.c.o	1	YES	YES	YES	VERIFIED
+AUTH-04	_BootstrapAstBinOpFromToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice04.HC	build/parser-ast-binop-subject.o	1	ast.c.o	1	YES	YES	YES	VERIFIED
+AUTH-05	_BootstrapAstUnaryOpFromToken	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice05.HC	build/parser-ast-unary-subject.o	1	ast.c.o	1	YES	YES	YES	VERIFIED
+AUTH-06	_BootstrapSwitchArmTerminates	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice06.HC	build/parser-switch-arm-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice07.HC	build/parser-compound-block-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-08	_BootstrapDefaultArmTerminates	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice08.HC	build/parser-default-arm-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-09	_BootstrapStatementDispatch	PARSER_DECISION	tools/bootstrap/selfhost-parser-slice09.HC	build/parser-statement-dispatch-subject.o	1	parser.c.o	1	YES	YES	YES	VERIFIED
+AUTH-10	_AbiCpaShouldPrintAst	NON_PARSER_CPA_DECISION	tools/bootstrap/selfhost-abi-compile-print-ast.HC	build/selfhost-abi-cpa-subject.o	1	compile.c.o	1	YES	YES	YES	VERIFIED
+AUTH-11	_AbiCoreClassifyCompoundAssign	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject.o	4 (1 production + 3 generation objects)	prslib.c.o	1	YES	YES	YES	VERIFIED
+AUTH-12	_AbiCoreIsValidPointerOperator	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject.o	4 (1 production + 3 generation objects)	ast.c.o	1	YES	YES	YES	VERIFIED
+AUTH-13	_AbiCoreIsRangeOperator	NEW_CORE_OPERATOR_DECISION	tools/bootstrap/selfhost-core-operator.HC	build/core-operator-subject.o	4 (1 production + 3 generation objects)	ast.c.o	1	YES	YES	YES	VERIFIED
+#
+# THE TWO CAUSAL COUNTS ARE NEVER COLLAPSED INTO ONE.
+#
+# At the ORIGINAL IMPLEMENT01 CLOSE, 12 of the 13 had causal
+# evidence and 1 (AUTH-13) did not. The separate correction ACT
+# (ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01-CORRECTION01) executed its
+# OWN experiment for AUTH-13, so the CORRECTION-INCLUSIVE causal count
+# is 13 of 13. Both counts are recorded, and the historical 12/13 is
+# NOT retroactively rewritten to 13/13.
+#
+PRODUCTION_POLYC_AUTHORITIES_STRUCTURALLY_ACTIVE=13
+PRODUCTION_POLYC_AUTHORITIES_CAUSALLY_BACKED_AT_IMPLEMENT01_CLOSE=12
+PRODUCTION_POLYC_AUTHORITIES_CAUSALLY_BACKED_CORRECTION_INCLUSIVE=13
+AUTHORITIES_LOST_BY_THIS_ACT=0
+AUTHORITIES_ADDED_BY_THIS_ACT=0
+AUTHORITY_COUNT_VERDICT=VERIFIED_13
+#
+# NOTE ON FRESHNESS (F9): this census is over the CURRENT committed
+# tree's build outputs. The tree was NOT rebuilt for this census,
+# because this ACT reaches a C0 HALT and no production change is
+# authorised; a fresh rebuild is only meaningful for a tree that
+# changed. The symbols' presence in the LINKED production executable
+# is the load-bearing fact, and it was read from ./hcc itself.

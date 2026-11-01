@@ -1,0 +1,65 @@
+# ACT_ID=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=contract-audit
+#
+# THE MANDATORY C0 CONTRACT AUDIT.
+#
+# Each premise is listed with its exact committed source, its
+# independent measured result, and a PASS|FAIL|UNPROVEN verdict.
+# The aggregate verdict is machine-enforced at the bottom.
+#
+# ---------------------------------------------------------------------------
+# PREMISE AUDIT
+# ---------------------------------------------------------------------------
+premise_id	premise	committed_source_of_truth	independent_measurement	measured_result	verdict
+C0-P1.a	The recorded source intervals and digests are consistent with the committed source	src/aarch64.c at blob 6a53ac8f2e320aa8b0f7fc23ea9bd90be0334229; RECON03 c1/core-sites.tsv; RECON03 c2/selected-bundle-contract.md section 2	Two independent rehash methods (POSIX dd, Git cat-file+tail/head) plus an exhaustive (start,length) SHA-256 search over the whole 101705-byte blob	The C1 record reproduces EXACTLY under [start,end). The C2 CONTRACT's three ranges reproduce their recorded digests under NO convention, and the exhaustive whole-file search finds NO interval with those digests at all.	FAIL
+C0-P1.b	One mechanically determined authoritative function-boundary table exists and maps to the frozen contract	Same	The C scanner derived the true whole-definition boundaries: FOR [35517,36571), INV [36577,37490), CSET [37566,37714)	The boundary table EXISTS and is recorded, but the MAPPING to the frozen contract does NOT: the frozen contract pairs each digest with a different byte set.	FAIL
+C0-P1.c	No sibling source interval overlaps	Same	Interval endpoint comparison	The three C1 ranges, the three C2 ranges and the three true whole definitions are each pairwise disjoint.	PASS
+C0-P2	AbiA64CmpCcEmitCSet has a load-bearing, observable output channel under its EXACT frozen signature and restrictions	RECON03 c2/selected-bundle-contract.md line 74; c2/abi-and-bootstrap-successor-contract.tsv rows callback_surface / mutable_host_state / ownership / aliasing	An exhaustive enumeration of the 8 channels by which a U0 call could affect the emitted assembly, cross-checked against every existing cross-seam authority in this tree	NO channel exists. The signature carries two copied scalars, no pointer, no callback and no state handle; the return type carries no value; the frozen contract forbids a callback, a global write, an assembly-buffer pointer and changing the return into a suffix pointer.	FAIL
+C0-P3.a	A genuine, distinct three-PolyC-producer DAG exists	Makefile subject rules; src/CMakeLists.txt	The committed build rules were read and the producer executables digested	SIX distinct compiler executables with SIX distinct digests exist (/usr/bin/gcc, build/host-stage0/hcc, ./hcc, build/hcc-bootstrap02/03/04) and are bound by real rules. A four-generation qualification with a pairwise comparator and a copy-forgery control already exists for other components.	PASS
+C0-P3.b	The frozen producer labels are unambiguous and the 12+12 schemas are not conflated	RECON03 c2/selected-bundle-contract.md section 4; c2/abi-and-bootstrap-successor-contract.tsv	The frozen text was read against the real rules	The frozen text calls BOTH /usr/bin/gcc AND build/host-stage0/hcc "G0" and names G1/G2/G3 without naming any executable. The frozen 12 heterogeneous checks (FROZEN-01..12) and the 12 ordered pairwise comparisons (PAIR-01..12) are genuinely different schemas and are crosswalked separately in the reconciliation file. The label ambiguity is recorded as RESIDUE R-P3-01 with an explicit mapping table.	PASS_WITH_RESIDUE
+C0-P4.a	The IrCmpKind domain, the implicit zero and the failure signal are source-derived	src/ir-types.h (live); src/aarch64.c lines 864..923; src/util.h	The enum was parsed from the LIVE header and the values were computed independently	The live enum gives IR_CMP_INVALID=-1, EQ=0 (implicit zero), NE=1 .. ORD=17 -- 19 named values, matching the predecessor's reported facts. The failure signal is a NULL pointer, never a negative numeric status, so the zero discriminant can never collide with a failure.	PASS
+C0-P4.b	The AArch64 suffix set is valid for the real target assembler	Live suffix tables in src/aarch64.c; the target toolchain	A real aarch64 assembler (clang --target=aarch64-apple-macos) was invoked on all 12 suffixes with a negative control	All 12 suffixes (eq ne lt le gt ge lo ls hi hs mi pl) assemble successfully; the negative control ("xx") is correctly rejected with "invalid condition code".	PASS
+C0-P4.c	The panic behaviour is a host process termination, not a cross-seam escape	src/util.h lines 33..38	loggerPanic expands to fprintf(stderr,...) followed by exit(EXIT_FAILURE)	Confirmed: a panic terminates the process with a failure exit status; no setjmp/longjmp and no recovery transfer crosses the seam.	PASS
+C0-P4.d	The float sub-table's unreachable combinations are identified rather than silently mapped	src/aarch64.c aarch64CcFor / aarch64CcInvFor float switches	The two float switches have NO cases for IR_CMP_OEQ..IR_CMP_ORD (10..17), so those kinds reach the default panic on the float path. The integer switches have no cases for them either, so they panic on both paths. The ordered/unordered kinds therefore have NO suffix in EITHER table.	PASS (recorded as an explicit unreachable/panic partition)
+#
+# ---------------------------------------------------------------------------
+# THE AGGREGATE GATE
+# ---------------------------------------------------------------------------
+# The ACT states: "This prerequisite is blocking; no C2 production
+# implementation while a C0 discrepancy remains FAIL or UNPROVEN."
+#
+gate_item	value
+premise_count	10
+premise_PASS	7
+premise_PASS_WITH_RESIDUE	1
+premise_FAIL	2
+premise_UNPROVEN	0
+C0_CONTRACT_VERDICT	FAIL
+PRIMARY_HALT_REASON	HALT_SOURCE_RANGE_DIGEST
+SECONDARY_HALT_REASON	HALT_CSET_ABI_NO_OBSERVABLE_OUTPUT
+C0_PRODUCTION_IMPLEMENTATION_AUTHORIZED	NO
+PRODUCTION_FILES_MODIFIED	0
+#
+# TWO DISCRETE BLOCKING FAILURES, BOTH IN THE FROZEN CONTRACT
+#
+# FAILURE 1 (C0-P1): the frozen contract's source-range/digest table is
+#   internally inconsistent. The same digest is paired with two
+#   different byte ranges across the predecessor's own C1 and C2
+#   records, and the C2 range does not hash to the C2 digest under
+#   any convention. The ACT's prescribed disposition is
+#   HALT_SOURCE_RANGE_DIGEST with a forward-only contract correction.
+#
+# FAILURE 2 (C0-P2): the frozen contract's third export has no output
+#   channel. The ACT's prescribed disposition is
+#   HALT_CSET_ABI_NO_OBSERVABLE_OUTPUT.
+#
+# BOTH FAILURES ARE PROPERTIES OF THE FROZEN CONTRACT, NOT OF THE
+# PRODUCTION SOURCE AND NOT OF THIS ACT'S EXECUTION. Neither can be
+# repaired inside IMPLEMENT02 without changing the frozen contract,
+# which the ACT forbids ("no hidden correction inside IMPLEMENT02",
+# "Do not make up a U0 output channel", "Do not ... turn the return
+# into a suffix pointer, add a callback, write a global, or change the
+# semantics of U0 under this ACT").
+#
+# C0 VERDICT = FAIL -> HALT before C1/C2
