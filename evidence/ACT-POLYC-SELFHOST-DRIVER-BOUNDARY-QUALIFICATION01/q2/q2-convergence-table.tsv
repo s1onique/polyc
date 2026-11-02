@@ -1,0 +1,69 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q2-IMPL
+# EVIDENCE_KIND=q2-convergence-table
+#
+# THE Q2 CONVERGENCE TABLE: THE COMPILED POLYC VERIFIER AND THE
+# INDEPENDENT POSIX/GIT WITNESS, COMPARED MEASUREMENT BY MEASUREMENT.
+#
+# The two implementations are INDEPENDENT BY CONSTRUCTION:
+#
+#   * the PolyC verifier loads each table into a shared field store and
+#     scans cells with an exact-string equality predicate;
+#   * the independent witness sorts whole lines and compares them with
+#     the `comm` set algebra, and counts with `sort | uniq -c`.
+#
+# They share no detection algorithm. Where they agree, the agreement is
+# a CONVERGENCE on the same measured facts.
+#
+# The polyc_result column is the exit status of the compiled PolyC
+# verifier on the corresponding mode; SILENT means the mode found no
+# violation. The witness_result column is the result of the
+# corresponding independent-witness check.
+#
+mode	polyc_result	witness_result	agrees	fact_measured
+IDENTITY	SILENT	MATCH	YES	the entry HEAD/TREE/branch, the zero replace refs and the entry-is-ancestor-of-HEAD relation
+ROSTER	SILENT	MATCH	YES	32 current rows, 32 historical rows, 0 missing, 0 extra, 0 duplicate IDs
+HISTCLASS	SILENT	MATCH	YES	0 rewritten historical classes across the 32 ID/class pairs
+OWNERSHIP	SILENT	MATCH	YES	9 POLYC_OWNED, 12 C_MECHANICAL, 2 C_SEMANTIC_RETAINED_WP001, 9 DORMANT, and the retained IDs are exactly emitFile and main
+SCOPE	SILENT	MATCH	YES	route-scoped C semantic remainder = 2, global C semantic remainder = 2, counted SEPARATELY
+AUTHORITY	SILENT	MATCH	YES	16 authority subjects, 16 unique IDs, 32 historical rows
+FAMILY	SILENT	MATCH	YES	5 ACTs = 1 implementation + 1 technical correction + 3 governance corrections
+CHRONOLOGY	SILENT	MATCH	YES	the tracked outcome is a PRECOMMITTED_PROSPECTIVE_RESULT, the original receipt is VERIFIED, the fresh replay is NOT_RUN, historical terminality is UNPROVEN, and 0 post-close ACT-id commits
+ACCEPT	SILENT	MATCH	YES	the frozen acceptance roster holds exactly 50 criteria
+M2CLASS	SILENT	MATCH	YES	M2_ACHIEVED=NO and the cross-target prefix is NOT_GREEN_67_ENVIRONMENT_PREFIX_CASES
+#
+# THE ANTI-SELFTEST DIMENSION
+#
+# Every one of the 20 anti-selftests fires its OWN reason token and
+# exits non-zero. The witness has no counterpart for the
+# anti-selftests, because the anti-selftests are about the DETECTOR's
+# own sensitivity, not about a measured fact that two independent
+# implementations could both derive. The independent witness covers
+# the FACT dimension; the anti-selftests cover the SENSITIVITY
+# dimension.
+#
+# The reason tokens are DISJOINT per mode, so a mutation that fires the
+# wrong token is a failure, not a near-miss.
+#
+anti_selftest_count	20
+anti_selftest_fired	20
+anti_selftest_reason_token_exact	20
+anti_selftest_silent_on_pristine	0
+#
+# THE CAUSAL EXECUTION DIMENSION
+#
+branch_id	build_rc	observed_difference	verdict
+BR_EMITFILE_EMIT_OBJECT	0	ARTIFACT_TYPE_CHANGED	C_SEMANTIC_RETAINED_WP001
+BR_MAIN_PRINT_TOKENS	0	STDOUT_LINE_COUNT_CHANGED	C_SEMANTIC_RETAINED_WP001
+#
+# THE RESTORATION DIMENSION
+#
+source_restored_digest_equals_baseline	YES
+rebuilt_production_binary_equals_baseline	BYTE_IDENTICAL
+production_files_modified	0
+#
+# THE DISCLOSURE DIMENSION
+#
+historical_ACT_terminality_confirmed	UNPROVEN
+fresh_external_replay	NOT_RUN
+historical_tracked_outcome_provenance	PRECOMMITTED_PROSPECTIVE_RESULT

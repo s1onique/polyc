@@ -1,0 +1,21 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q2-IMPL
+# EVIDENCE_KIND=causal-execution-and-provenance
+#
+# THE TWO DISCRIMINATING COUNTERFACTUALS, RE-EXECUTED.
+#
+# Each counterfactual disables exactly ONE C branch in the
+# frozen src/main.c, rebuilds the production compiler, runs it
+# over its named route, and observes the behavioural difference.
+# The source is then RESTORED and its digest is re-checked.
+#
+branch_id	function	source_line	mutation	baseline_digest	mutated_digest	restored_digest	build_rc	baseline_artifact	mutant_artifact	observed_difference	verdict
+BR_EMITFILE_EMIT_OBJECT	emitFile	250	if (0 && args->emit_object)	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	c23566fbbe1045a86bce61b0109bde1a221140da868a24c810af696ce711ee42	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	0	Mach-O 64-bit object arm64	Mach-O 64-bit executable arm64	ARTIFACT_TYPE_CHANGED	C_SEMANTIC_RETAINED_WP001
+BR_MAIN_PRINT_TOKENS	main	519	if (0 && args.print_tokens)	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	2f89d3b0bffa669807fe8c239c2ebc8f96df07711ac5f8ed4abaa35c83a34e65	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	0	stdout_lines=9	stdout_lines=0	STDOUT_LINE_COUNT_CHANGED	C_SEMANTIC_RETAINED_WP001
+#
+# THE SOURCE WAS RESTORED: the restored_digest column equals the
+# baseline_digest column for BOTH counterfactuals.
+# No production file remains modified.
+#
+# THE PRODUCTION BINARY WAS REBUILT FROM THE RESTORED SOURCE:
+# REBUILT_BINARY_VS_BASELINE = BYTE_IDENTICAL

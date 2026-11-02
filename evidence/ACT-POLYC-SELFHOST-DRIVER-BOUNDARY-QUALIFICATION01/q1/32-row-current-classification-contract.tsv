@@ -1,3 +1,29 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=32-row-current-classification-contract
+#
+# THE PER-ROW CLASSIFICATION OF THE 32 HISTORICAL ROWS.
+#
+# The historical_* columns are IMMUTABLE HISTORICAL VALUES read
+# from the committed C0 census. They are NOT a new verdict.
+#
+# current_source_owner    the component that owns the function today
+# decision_owner         the component that owns the BEHAVIOUR
+#                         SELECTED at the decision point
+# live_text_callsites    the __text relocation count: the number of
+#                         live call sites to the function in the
+#                         production object. 0 means the function
+#                         is reachable only through dead data or not
+#                         at all.
+# dead_data_callsites    the __data relocation count: references from
+#                         the DEAD legacy option table.
+#
+# THE MEASURED PER-FUNCTION LIVE CALL GRAPH (the __text relocation counts)
+# cli.c.o __text: cliPanic=5 getASMFileName=1 cliVersionPrint=1 cliTerryInfo=1 cliTargetToString=1 cliPrintUsage=1 cliParseArgsPolyC=1 cliPanicGeneric=1 cliNoInputFiles=1 cliConcatArgv=1 cliApplyTarget=1
+# cli.c.o __data (DEAD legacy option table): cliParseNop=26 cliParseString=5 cliParseDefine=1
+# main.c.o __text: writeAsmToTmp=5 memoryRelease=3 linkLibFlags=2 safeSystem=1 hccLibInit=1 emitFile=1 assemble=1
+#
+historical_id	historical_file	historical_function	historical_class	historical_migrate_intent	current_source_owner	decision_owner	live_text_callsites	dead_data_callsites	production_reachable	wp001_route_reachable	counterfactual_execution	current_class	confidence	note
 A-C-DRIVER-cli-cliArgsInit-SL	src/cli.c	cliArgsInit	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	REACHABLE	YES	NOT_APPLICABLE_INITIALISATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	struct field initialisation; no compile decision
 A-C-DRIVER-cli-cliConcatArgv-FC	src/cli.c	cliConcatArgv	DRIVER_SEMANTIC	YES	C_HOST_REPORTS	POLYC_DRIVER	1	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (the PolyC status mutation drove the C reporter)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function formats and reports a status the PolyC driver selected; it adds no policy of its own
 A-C-DRIVER-cli-cliGetFileType-FC	src/cli.c	cliGetFileType	DRIVER_SEMANTIC	YES	POLYC_DRIVER	POLYC_DRIVER	0	0	REACHABLE_VIA_POLYC_DRIVER	YES	COUNTERFACTUAL_C_PERFORMED (PolyC field mapping mutation drove the C consumer)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function body is not in the live call graph; the decision it used to make is made by the compiled PolyC driver

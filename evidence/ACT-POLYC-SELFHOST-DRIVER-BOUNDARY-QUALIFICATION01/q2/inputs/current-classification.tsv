@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=32-row-current-classification-contract
+#
+# THE PER-ROW CLASSIFICATION OF THE 32 HISTORICAL ROWS.
+#
+# The historical_* columns are IMMUTABLE HISTORICAL VALUES read
+# from the committed C0 census. They are NOT a new verdict.
+#
+# current_source_owner    the component that owns the function today
+# decision_owner         the component that owns the BEHAVIOUR
+#                         SELECTED at the decision point
+# live_text_callsites    the __text relocation count: the number of
+#                         live call sites to the function in the
+#                         production object. 0 means the function
+#                         is reachable only through dead data or not
+#                         at all.
+# dead_data_callsites    the __data relocation count: references from
+#                         the DEAD legacy option table.
+#
+# THE MEASURED PER-FUNCTION LIVE CALL GRAPH (the __text relocation counts)
+# cli.c.o __text: cliPanic=5 getASMFileName=1 cliVersionPrint=1 cliTerryInfo=1 cliTargetToString=1 cliPrintUsage=1 cliParseArgsPolyC=1 cliPanicGeneric=1 cliNoInputFiles=1 cliConcatArgv=1 cliApplyTarget=1
+# cli.c.o __data (DEAD legacy option table): cliParseNop=26 cliParseString=5 cliParseDefine=1
+# main.c.o __text: writeAsmToTmp=5 memoryRelease=3 linkLibFlags=2 safeSystem=1 hccLibInit=1 emitFile=1 assemble=1
+#
+historical_id	historical_file	historical_function	historical_class	historical_migrate_intent	current_source_owner	decision_owner	live_text_callsites	dead_data_callsites	production_reachable	wp001_route_reachable	counterfactual_execution	current_class	confidence	note
+A-C-DRIVER-cli-cliArgsInit-SL	src/cli.c	cliArgsInit	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	REACHABLE	YES	NOT_APPLICABLE_INITIALISATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	struct field initialisation; no compile decision
+A-C-DRIVER-cli-cliConcatArgv-FC	src/cli.c	cliConcatArgv	DRIVER_SEMANTIC	YES	C_HOST_REPORTS	POLYC_DRIVER	1	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (the PolyC status mutation drove the C reporter)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function formats and reports a status the PolyC driver selected; it adds no policy of its own
+A-C-DRIVER-cli-cliGetFileType-FC	src/cli.c	cliGetFileType	DRIVER_SEMANTIC	YES	POLYC_DRIVER	POLYC_DRIVER	0	0	REACHABLE_VIA_POLYC_DRIVER	YES	COUNTERFACTUAL_C_PERFORMED (PolyC field mapping mutation drove the C consumer)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function body is not in the live call graph; the decision it used to make is made by the compiled PolyC driver
+A-C-DRIVER-cli-cliNoInputFiles-FC	src/cli.c	cliNoInputFiles	DRIVER_SEMANTIC	YES	C_HOST_REPORTS	POLYC_DRIVER	1	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (the PolyC status mutation drove the C reporter)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function formats and reports a status the PolyC driver selected; it adds no policy of its own
+A-C-DRIVER-cli-cliPanic-SL	src/cli.c	cliPanic	DRIVER_SEMANTIC	YES	C_HOST_REPORTS	POLYC_DRIVER	5	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (the PolyC status mutation drove the C reporter)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function formats and reports a status the PolyC driver selected; it adds no policy of its own
+A-C-DRIVER-cli-cliPanicGeneric-FC	src/cli.c	cliPanicGeneric	C_MECHANICAL	NO	C_HOST_REPORTS	POLYC_DRIVER	1	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (the PolyC status mutation drove the C reporter)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function formats and reports a status the PolyC driver selected; it adds no policy of its own
+A-C-DRIVER-cli-cliParseArgs-SW1	src/cli.c	cliParseArgs	DRIVER_SEMANTIC	YES	POLYC_DRIVER	POLYC_DRIVER	0	0	REACHABLE_VIA_POLYC_DRIVER	YES	COUNTERFACTUAL_C_PERFORMED (PolyC field mapping mutation drove the C consumer)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function body is not in the live call graph; the decision it used to make is made by the compiled PolyC driver
+A-C-DRIVER-cli-cliParseAssign-SL	src/cli.c	cliParseAssign	DORMANT	NO	C_DEAD	NONE	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	defined but never referenced from any live section
+A-C-DRIVER-cli-cliParseBoolean-FC	src/cli.c	cliParseBoolean	DORMANT	NO	C_DEAD	NONE	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	defined but never referenced from any live section
+A-C-DRIVER-cli-cliParseDefine-SL	src/cli.c	cliParseDefine	DRIVER_SEMANTIC	YES	C_LEGACY_TABLE_DEAD	POLYC_DRIVER	0	1	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	only referenced from the DEAD legacy option table in __data; zero live __text call sites
+A-C-DRIVER-cli-cliParseInt-FC	src/cli.c	cliParseInt	DORMANT	NO	C_DEAD	NONE	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	defined but never referenced from any live section
+A-C-DRIVER-cli-cliParseNop-SL	src/cli.c	cliParseNop	DRIVER_SEMANTIC	YES	C_LEGACY_TABLE_DEAD	POLYC_DRIVER	0	26	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	only referenced from the DEAD legacy option table in __data; zero live __text call sites
+A-C-DRIVER-cli-cliParseString-SL	src/cli.c	cliParseString	DRIVER_SEMANTIC	YES	C_LEGACY_TABLE_DEAD	POLYC_DRIVER	0	5	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	only referenced from the DEAD legacy option table in __data; zero live __text call sites
+A-C-DRIVER-cli-cliParserFind-FC	src/cli.c	cliParserFind	DRIVER_SEMANTIC	YES	POLYC_DRIVER	POLYC_DRIVER	0	0	REACHABLE_VIA_POLYC_DRIVER	YES	COUNTERFACTUAL_C_PERFORMED (PolyC field mapping mutation drove the C consumer)	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the C function body is not in the live call graph; the decision it used to make is made by the compiled PolyC driver
+A-C-DRIVER-cli-cliPrintUsage-FC	src/cli.c	cliPrintUsage	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	NO	NOT_APPLICABLE_PRESENTATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	presentation only; prints a fixed text and sets no CliArgs field
+A-C-DRIVER-cli-cliTargetToString-SW1	src/cli.c	cliTargetToString	DRIVER_SEMANTIC	YES	C_HOST_MECHANICAL	POLYC_DRIVER	1	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_MAPPING	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the target ENUM was selected by the PolyC driver; the C function is a mechanical enum-to-string mapping through target_map and adds no policy
+A-C-DRIVER-cli-cliTerryInfo-FC	src/cli.c	cliTerryInfo	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	NO	NOT_APPLICABLE_PRESENTATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	presentation only; prints a fixed text and sets no CliArgs field
+A-C-DRIVER-cli-cliVersionPrint-FC	src/cli.c	cliVersionPrint	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	NO	NOT_APPLICABLE_PRESENTATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	presentation only; prints a fixed text and sets no CliArgs field
+A-C-DRIVER-cli-getASMFileName-SW1	src/cli.c	getASMFileName	DRIVER_SEMANTIC	YES	C_HOST_MECHANICAL	POLYC_DRIVER	1	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_MAPPING	POLYC_OWNED_DECISION_PROVEN	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	the FILE KIND was classified by the PolyC driver; on the production route the C function is entered with the hardcoded HC_SOURCE and only derives the output name
+A-C-DRIVER-cli-getBuildModeStr-SL	src/cli.c	getBuildModeStr	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	presentation helpers; zero live __text call sites in the production object
+A-C-DRIVER-cli-gitGetHash-SL	src/cli.c	gitGetHash	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	presentation helpers; zero live __text call sites in the production object
+A-C-DRIVER-cli-longestCommand-FC	src/cli.c	longestCommand	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	NOT_REACHABLE	NO	NOT_APPLICABLE_NO_LIVE_CALLSITE	DORMANT_OR_UNREACHABLE_PROVEN	PROVEN_OBJECT_RELOCATION_ZERO	presentation helpers; zero live __text call sites in the production object
+A-C-DRIVER-main-assemble-FC	src/main.c	assemble	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-emitFile-FC	src/main.c	emitFile	DRIVER_SEMANTIC	YES	C_HOST_PLATFORM	C_SEMANTIC_RETAINED_WP001	1	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (BR_EMITFILE_EMIT_OBJECT: the produced artifact changed from an OBJECT to an EXECUTABLE)	C_SEMANTIC_RETAINED_WP001	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	emitFile selects the output artifact kind in C on the WP-001 REQUIRED ROUTE
+A-C-DRIVER-main-hccLibInit-SL	src/main.c	hccLibInit	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-linkLibFlags-FC	src/main.c	linkLibFlags	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	2	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-main-SW1	src/main.c	main	DRIVER_SEMANTIC	YES	C_HOST_PLATFORM	C_SEMANTIC_RETAINED_WP001	0	0	REACHABLE	YES	COUNTERFACTUAL_C_PERFORMED (BR_MAIN_PRINT_TOKENS: disabling the C arm removed the whole token stream)	C_SEMANTIC_RETAINED_WP001	PROVEN_SOURCE_OBJECT_COUNTERFACTUAL	main() dispatches the compiler action in C; the mutated C arm changed the observable behaviour. live_text_callsites=0 because main is the PROCESS ENTRY POINT and has no incoming call
+A-C-DRIVER-main-memoryInit-SL	src/main.c	memoryInit	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-memoryPrintStats-SL	src/main.c	memoryPrintStats	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	0	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-memoryRelease-SL	src/main.c	memoryRelease	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	3	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-safeSystem-FC	src/main.c	safeSystem	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	1	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
+A-C-DRIVER-main-writeAsmToTmp-FC	src/main.c	writeAsmToTmp	C_MECHANICAL	NO	C_HOST_PLATFORM	C_MECHANICAL	5	0	REACHABLE	YES	NOT_APPLICABLE_PLATFORM_OPERATION	C_MECHANICAL_EXECUTION_PROVEN	PROVEN_SOURCE_OBJECT	platform or engine operation; selects no compile policy
