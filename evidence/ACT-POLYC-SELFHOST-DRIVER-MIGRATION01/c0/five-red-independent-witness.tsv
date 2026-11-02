@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-independent-witness
+#
+# The INDEPENDENT derivation. This witness shares no code with the
+# compiled PolyC detector; it re-derives every fact from the
+# primary rows with awk and reaches the SAME verdict.
+#
+# THE INDEPENDENT DERIVATIONS
+#   owned_polyc_decisions = 0
+#   inert_polyc_functions = 0
+#   leaked_driver_symbols = 0
+#   active_legacy_decisions = 12
+#   unsafe_abi_operations = 0 over 0 declared operations
+#   semantic_sources = 28, polyc_authored = 0
+#
+red_id	independent_derived	independent_verdict	polyc_detector_exit	AGREE	reason_token
+R01_FAKE_DRIVER_INERT	owned=0	ACCEPT	exit=0	YES	NONE
+R01_FAKE_DRIVER_INERT_A	claimed=1 derived=0	REJECT	exit=1	YES	POLYC_DRIVER_NOT_SEMANTIC_AUTHORITY
+R01_FAKE_DRIVER_OVERCLAIM	claimed=7 derived=0	REJECT	exit=1	YES	POLYC_DRIVER_NOT_SEMANTIC_AUTHORITY
+R02_ORACLE_LEAK	leaked=0	ACCEPT	exit=0	YES	NONE
+R02_ORACLE_LEAK_A	claimed=1 derived=0	REJECT	exit=1	YES	C_ORACLE_CONTAMINATED
+R03_DORMANT_C	active=12	ACCEPT	exit=0	YES	NONE
+R03_DORMANT_C_A	active=12	REJECT	exit=1	YES	LEGACY_C_DRIVER_DECISION_ACTIVE
+R04_ARGUMENT_LIFETIME	unsafe=0 ops=0	ACCEPT	exit=0	YES	NONE
+R04_ARGUMENT_LIFETIME_A	unsafe=0 ops=0	REJECT	exit=1	YES	DRIVER_ABI_LIFETIME_OR_DOMAIN
+R05_FALSE_P0	semantic=28 authored=0	ACCEPT	exit=0	YES	NONE
+R05_FALSE_P0_A	semantic=28 authored=0	REJECT	exit=1	YES	BOOTSTRAP_SOURCE_CLOSURE_FALSE
+#
+key	value
+INDEPENDENT_WITNESS_ROWS	11
+INDEPENDENT_REJECT_ROWS	6
+INDEPENDENT_ACCEPT_ROWS	5
+INDEPENDENT_ALL_AGREE	YES

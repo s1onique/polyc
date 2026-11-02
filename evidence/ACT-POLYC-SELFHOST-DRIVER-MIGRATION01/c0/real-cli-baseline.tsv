@@ -1,0 +1,23 @@
+case_id	argv_encoded	exit_status	stdout_sha256	stderr_sha256	stdout_bytes	stderr_bytes	stderr_first_line
+C01_help	--help	0	cd97f156248dda49fcc3bb8aab87e104fa05e0200dcc99b5df7d86195ad7694c	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3140	0	EMPTY
+C02_version	--version	0	c04f9fe1114b34e0ceb465b314b922ab6a6d2fa9641babf8a51e4b86d9e9da6e	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	146	0	EMPTY
+C03_no_args		1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	285a28869056ce5771ffd0da6e114a706cb52368ce3d95b45222b940ccbea97f	0	57	hcc: fatal error: no input files
+C04_unknown_option	--bogus	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	f5a03e1073830c07dac5b25fcb7d49f566390b8d229ebd7778cfde4a2ce6ecce	0	44	Error: Unknown commandline options: --bogus
+C05_missing_o_value	-c input.HC -o	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	821423855809b7517f0230aee8d6747f5f6118165fe85f57be4f1824be337030	0	57	Error: Unexpected end of input - expected `-o <option?>`
+C06_nonexistent_src	-c nonexistent.HC -o out.o	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0f6695afc1e8b253187c27779ce15172aa8cb583930d106040b22cd4637a6900	0	54	[0;31mERROR: [0mFailed to open file: nonexistent.HC
+C07_compile_object	-c input.HC -o out.o	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C08_install_dir_eq	--install-dir=/tmp/x -c input.HC -o out2.o	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	8187b43cdfbc5790183c19f26ad3e766a0fb9dc18aaaf35ddba4104015da2ecc	0	61	[0;31mERROR: [0mFailed to open file: /tmp/x/include/tos.HH
+C09_o_dashdash	-c input.HC -- -o out3.o	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	1f4bef5e2c041c3f51305fd73fb4fffdaa983b9c1c59a5664def9d2dfe6bffa2	0	39	Error: Unknown commandline options: --
+C10_permuted	-o out4.o -c input.HC	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C11_dup_c	-c -c input.HC -o out5.o	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C12_source_only	input.HC	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	47b2905bc02bc43c2ba080d805b7d7711bdc36c8b90a99b93464cd3f05074700	0	301	ld: warning: search path '/tmp/wp001-c0/prefix/lib' not found
+C13_define_flag	-c input.HC -o out.o -D	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C14_unknown_short	-z input.HC	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	7e5f54aedcbc7fb76b7d6572c691141df78f35be7c702ebe4689b5309f85a971	0	39	Error: Unknown commandline options: -z
+#
+# The C0 CLI baseline of the PRODUCTION ./hcc at the pinned entry.
+# Every row is an EXECUTED invocation with a real exit status and
+# the real stdout/stderr digests. The compile case C07 produced a
+# real Mach-O object; see real-compile-object-witness.tsv.
+#
+# INPUT_FIXTURE	input.HC	I64 main(I64 argc, U8 **argv) { return 0; }
+# INPUT_FIXTURE_SHA256	f90b3f4bcd55453adf27364ae11c5f875a1c3fdeccf448c529dc7c5a70f5d98e

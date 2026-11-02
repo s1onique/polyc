@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=real-compile-object-witness
+#
+# THE NAMED WP001_COMPILE_OBJECT WITNESS, EXECUTED AT C0.
+#
+# The invocation is the predecessor contract witness:
+#     hcc --install-dir=X -c input.HC -o out.o
+# with X, input.HC and out.o POPULATED FROM LIVE FIXTURES.
+#
+key	value	method
+COMMAND	hcc --install-dir=/tmp/wp001-c0/prefix -c input.HC -o out.o	executed in /tmp/wp001-g0
+EXIT_STATUS	0	measured
+OBJECT_PATH	/tmp/wp001-g0/out.o	produced
+OBJECT_EXISTS	YES	test -f
+OBJECT_SHA256	cf7c2e60c6832eb239f95df9150d50b9d53e5f8c6456a6396ec649a355bfb9d6	shasum -a 256
+OBJECT_SIZE_BYTES	544	wc -c
+OBJECT_FILE_TYPE	Mach-O 64-bit object arm64	file -b
+OBJECT_SYMBOL_MAIN	1	nm
+OBJECT_LINK_TEST	LINKED	cc out.o -o prog
+OBJECT_RUN_EXIT	0	./prog
+OBJECT_IS_REAL_NOT_A_STUB	YES	the file is a Mach-O 64-bit object with a _main text symbol that links and runs
+PREFIX_POPULATED	YES	/tmp/wp001-c0/prefix/include/tos.HH exists and is 56333 bytes
+PREFIX_TOS_HH_SHA256	a5c9aefb34a338e17d5efc07639c7dffbce5df95cd020e1fb6b111982bb83b60	shasum -a 256
+INPUT_HC_SHA256	f90b3f4bcd55453adf27364ae11c5f875a1c3fdeccf448c529dc7c5a70f5d98e	shasum -a 256 of the live fixture

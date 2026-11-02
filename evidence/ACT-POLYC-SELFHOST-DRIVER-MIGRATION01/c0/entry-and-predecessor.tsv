@@ -1,0 +1,22 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=entry-and-predecessor
+#
+# EVERY ROW IS MEASURED, NOT ASSERTED.
+#
+key	value	method
+ENTRY_HEAD	2288a80330b9907341cd8a7d62d33cbfe9da5452	git rev-parse HEAD
+ENTRY_TREE	e87e1642c6a7aee49a2bea7c4e5ee1a128156c17	git rev-parse HEAD^{tree}
+BRANCH	main	git branch --show-current
+EXPECTED_HEAD_MATCH	YES	ACT EXPECTED ENTRY_HEAD
+WORKTREE_STATUS_PORCELAIN_LINES	1	git status --porcelain=v1 | wc -l
+GIT_REPLACE_REFS	0	git replace -l | wc -l
+PREDECESSOR_ACT	ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01	ACT authorization
+PREDECESSOR_CLOSE_SHA	2288a80330b9907341cd8a7d62d33cbfe9da5452	git log --grep=CLOSE -1 --format=%H
+PREDECESSOR_PHASE_COMMIT_COUNT	5	git log --grep=<ACT> | wc -l
+PREDECESSOR_PHASE_SEQUENCE	C4: CLOSE,C3: EVIDENCE,C2: IMPL,C1: EVIDENCE,C0: RED	git log --format=%s --grep=<ACT> | sed
+PREDECESSOR_CLOSE_ANCESTOR_OF_HEAD	YES	git merge-base --is-ancestor
+PREDECESSOR_CLOSE_TRAILERS	ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01 C4: CLOSE -- the M2 forecast is rebased, the driver is the selected successor, and the terminality receipt is PLANNED not executed|ACT, while the measured rate over the only cohorts that have ever run|ACT: ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01|ACT-Phase: CLOSE|ACT-Verdict: PASS	git log -1 --format=%B | grep ^ACT
+WP001_CONTRACT_BLOB_OID	772945dc74977d71f254bdf0e8a57bff89c3c4fd	git rev-parse HEAD:<path>
+WP001_CONTRACT_SHA256	f77ef70682111ad45fb8b88c02bb8823ddcca4a65687137c366ea487349835ca	shasum -a 256 of the committed blob
+PREEXISTING_WORKTREES	5	git worktree list --porcelain | grep ^worktree | wc -l

@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=existing-15-production-authorities
+#
+# EACH ROW IS INDEPENDENTLY RE-MEASURED AT C0 FROM THE REAL
+# PRODUCTION OBJECT GRAPH, NOT COPIED FROM THE PREDECESSOR.
+#
+# defn_in_obj  1 iff the subject object DEFINES the global text symbol
+# linked_in_hcc 1 iff the symbol is a global text symbol in the linked ./hcc
+# importing_c_objs  how many production C objects IMPORT the symbol
+#
+authority_id	symbol	defn_object	defn_in_obj	linked_in_hcc	importing_c_objs	c_source_callsite	producer	verdict
+AUTH-01	_BootstrapCalcPadding	build/parser-padding-subject.o	1	1	1	src/parser.c:453	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-02	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	1	1	1	src/parser.c:865	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-03	_BootstrapOperatorPrecedence	build/parser-operator-precedence-subject.o	1	1	1	src/prslib.c:1176	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-04	_BootstrapAstBinOpFromToken	build/parser-ast-binop-subject.o	1	1	1	src/ast.c:247	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-05	_BootstrapAstUnaryOpFromToken	build/parser-ast-unary-subject.o	1	1	1	src/ast.c:328	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-06	_BootstrapSwitchArmTerminates	build/parser-switch-arm-subject.o	1	1	1	src/parser.c:1535	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	build/parser-compound-block-subject.o	1	1	1	src/parser.c:2225	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-08	_BootstrapDefaultArmTerminates	build/parser-default-arm-subject.o	1	1	1	src/parser.c:1730	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-09	_BootstrapStatementDispatch	build/parser-statement-dispatch-subject.o	1	1	1	src/parser.c:1861	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-10	_AbiCpaShouldPrintAst	build/selfhost-abi-cpa-subject.o	1	1	1	src/compile.c:67	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-11	_AbiCoreClassifyCompoundAssign	build/core-operator-subject.o	1	1	1	src/prslib.c:1348	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-12	_AbiCoreIsValidPointerOperator	build/core-operator-subject.o	1	1	1	src/ast.c:992	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-13	_AbiCoreIsRangeOperator	build/core-operator-subject.o	1	1	1	src/ast.c:2381	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-14	_AbiA64CcForV2	build/a64-cmp-cc-subject.o	1	1	1	src/aarch64.c:885	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-15	_AbiA64CcInvForV2	build/a64-cmp-cc-subject.o	1	1	1	src/aarch64.c:886	C_ROOTED_STAGE0_HCC	MEASURED
+#
+# MEASURED COUNTS
+# PRODUCTION_POLYC_AUTHORITIES_MEASURED	15	rows with defn_in_obj=1 AND linked_in_hcc=1 AND importing_c_objs>=1
+# PRODUCTION_POLYC_AUTHORITIES_WITH_ONE_IMPORTER	15	rows with importing_c_objs==1
+# PRODUCTION_POLYC_AUTHORITIES_ROSTER_SIZE	15	total AUTH rows
+# STAGE0_PRODUCER_PATH	build/host-stage0/hcc	$(BOOTSTRAP_STAGE0_DIR)/hcc per the Makefile
+# STAGE0_PRODUCER_SHA256	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085	shasum -a 256 build/host-stage0/hcc
+# PRODUCTION_HCC_SHA256	15d2918495f6d2dbcb90dee3e0422c46cb77f840824a30962518e63fd19b37d4	shasum -a 256 build/hcc (the linked hybrid compiler)
+# PRODUCTION_LINK_LINE_OBJ_COUNT	40	one .o per line in build/CMakeFiles/hcc.dir/link.txt
+# CSET_ADAPTER_NOT_COUNTED	YES	aarch64EmitCSet is static, exports ZERO symbols and owns ZERO condition selection

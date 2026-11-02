@@ -1,0 +1,34 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=wp001-source-and-contract-freeze
+#
+# THE FROZEN WP-001 CONTRACT AND THE FROZEN DRIVER SOURCE.
+#
+item	value	method
+WP_ID	WP-001	predecessor work-packages.tsv
+WP001_SOURCE_IDS	SRC-016(main.c);SRC-007(cli.c)	predecessor work-packages.tsv column 2
+WP001_CONTRACT_PATH	evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01/c2/selected-successor-contract.md	predecessor evidence
+WP001_CONTRACT_BLOB_OID	772945dc74977d71f254bdf0e8a57bff89c3c4fd	git rev-parse HEAD:<path>
+WP001_CONTRACT_SHA256	f77ef70682111ad45fb8b88c02bb8823ddcca4a65687137c366ea487349835ca	shasum -a 256 of the committed blob
+WP001_CONTRACT_LINES	110	wc -l of the committed blob
+WP001_REPORTED_LOC	1257	predecessor contract (10 main.c + 22 cli.c authority rows; 683 + 574 lines)
+WP001_REPORTED_AUTHORITY_ROWS	32	predecessor contract
+WP001_REPORTED_PREDECESSORS	NONE	predecessor work-packages.tsv column 8
+WP001_NAMED_WITNESS	hcc --install-dir=X -c input.HC -o out.o	predecessor contract
+WP001_MILESTONE_CLASS	M2_PRECURSOR	predecessor work-packages.tsv
+WP001_BOOTSTRAP_GATE	P0	predecessor work-packages.tsv
+WP001_DOWNSTREAM_UNBLOCKED	19 of 20	predecessor contract
+SRC_MAIN_C_BLOB_OID	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	git rev-parse HEAD:src/main.c
+SRC_MAIN_C_SHA256	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	shasum -a 256 src/main.c
+SRC_MAIN_C_LINES	683	wc -l src/main.c
+SRC_CLI_C_BLOB_OID	d296f8fdeb47646f260a7463a2a43abd5cbc979a	git rev-parse HEAD:src/cli.c
+SRC_CLI_C_SHA256	3ee3375ad0d48ec06706162dad5c5e566c0e2e90deb3b9a1a5849d48b7cd0ea0	shasum -a 256 src/cli.c
+SRC_CLI_C_LINES	574	wc -l src/cli.c
+SRC_TOTAL_LOC	1257	wc -l of both
+PREDECESSOR_SRC_CLOSURE_ROW_SRC016	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	predecessor c1/source-closure.tsv
+PREDECESSOR_SRC_CLOSURE_ROW_SRC007	d296f8fdeb47646f260a7463a2a43abd5cbc979a	predecessor c1/source-closure.tsv
+PREDECESSOR_SRC016_SHA256	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	predecessor c1/source-closure.tsv column 3
+PREDECESSOR_SRC007_SHA256	3ee3375ad0d48ec06706162dad5c5e566c0e2e90deb3b9a1a5849d48b7cd0ea0	predecessor c1/source-closure.tsv column 3
+FROZEN_BLOB_MATCH_SRC016	YES	live sha256 vs predecessor column 3
+FROZEN_BLOB_MATCH_SRC007	YES	live sha256 vs predecessor column 3
+CONTRACT_DISAGREEMENT_WITH_THIS_ACT	NONE	the contract forbids touching the lexer/parser/AST/IR/codegen, changing CliArgs layout, adding ?: and touching /tmp/holyc-asm.s; this ACT touches none of them
