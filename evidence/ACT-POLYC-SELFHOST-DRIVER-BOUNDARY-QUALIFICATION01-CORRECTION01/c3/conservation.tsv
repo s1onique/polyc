@@ -1,0 +1,30 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=conservation
+#
+# PRODUCTION_SEMANTICS_CHANGED = NO
+# HISTORICAL_EVIDENCE_MODIFIED = NO
+#
+# Every row is MEASURED. A row whose method is a git diff records
+# the EXACT number of differing paths between the predecessor close
+# and the subject commit, over the named path set.
+#
+subject	path_set	differing_paths	measured_by	result
+PRODUCTION_SOURCE	src	0	git diff --name-only <predecessor-close> HEAD -- src	UNCHANGED
+PRODUCTION_SOURCE	tools/bootstrap	0	git diff --name-only <predecessor-close> HEAD -- tools/bootstrap	UNCHANGED
+PRODUCTION_BINARY	hcc	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	sha256 of the production compiler in the working tree	UNCHANGED
+PRODUCTION_OBJECT	build/CMakeFiles/hcc.dir/src/main.c.o	ABSENT	the object is not present in this build tree	NOT_APPLICABLE
+PRODUCTION_OBJECT	build/CMakeFiles/hcc.dir/tools/bootstrap/selfhost-driver-wp001.HC.o	ABSENT	the object is not present in this build tree	NOT_APPLICABLE
+HISTORICAL_EVIDENCE	evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01	0	git diff --name-only <predecessor-close> HEAD -- evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01	UNCHANGED
+HISTORICAL_EVIDENCE	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md	0	git diff --name-only <predecessor-close> HEAD -- docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md	UNCHANGED
+HISTORICAL_ACT_DOCUMENT	docs/acts/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md	0	git diff --name-only <predecessor-close> HEAD -- <the closed ACT document>	UNCHANGED
+HISTORICAL_CLOSE_ANCESTRY	<predecessor-close>	YES	git merge-base --is-ancestor <predecessor-close> HEAD	PASS
+HISTORICAL_POST_CLOSE_OUTCOME	<predecessor-post-close>	YES	git cat-file -e <predecessor-post-close>^{commit}	PASS
+CORRECTION_SCOPE	all paths changed by this correction	60	git diff --name-only <predecessor-post-close> HEAD	MEASURED
+#
+# The production source set and the production compiler bytes are
+# UNCHANGED against the predecessor close. The predecessor
+# evidence, the predecessor handoff and the predecessor closed ACT
+# document are UNCHANGED. The predecessor close and its post-close
+# outcome commit are both still present, and the close is an
+# ancestor of the subject commit.

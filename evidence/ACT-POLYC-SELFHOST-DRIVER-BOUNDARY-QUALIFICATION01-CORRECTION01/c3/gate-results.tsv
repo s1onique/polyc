@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=gate-results
+#
+# The canonical local gates, RUN AGAINST THE EXACT COMMITTED
+# TREE. A gate is only evidence if it actually ran.
+#
+# The FACTORY V2 RANGE VALIDATION is run against the CLOSED
+# PREDECESSOR range, because THIS correction has no CLOSE commit
+# until C4. It is run again against this range after the close.
+#
+gate	command	measured	result
+SUBJECT_HEAD	git rev-parse HEAD	8e84a6d8a35b174543cd5a994834eeb625979c16	MEASURED
+SUBJECT_TREE	git rev-parse HEAD^{tree}	8ac90db197bc406f8eb06341b00a7e509c2e5dfd	MEASURED
+WORKTREE_DIRTY	git status --porcelain=v1	0	PASS
+GATE_FAST	scripts/quality/gate-fast.sh	5 checks, rc=0	PASS
+GATE_PUSH	scripts/quality/gate-push.sh HEAD	rc=0	PASS
+APPEND_ONLY	scripts/quality/factory-append-only-test.sh	11 cases, rc=0	PASS
+COMMIT_MSG_VALIDATOR	scripts/quality/factory-v2-commit-msg-check.sh	3 commits, 0 invalid	PASS
+FACTORY_V2_RANGE_PREDECESSOR	scripts/quality/factory-v2-range-check.sh <predecessor> <predecessor-close>	rc=0	PASS
+FACTORY_V2_TEST	scripts/quality/factory-v2-test.sh	rc=0	PASS
+F_NO_PYTHON	build/factory-no-python-check <git ls-files -z>	rc=1, 12 violations	FAIL
+F_NO_PYTHON_DISPOSITION	the F_NO_PYTHON violation set against the predecessor close	12 pre-existing, 0 introduced by this correction	NO_NEW_VIOLATIONS
+REPLACE_REFS	git replace -l	0	PASS
+ACT_WORKTREES	git worktree list	0	0_ACT_WORKTREES
+FACTORY_CLOSURE_STATUS	scripts/quality/factory-closure-status-check.sh	rc=0	PASS
+#
+# GATE_FAILURES = 1
+# GATE_FAILURES_INTRODUCED_BY_THIS_CORRECTION = 0
+#
+# THE F_NO_PYTHON FAIL ROW IS PRE-EXISTING. Its twelve violations
+# are all present at the predecessor close and none of them is
+# touched by this correction. The FAIL is DISCLOSED, not
+# converted into a PASS, and the exact identity of every
+# violation is recorded in c3/no-python-disposition.tsv.
+# GATE_STATUS = PASS_WITH_DISCLOSED_PRE_EXISTING_FAILURE
+# HALT_REQUIRED_GATE_FAILED = NO
