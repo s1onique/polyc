@@ -1,0 +1,127 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THE PLAN FOR THE EXTERNAL POST-CLOSE TERMINALITY PROBE.
+#
+# This file is a PLAN. It is committed by the ACT's TERMINAL CLOSE.
+# It does NOT contain the outcome of the probe, because the probe has
+# NOT RUN yet: it runs AFTER this close.
+#
+# THE STRUCTURAL REASON. The canonical range validator enforces rule 4
+# (exactly one `ACT-Phase: CLOSE` in the range, and it is the last
+# member of the range) and rule 6 (no commit descending from the CLOSE
+# may carry `ACT:<id>`). A receipt that must be recorded AFTER the
+# close can therefore neither carry the ACT id nor be recorded BEFORE
+# the close without making the close premature.
+#
+# THE RESOLUTION IS STRUCTURAL, NOT PROCEDURAL:
+#
+#   THE CLOSE COMMITS ONLY THIS PLAN;
+#   THE PROBE IS EXECUTED AFTER THE CLOSE;
+#   THE RECEIPT LIVES OUTSIDE THE REPOSITORY AND IS NEVER BACKDATED;
+#   THE OUTCOME IS REPORTED TO THE OPERATOR AND, WHEN CONVENIENT,
+#   RECORDED IN THE ROADMAP BY AN ORDINARY COMMIT WITH NO ACT TRAILER.
+#
+# An ordinary commit carries no ACT trailer, so rule 6 counts only
+# commits that carry `ACT:<id>` and is satisfied exactly.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE PROBE MUST CHECK, AND WHAT IT MUST NOT
+# ---------------------------------------------------------------------------
+#
+# The probe is READ-ONLY. It performs no network operation, creates no
+# commit and modifies no tracked file. Its receipt is written to a
+# path OUTSIDE the repository working tree.
+#
+# The probe MUST bind to:
+#
+#   BOUND_ACT        the ACT id
+#   BOUND_HEAD       the exact HEAD of the terminal close, queried from
+#                    Git at probe time
+#   BOUND_TREE       the exact tree object of the terminal close
+#   BRANCH           the branch the close is on
+#
+# The probe MUST NOT claim the SHA of the commit that contains the
+# receipt, and MUST NOT claim the SHA of any commit from inside a
+# committed artifact. F-GIT-IDENTITY forbids it, and it is structurally
+# impossible: the SHA depends on the tree, which depends on the file
+# content, which would depend on the SHA.
+#
+# ---------------------------------------------------------------------------
+# THE NUMBERED CHECKS
+# ---------------------------------------------------------------------------
+#
+# check_01  THE PHASE PATH IS VALID
+#           The ACT's range carries the expected phase sequence and
+#           EXACTLY ONE `ACT-Phase: CLOSE`, and that close is the LAST
+#           member of the range.
+#
+# check_02  NO SUBSEQUENT TRACKED COMMITS
+#           Zero tracked commits exist after the terminal close on the
+#           branch.
+#
+# check_03  NO ACT-ID COMMIT AFTER THE CLOSE
+#           Zero commits descending from the terminal close carry
+#           `ACT:<id>`. THIS IS THE STRUCTURAL PROOF THAT THE
+#           RESOLUTION WORKS.
+#
+# check_04  THE ACT ID APPEARS ON EXACTLY THE PHASE COMMITS
+#           The commits carrying the ACT id are exactly the ACT's own
+#           phase commits, and no other.
+#
+# check_05  THE PRODUCTION DELTA IS EMPTY
+#           The production delta of this ACT is byte-identical: no file
+#           under `src/**` was modified by this ACT.
+#
+# check_06  NO COMMITTED EVIDENCE FILE WAS MODIFIED
+#           The evidence of every PRIOR ACT is byte-identical.
+#
+# check_07  THE PROBE ITSELF IS READ-ONLY
+#           No network operation, no commit created, no tracked file
+#           modified by the probe.
+#
+# check_08  THE REPOSITORY IS CLEAN
+#           Zero dirty tracked entries at probe time.
+#
+# check_09  ZERO REPLACE REFS
+#           `git replace -l` is empty.
+#
+# check_10  ZERO ACT WORKTREES
+#           No worktree carries this ACT's id.
+#
+# check_11  THE TERMINALITY PLAN IS COMMITTED AND IS A PLAN
+#           The tracked terminality artifact of this ACT contains a
+#           PLAN and contains NO pre-committed post-close success. A
+#           PASS for an event that has not happened yet is FORBIDDEN.
+#
+# check_12  THE AUDIT VERDICT IS DISTINCT FROM THE HISTORIC STATUS
+#           The handoff and the ROADMAP record the audit's verdict
+#           SEPARATELY from the historic `WP001_DRIVER_MIGRATION`
+#           status, and the audit's verdict does not silently
+#           overwrite the historic one.
+#
+# check_13  THE PRE-EXISTING F_NO_PYTHON FAILURE IS DISCLOSED
+#           The tracked C3 evidence discloses the F_NO_PYTHON failure
+#           with the exact identity of all twelve violations, and the
+#           disposition table records that zero of them was introduced
+#           by this correction. The disclosure is PRESENT in the
+#           tracked evidence.
+#
+# ---------------------------------------------------------------------------
+# THE EXPECTED OUTCOME SHAPE
+# ---------------------------------------------------------------------------
+#
+#   PROBE_RESULT=PASS|FAIL
+#   CHECK_01..CHECK_13 = PASS|FAIL
+#
+# The probe writes its receipt OUTSIDE the repository. It is never
+# backdated and it is never committed.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE PROBE MAY NOT DO
+# ---------------------------------------------------------------------------
+#
+#   * It may NOT create a commit, a branch, a tag or a stash.
+#   * It may NOT perform a network operation.
+#   * It may NOT modify a tracked file.

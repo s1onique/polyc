@@ -9616,3 +9616,121 @@ its outcome is recorded by an ordinary commit with no ACT trailer.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01/`.
+
+---
+
+## ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01 — the predecessor audit's counts and witness bindings are REPAIRED
+
+This ACT corrected the ACT it follows. It changed **no** production
+file, and it did **not** rewrite history: every predecessor artifact is
+preserved byte for byte.
+
+The predecessor audited the WP-001 driver boundary and reported 49
+PASSes of 50 criteria. The correction re-derives the adjudication of
+all 50 criteria from the evidence, and the predecessor's audited claim
+**did not hold**.
+
+### THE THREE COUNT REPRESENTATIONS DISAGREE
+
+The predecessor carried three representations of the same fifty-row
+ledger, and **none of the three agrees with the others**:
+
+```text
+criterion rows   PASS:49  FAIL:0  DEFERRED:1
+ledger summary   PASS:49  FAIL:0  DEFERRED:2
+handoff          PASS:46  FAIL:0  DEFERRED:5
+```
+
+The correction re-derives the criterion-only partition from the rows
+themselves, excluding the `AC_ROSTER_SIZE` metadata row, and reports
+the disagreement rather than resolving it by fiat.
+
+### THE RECONCILED ADJUDICATION
+
+```text
+PROVEN_AS_FROZEN                   3
+PROVEN_BY_ALTERNATE_EXISTING_WITNESS 32
+UNSUPPORTED_BY_CITED_WITNESS      14
+DEFERRED_AT_HISTORICAL_CHECKPOINT  1
+```
+
+Fourteen of the predecessor's forty-nine reported PASSes are **not**
+supported by the witness the predecessor cited. Nine criteria drift
+from their frozen predicate and five drift from their frozen phase
+(`AC14` `AC15` `AC16` `AC17` `AC18`). Two cited witness paths are
+absent from the predecessor close tree, and ten cited witnesses were
+committed by a phase other than the frozen criterion phase.
+
+### THE REMAINERS, AT TWO DIFFERENT UNITS
+
+The historical FUNCTION-level classification and the branch-level
+classification are reported **separately** and are **not** conflated.
+
+```text
+HISTORICAL_RETAINED_C_ROWS          2   (function level)
+REQUALIFIED_GLOBAL_REMAINDER         2   (branch level)
+REQUALIFIED_REQUIRED_ROUTE_REMAINDER 1   (branch level)
+```
+
+The predecessor counted `main()` and `emitFile()` as two retained-C
+rows and asserted that **both** are on the required route. The
+branch-level measurement shows that of the two C-semantic branches,
+only `BR_EMITFILE_EMIT_OBJECT` is `PROVEN_REACHABLE` on the required
+route. `BR_MAIN_PRINT_TOKENS` is a whole-CLI-scope branch: it is
+reached by the token route and **not** by the required route. All 32
+historical rows are crosswalked to the branches that discharge them,
+or to `NONE`.
+
+### THREE FAIL-CLOSED DEFECTS IN THE CORRECTION VERIFIER
+
+The correction's own verifier had three modes that **silently
+passed**, because each skipped the rows it could not check. All three
+were found and repaired during C2, and each now fails closed:
+
+* `ACWITNESS` read ledger columns that did not exist and skipped every
+  row. It now consumes the fifty-row witness binding table **by name**.
+* `ACPREDICATE` compared against a column that did not exist and
+  compared nothing. It now compares the ledger against the frozen table
+  against the **immutable C0 contract**, which is the anchor that
+  separates a predicate drift from a contract rewrite.
+* `ACWITNESS` read the existence table **positionally**, so it read the
+  chronology column as the relevance column. Every column is now
+  addressed by name.
+
+All **18** negative controls fire their **own exact** reason token,
+with a silent pristine run and a silent byte-identical restored run.
+
+### THE AUDIT VERDICT IS DISTINCT FROM THE HISTORIC WP-001 STATUS
+
+```text
+HISTORICAL_AUDIT_VERDICT   = PASS_FINDINGS_WITH_REMAINDER
+CURRENT_CORRECTION_VERDICT = PASS_WITH_DISCLOSED_PRE_EXISTING_FAILURE
+WP001_DRIVER_MIGRATION      = ACHIEVED   (the historic migration verdict)
+HISTORICAL_ACT_TERMINALITY_CONFIRMED = UNPROVEN
+```
+
+Neither verdict overwrites the other, and neither overwrites the
+historic migration verdict.
+
+### THE DISCLOSED PRE-EXISTING FAILURE
+
+The `F_NO_PYTHON` check is **non-green** with twelve violations. It is
+**not** converted into a PASS. Every violation is pre-existing at the
+predecessor close and none was touched by this correction:
+
+```text
+GATE_FAILURES                            1
+GATE_FAILURES_INTRODUCED_BY_THIS_CORRECTION 0
+GATE_STATUS = PASS_WITH_DISCLOSED_PRE_EXISTING_FAILURE
+```
+
+### THE C4 TERMINALITY PLAN, NOT A PRE-COMMITTED SUCCESS
+
+The external read-only probe **has not run yet**. This ACT's close
+commits the **PLAN** for it, and the plan carries no PASS for an
+event that has not happened. The probe runs after the close, its
+receipt lives **outside** the repository and is never backdated, and
+its outcome is recorded by an ordinary commit with no ACT trailer.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01/`.
