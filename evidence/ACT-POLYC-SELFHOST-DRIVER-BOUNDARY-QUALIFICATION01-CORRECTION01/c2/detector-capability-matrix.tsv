@@ -1,0 +1,89 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=detector-capability-matrix
+#
+# THE Q0 DETECTOR VERSUS THE CORRECTION DETECTOR.
+#
+# The predecessor Q0 detector (tools/quality/driver-boundary-
+# qualification01-verify.HC) is NOT modified and NOT overwritten.
+# Its source is read from the predecessor close tree. Parity for
+# the correction is established in the NEW correction detector
+# (tools/quality/driver-boundary-qualification01-correction01-
+# verify.HC) only.
+#
+# A HISTORICAL Q0 CAPABILITY CANNOT BE BACKDATED BY A
+# CORRECTION. Where the correction requires a reason token that
+# the Q0 detector does not emit, the discrepancy is DISCLOSED in
+# the historical_discrepancy column rather than papered over.
+#
+# THE TWO ROSTERS ARE DISJOINT BY DESIGN.
+#   The Q0 roster (NC01..NC24) names the PREDECESSOR defects.
+#   The correction roster (NC-C01..NC-C18) names the CORRECTION
+#   defects: the frozen-contract drift, the evidence binding, the
+#   count reconciliation, the route-scoped ownership and the
+#   terminality chronology.
+#   A token supported by one roster is NOT thereby supported by
+#   the other. Rows are therefore emitted for BOTH rosters and
+#   the cross-roster column records the DISCLOSED GAP.
+#
+# COLUMNS.
+#   q0_detector_supported         the exact reason token appears
+#                                 WHOLE in the Q0 detector SOURCE.
+#   q0_execution_proven           the predecessor Q3 execution
+#                                 matrix records ADVERSE exit!=0
+#                                 with that exact token.
+#   correction_detector_supported the exact reason token appears
+#                                 WHOLE in the CORRECTION detector.
+#   correction_execution_proven   the correction C3 execution
+#                                 matrix records ADVERSE exit!=0
+#                                 with that exact token. PENDING
+#                                 until C3 executes the controls.
+#   historical_discrepancy        the disclosed difference.
+#
+nc_id	suite	adverse_condition	expected_detector_reason	q0_detector_supported	q0_execution_proven	correction_detector_supported	correction_execution_proven	correction_mode	historical_discrepancy
+NC01	Q0	Wrong entry HEAD or TREE accepted	ENTRY_IDENTITY_FORGED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC02	Q0	Wrong CORRECTION04 CLOSE identified	CORRECTION_CLOSE_IDENTITY_WRONG	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC03	Q0	Parent missing-trailer commit treated as a valid ACT trailer	NON_ACT_TRAILER_PROMOTED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC04	Q0	Duplicate parent CLOSE hidden	HISTORICAL_CLOSE_DUPLICATE_HIDDEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC05	Q0	Precommitted terminality outcome called a later receipt	PRECOMMITTED_RESULT_LAUNDERED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC06	Q0	Original external receipt invented from filename	RECEIPT_EXISTENCE_NOT_PROVEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC07	Q0	Replay claimed as original historical receipt	REPLAY_PROVENANCE_CONFLATED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC08	Q0	Post-CLOSE ACT-id commit omitted from scan	POST_CLOSE_ID_CARRIER_OMITTED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC09	Q0	Missing original 32-row ID silently accepted	DRIVER_ROSTER_ID_MISSING	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC10	Q0	Duplicate original 32-row ID silently accepted	DRIVER_ROSTER_ID_DUPLICATE	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC11	Q0	Original semantic row silently relabelled mechanical	HISTORICAL_CLASS_REWRITTEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC12	Q0	main semantic branch assumed dormant from no relocation	ENTRY_BRANCH_CAUSAL_UNPROVEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC13	Q0	emitFile policy inferred mechanical without tests	EMITFILE_POLICY_UNPROVEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC14	Q0	PolyC-influenced C branch called automatically PolyC-owned	DECISION_OWNER_NOT_TRACED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC15	Q0	Unreachable C branch asserted without call/object proof	UNREACHABILITY_NOT_PROVEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC16	Q0	Changed mutant source never linked into experimental binary	MUTATION_LINK_PROVENANCE_MISSING	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC17	Q0	C-OFF oracle imports WP-001 subject	G0_DRIVER_CONTAMINATED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC18	Q0	Comparator ignores changed stderr, exit or output object	COMPILER_SEMANTIC_COMPARATOR_INSENSITIVE	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC19	Q0	main/emitFile off-route C policy omitted from global remainder	GLOBAL_DRIVER_REMAINDER_UNDERCOUNTED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC20	Q0	32 rows counted as 32 migrated authorities	AUTHORITY_UNIT_MISMATCH	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC21	Q0	Full WP-001 family counted as only 2 ACTs	ACT_FAMILY_COST_UNDERCOUNTED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC22	Q0	Hybrid WP-001 compiler called M2	M2_BOOTSTRAP_MISCLASSIFIED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC23	Q0	Non-green historical baseline relabelled PASS	KNOWN_BASELINE_FALSE_GREEN	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC24	Q0	Forged AC set, self-claimed receipt or early CLOSE	FACTORY_ACCEPTANCE_OR_TERMINALITY_FORGED	YES	YES	NO	NOT_APPLICABLE	-	Q0_TOKEN_NOT_IN_CORRECTION_DETECTOR
+NC-C01	CORRECTION	AC14 phase altered	FROZEN_AC_PHASE_DRIFT	NO	NO	YES	PENDING_C3	ACPHASE	NONE
+NC-C02	CORRECTION	AC14 predicate substituted	FROZEN_AC_PREDICATE_DRIFT	NO	NO	YES	PENDING_C3	ACPREDICATE	NONE
+NC-C03	CORRECTION	AC12 irrelevant witness accepted	AC_WITNESS_PREDICATE_MISMATCH	NO	NO	YES	PENDING_C3	ACWITNESS	NONE
+NC-C04	CORRECTION	Duplicate AC ID accepted	AC_ID_DUPLICATE	NO	NO	YES	PENDING_C3	ACSET	NONE
+NC-C05	CORRECTION	Missing AC ID accepted	AC_ID_MISSING	NO	NO	YES	PENDING_C3	ACSET	NONE
+NC-C06	CORRECTION	Metadata counted as criterion	AC_METADATA_COUNTED	NO	NO	YES	PENDING_C3	ACCOUNTING	NONE
+NC-C07	CORRECTION	False status totals accepted	AC_STATUS_TOTAL_FORGED	NO	NO	YES	PENDING_C3	ACCOUNTING	NONE
+NC-C08	CORRECTION	Missing witness path accepted	AC_WITNESS_MISSING	NO	NO	YES	PENDING_C3	ACWITNESS	NONE
+NC-C09	CORRECTION	Witness from wrong phase accepted	AC_WITNESS_CHRONOLOGY_INVALID	NO	NO	YES	PENDING_C3	ACWITNESS	NONE
+NC-C10	CORRECTION	Token-route witness counted as required-route proof	BRANCH_ROUTE_SCOPE_LAUNDERED	NO	NO	YES	PENDING_C3	ROUTES	NONE
+NC-C11	CORRECTION	Function reachability substituted for branch reachability	FUNCTION_BRANCH_REACHABILITY_CONFLATED	NO	NO	YES	PENDING_C3	ROUTES	NONE
+NC-C12	CORRECTION	C execution automatically equated with C policy	DECISION_OWNER_NOT_CAUSALLY_SEPARATED	NO	NO	YES	PENDING_C3	DECISION	NONE
+NC-C13	CORRECTION	Unlinked mutant accepted	MUTANT_LINK_PROVENANCE_MISSING	NO	NO	YES	PENDING_C3	DECISION	NONE
+NC-C14	CORRECTION	Comparator ignores artifact type, exit, stdout or stderr	SEMANTIC_COMPARATOR_INSENSITIVE	NO	NO	YES	PENDING_C3	DECISION	NONE
+NC-C15	CORRECTION	NOT_REMEASURED converted into fresh PASS	BASELINE_NOT_REMEASURED_LAUNDERED	NO	NO	YES	PENDING_C3	BASELINE	NONE
+NC-C16	CORRECTION	AC50 claimed before close	PRECOMMITTED_EXTERNAL_SUCCESS	NO	NO	YES	PENDING_C3	CHRONOLOGY	NONE
+NC-C17	CORRECTION	Historical receipt chronology invented	HISTORICAL_TERMINALITY_LAUNDERED	NO	NO	YES	PENDING_C3	CHRONOLOGY	NONE
+NC-C18	CORRECTION	Original acceptance predicate changed to obtain PASS	FROZEN_CONTRACT_REWRITTEN	NO	NO	YES	PENDING_C3	ACPREDICATE	NONE
+#
+# Q0_ROSTER_ROWS = 24
+# CORRECTION_ROSTER_ROWS = 18
+# TOTAL_ROWS = 42

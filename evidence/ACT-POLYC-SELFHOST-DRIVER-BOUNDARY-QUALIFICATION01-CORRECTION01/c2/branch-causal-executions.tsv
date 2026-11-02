@@ -1,0 +1,21 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=branch-causal-executions
+#
+# THE LINKED COUNTERFACTUALS, RE-EXECUTED against the REAL
+# production CMake build.
+#
+# EVERY row records the BASELINE, MUTANT and RESTORED source
+# digests, the BASELINE and MUTANT BINARY digests, the build exit
+# code, the selected artifact path, the artifact TYPE and SIZE,
+# and the stdout/stderr line counts.
+#
+# A SOURCE MUTATION THAT WAS NEVER LINKED INTO THE EXECUTED
+# BINARY IS NOT VALID CAUSAL EVIDENCE. The mutant_binary_sha
+# column therefore DIFFERS from the baseline_binary_sha column.
+#
+branch_id	function	source_line	mutation	route	baseline_source_sha	mutant_source_sha	restored_source_sha	baseline_binary_sha	mutant_binary_sha	build_rc	selected_artifact	artifact_type	artifact_size	stdout_lines	stderr_lines	observed_difference	verdict
+BR_EMITFILE_EMIT_OBJECT	emitFile	250	if (0 && args->emit_object)	-c input.HC	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	c23566fbbe1045a86bce61b0109bde1a221140da868a24c810af696ce711ee42	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	685e8957a09b05ad18aba4f1ec6cf460ce483dfa100b22525e7e281b68e2e67b	0	out.o	Mach-O 64-bit object arm64->Mach-O 64-bit executable arm64	544->16944	0->0	3->0	ARTIFACT_TYPE_CHANGED	C_BRANCH_SELECTS_THE_ARTIFACT_TYPE
+BR_MAIN_PRINT_TOKENS	main	519	if (0 && args.print_tokens)	-tokens input.HC	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	2f89d3b0bffa669807fe8c239c2ebc8f96df07711ac5f8ed4abaa35c83a34e65	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	4d26e2e692b0aa853eee02daae45b128955a9bf5d8c4c711c0e5d63b72a10de4	0	NONE	NONE->Mach-O 64-bit executable arm64	0->16944	9->0	0->0	ARTIFACT_TYPE_CHANGED	C_BRANCH_SELECTS_THE_ARTIFACT_TYPE
+BR_MAIN_COMPILE_TO_AST	main	533	if (!compileToAst(cc,&args,lexer_flags) || 1)	-c input.HC	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	8dbea2824f6dea081694f0fb1baf1877c1386c99c2ae06251112f7e2ee9a5202	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	6b2e3ce5534fc876807473e2b7bdb32cee3d8d9bf3973adfe8cf47df9b207c6e	0	out.o	Mach-O 64-bit object arm64->NONE	544->0	0->0	3->0	ARTIFACT_TYPE_CHANGED	C_BRANCH_SELECTS_THE_ARTIFACT_TYPE
+BR_POLYC_FIELD_FOR_ACTION	WpDriverFieldForAction	830	return WP_FIELD_NONE;	-c input.HC	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	82c149d9482196c8045239dc880338c344c28847d0954a665319b2cacc12b2bb	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	55e4ec22369b21936b9571f1785f1b93681ca71213132a97145a6276ed972264	0	out.o	Mach-O 64-bit object arm64->NONE	544->0	0->0	3->0	POLYC_SELECTION_DRIVES_THE_C_ACTION	POLYC_SELECTION_IS_ON_THE_CAUSAL_PATH

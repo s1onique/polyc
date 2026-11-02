@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=independent-witness
+#
+# THE INDEPENDENT POSIX/GIT WITNESS.
+#
+# It recomputes each critical fact from the SAME committed inputs
+# using git, awk, sort, uniq, comm, cmp and shasum. It shares NO
+# material detection algorithm with the compiled PolyC verifier:
+# it does NOT tokenise predicates, does NOT compare phases through
+# a column index, and does NOT read a verdict field.
+#
+# THE VERDICT IS PER FACT. A MATCHING OVERALL PASS STRING IS NOT
+# SUFFICIENT.
+#
+fact	independent_value	method
+AC_IDENTITY	frozen=50 ledger=50 missing=0 extra=0 duplicate=0	comm over the sorted identifier sets
+AC_PHASES	drift_rows=5 ids: AC14 AC15 AC16 AC17 AC18	join on identifier, compare the phase fields
+AC_PREDICATE_BINDING	adjudications_bound=4 unbound=5 artifact_absent=0	re-read the named structured field from the named artifact in the predecessor close tree
+BINDING_INVARIANT	proven_rows=35 binding_ok=35 binding_hole=0 binding_absent_from_close_tree=0	recompute the PROVEN-verdict binding invariant against git ls-tree at the predecessor close
+AC_COUNTS	criterion_rows=PASS:49 FAIL:0 DEFERRED:1 metadata_excluded=[AC_ROSTER_SIZE ] ledger_summary=[LEDGER_PASS     = 49 LEDGER_FAIL     = 0 LEDGER_DEFERRED = 2 ] handoff=[46 PASS, 0 FAIL, 5 DEFERRED]	awk over the ACnn identifier set, excluding the metadata row
+WITNESS_PATH_EXISTENCE	cited_paths=50 absent_from_close_tree=2	resolve each cited path against git ls-tree at the predecessor close
+WITNESS_CHRONOLOGY	cited_witness_phase_differs_from_frozen_phase=10 ids=AC14 AC15 AC16 AC17 AC18 AC19 AC39 AC40 AC41 AC45 	compare the witness path phase directory with the frozen phase
+BRANCH_ROUTE_SCOPES	proven_reachable=3 proven_unreachable=14 unproven=0 reachable_ids=[BR_MAIN_COMPILE_TO_AST BR_MAIN_EMIT_FILE_CALL BR_EMITFILE_EMIT_OBJECT ]	count the route scope vocabulary in the source-derived branch inventory
+BASELINE_STATUS	not_remeasured_rows=6 known_failure_rows=1	read the committed baseline ledger rows, preserving the NOT_REMEASURED state
