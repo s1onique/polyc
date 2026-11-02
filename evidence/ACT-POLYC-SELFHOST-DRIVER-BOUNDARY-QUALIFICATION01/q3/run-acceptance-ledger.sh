@@ -174,12 +174,29 @@ emit AC46 Q3 PASS "q3/gate-results.tsv" \
   "gate-fast and the serialised gate-push pass; Factory, F14 and append-only are clean"
 
 # --- Q4 ---------------------------------------------------------------------
-emit AC47 Q4 DEFERRED "the Q4 handoff and ROADMAP section" \
+#
+# AC47, AC48 and AC49 are discharged by THIS close. The close commits
+# the handoff and the ROADMAP section (AC47), it is the ONLY close and
+# its trailers are prevalidated (AC48), and it commits ONLY the
+# terminality PLAN with no precommitted post-CLOSE success (AC49).
+#
+# The ledger is regenerated AFTER the close commit, so the ledger
+# itself is part of the CLOSE commit's tree. The verifier's ACCEPT
+# mode reads the ledger as DATA, so a self-claimed ledger cannot
+# substitute for the measurement: the AC48 and AC49 criteria are
+# discharged by the COMMITTED ARTIFACTS, not by this ledger's own
+# claim.
+emit AC47 Q4 PASS "q4/q4-evidence-summary.md and docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md" \
   "the final handoff records the audit verdict SEPARATELY from the historic WP001 status"
-emit AC48 Q4 DEFERRED "the Q4 terminal close" \
+emit AC48 Q4 PASS "the Q4 terminal close" \
   "exactly ONE current ACT CLOSE with the required prevalidated trailers"
-emit AC49 Q4 DEFERRED "the Q4 terminal close" \
+emit AC49 Q4 PASS "q4/terminality-plan.txt" \
   "the CLOSE commits only the terminality PLAN; no precommitted post-CLOSE success"
+
+# AC50 and the roster-size row are DEFERRED to the external post-CLOSE
+# probe. They CANNOT be discharged here: the probe has not run, and a
+# PASS for an event that has not happened is exactly the defect this
+# ACT found in the history it examined.
 emit AC50 External DEFERRED "the external post-CLOSE receipt" \
   "the external read-only probe has NOT been run; it runs AFTER the terminal close"
 

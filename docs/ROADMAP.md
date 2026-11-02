@@ -9500,3 +9500,119 @@ AC50 = PASS
 ```
 
 The receipt lives **outside** the repository and is never backdated.
+
+## ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01 — the WP-001 driver boundary is QUALIFIED
+
+This ACT asked two questions and ANSWERED both. It changed **no**
+production file.
+
+```text
+does_polyc_own_the_wp001_driver_boundary     = NO
+is_the_historical_terminality_evidence_sound = NO (UNPROVEN)
+```
+
+### THE AUDIT VERDICT IS SEPARATE FROM THE HISTORIC WP-001 STATUS
+
+The historic `WP001_DRIVER_MIGRATION = ACHIEVED` is the MIGRATION
+ACT's own verdict and is **NOT overwritten** by this audit. The two
+are recorded side by side:
+
+```text
+AUDIT_VERDICT               = PASS_FINDINGS_WITH_REMAINDER
+WP001_BOUNDARY_CONFIRMED    = NO
+WP001_DRIVER_MIGRATION      = ACHIEVED   (the historic migration verdict)
+HISTORICAL_ACT_TERMINALITY_CONFIRMED = UNPROVEN
+```
+
+### THE MEASURED BOUNDARY
+
+The 32 historical driver rows were classified at BRANCH granularity,
+by **DECISION OWNER** rather than by function ownership:
+
+```text
+POLYC_OWNED_DECISION_PROVEN    9
+C_MECHANICAL_EXECUTION_PROVEN  12
+C_SEMANTIC_RETAINED_WP001       2
+DORMANT_OR_UNREACHABLE_PROVEN  9
+```
+
+The two retained-C rows are `main()` and `emitFile()`, and **both are
+on the WP-001 required route**. Two LINKED COUNTERFACTUALS, compiled,
+linked and executed against the real production build, prove it:
+
+```text
+BR_EMITFILE_EMIT_OBJECT  src/main.c:250
+  the artifact type CHANGES from a Mach-O 64-bit OBJECT to a
+  Mach-O 64-bit EXECUTABLE
+
+BR_MAIN_PRINT_TOKENS     src/main.c:519
+  the token stream DISAPPEARS: 9 stdout lines -> 0
+```
+
+```text
+WP001_REQUIRED_ROUTE_C_SEMANTIC_REMAINDER = 2
+WP001_GLOBAL_C_SEMANTIC_REMAINDER        = 2
+```
+
+The two remainders are counted **SEPARATELY** and neither is asserted
+to be zero.
+
+### THE HISTORICAL TERMINALITY EVIDENCE IS NOT CONFIRMED
+
+```text
+HISTORICAL_TRACKED_OUTCOME_PROVENANCE = PRECOMMITTED_PROSPECTIVE_RESULT
+ORIGINAL_EXTERNAL_RECEIPT             = VERIFIED
+FRESH_EXTERNAL_REPLAY                 = NOT_RUN
+HISTORICAL_ACT_TERMINALITY_CONFIRMED  = UNPROVEN
+```
+
+The tracked terminal outcome was committed **BEFORE** the probe ran.
+It is a prospective result that was pre-committed, not an
+observation. The original receipt exists and binds to the
+correction's terminal state, but its **timestamp is not
+topology-backed**: historical execution timing is not provable from
+the current evidence.
+
+### THE FAMILY COST IS FIVE ACTS
+
+```text
+WP001_ALL_ACTS_CONSUMED           = 5
+WP001_IMPLEMENTATION_ACTS         = 1
+WP001_TECHNICAL_CORRECTION_ACTS   = 1
+WP001_GOVERNANCE_CORRECTION_ACTS  = 3
+```
+
+The earlier `WP001_ACT_COST_MEASURED = 2` understated the family
+cost. The five-ACT count is recomputed from the actual commits.
+
+### THE AUDIT'S OWN MACHINERY IS SOUND
+
+```text
+ADVERSE_CONTROLS_FIRED        24 of 24, each with its EXACT reason token
+ANTI_SELFTESTS_FIRED          20 of 20, each with its EXACT reason token
+INDEPENDENT_WITNESS_MATCH     44 of 44
+INDEPENDENT_RECOMPUTATION     10 of 10 agreements, 0 disagreements
+CONSERVATION_MISMATCHES        0
+ACCEPTANCE_LEDGER             46 PASS, 0 FAIL, 5 DEFERRED
+GATE_FAST                     PASS
+GATE_PUSH                     PASS
+APPEND_ONLY                   PASS (11 of 11)
+```
+
+**SIX OF THE FROZEN NEGATIVE CONTROLS WERE NEVER IMPLEMENTED** before
+this ACT: `CORRECTION_CLOSE_IDENTITY_WRONG`,
+`NON_ACT_TRAILER_PROMOTED`, `HISTORICAL_CLOSE_DUPLICATE_HIDDEN`,
+`MUTATION_LINK_PROVENANCE_MISSING`, `G0_DRIVER_CONTAMINATED` and
+`COMPILER_SEMANTIC_COMPARATOR_INSENSITIVE`. The gap was closed in the
+**verifier**; the frozen roster was NOT edited. Disclosed.
+
+### THE Q4 TERMINALITY PLAN, NOT A PRE-COMMITTED SUCCESS
+
+The external read-only probe **has not run yet**. This ACT's close
+commits the **PLAN** for it, and the plan carries no PASS for an
+event that has not happened. The probe runs after the close, its
+receipt lives **outside** the repository and is never backdated, and
+its outcome is recorded by an ordinary commit with no ACT trailer.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01/`.
