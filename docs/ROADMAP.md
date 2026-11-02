@@ -9020,3 +9020,106 @@ SLICE10_AUTHORIZED     = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.md`
 and `evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/`.
+
+## M2 critical-path rebase (ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01)
+
+The M2 forecast is **rebased on source-derived evidence**, and the
+programme's first real work is **identified and selected**. Two findings
+dominate, and both change how the programme should be read.
+
+**The archived forecast's arithmetic is sound; its load-bearing
+assumption was never validated.** The archived CENSUS01 forecast was
+reproduced *exactly* from the verifier's own source — all four
+milestones, M1 154/348/948, M2 159/355/961, M3 161/358/967 and
+M4 201/447/1208. Its weak point is FA-04, an assumed **12 decision
+sites per implementation ACT**. The measured rate over the only
+cohorts that have ever run is **1.0**: nine PolyC subjects against
+nine implementation ACTs. Re-running the archived formula shape over
+the **1252 real authority rows** at the measured rate prices the full
+M2 scope at **1897 ACTs** (1637 low / 3247 high), not 355. The
+sensitivity table re-runs the real model nine times and shows that
+this single parameter moves the forecast by **1640 ACTs**. The
+archived 12 has no measured cohort; the measured 1.0 does.
+
+**The archived forecast had no independent critical path at all.** Its
+`critical_path_length` column equals its `total_effort_sum` in every
+milestone row — a copy, not a computation. The rebased model replaces
+it with a real longest path over a **20-package DAG** (37 edges, zero
+duplicates, zero dangling references, acyclic), with a witness route:
+
+```text
+WP-001 -> WP-002 -> WP-003 -> WP-004 -> WP-005 -> WP-007
+       -> WP-008 -> WP-017 -> WP-018 -> WP-019 -> WP-020
+```
+
+The critical path is **75** and the total is **121**; they are computed
+separately and are not equated. The POSIX generator and the compiled
+PolyC verifier agree on every number.
+
+The **290 against 355** discrepancy is recorded, not carried forward.
+It is a **display defect**, not an arithmetic one: the six displayed
+category columns report per-component totals, while the total is built
+from the bundle base. The formula reproduces every milestone exactly,
+and the 65 represents **no** unbudgeted work. A C0 finding is refined,
+not rewritten.
+
+The measurement basis is re-derived, not inherited: **52 nodes**, **238
+raw edges**, **135 mandatory** edges (95 TYPE_REPRESENTATION + 14
+MUTABLE_STATE + 14 CALLBACK + 12 RECOVERY), **34 SCCs** = 33 singletons
+plus one of size 19, recomputed independently. The historical `134` is
+shown to be a narrative transcription slip, not a different graph.
+`E-TYP-0136` is present and mandatory but its evidence is a **header
+inclusion alone**, so it stays a layout-coupling candidate;
+`E-MUT-0137` remains an unsupported witness. The 19-node component is
+recorded as **evidence of coupling**, not as authority to migrate the
+connected rows atomically.
+
+The producer chain is measured: `gcc` → 46 C units → C-rooted stage0 →
+12 PolyC **helper subjects** → linker → the hybrid `./hcc`. Stage 0
+compiles PolyC source, but the source it compiles is helper subjects,
+not a compiler. The earliest unsatisfied bootstrap gate is therefore
+**P0**: a PolyC-authored compiler source set does not exist. Boundary A
+(the precursor) is **10** semantic units / **14346** LOC; Boundary B
+(the full M2 scope) is **24** semantic units / **36677** LOC, with **4**
+mechanical glue units / **2991** LOC permitted.
+
+The selected successor is **WP-001, the PolyC-authored driver**
+(`src/main.c`, `src/cli.c`; 1257 LOC; 32 authority rows). It unblocks
+**19 of the 20** packages, is the only R0 package that is qualified
+with a named witness and no predecessors, and sits at the head of the
+critical path. Its witness is the real production invocation
+`hcc --install-dir=X -c input.HC -o out.o`. The proposed successor is
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01`.
+
+Every baseline is conserved, re-measured freshly at C3: parser
+376/376 over 90 blocks with the ordered sequence MD5
+`b6f117eb1386ca80f81bc06226e2a741`, direct lexers 89/89, 45/45 and
+23/23, `gate-fast` PASS, the serialized `gate-push` PASS, append-only
+11/11, closure status 60/60, and **zero** changed files under `src/`,
+`tools/bootstrap/`, `tests/` and `scripts/quality/`. `F-NO-PYTHON`
+remains honestly FAIL at the **same** 12 paths with zero new,
+`F-POLYC-TOOLS` remains honestly UNAVAILABLE because its canonical
+checker does not exist, and the cross-target baseline remains
+NOT_REMEASURED. All **24** frozen adversarial controls are sensitive,
+each with its own reason token, each cross-checked by an independent
+POSIX witness that shares no code with the compiled PolyC detector, and
+**15** independent recomputations match. The acceptance ledger closes
+at **AC01…AC49 PASS** and **AC50 DEFERRED**: the external read-only
+terminality receipt is created after the CLOSE, outside the repository,
+bound to the exact terminal HEAD and TREE, and is never backdated. The
+plan for it is tracked at
+`evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01/c4/terminality-plan.txt`
+and is explicitly marked PLAN.
+
+```text
+M0_SELFHOST = ACHIEVED
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+NEXT_TARGET = NONE
+NEXT_ACT_PROPOSED = ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+NEXT_TARGET_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01.md`
+and `evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01/`.

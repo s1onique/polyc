@@ -92,7 +92,7 @@ evidence_for() {
     AC47) echo "c3/gate-fast.txt|c3/capture-gates.sh" ;;
     AC48) echo "c3/production-and-source-conservation.tsv|c3/capture-conservation.sh" ;;
     AC49) echo "c3/ac-status.tsv|c3/capture-ac-status.sh" ;;
-    AC50) echo "c4/terminality-plan.txt|EXTERNAL_RECEIPT_AFTER_CLOSE" ;;
+    AC50) echo "c4/terminality-plan.txt|EXTERNAL_RECEIPT_AFTER_CLOSE__THE_PLAN_IS_NOT_THE_RECEIPT" ;;
     *) echo "NONE|NONE" ;;
   esac
 }

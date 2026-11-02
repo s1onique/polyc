@@ -1,0 +1,52 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THIS IS A PLAN, NOT AN EXECUTED RECEIPT.
+#
+# It says, in unambiguous words: PLAN. It is NOT a post-CLOSE
+# terminality receipt, and it does not claim AC50.
+#
+# THE EXTERNAL TERMINALITY RECEIPT IS GENERATED AFTER THE CLOSE
+# COMMIT, OUTSIDE THE REPOSITORY, AND IS BOUND TO THE EXACT
+# TERMINAL HEAD AND TREE. It does not exist at this phase.
+#
+ARTIFACT_KIND=PLAN
+IS_EXECUTED_RECEIPT=NO
+CLAIMS_AC50=NO
+GENERATED_AFTER_CLOSE=YES
+GENERATED_OUTSIDE_REPOSITORY=YES
+#
+PLAN_STEPS:
+  1. The CLOSE commit is created with the trailers
+     ACT: ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+     ACT-Phase: CLOSE
+     ACT-Verdict: PASS
+  2. The terminal HEAD and TREE are read from git AFTER that commit.
+  3. A read-only receipt is generated OUTSIDE the repository, at a
+     /tmp path, and is bound to those exact HEAD and TREE values.
+  4. The receipt verifies:
+       - the fifteen production PolyC authorities are unchanged
+       - the production semantic delta is zero
+       - the bootstrap milestone labels are accurate
+       - the source, producer, DAG and forecast joins all resolve
+       - all AC01..AC49 are PASS and AC50 is satisfied BY the receipt
+       - all NC01..NC24 are sensitive
+       - the C0..C4 sequence is exactly five commits
+       - there is exactly one CLOSE commit
+       - there is no post-CLOSE continuation
+       - no worktree was created by this ACT
+       - there are zero replace refs
+       - the index and worktree are clean;
+       - nothing was pushed.
+  5. If the receipt fails, the disposition is
+     HALT_EXTERNAL_TERMINALITY: no second CLOSE, no Git history
+     rewrite, no ordinary receipt commit.
+#
+EXPECTED_COMMIT_SEQUENCE=C0 RED -> C1 EVIDENCE -> C2 IMPL -> C3 EVIDENCE -> C4 CLOSE
+EXPECTED_COMMIT_COUNT=5
+EXPECTED_CLOSE_CARDINALITY=1
+RECEIPT_LOCATION_PREFIX=/tmp/
+RECEIPT_IS_OUTSIDE_THE_GIT_TREE=YES
+#
+TERMINALITY_PLAN_STATUS=PLAN_ONLY__NOT_A_RECEIPT
