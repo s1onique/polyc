@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03
+# ACT_PHASE=R1-EVIDENCE
+# EVIDENCE_KIND=duplicate-disclosure
+#
+# THE DISCLOSURE. THE DUPLICATE IS NOT CONCEALED AND NOT
+# RELABELLED AS CORRECT.
+#
+# ---------------------------------------------------------------------------
+# THE PARENT'S COMMITTED PATH, MEASURED
+# ---------------------------------------------------------------------------
+order	short_sha	subject_phase_label	act_phase_trailer	is_terminal_close
+1	0be7c87e	C0	RED	NO
+2	3645738a	C1	NONE	NO
+3	aa243059	C2	NONE	NO
+4	1e0dd97d	C3	NONE	NO
+5	c57a4e8b	C4	CLOSE	YES
+6	ec36285c	C4	EVIDENCE	NO
+7	2b061fe3	C4	CLOSE	YES
+#
+# ---------------------------------------------------------------------------
+# THE THREE FACTS
+# ---------------------------------------------------------------------------
+fact	value
+PARENT_PATH_COMMIT_COUNT	7
+PARENT_PATH_C4_LABEL_COUNT	3
+PARENT_PATH_TERMINAL_CLOSE_COUNT	2
+PARENT_CONTRACT_REQUIRES_COMMIT_COUNT	5
+PARENT_CONTRACT_REQUIRES_C4_LABEL_COUNT	1
+PARENT_CONTRACT_REQUIRES_TERMINAL_CLOSE_COUNT	1
+DUPLICATE_IRREPARABLE	YES
+DUPLICATE_CONCEALED	NO
+DUPLICATE_DISCLOSED_IN	this file; the parent handoff; docs/ROADMAP.md
+#
+# ---------------------------------------------------------------------------
+# WHY IT IS IRREPARABLE
+# ---------------------------------------------------------------------------
+# Removing c57a4e8b, ec36285c or 2b061fe3 from the parent's path would
+# require amend, rebase, filter-branch, filter-repo, git replace,
+# reset+recommit, squash merge or force push. Every one of those is
+# forbidden by the append-only invariant, whose graph properties are
+# enforced by the local pre-push hook on the destination ref. The
+# permanent regression suite is scripts/quality/factory-append-only-test.sh
+# (NC1..NC11) and F5 forbids weakening it.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE CORRECTION DOES INSTEAD
+# ---------------------------------------------------------------------------
+# This ACT establishes a NEW, mechanically valid FIVE-COMMIT path
+# carrying the parent's evidence and the parent's acceptance
+# ledger, with every commit carrying a complete git-parseable trailer
+# block, and with exactly ONE ACT-Phase: CLOSE in it. The
+# external read-only terminality probe is RE-EXECUTED after that
+# path's terminal close, and the new receipt binds to the new
+# terminal HEAD and TREE.

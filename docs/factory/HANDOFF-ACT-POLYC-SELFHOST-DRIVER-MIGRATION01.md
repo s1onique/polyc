@@ -255,3 +255,40 @@ THE ACCEPTANCE LEDGER THEREFORE READS AC01...AC50 PASS. The receipt
 lives OUTSIDE the repository and is never backdated, because a
 committed receipt could never bind to its own containing commit
 (F-GIT-IDENTITY).
+
+DUPLICATE C4 DISCLOSURE
+
+The parent's committed path carries SEVEN commits under its ACT
+identity, THREE of them labelled `C4`, and TWO of them carrying
+`ACT-Phase: CLOSE`. The parent's own contract requires EXACTLY FIVE
+distinct linear commits and "the unique fifth CLOSE commit".
+
+The cause is that the intermediate close was created BEFORE the
+external terminality receipt existed, which was premature: the
+contract says the receipt may only be produced AFTER the CLOSE, and
+its checks must observe the terminal state. The receipt then had to
+be recorded in a further commit, and the terminal close had to follow
+it. Both further commits re-used the `C4` label.
+
+The defect was caught by EXECUTION, not by review: the external
+read-only terminality probe reported
+`ordered=[C0 C1 C2 C3 C4 C4 C4 ] close_count=2` and
+`PROBE_RESULT=FAIL`. The probe refused to certify a path that does
+not match the contract.
+
+The duplicate is IRREPARABLE: removing any of the extra commits would
+require amend, rebase, filter-branch, filter-repo, `git replace`,
+reset+recommit, squash merge or force push, and every one of those is
+forbidden by the append-only invariant.
+
+The forward-only repair is
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03`, which
+establishes a NEW, mechanically valid FIVE-COMMIT path carrying this
+ACT's evidence and its acceptance ledger, with exactly ONE
+`ACT-Phase: CLOSE` in it, and re-executes the external terminality
+probe against that path.
+
+The measured inventory is in
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/c0/parent-path-inventory.tsv`
+and
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/c1/duplicate-disclosure.tsv`.
