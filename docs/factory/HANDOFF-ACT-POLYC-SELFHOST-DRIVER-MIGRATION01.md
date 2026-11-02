@@ -292,3 +292,49 @@ The measured inventory is in
 `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/c0/parent-path-inventory.tsv`
 and
 `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/c1/duplicate-disclosure.tsv`.
+
+TERMINAL SOUNDNESS DISCLOSURE
+
+Three defects with ONE root cause were measured in this ACT family.
+They are recorded here plainly, and none of them is concealed.
+
+  1. THIS ACT'S ORIGINAL COMMITTED PATH IS DUPLICATED: it carries
+     THREE `C4` labels and TWO `ACT-Phase: CLOSE` commits where the
+     contract requires one. The cause was a premature intermediate
+     close, created before the external terminality receipt existed.
+     IRREPARABLE under the append-only invariant.
+
+  2. THIS ACT'S C1, C2 AND C3 COMMITS CARRY NO `ACT:` TRAILER: they
+     put the ACT identity in the subject line only, so the canonical
+     commit-message validator classified them as MODE=NON_ACT and the
+     range validator's backwards walk stops at C0. IRREPARABLE.
+
+  3. THE SAME DUPLICATE-CLOSE DEFECT WAS REPRODUCED INSIDE
+     ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03 BY THE AGENT
+     THAT WAS CORRECTING IT: that ACT committed its own terminal
+     close, then recorded the re-executed receipt's outcome in a
+     further commit, then committed a further close, so its range
+     contains TWO CLOSEs and the canonical validator reports
+     `REASON=expected exactly 1 CLOSE commit in range, found 2`.
+     IRREPARABLE.
+
+THE ROOT CAUSE. The canonical range validator enforces rule 4
+(exactly one `ACT-Phase: CLOSE`, and it is the last commit of the
+range) and rule 6 (no commit descending from the CLOSE may carry
+`ACT:<id>`). A receipt that must be recorded AFTER the close can
+therefore neither carry the ACT id nor be recorded before the close
+without making the close premature.
+
+THE RESOLUTION IS STRUCTURAL, NOT PROCEDURAL: the ACT's path ends at
+its terminal close; the close is the last commit carrying the ACT id;
+and everything after it is an ordinary commit with no ACT trailer at
+all.
+
+THE FORWARD-ONLY REPAIR is
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04`, whose path is
+built to that shape from the start: it has exactly one terminal close
+and no ACT-id commit after it. The measured defects and the derived
+rule are in
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04/c0/`
+and
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04/c1/`.

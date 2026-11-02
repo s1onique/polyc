@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04
+# ACT_PHASE=S1-EVIDENCE
+# EVIDENCE_KIND=the-structural-rule
+#
+# THE STRUCTURAL RULE, DERIVED FROM THE CANONICAL VALIDATOR
+# ITSELF RATHER THAN ASSERTED.
+#
+# -------------------------------------------------------------------
+# THE RULES, QUOTED FROM THE CANONICAL VALIDATOR
+# -------------------------------------------------------------------
+# scripts/quality/factory-v2-range-check.sh states, in its own
+# header:
+#
+#   1. CLOSE has ACT=<id>, ACT-Phase=CLOSE, exactly one ACT-Verdict.
+#   2. Every commit in FIRST..CLOSE has ACT=<same id> with a valid
+#      ACT-Phase.
+#   3. FIRST has ACT-Phase=RED.
+#   4. Exactly one CLOSE exists in FIRST..CLOSE and it is the last
+#      commit.
+#   6. No commit after CLOSE carries ACT=<id>.
+#
+# RULE 6 IS ENFORCED OVER THE WHOLE DESCENDANT PATH, not merely over
+# the direct children:
+#
+#   The rule is about the whole DESCENDANT PATH of CLOSE, so the check
+#   now walks every commit reachable from CLOSE (excluding CLOSE
+#   itself) and rejects any of them that carries ACT:<id>.
+#
+# -------------------------------------------------------------------
+# THE DERIVED RULE
+# -------------------------------------------------------------------
+# RULES 4 AND 6 TOGETHER IMPLY:
+#
+#   THE SET OF COMMITS CARRYING ACT:<id> IS EXACTLY THE SET
+#   FIRST..CLOSE, AND CLOSE IS ITS LAST MEMBER.
+#
+# CONSEQUENCE. A commit that carries ACT:<id> may NOT be created after
+# the terminal close. The terminality receipt therefore CANNOT be
+# recorded under the ACT id, and CANNOT be recorded before the close
+# without making the close premature.
+#
+# THE SHAPE THAT SATISFIES BOTH RULES:
+#
+#   ... RED -> EVIDENCE -> IMPL -> EVIDENCE -> CLOSE   (the ACT id)
+#   <ordinary commit>                              (NO ACT id)
+#   <ordinary commit>                              (NO ACT id)
+#
+# The receipt outcome is reported in an ORDINARY commit AFTER the
+# close. Rule 6 counts only commits that carry ACT:<id>, so an
+# ordinary commit after the close satisfies it exactly.
+#
+# -------------------------------------------------------------------
+# THE MEASURED CONSEQUENCE FOR THIS ACT
+# -------------------------------------------------------------------
+property	required	this_act
+ACT_id_commits_are_contiguous	YES	YES
+exactly_one_terminal_close_in_range	1	1
+no_ACT_id_commit_after_the_terminal_close	YES	YES
+first_commit_phase	RED	RED
+every_commit_has_a_valid_phase	YES	YES
+production_files_changed	0	0
+committed_evidence_modified	0	0

@@ -9407,3 +9407,50 @@ AC50 = PASS
 ```
 
 The receipt lives **outside** the repository and is never backdated.
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04 — terminal soundness CLOSED
+
+**Three defects with one root cause** were measured in the
+WP-001 driver-migration ACT family, and the third of them was
+**reproduced by the agent that was correcting it**.
+
+| # | defect | measured |
+|---|---|---|
+| 1 | the parent's path is duplicated | 3 `C4` labels, 2 terminal `CLOSE`s, where the contract requires 1 |
+| 2 | the parent's C1/C2/C3 carry no `ACT:` trailer | `MODE=NON_ACT`; the range walk stops at C0 |
+| 3 | the **same** duplicate-close defect inside `CORRECTION03` | `REASON=expected exactly 1 CLOSE commit in range, found 2` |
+
+**THE ROOT CAUSE.** The canonical range validator enforces rule 4
+(exactly one `ACT-Phase: CLOSE`, and it is the last commit of the
+range) and rule 6 (no commit descending from the CLOSE may carry
+`ACT:<id>`). A receipt that must be recorded **after** the close can
+therefore neither carry the ACT id nor be recorded **before** the
+close without making the close premature.
+
+**THE RESOLUTION IS STRUCTURAL, NOT PROCEDURAL:**
+
+```text
+THE ACT'S PATH ENDS AT ITS TERMINAL CLOSE;
+THE CLOSE IS THE LAST COMMIT THAT CARRIES THE ACT ID;
+EVERYTHING AFTER IT IS AN ORDINARY COMMIT WITH NO ACT TRAILER.
+```
+
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04` is built to that
+shape from the start: exactly one terminal close, and no ACT-id
+commit after it.
+
+```text
+root_cause_rule_4_vs_rule_6_tension = YES
+all_three_defects_irreparable        = YES
+structural_resolution_available      = YES
+PRODUCTION_SEMANTICS_CHANGED         = NO
+HISTORY_REWRITTEN                    = NO
+```
+
+All three prior defects are **irreparable** under the append-only
+invariant and are **disclosed** in the parent handoff, in
+`CORRECTION03`'s handoff, in the ROADMAP and in this correction's
+evidence.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04/`.
