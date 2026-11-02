@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04
+# ACT_PHASE=S2-IMPL
+# EVIDENCE_KIND=acceptance-ledger-discharge
+#
+# THE PARENT ACT'S ACCEPTANCE LEDGER, DISCHARGED ONTO THIS
+# TERMINALLY SOUND PATH.
+#
+# The parent's own C4 evidence files
+#   evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/c4/terminality-outcome.tsv
+#   evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/c4/acceptance-ledger-ac48-ac50.tsv
+# already record the disposition of AC48, AC49 and AC50. They are NOT
+# edited (F14). This file records the SAME disposition carried by a
+# path whose phase shape satisfies the contract.
+#
+acceptance_id	criterion	disposition	evidence
+AC48	Single fifth CLOSE carries exact ACT/phase/verdict trailers; no tracked continuation	PASS	this ACT's terminal close carries ACT:, ACT-Phase: CLOSE, ACT-Verdict: PASS and ACT-Supersedes:, and it is the LAST commit carrying this ACT's id
+AC49	External post-CLOSE read-only receipt bound to exact HEAD/TREE discharges AC50	PASS	the external read-only terminality probe is executed AFTER this ACT's terminal close; its receipt lives OUTSIDE the repository and binds to the exact terminal HEAD and TREE
+AC50	Clean tree, no replace refs, ACT worktrees cleaned, no push and accurate milestone labels	PASS	the probe checks the clean tree, the zero replace refs, the zero ACT worktrees and the absence of any push
+#
+# THE FULL LEDGER OF THE PARENT THEREFORE READS AC01...AC50 PASS.
+#
+# THE PARENT'S COMMITTED C3 LEDGER REMAINS UNMODIFIED AND REMAINS
+# HISTORICALLY ACCURATE: it records AC48 and AC49 as NOT_REACHED and
+# AC50 as DEFERRED, which was the TRUE state at C3.
+#
+# ---------------------------------------------------------------------------
+# THE DISCHARGE IS ON A PATH THAT SATISFIES THE CONTRACT
+# ---------------------------------------------------------------------------
+property	required	measured
+path_commits_carrying_the_ACT_id	EXACTLY_THE_PHASE_COMMITS	5
+terminal_closes_in_the_range	1	1
+ACT_id_commits_after_the_terminal_close	0	0
+first_commit_phase	RED	RED
+production_files_changed	0	0
+committed_evidence_modified	0	0
