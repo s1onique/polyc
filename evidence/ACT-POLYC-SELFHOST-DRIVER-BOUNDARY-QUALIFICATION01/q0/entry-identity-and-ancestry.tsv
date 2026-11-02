@@ -1,0 +1,14 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q0-RED
+# EVIDENCE_KIND=entry-identity-and-ancestry
+#
+# Every value is READ-ONLY measured from the live Git object store.
+#
+check	command	measured	result
+ENTRY_HEAD	git rev-parse HEAD	299bf83731a54cdfa738cbff7ae9cbd02755b1d9	MATCH
+ENTRY_TREE	git rev-parse HEAD^{tree}	47590ddb7b9cc8a27387cdff794bc2948127889d	MATCH
+BRANCH	git branch --show-current	main	MATCH
+WORKTREE_CLEAN	git status --porcelain=v1	1 entries	0
+REPLACE_REFS	git replace -l	0	PASS
+HEAD_SUBJECT	git log -1 --format=Record the external terminality receipt outcome for ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04		MEASURED
+HEAD_CARRIES_ACT_TRAILER	git show -s --format=%B HEAD | grep -c "^ACT:"	0	NONE

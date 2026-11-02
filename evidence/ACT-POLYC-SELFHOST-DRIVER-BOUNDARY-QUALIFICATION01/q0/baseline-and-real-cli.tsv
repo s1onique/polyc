@@ -1,0 +1,30 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q0-RED
+# EVIDENCE_KIND=baseline-and-real-cli
+#
+# Both compiler generations executed over the frozen corpus.
+# c_on_* is the selector-ON production compiler; g0_* is the
+# selector-OFF C-only oracle. The two must AGREE on the route.
+#
+case_id	argv_shape	expected_decision_owner	c_on_exit	c_on_stdout_lines	c_on_artifact	g0_exit	g0_artifact	c_on_first_stderr_line	note
+C01_help	--help	POLYC_DRIVER	0	38	NONE	0	NONE	NO_STDERR	option classification and the HELP action
+C02_version	--version	POLYC_DRIVER	0	4	NONE	0	NONE	NO_STDERR	option classification and the VERSION action
+C03_no_args	--install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix	POLYC_DRIVER	1	0	NONE	1	NONE	hcc: fatal error: no input files	the no-input-file status
+C04_unknown_option	--bogus	POLYC_DRIVER	1	0	NONE	1	NONE	Error: Unknown commandline options: --bogus	the unknown-argument status
+C05_missing_o_value	-o	POLYC_DRIVER	1	0	NONE	1	NONE	Error: Unexpected end of input - expected `-o <option?>`	the arity-violation status
+C06_nonexistent_src	-c nonexistent.HC -o out.o	C_ENGINE	1	0	NONE	1	NONE	[0;31mERROR: [0mFailed to open file: nonexistent.HC	a well-formed request whose input is missing
+C07_compile_object	-c input.HC -o out.o	POLYC_DRIVER	0	0	out.o:Mach-O 64-bit object arm64	0	out.o:Mach-O 64-bit object arm64	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]	the compile-object action
+C08_install_dir_eq	--install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix	POLYC_DRIVER	1	0	NONE	1	NONE	hcc: fatal error: no input files	the = suffix value source
+C09_o_dashdash	--	POLYC_DRIVER	1	0	NONE	1	NONE	Error: Unknown commandline options: --	the unknown-argument status
+C10_permuted	-o out.o -c input.HC	POLYC_DRIVER	0	0	out.o:Mach-O 64-bit object arm64	0	out.o:Mach-O 64-bit object arm64	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]	the NEXT value source
+C11_dup_c	-c -c input.HC -o out.o	POLYC_DRIVER	0	0	out.o:Mach-O 64-bit object arm64	0	out.o:Mach-O 64-bit object arm64	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]	the repeated-flag action
+C12_source_only	input.HC	C_ENGINE	0	0	NONE	0	NONE	NO_STDERR	the source-only default route
+C13_define_flag	-D FOO input.HC	POLYC_DRIVER	1	0	NONE	1	NONE	Error: Unknown commandline options: FOO	the -D suffix value
+C14_unknown_short	-z input.HC	POLYC_DRIVER	1	0	NONE	1	NONE	Error: Unknown commandline options: -z	the unknown-argument status
+A01_assemble_only	-S input.HC -o out.s	C_EMITFILE	0	0	out.s:assembly	0	out.s:assembly	NO_STDERR	the emitFile assembly arm
+A02_emit_object_only	-c input.HC -o out.o	C_EMITFILE	0	0	out.o:Mach-O 64-bit object arm64	0	out.o:Mach-O 64-bit object arm64	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]	the emitFile object arm
+A03_tokens	-tokens input.HC	C_MAIN	0	8	NONE	0	NONE	NO_STDERR	the main action dispatch: tokens
+A04_transpile	-transpile input.HC	C_MAIN	0	24	NONE	0	NONE	NO_STDERR	the main action dispatch: transpile
+A05_ast	-ast input.HC	C_MAIN	0	10	NONE	0	NONE	NO_STDERR	the main action dispatch: ast
+A06_cfg	-cfg input.HC	C_MAIN	0	0	NONE	0	NONE	NO_STDERR	the main action dispatch: cfg
+A07_dump_ir	--dump-ir input.HC	C_MAIN	0	15	NONE	0	NONE	NO_STDERR	the main action dispatch: dump-ir

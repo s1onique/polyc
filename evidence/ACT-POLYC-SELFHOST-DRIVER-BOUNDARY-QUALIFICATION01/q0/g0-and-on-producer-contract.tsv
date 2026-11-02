@@ -1,0 +1,20 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q0-RED
+# EVIDENCE_KIND=g0-and-on-producer-contract
+#
+# The TWO COMPILER GENERATIONS, with their identities and the
+# source/object/link evidence that makes the C-OFF oracle
+# INDEPENDENT of the WP-001 PolyC driver.
+#
+artifact	sha256	size_bytes	symbols	note
+G0_SELECTOR_OFF_BINARY	e9448ff10c9feeacb216fa36d51228f737b3392ab3fac122ef60c7095bf5652d	745552	0 driver symbols	the C-only driver oracle
+C_ON_PRODUCTION_BINARY	c59254bf70b7826a12042ba7aa6ac25ef5b6b4ddb53a706042abc773d4b7fb41	776272	19 driver symbols	the production compiler
+G0_CLI_OBJECT	df55aba66e5ccc921d84644338df9b6b45cac8b639e7c34415863ebc9cc3a8bb	20168	0 driver relocations	the C-only cli object
+C_ON_CLI_OBJECT	b2af6d18c573d981a1d4d3903b22fd4e32c5e286d65fcbc345562ab6db4833df	19592	8 driver relocations	the production cli object
+#
+check	command	g0_result	c_on_result	verdict
+DRIVER_SYMBOL_COUNT	nm -g <bin> | grep -c _WpDriver	0	19	PASS
+LEGACY_C_PARSER_PRESENT	nm <cli.c.o> | grep -c _cliParseArgsLegacy	1	0	G0_HAS_IT_C_ON_DOES_NOT
+DRIVER_RELOC_COUNT	nm -u <cli.c.o> | grep -c _WpDriver	0	8	G0_ZERO_C_ON_EIGHT
+DRIVER_OBJECT_ON_LINK_LINE	grep -c driver <link.txt>	0	2	G0_ZERO_C_ON_TWO
+CORPUS_CASES	q0/run-cli-corpus.sh	21 cases	21 cases	EXIT_AND_ARTIFACT_AGREE_21_OF_21
