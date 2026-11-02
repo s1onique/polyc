@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04
+# ACT_PHASE=S3-EVIDENCE
+# EVIDENCE_KIND=conservation-and-gates
+#
+# THE CONSERVATION AND GATES, MEASURED.
+#
+# The reference point is the parent ACT's own C3 commit, which is
+# the last commit that carried production content.
+#
+#   git diff --stat <parent-C3> HEAD -- src/ tools/ scripts/ tests/
+#   git diff --diff-filter=M --name-only <parent-C3> HEAD -- evidence/
+#   git replace -l | wc -l
+#
+measurement	result
+PRODUCTION_GATE_SCRIPT_TEST_DIFF	EMPTY
+COMMITTED_EVIDENCE_MODIFIED	EMPTY
+REPLACE_REFS	0
+HISTORY_REWRITTEN	0
+GATE_FAST_STATUS	PASS
+GATE_PUSH_STATUS	PASS
+APPEND_ONLY	PASS 11 of 11
+CLOSURE_STATUS	PASS 66 of 66 pairs
+COMMIT_MSG_VALIDATOR_MODE	ACT
+#
+# ALL FOUR CORRECTIONS -- CORRECTION01, CORRECTION02,
+# CORRECTION03 and THIS ACT -- CHANGED NO PRODUCTION FILE AND
+# MODIFIED NO COMMITTED EVIDENCE FILE.
+#
+# THE GATES, run against this tree:
+#   CHECK=diff-check        STATUS=PASS
+#   CHECK=shell-syntax      STATUS=PASS
+#   CHECK=doc-invariants    STATUS=PASS
+#   CHECK=large-file-guard  STATUS=PASS
+#   MANIFEST_ROWS=66  PAIR_OK=66  PAIR_FAIL=0  STATUS=PASS
+#   APPEND_ONLY: PASS=11 FAIL=0
