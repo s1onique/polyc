@@ -1,0 +1,43 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=external-receipt-existence-and-binding
+#
+# THE CLAIMED EXTERNAL RECEIPT, INSPECTED AS ACTUAL BYTES.
+# The filename is NOT evidence of the generation time.
+#
+property	value	method
+RECEIPT_PATH	/tmp/wp001-terminality-receipt-20261102T091256Z.txt	ls
+RECEIPT_EXISTS	YES	test -f
+RECEIPT_SHA256	b3d4a4ca3a6a05a12bc0163757c8ffe510432070820051f09d96c9ebd2f94165	shasum -a 256
+RECEIPT_SIZE_BYTES	1356	wc -c
+RECEIPT_MTIME	2026-11-02 12:13:00 +0000	stat -f %Sm (the observed file mtime; an OBSERVED VALUE, not an ordering proof)
+    ID: 100000e0000001a Namelen: ?       Type: apfs
+Block size: 4096       Fundamental block size: 4096
+Blocks: Total: 242837545  Free: 38844740   Available: 38844740
+Inodes: Total: 1556476198 Free: 1553789600	stat
+BOUND_HEAD	e3f8382d94c4c6fcc0370b4126d0e759145614fe	the BOUND_HEAD line of the receipt
+BOUND_TREE	b772785da2c12acd167691f69dcc97ccb42f236f	the BOUND_TREE line of the receipt
+BOUND_ACT	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04	the BOUND_ACT line of the receipt
+BOUND_HEAD_MATCHES_C04_CLOSE	MATCH	git rev-parse e3f8382d^{commit}
+BOUND_TREE_MATCHES_C04_CLOSE_TREE	MATCH	git rev-parse e3f8382d^{tree}
+C04_CLOSE_TREE	b772785da2c12acd167691f69dcc97ccb42f236f	git rev-parse
+PROBE_TIME_CLAIMED	2026-11-02T09:12:56Z	the PROBE_TIME line of the receipt
+PROBE_RESULT_CLAIMED	PASS	the PROBE_RESULT line of the receipt
+NUMBERED_CHECKS	12	the CHECK_ lines of the receipt
+OTHER_RECEIPTS_PRESENT	7	ls /tmp/wp001-terminality-receipt-*
+#
+# THE BINDING VERDICT
+#
+# The receipt binds to the CORRECTION04 terminal CLOSE and to that
+# CLOSE TREE, and it asserts PASS for all eleven numbered checks.
+# Its BOUND_HEAD and BOUND_TREE are the CORRECTION04 CLOSE commit
+# and tree, which are the objects this audit independently measured.
+#
+# What the receipt does NOT establish: that the probe was executed
+# AFTER the CORRECTION04 CLOSE. The receipt carries a PROBE_TIME
+# string and a file mtime, and this audit records both as OBSERVED
+# VALUES, not as a proof of ordering against the commit topology.
+# The commit topology is authoritative for ordering, and it says the
+# CORRECTION04 outcome file was added by the POST-CLOSE commit
+# 299bf83731a54cdfa738cbff7ae9cbd02755b1d9, which carries NO ACT
+# trailer and is a legal ordinary commit under Factory-v2 rule 6.

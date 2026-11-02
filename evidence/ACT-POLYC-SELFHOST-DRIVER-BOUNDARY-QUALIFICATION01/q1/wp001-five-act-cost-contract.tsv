@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=wp001-five-act-cost-contract
+#
+# THE WP-001 FAMILY COST ACCOUNTING, FROZEN BEFORE THE
+# RECOMPUTATION. The parent ACT recorded WP001_ACT_COST_MEASURED=2.
+# That figure covered the parent plus CORRECTION01 only. It is NOT
+# the full family cost and must not be relabelled as such.
+#
+# THE COST UNIT IS A NAMED ACT, NOT A COMMIT. An ordinary
+# receipt commit that carries no ACT id is NOT an ACT and is not
+# counted as one.
+#
+key	value	note
+WP001_IMPLEMENTATION_ACTS	1	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01, the parent
+WP001_TECHNICAL_CORRECTION_ACTS	1	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01, which corrected the MUTATION TARGET and the DISPATCH
+WP001_GOVERNANCE_CORRECTION_ACTS	3	CORRECTION02 (range repair), CORRECTION03 (duplicate-close disclosure), CORRECTION04 (terminal-sound path)
+WP001_ALL_ACTS_CONSUMED	5	the parent plus FOUR corrections
+WP001_FACTORY_COMMIT_COUNT_ACT_IDS	21	the number of family commits carrying SOME ACT: trailer, measured over the first-parent ancestry
+WP001_NON_ACT_RECEIPT_COMMITS	5	the family commits carrying NO ACT: trailer: the parent C1/C2/C3, CORRECTION01 C1, and the post-CLOSE receipt commit
+WP001_ESTIMATE_LOW_BASE_HIGH	2/3/5	the HISTORICAL forecast, NOT re-priced by this audit
+WP001_BUDGET_DISPOSITION	HIGH_CASE_REACHED	the historical HIGH case of 5 named ACTs is exactly what the family consumed
+#
+# THE RELATIONSHIP BETWEEN THE FORECAST AND THE OUTCOME
+#
+# The historical estimate was 2/3/5 named ACTs. The family
+# consumed exactly 5 named ACTs: the parent, ONE technical
+# correction and THREE governance corrections. The technical
+# work was ONE ACT. The remaining THREE ACTs were spent on the
+# FACTORY-V2 RANGE AND TERMINALITY, not on the driver migration.
+#
+# The historical WP001_ACT_COST_MEASURED=2 was the parent plus
+# CORRECTION01. That is the TECHNICAL subset, correctly measured
+# at the time, and it is preserved as such. It is NOT the full
+# family cost.
+#
+# WHAT THIS DOES NOT JUSTIFY
+#
+# One noisy family is NOT a throughput rate. Multiplying 5 ACTs
+# across the 20-package DAG would multiply a single
+# governance-heavy sample. The DAG budget and critical path must be
+# re-priced from the PACKAGE structure, with the governance
+# overhead identified as a SEPARATE cost class, not folded into
+# the per-package migration estimate.
+# THE FIVE FAMILY COMMITS THAT CARRY NO ACT: TRAILER
+#   3645738a5e075aee810d5adda6070cf843f63fbb  the parent C1
+#   aa24305908fc8b80b07463bdebb81d8307dcf2ed  the parent C2
+#   1e0dd97deaad6f699239e942325ca9d9fee4d999  the parent C3
+#   c0187d866272f4b57b7fd8aae0c04296edd2ef6e  CORRECTION01 C1
+#   299bf83731a54cdfa738cbff7ae9cbd02755b1d9  the post-CLOSE receipt commit
+#
+# The parent's C1/C2/C3 are the commits that DID the technical work.
+# They carry no ACT: trailer, so the canonical range validator's
+# backwards walk STOPS at the parent's C0 and the parent's five-phase
+# range is not mechanically valid. This is the measured root cause of
+# the THREE governance corrections: CORRECTION02 repaired the range,
+# CORRECTION03 disclosed the duplicate close, and CORRECTION04
+# established a terminally sound path.

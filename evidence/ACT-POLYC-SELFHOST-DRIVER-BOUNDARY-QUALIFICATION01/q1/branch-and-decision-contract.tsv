@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=branch-and-decision-contract
+#
+# THE OWNERSHIP VOCABULARY, FROZEN BEFORE THE CLASSIFICATION.
+#
+# A row is classified by DECISION OWNER, not by function
+# ownership and not by whether a source file was touched. A
+# function may contain both mechanical operations and independent
+# policy; the classification is therefore made at BRANCH
+# granularity.
+#
+current_class	definition	proof_required
+POLYC_OWNED_DECISION_PROVEN	C only transports or executes an already selected PolyC decision	source + object + counterfactual
+C_MECHANICAL_EXECUTION_PROVEN	C performs a platform or engine operation without selecting semantic policy	source + object + execution on the particular path
+C_SEMANTIC_RETAINED_WP001	C still chooses behaviour within the frozen WP-001 driver source boundary	source + linked counterfactual with an observed difference
+C_SEMANTIC_ENGINE_OUTSIDE_WP001	a live choice belongs to a retained compiler engine or another separately frozen package	source closure justification
+DORMANT_OR_UNREACHABLE_PROVEN	not called on the relevant route, or compiled out	object + execution evidence
+UNPROVEN	the source, call, object or execution proof is missing; blocks an unqualified boundary-confirmed result	an explicit honest UNPROVEN
+#
+# THE TWO AXES THAT MUST NOT BE COLLAPSED
+#
+#  1. FUNCTION-LEVEL OWNER: which component owns the function.
+#  2. DECISION-LEVEL OWNER: which component owns the BEHAVIOUR SELECTED
+#     at the branch. A function can be function-level C and
+#     decision-level C, or function-level C and decision-level
+#     POLYC, and a third option: the C branch reads a PolyC-produced
+#     value but ADDS its own policy, which is C_SEMANTIC_RETAINED_WP001,
+#     NOT POLYC_OWNED_DECISION_PROVEN.
+#
+# THE ROUTE SCOPE AXIS
+#
+#  WP001_REQUIRED_ROUTE  the frozen route: --install-dir=X -c input.HC -o out.o
+#  WHOLE_CLI_SURFACE   every route the CLI can take
+#
+#  A live but OFF-ROUTE C semantic choice is reported in the GLOBAL
+#  count and NOT folded into the route-scoped count. The global count
+#  is never asserted to be zero without its own evidence.

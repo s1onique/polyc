@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q1-EVIDENCE
+# EVIDENCE_KIND=main-and-emitfile-route-matrix
+#
+# THE MEASURED BRANCH MATRIX for main() and emitFile().
+#
+# Every row is a REAL branch in the frozen src/main.c. The
+# discriminator column names the exact C condition. The
+# counterfactual column names the mutation that was COMPILED,
+# LINKED and EXECUTED, and the OBSERVED behavioural difference.
+#
+# A branch whose counterfactual produced NO observable difference
+# is NOT classified as C-retained: the evidence does not support
+# the claim either way, and the row says so.
+#
+branch_id	function	source_line	live_condition	discriminator_origin	c_off_or_c_on	linked_proof	observed_difference	observed_artifact	verdict	route_scope
+BR_MAIN_PRINT_TOKENS	main	519	if (args.print_tokens)	the CliArgs field print_tokens, SET BY the C bridge from the PolyC-selected field WP_DRIVER_FIELD_PRINT_TOKENS	C_ON	1	1	the token stream is replaced by NO output	baseline: 8 stdout lines; mutant: 0 stdout lines	C_SEMANTIC_RETAINED_WP001	WHOLE_CLI_SURFACE
+BR_EMITFILE_EMIT_OBJECT	emitFile	250	if (args->emit_object)	the CliArgs field emit_object, SET BY the C bridge from the PolyC-selected field WP_DRIVER_FIELD_EMIT_OBJECT	C_ON	1	1	the produced artifact CHANGES from a Mach-O OBJECT to a Mach-O EXECUTABLE	baseline: out.o = Mach-O 64-bit object arm64 (544 B); mutant: out.o = Mach-O 64-bit executable arm64 (16952 B)	C_SEMANTIC_RETAINED_WP001	WP001_REQUIRED_ROUTE
+#
+# THE TWO DISCRIMINATING WITNESSES, IN DETAIL
+#
+# BR_EMITFILE_EMIT_OBJECT -- the WP-001 REQUIRED ROUTE.
+#   The mutation `if (0 && args->emit_object)` at src/main.c:250 disables
+#   ONLY the object-emission arm of emitFile. The mutation was
+#   compiled into a real production compiler (BUILD_RC=0), the
+#   stage0 producer was held PRISTINE so that the mutation could not
+#   break the toolchain, and the mutated binary was EXECUTED over
+#   the required route. The observed difference is an ARTIFACT-TYPE
+#   change: the compiler produced a linked EXECUTABLE where the
+#   baseline produced a relocatable OBJECT. The C branch therefore
+#   SELECTS the artifact type on the required route.
+#
+# BR_MAIN_PRINT_TOKENS -- the main() ACTION DISPATCH.
+#   The mutation `if (0 && args.print_tokens)` at src/main.c:519
+#   disables ONLY the tokens arm of the main() action dispatch. The
+#   mutated compiler was built (BUILD_RC=0) and executed over
+#   `-tokens input.HC`. The observed difference is the COMPLETE
+#   DISAPPEARANCE of the token stream (8 stdout lines -> 0). The C
+#   branch in main() therefore SELECTS the action.
+#
+# THE POLYC-OWNED LAYER, MEASURED SEPARATELY
+#   The eight cli.c.o relocations are into: ClassifyOption,
+#   ClassifyArgument, Decide, OptionField, ValueArgIndex,
+#   ValueOffset, HostSetArgv and HostCopyValue. Five of those are
+#   the C host bridge (argv install + byte copy) and three are the
+#   PolyC decision layer (option classification, field selection,
+#   whole-argv status). The C bridge copies a value the PolyC driver
+#   chose; it does not choose.
