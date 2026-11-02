@@ -1,0 +1,14 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=c3-gates-and-controls
+#
+# THE C3 GATES, THE APPEND-ONLY INVARIANT, AND THE CLOSURE
+# STATUS, ALL EXECUTED AT C3.
+#
+gate	command	exit	verdict	evidence
+gate-fast	sh scripts/quality/gate-fast.sh	0	PASS	c3/gate-fast.txt
+gate-push	sh scripts/quality/gate-push.sh	0	PASS	c3/gate-push.txt
+append-only	sh scripts/quality/factory-append-only-test.sh	0	PASS	PASS=11 FAIL=0
+factory-v2-range	factory-v2-range-check.sh <PRED> 9ba4ba5d	0	PASS	COMMITS=4 VERDICT=PASS
+closure-status	sh scripts/quality/factory-closure-status-check.sh	0	PASS	MANIFEST_ROWS=60 PAIR_OK=60
+replace-refs	git replace -l	0	PASS	zero replace refs

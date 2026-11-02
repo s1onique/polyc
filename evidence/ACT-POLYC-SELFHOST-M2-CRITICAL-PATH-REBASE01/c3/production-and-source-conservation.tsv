@@ -1,0 +1,20 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=production-and-source-conservation
+#
+# WHAT THIS ACT DID NOT CHANGE, MEASURED AGAINST THE ENTRY.
+#
+# ENTRY = 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4
+# TREE  = 78e6c706863aea2858d1dadb850b0fc30f78d6c4
+#
+# Every row is a git diff between the entry commit and the
+# current HEAD, over the named path class. A non-zero count
+# would be a scope violation; the expected value is 0.
+#
+scope_class	path_spec	files_changed	expected	verdict	evidence
+PRODUCTION_C_SRC	src/	0	0	PASS	git diff --name-only 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4 HEAD -- src/
+PRODUCTION_C_HEADERS	src/	0	0	PASS	git diff --name-only 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4 HEAD -- src/
+BOOTSTRAP_SUBJECTS	tools/bootstrap/	0	0	PASS	git diff --name-only 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4 HEAD -- tools/bootstrap/
+EXISTING_TESTS	tests/	0	0	PASS	git diff --name-only 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4 HEAD -- tests/
+CANONICAL_GATES	scripts/quality/	0	0	PASS	git diff --name-only 9ba4ba5ddbbfacb10393514874c829c9f21d5ea4 HEAD -- scripts/quality/
+POLYC_AUTHORITY_COUNT	CENSUS01 authorities.tsv	9	15	PASS	awk over the CENSUS01 authority table
