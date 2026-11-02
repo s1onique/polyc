@@ -1,0 +1,62 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04
+# ACT_PHASE=S0-RED
+# EVIDENCE_KIND=three-defects-and-root-cause
+#
+# THE THREE DEFECTS, MEASURED, AND THEIR COMMON ROOT CAUSE.
+#
+# -------------------------------------------------------------------
+# DEFECT 1 -- THE PARENT PATH IS DUPLICATED
+# -------------------------------------------------------------------
+act_id	path_commits	c4_labels	terminal_closes
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	4	3	2
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01	0	0	0
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02	5	1	1
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03	7	0	2
+#
+# The parent and CORRECTION03 both carry TWO terminal closes.
+# CORRECTION01 and CORRECTION02 carry exactly one.
+#
+# -------------------------------------------------------------------
+# DEFECT 2 -- THE PARENT C1/C2/C3 CARRY NO ACT TRAILER
+# -------------------------------------------------------------------
+commit	act_trailer_count
+0be7c87e38a43e364cfe5e12f1a1db9e4bcb3f07	1
+3645738a5e075aee810d5adda6070cf843f63fbb	0
+aa24305908fc8b80b07463bdebb81d8307dcf2ed	0
+1e0dd97deaad6f699239e942325ca9d9fee4d999	0
+#
+# -------------------------------------------------------------------
+# DEFECT 3 -- THE SAME DEFECT, REPRODUCED INSIDE CORRECTION03
+# -------------------------------------------------------------------
+# CORRECTION03 committed its own terminal close, then recorded the
+# re-executed receipt outcome in a further commit, then committed a
+# further close. Its range therefore contains TWO CLOSEs.
+#
+#   sh scripts/quality/factory-v2-range-check.sh \
+#      ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03 <close>
+#   => REASON=expected exactly 1 CLOSE commit in range, found 2
+#
+# AND the earlier close has ACT-id DESCENDANTS, so rule 6 also fails:
+#
+#   commit <sha> after CLOSE still carries ACT: <id>;
+#   ACT must not continue past CLOSE
+#
+# -------------------------------------------------------------------
+# THE ROOT CAUSE
+# -------------------------------------------------------------------
+# The canonical range validator enforces:
+#   rule 4  exactly ONE ACT-Phase: CLOSE in FIRST..CLOSE, and it is
+#           the LAST commit of the range;
+#   rule 6  NO commit DESCENDING FROM the CLOSE may carry ACT:<id>.
+# A receipt that must be recorded AFTER the close therefore cannot be
+# recorded with the ACT id, and cannot be recorded BEFORE the close
+# without making the close premature.
+#
+# THE RESOLUTION IS STRUCTURAL:
+#   THE ACT'S PATH ENDS AT ITS TERMINAL CLOSE; THE CLOSE IS THE LAST
+#   COMMIT CARRYING THE ACT ID; AND EVERYTHING AFTER IT IS AN
+#   ORDINARY COMMIT WITH NO ACT TRAILER AT ALL.
+#
+root_cause_rule_4_vs_rule_6_tension	YES
+all_three_defects_irreparable	YES
+structural_resolution_available	YES
