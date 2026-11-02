@@ -58,7 +58,22 @@ GATE_PUSH=PASS (7 checks: build, install, gep01, aot, jit, lsp, diff-check)
 APPEND_ONLY=PASS (11 of 11)
 CLOSURE_STATUS=PASS (63 of 63)
 FACTORY_V2_RANGE=PENDING (it requires the CLOSE commit, which this
-commit creates; it is verified by the external terminality probe)
+  commit creates; it is verified by the external terminality probe)
+
+RANGE TRAILER FACT
+The parent ACT's C1, C2 and C3 commits carry NO git-parseable `ACT:`
+trailer; only C0 does. The canonical commit-message validator
+therefore classifies those three commits as MODE=NON_ACT, and the
+canonical range validator's backwards walk from a CLOSE STOPS AT C0.
+The parent's own five-phase range is consequently NOT mechanically
+valid. The history is APPEND-ONLY, so this cannot be repaired by
+amend, rebase, replay or force push; the FORWARD-ONLY repair is
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02, which re-
+establishes a contiguous, trailer-complete range over the same work.
+The measured trailer state is recorded in
+evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02/c0/parent-trailer-state.tsv.
+NO PRODUCTION FILE, NO GATE and NO EVIDENCE OF THIS ACT IS CHANGED BY
+THAT CORRECTION.
 
 SCOPE
 FILES_CHANGED=src/CMakeLists.txt src/cli.c src/cli.h

@@ -9217,3 +9217,43 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/`.
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02 — range repair CLOSED
+
+The **Factory-v2 phase range** of `ACT-POLYC-SELFHOST-DRIVER-MIGRATION01`
+was found to be **mechanically invalid**, by measurement rather than
+by assertion. The Doctrine requires that **every** ACT commit carry
+the git-parseable `ACT:` and `ACT-Phase:` trailers, and the canonical
+range validator enforces it as rule 2. The parent ACT's C0 carried
+them; its **C1, C2 and C3 did not** — they put the ACT identity in
+the subject line only, which is a human-readable form and not a git
+trailer block. The canonical commit-message validator therefore
+classified those three commits as `MODE=NON_ACT`, and the range
+validator's backwards walk from a CLOSE **stopped at C0**.
+
+The history is **append-only**: amend, rebase, filter-branch,
+filter-repo, `git replace`, reset+recommit, squash merge and force
+push are all forbidden, and the local pre-push hook enforces the
+graph properties of the destination ref. There is no forward-only
+operation that can add a trailer to an already-committed object.
+
+The repair is therefore a **new, fully trailer-complete, contiguous
+phase range** opened by
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02`, whose CLOSE
+carries `ACT-Supersedes: ACT-POLYC-SELFHOST-DRIVER-MIGRATION01`.
+**No production file, no gate, no script, no test and no committed
+evidence of the parent was changed.** The parent's original range
+defect is **irreparable** and is therefore **disclosed as permanent
+residue** rather than concealed.
+
+```text
+PARENT_RANGE_MECHANICALLY_VALID = NO
+PARENT_RANGE_REPAIRABLE_WITHOUT_A_HISTORY_REWRITE = NO
+REPAIR_MECHANISM = A NEW FORWARD-ONLY ACT WITH COMPLETE TRAILERS
+PARENT_PRODUCTION_DELTA_CHANGED = NO
+PARENT_EVIDENCE_CHANGED = NO
+HISTORY_REWRITTEN = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02/`.
