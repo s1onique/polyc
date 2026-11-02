@@ -1,0 +1,39 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-negative-controls
+#
+# THE EXACT 18-ID CORRECTION NEGATIVE-CONTROL ROSTER, FROZEN AT C0.
+#
+# Each adverse control MUST produce its OWN EXACT reason token, on a
+# NONZERO exit, against a DISPOSABLE copy of the pristine input.
+# The pristine run MUST be SILENT with exit 0, and the RESTORED run
+# MUST be SILENT with exit 0 and BYTE-IDENTICAL to the pristine.
+#
+# A control that fires a DIFFERENT token does not pass. A control that
+# exits zero does not pass. A FORGED token (one that merely contains
+# or is contained by the expected token) does not pass.
+#
+# The original Q0 detector and the predecessor Q2 verifier are NOT
+# modified by this correction. Parity is established in the NEW
+# correction verifier only.
+#
+nc_id	adverse_condition	expected_detector_reason	fires_in_mode
+NC-C01	AC14 phase altered	FROZEN_AC_PHASE_DRIFT	ACPHASE
+NC-C02	AC14 predicate substituted	FROZEN_AC_PREDICATE_DRIFT	ACPREDICATE
+NC-C03	AC12 irrelevant witness accepted	AC_WITNESS_PREDICATE_MISMATCH	ACWITNESS
+NC-C04	Duplicate AC ID accepted	AC_ID_DUPLICATE	ACSET
+NC-C05	Missing AC ID accepted	AC_ID_MISSING	ACSET
+NC-C06	Metadata counted as criterion	AC_METADATA_COUNTED	ACCOUNTING
+NC-C07	False status totals accepted	AC_STATUS_TOTAL_FORGED	ACCOUNTING
+NC-C08	Missing witness path accepted	AC_WITNESS_MISSING	ACWITNESS
+NC-C09	Witness from wrong phase accepted	AC_WITNESS_CHRONOLOGY_INVALID	ACWITNESS
+NC-C10	Token-route witness counted as required-route proof	BRANCH_ROUTE_SCOPE_LAUNDERED	ROUTES
+NC-C11	Function reachability substituted for branch reachability	FUNCTION_BRANCH_REACHABILITY_CONFLATED	ROUTES
+NC-C12	C execution automatically equated with C policy	DECISION_OWNER_NOT_CAUSALLY_SEPARATED	DECISION
+NC-C13	Unlinked mutant accepted	MUTANT_LINK_PROVENANCE_MISSING	DECISION
+NC-C14	Comparator ignores artifact type, exit, stdout or stderr	SEMANTIC_COMPARATOR_INSENSITIVE	DECISION
+NC-C15	NOT_REMEASURED converted into fresh PASS	BASELINE_NOT_REMEASURED_LAUNDERED	BASELINE
+NC-C16	AC50 claimed before close	PRECOMMITTED_EXTERNAL_SUCCESS	CHRONOLOGY
+NC-C17	Historical receipt chronology invented	HISTORICAL_TERMINALITY_LAUNDERED	CHRONOLOGY
+NC-C18	Original acceptance predicate changed to obtain PASS	FROZEN_CONTRACT_REWRITTEN	ACPREDICATE
+NC_ROSTER_SIZE	18
