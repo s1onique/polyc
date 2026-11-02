@@ -1,0 +1,74 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=parent-range-repair
+#
+# THE PARENT ACT'S PHASE SEQUENCE, WITH ITS TRAILER STATE, AND THE
+# FORWARD-ONLY REPAIR.
+#
+# ---------------------------------------------------------------------------
+# THE PARENT'S PHASE SEQUENCE AND ITS TRAILER STATE
+#
+# The phase labels are read from the COMMIT SUBJECT lines, which is
+# how a human reads the history. The TRAILER state is read from the
+# git-parseable trailer block, which is how the canonical tools read
+# it.
+# ---------------------------------------------------------------------------
+commit	subject_phase	act_trailer	act_phase_trailer	range_validator_sees_it
+0be7c87e38a43e364cfe5e12f1a1db9e4bcb3f07	C0 RED	YES	RED	YES
+3645738a5e075aee810d5adda6070cf843f63fbb	C1 EVIDENCE	NO	NONE	NO
+aa24305908fc8b80b07463bdebb81d8307dcf2ed	C2 IMPL	NO	NONE	NO
+1e0dd97deaad6f699239e942325ca9d9fee4d999	C3 EVIDENCE	NO	NONE	NO
+#
+# ---------------------------------------------------------------------------
+# THE RANGE VALIDATOR'S BACKWARDS WALK
+#
+# The validator derives FIRST by walking backwards from the CLOSE
+# through commits that carry the SAME `ACT:` id, and it STOPS at the
+# first commit that does not.
+#
+# The parent's walk therefore STOPS AT C0, because C1 does not carry
+# the trailer. The parent's mechanically derived range is therefore
+# C0 alone, and rule 2 ("Every commit in FIRST..CLOSE has ACT=<same
+# id> with a valid ACT-Phase") cannot be satisfied for the parent's
+# full five-phase sequence.
+#
+# THIS IS NOT REPAIRABLE FROM THE OUTSIDE. The only mechanisms that
+# would repair it are amend, rebase, filter-branch, filter-repo, git
+# replace, reset+recommit, squash merge and force push, and EVERY ONE
+# OF THEM IS FORBIDDEN by the append-only invariant, which the local
+# pre-push hook enforces on the destination ref.
+#
+# ---------------------------------------------------------------------------
+# THE FORWARD-ONLY REPAIR
+#
+# This ACT establishes a NEW, fully trailer-complete, CONTIGUOUS
+# phase range covering the parent's WORK. Its commits carry:
+#
+#   ACT: ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02
+#   ACT-Phase: RED | EVIDENCE | IMPL | CLOSE
+#
+# and the CLOSE additionally carries:
+#
+#   ACT-Verdict: PASS
+#   ACT-Supersedes: ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+#
+# The `ACT-Supersedes` trailer appears ONLY on the CLOSE, which is
+# what the canonical range validator's rule 5 requires.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE REPAIR DOES AND DOES NOT CLAIM
+# ---------------------------------------------------------------------------
+key	value
+PARENT_RANGE_MECHANICALLY_VALID	NO
+PARENT_RANGE_REPAIRABLE_WITHOUT_A_HISTORY_REWRITE	NO
+REPAIR_MECHANISM	A NEW FORWARD-ONLY ACT WITH COMPLETE TRAILERS
+PARENT_PRODUCTION_DELTA_CHANGED	NO
+PARENT_EVIDENCE_CHANGED	NO
+PARENT_WORK_COVERED_BY_THE_REPAIRED_RANGE	YES
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS
+# ---------------------------------------------------------------------------
+#   git log -1 --format='%B' <commit> | grep -cE '^ACT: ACT-POLYC-...$'
+#   sh scripts/quality/factory-v2-commit-msg-check.sh <the message file>
+#   sh scripts/quality/factory-v2-range-check.sh <ACT-ID> <CLOSE-COMMIT>
