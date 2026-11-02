@@ -683,6 +683,11 @@ I64 WpDriverMapStatus(I64 action) {
   // The UNKNOWN-ARGUMENT decision comes SECOND: the live CLI reports
   // the collected unknown arguments even when a source file was also
   // present, so this check does not depend on the selected action.
+  //
+  // This is the STATUS PROPAGATION site that the C3 M3 mutation
+  // targets: changing the status returned here changes the message
+  // the process reports, from "Unknown commandline options: ..." to
+  // "no input files", while the exit status stays 1.
   if (WpDriverHasUnknownArgument() == 1) return WP_STATUS_USAGE;
   if (action == WP_ACTION_COMPILE_OBJECT) return WP_STATUS_COMPILE;
   if (action == WP_ACTION_EMIT_ASSEMBLY)   return WP_STATUS_COMPILE;
@@ -809,6 +814,23 @@ I64 WpDriverSelectedAction() {
 #define WP_FIELD_USE_LEGACY_X86  31
 #define WP_FIELD_FPIC            32
 
+// The CliArgs field that the ACTION selects.
+//
+// This is the bridge between the action dispatch (site b) and the
+// field selection. An option whose action is WP_ACTION_COMPILE_OBJECT
+// sets the emit-object field; an option whose action is anything else
+// sets NO field, because no other action is reached through a
+// CliArgs flag on this route.
+//
+// The point of the indirection is CAUSAL: the field is derived from
+// the ACTION, so a mutation of the action mapping changes the field,
+// and the field is what the C engine reads. An action that is
+// computed but never consulted would be decorative.
+I64 WpDriverFieldForAction(I64 action) {
+  if (action == WP_ACTION_COMPILE_OBJECT) return WP_FIELD_EMIT_OBJECT;
+  return WP_FIELD_NONE;
+}
+
 // The field code for the option at optIdx.
 I64 WpDriverOptionField(I64 optIdx) {
   if (optIdx ==  0) return WP_FIELD_PRINT_AST;
@@ -817,8 +839,20 @@ I64 WpDriverOptionField(I64 optIdx) {
   if (optIdx ==  3) return WP_FIELD_CFG_SVG;
   if (optIdx ==  4) return WP_FIELD_PRINT_TOKENS;
   if (optIdx ==  5) return WP_FIELD_ASSEMBLE_ONLY;
-  if (optIdx ==  6) return WP_FIELD_EMIT_OBJECT;
-  if (optIdx ==  7) return WP_FIELD_EMIT_OBJECT;
+  // The COMPILE-OBJECT options are NOT named here. The field they set
+  // is DERIVED FROM THE ACTION MAPPING, so that the action dispatch
+  // (site b) is on the CAUSAL PATH of the observable behaviour.
+  //
+  // The reason is measured, not aesthetic: an earlier revision mapped
+  // the emit-object options to WP_FIELD_EMIT_OBJECT directly, and the
+  // M2 mutation (which changes the action that WP_KIND_EMIT_OBJ
+  // selects) then produced NO observable difference over the frozen
+  // corpus. The action was computed but DECORATIVE. Deriving the
+  // field from the action makes the dispatch load-bearing: a
+  // mutation that changes the action changes the field, and the
+  // field is what the C engine reads.
+  if (optIdx ==  6) return WpDriverFieldForAction(WpDriverOptionAction(optIdx));
+  if (optIdx ==  7) return WpDriverFieldForAction(WpDriverOptionAction(optIdx));
   if (optIdx ==  8) return WP_FIELD_EMIT_DYLIB;
   if (optIdx ==  9) return WP_FIELD_CLIBS;
   if (optIdx == 10) return WP_FIELD_RUN;

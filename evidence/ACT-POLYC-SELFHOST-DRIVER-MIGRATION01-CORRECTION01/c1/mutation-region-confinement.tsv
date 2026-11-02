@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=mutation-region-confinement
+#
+# THE CHANGED BYTES OF EACH MUTATION ARE CONFINED TO ITS OWN DECISION
+# REGION, MEASURED BY DIFFING THE MUTATED SOURCE AGAINST THE PRISTINE
+# SOURCE.
+#
+# The parent ACT's C3 section 5.2 requires: "verify changed bytes
+# confined to its own function/decision region".
+#
+# ---------------------------------------------------------------------------
+mutation_id	changed_line_count	changed_line_number	enclosing_function	pristine_source_sha256	mutated_source_sha256	digest_changed
+M1_FLAG_ARITY	1	339	static I64 WpDriverOptMatches(I64 argIdx, I64 optIdx) {	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	1be4075b377b3a34131147fb9c28511ab8aa9753748bc5792c527d64b91b6b0c	YES
+M2_ACTION_DISPATCH	1	582	I64 WpDriverOptionAction(I64 optIdx) {	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	f154bfca0cdd7edd5e25591fe3df36ebab2ac54025f120183a2cb2e3b204aa15	YES
+M3_STATUS_PROPAGATION	1	691	I64 WpDriverMapStatus(I64 action) {	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	26c7db9e51582ba3fca98594fe0da63454c644c238aad150132822321b9baf9c	YES
+#
+# ---------------------------------------------------------------------------
+# THE THREE ENCLOSING FUNCTIONS ARE THREE DISTINCT FUNCTIONS
+# ---------------------------------------------------------------------------
+check	result
+M1_M2_M3_ENCLOSING_FUNCTIONS_ALL_DIFFERENT	YES
+M1_ENCLOSING_FUNCTION	WpDriverOptMatches
+M2_ENCLOSING_FUNCTION	WpDriverOptionAction
+M3_ENCLOSING_FUNCTION	WpDriverMapStatus
+M1_DECISION_GROUP	DG_FLAG_ARITY
+M2_DECISION_GROUP	DG_ACTION_DISPATCH
+M3_DECISION_GROUP	DG_STATUS_MAPPING
+THREE_DISTINCT_DECISION_GROUPS	YES
+#
+# NOTE ON M2's ENCLOSING FUNCTION
+# The parent's C1 contract names the mutation target as the action
+# mapping "in WpDriverSelectAction". The mapping construct itself
+# lives in WpDriverOptionAction, which WpDriverSelectAction calls.
+# The mutation is therefore confined to the ACTION DISPATCH decision
+# region either way, and the enclosing function is reported as
+# MEASURED rather than as the contract's shorthand.
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS
+# ---------------------------------------------------------------------------
+#   diff <pristine driver source> <mutated driver source>
+#   shasum -a 256 <each source>
+#   the enclosing function is read from the mutated source by scanning
+#   backwards from the changed line to the nearest function header
+#
+# THE MUTATION WAS APPLIED TO A COPY. The repository's driver source
+# is NOT modified by the mutation experiment; the pristine source
+# digest above is the digest of the repository file itself.

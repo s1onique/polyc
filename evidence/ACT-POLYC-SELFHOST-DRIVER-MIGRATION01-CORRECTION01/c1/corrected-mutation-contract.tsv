@@ -1,0 +1,101 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=corrected-mutation-contract
+#
+# THE CORRECTED MUTATION CONTRACT.
+#
+# This ACT corrects ONE row of the parent ACT's committed C1 contract:
+# the M3 row named a source construct that is NOT on the causal path.
+# The parent's C1 evidence is NOT edited (F14); the correction and its
+# measured justification live here.
+#
+# ---------------------------------------------------------------------------
+# THE DEFECT, AS MEASURED
+#
+# The parent's C1 M3 row named this construct:
+#
+#   if (action == WP_ACTION_NONE) {
+#     if (WpDriverUnknownArgCount() > 0) return WP_STATUS_USAGE;
+#     return WP_STATUS_NO_INPUT;
+#   }
+#
+# The M3 row's stated INTENT was "force the NO_INPUT status for an
+# argv that holds an UNKNOWN argument". The intent is CORRECT. The
+# construct is NOT REACHED for such an argv, because the
+# unknown-argument status is produced EARLIER, by the check that runs
+# before the action mapping:
+#
+#   if (WpDriverHasUnknownArgument() == 1) return WP_STATUS_USAGE;
+#
+# MEASURED PROOF OF THE DEFECT (the parent's C2 implementation):
+#   the M3 mutation applied to the named construct produced
+#   ZERO changed cases over the frozen fourteen-case corpus, apart
+#   from the ENVIRONMENT_EXPLAINED commit-hash line.
+#
+# ---------------------------------------------------------------------------
+# THE CORRECTED CONTRACT
+# ---------------------------------------------------------------------------
+mutation_id	decision_group	polyc_function	source_construct_to_mutate	mutation	observable_effect_that_must_appear	changed_cases_measured	distinctness
+M1_FLAG_ARITY	DG_FLAG_ARITY	WpDriverOptMatches	the exact-match byte comparison `if (*ap != an[j]) return 0;`	compare the option-name byte at an OFFSET of one, so no option name ever matches EXACTLY	the option stops being recognised, so it is collected as an UNKNOWN argument and the process reports "Unknown commandline options: -o" instead of compiling, and the compile routes end with exit 1	8 of 14: C01,C02,C05,C06,C07,C08,C09,C10,C11,C13	the classification changes WHICH OPTIONS EXIST, so every option-bearing case moves
+M2_ACTION_DISPATCH	DG_ACTION_DISPATCH	WpDriverSelectAction	the action mapping `if (kind == WP_KIND_EMIT_OBJ)  return WP_ACTION_COMPILE_OBJECT;`	return WP_ACTION_NONE for the emit-object options	the compile action is no longer selected, so the emit-object FIELD is no longer set, no object is produced, and the compile routes end with exit 1 instead of producing an object	4 of 14: C07,C10,C11,C13	the dispatch changes WHICH ROUTE is taken for a RECOGNISED option, and only the compile routes move
+M3_STATUS_PROPAGATION	DG_STATUS_MAPPING	WpDriverMapStatus	the status propagation `if (WpDriverHasUnknownArgument() == 1) return WP_STATUS_USAGE;`	return WP_STATUS_NO_INPUT for an argv that holds an UNKNOWN argument	the unknown-option failure is REPLACED by the no-input failure, so the message changes from "Unknown commandline options: ..." to "no input files" while the exit status stays 1	3 of 14: C04,C09,C14	the status changes WHICH FAILURE is REPORTED for an argv whose OPTIONS ARE ALREADY RECOGNISED, and only the failure-reporting cases move
+#
+# ---------------------------------------------------------------------------
+# THE THREE EFFECTS ARE DISTINGUISHABLE FROM EACH OTHER
+# ---------------------------------------------------------------------------
+check	M1	M2	M3
+C01_help	DIFF	MATCH	MATCH
+C02_version	DIFF	MATCH	MATCH
+C04_unknown_option	MATCH	MATCH	DIFF
+C05_missing_o_value	DIFF	MATCH	MATCH
+C07_compile_object	DIFF	DIFF	MATCH
+C09_o_dashdash	DIFF	MATCH	DIFF
+C10_permuted	DIFF	DIFF	MATCH
+C11_dup_c	DIFF	DIFF	MATCH
+C13_define_flag	DIFF	DIFF	MATCH
+C14_unknown_short	MATCH	MATCH	DIFF
+CHANGED_CASE_COUNT	8	4	3
+PAIRWISE_IDENTICAL_EFFECTS	NO	NO	NO
+#
+# NO TWO MUTATIONS PRODUCE THE SAME SET OF CHANGED CASES, and the
+# three sets are pairwise different on every case:
+#   M1 differs from M2 on C01, C02, C05, C06, C08, C09
+#   M1 differs from M3 on C01, C02, C05, C06, C07, C08, C09, C10, C11, C13
+#   M2 differs from M3 on C04, C07, C09, C10, C11, C13, C14
+#
+# ---------------------------------------------------------------------------
+# THE C2 PRODUCTION CHANGE THAT MAKES M2 OBSERVABLE
+#
+# The parent's C2 implementation mapped the emit-object options to the
+# emit-object CliArgs field DIRECTLY, so the action was computed but
+# never consulted and site (b) was DECORATIVE. The corrected
+# implementation DERIVES the field from the action:
+#
+#   if (optIdx ==  6) return WpDriverFieldForAction(WpDriverOptionAction(optIdx));
+#   if (optIdx ==  7) return WpDriverFieldForAction(WpDriverOptionAction(optIdx));
+#
+#   I64 WpDriverFieldForAction(I64 action) {
+#     if (action == WP_ACTION_COMPILE_OBJECT) return WP_FIELD_EMIT_OBJECT;
+#     return WP_FIELD_NONE;
+#   }
+#
+# This is a CAUSAL indirection: the field is what the retained C
+# compilation engine reads, so a mutation of the action mapping now
+# changes the field and therefore the engine's behaviour.
+#
+# The change is confined to tools/bootstrap/selfhost-driver-wp001.HC.
+# The C side is NOT touched and still contains no option table, no
+# option name, no arity rule and no action choice.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+PARENT_C1_M3_CONSTRUCT_ON_CAUSAL_PATH	NO
+CORRECTED_M3_CONSTRUCT_ON_CAUSAL_PATH	YES
+M1_CHANGED_CASES	8
+M2_CHANGED_CASES	4
+M3_CHANGED_CASES	3
+M1_M2_M3_PAIRWISE_DISTINCT	YES
+DECORATIVE_SITE_REMAINS	NONE
+CORRECTION_STATUS	FROZEN

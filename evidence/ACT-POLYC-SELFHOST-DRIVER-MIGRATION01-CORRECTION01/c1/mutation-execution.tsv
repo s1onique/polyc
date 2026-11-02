@@ -1,0 +1,80 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=mutation-execution
+#
+# THE THREE MUTATIONS, EXECUTED END TO END.
+#
+# For each mutation: a COPY of the driver source was mutated, the
+# driver subject was RECOMPILED BY THE REAL PRODUCTION COMPILER, a
+# FRESH production compiler was CONFIGURED AND LINKED against the
+# mutated subject, and the frozen fourteen-case corpus was
+# RE-EXECUTED against the resulting binary.
+#
+# ---------------------------------------------------------------------------
+# THE PRISTINE BASELINE
+# ---------------------------------------------------------------------------
+key	value
+PRISTINE_DRIVER_SOURCE_SHA256	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd
+PRISTINE_DRIVER_OBJECT_SHA256	8f91d827bc5a56f55097514d56d02a3b69cd3b71de67707c327ddc5dfb6b98d7
+PRISTINE_BINARY_DRIVER_SYMBOLS	19
+#
+# ---------------------------------------------------------------------------
+# THE THREE EXECUTED MUTATIONS
+# ---------------------------------------------------------------------------
+mutation_id	mutant_source_sha256	mutant_object_sha256	object_digest_changed	binary_rebuilt_exit	binary_driver_symbols	caller_imports_correct_symbol	changed_cases	changed_case_list
+M1_FLAG_ARITY	1be4075b377b3a34131147fb9c28511ab8aa9753748bc5792c527d64b91b6b0c	b3153ef7a9a6e351dd353c12d5d6d7a55d68f97c3548035a0c2489c2d7729fba	YES	0	19	YES	8	C01,C02,C05,C06,C07,C08,C09,C10,C11,C13
+M2_ACTION_DISPATCH	f154bfca0cdd7edd5e25591fe3df36ebab2ac54025f120183a2cb2e3b204aa15	ae3e857469c2d40a3951c9037519ebad0b3d7ef2d334ca2f193195325a864dc1	YES	0	19	YES	4	C07,C10,C11,C13
+M3_STATUS_PROPAGATION	26c7db9e51582ba3fca98594fe0da63454c644c238aad150132822321b9baf9c	0fb24459b8f050149a1ddd24a1e9150065217c4b94ea0f80abc1b2398720184a	YES	0	19	YES	3	C04,C09,C14
+#
+# NOTE ON THE CHANGED-CASE COUNTS
+# The `changed_cases` count is the number of the fourteen corpus cases
+# whose four comparator fields differ from the pristine build. The
+# ENVIRONMENT_EXPLAINED commit-hash line of C02_version is NOT a
+# semantic change: the C02 row is counted only when a SEMANTIC field
+# differs. C02 IS counted for M1 because M1 changes the exit status
+# of --version from 0 to 1, which is a semantic change.
+#
+# ---------------------------------------------------------------------------
+# THE OBSERVABLE EFFECTS, IN THE C1 CONTRACT'S OWN TERMS
+# ---------------------------------------------------------------------------
+mutation_id	observable_channel	effect
+M1_FLAG_ARITY	exit status and stderr	the option stops being recognised, so it is collected as an UNKNOWN argument; the compile routes end with exit 1 and the unknown-option message appears
+M2_ACTION_DISPATCH	exit status and stderr	the compile action is no longer selected, so the emit-object field is not set, no object is produced, and the compile routes end with exit 1
+M3_STATUS_PROPAGATION	stderr	the unknown-option failure is replaced by the no-input failure: the message becomes "no input files" while the exit status stays 1
+#
+# ---------------------------------------------------------------------------
+# THE THREE EFFECTS ARE DISTINGUISHABLE
+# ---------------------------------------------------------------------------
+check	result
+M1_CHANGED_SET	{C01,C02,C05,C06,C07,C08,C09,C10,C11,C13}
+M2_CHANGED_SET	{C07,C10,C11,C13}
+M3_CHANGED_SET	{C04,C09,C14}
+M1_INTERSECT_M2	{C07,C10,C11,C13}
+M1_MINUS_M2	{C01,C02,C05,C06,C08,C09}
+M1_INTERSECT_M3	{C09}
+M1_MINUS_M3	{C01,C02,C05,C06,C07,C08,C10,C11,C13}
+M2_INTERSECT_M3	{}
+M2_MINUS_M3	{C07,C10,C11,C13}
+NO_TWO_MUTATIONS_PRODUCE_THE_SAME_SET	YES
+EVERY_MUTATION_PRODUCES_AT_LEAST_ONE_OBSERVABLE_CHANGE	YES
+DECORATIVE_MUTATION_REMAINS	NONE
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS
+# ---------------------------------------------------------------------------
+#   # mutate a COPY, compile the subject, build a fresh compiler
+#   <copy of tools/bootstrap/selfhost-driver-wp001.HC> is mutated
+#   <production hcc> --install-dir=<prefix> -c driver.HC -o driver.o
+#   cmake -S ./src -B <b> ... -DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+#       -DDRIVER_WP001_OBJECT=<the mutated driver.o>
+#   cmake --build <b> --target hcc
+#
+#   # re-execute the frozen corpus
+#   sh evidence/.../c0/capture-cli-baseline.sh <the mutant binary> \
+#       <prefix> <out.tsv> <workdir>
+#
+#   # compare
+#   the four-field comparator over the pristine TSV and the mutant TSV
+#
+# THE REPOSITORY'S DRIVER SOURCE IS NOT MODIFIED BY THE EXPERIMENT.
+# Every mutation was applied to a copy in a disposable directory.
