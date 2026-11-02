@@ -1,0 +1,24 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=forecast-scenarios
+#
+# THE REBASED FORECAST SCENARIOS, AND THE HISTORICAL COMPARISON.
+#
+# Each scenario is a SUBSET of the work-package DAG plus an
+# explicit scope note. The totals are the SUM over the selected
+# packages and the critical path is the LONGEST PATH over the
+# INDUCED SUBGRAPH -- computed separately, never equated. That
+# distinction is exactly what the archived forecast failed to
+# make, and it is the single largest structural improvement of
+# the rebased model over the archived one.
+#
+# The critical path is strictly less than the total whenever the
+# scenario has independent work, and the gap is now MEASURED
+# rather than asserted.
+#
+scenario_id	label	total_effort_low	total_effort_base	total_effort_high	critical_path_low	critical_path_base	critical_path_high	correction_reserve	scope_note
+S01	THE FIRST BOUNDED STEP: the PolyC-authored driver	2	3	5	2	3	5	0	WP-001 alone: the argument handling and the compile entry point. THIS IS THE SELECTED SUCCESSOR.
+S02	THE DRIVER AND THE COMPILE PIPELINE	5	8	13	5	8	13	0	WP-001 and WP-002: the driver plus the read-lex-parse-emit pipeline.
+S03	THE COMPLETE FRONT END	17	31	54	15	27	47	2	WP-001,WP-002,WP-003,WP-004,WP-006,WP-017: the driver, the pipeline, the lexer, the parser, the containers and the shared ABI. The smallest set containing a complete front end.
+S04	THE M2 PRECURSOR	19	35	61	17	31	54	3	every package whose milestone is M2_PRECURSOR. The precursor is a working compiler-producing source set, not M2 itself.
+S05	THE FULL M2 SCOPE	58	121	228	37	75	138	18	every package: the complete M2 scope with its correction and verification reserve.

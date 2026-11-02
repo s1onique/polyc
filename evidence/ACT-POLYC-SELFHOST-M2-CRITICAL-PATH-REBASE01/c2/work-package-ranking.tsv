@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=work-package-ranking
+#
+# THE RANKING, AND THE ONE SUCCESSOR THIS ACT SELECTS.
+#
+# THE RANKING CRITERION, STATED ONCE:
+#   A work package is RANKED BY HOW FAR IT MOVES THE
+#   PROGRAMME, measured as the number of downstream packages it
+#   UNBLOCKS, and it is QUALIFIED only if it has a named
+#   smallest runnable witness.
+#
+#   R0 = it is on the critical path to the earliest
+#        unsatisfied bootstrap gate (P0: the compiler-producing
+#        source set does not exist yet).
+#   R1 = it is required for the M2 milestone.
+#   R2 = it is required for the M2 milestone but is NOT on the
+#        host-target critical path, so it can run in parallel.
+#   R3 = it is a tool surface, not on the M2 path.
+#
+# The downstream_unblocked column is COMPUTED by reachability
+# over the real dependency edges, not asserted.
+#
+# The successor is selected by the FIRST package that is
+# RANKED R0, that has a named witness, and whose predecessors
+# are all satisfiable. This is the ONLY successor this ACT
+# opens; no other package is authorized by this document.
+#
+rank	wp_id	subsystem	gate_satisfied	authority_rows	downstream_unblocked	base_effort	priority	qualification	witness	evidence
+R0	WP-001	DRIVER	P0	32	19	3	R0	QUALIFIED	hcc --install-dir=X -c input.HC -o out.o emits a compiler artifact	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-002	COMPILE_DRIVER	P0	77	17	5	R0	QUALIFIED_PENDING	a PolyC-authored compileToAsm emits assembly text for a representative source	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-003	LEXER	P0	63	13	7	R0	QUALIFIED	a PolyC-authored lexer reproduces the token sequence of a representative source	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-004	PARSER	P0	142	12	8	R0	QUALIFIED	a PolyC-authored parser builds an AST for a representative source	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-005	AST	M1	146	10	6	R1	QUALIFIED_PENDING	a PolyC-authored AST builder produces the node kinds the codegen consumes	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-006	CONTAINERS	P0	179	4	4	R0	QUALIFIED_PENDING	a PolyC-authored AoStr passes the string growth cases	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-007	IR	M1	69	9	9	R1	QUALIFIED_PENDING	a PolyC-authored IR builder produces the opcodes the backend consumes	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-008	CFG	M1	77	7	6	R1	QUALIFIED_PENDING	a PolyC-authored CFG builder produces the blocks the backend consumes	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-009	ASSEMBLER	M1	20	2	6	R1	QUALIFIED_PENDING	a PolyC-authored assembler emits the expected assembly text for a fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-010	CODEGEN	M1	105	0	10	R1	QUALIFIED	a PolyC-authored AArch64 backend emits the expected assembly for a fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R2	WP-011	CODEGEN	M1	145	0	9	R2	QUALIFIED_PENDING	a PolyC-authored x86-64 backend emits the expected assembly for a fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R3	WP-012	JSON	M4	19	0	2	R3	QUALIFIED_PENDING	a PolyC-authored JSON emitter reproduces the fixture output	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R3	WP-013	LSP	M4	67	0	5	R3	QUALIFIED_PENDING	a PolyC-authored LSP responds to a request fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R3	WP-014	REPL	M4	48	0	4	R3	QUALIFIED_PENDING	a PolyC-authored REPL evaluates a fixture expression	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R3	WP-015	TRANSPILER	M4	43	0	4	R3	QUALIFIED_PENDING	a PolyC-authored transpiler produces the expected output for a C fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R3	WP-016	SUPPORT	M4	20	0	2	R3	QUALIFIED_PENDING	a PolyC-authored checker accepts or rejects the fixture	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-017	SHARED_INFRA	P0	0	3	4	R0	QUALIFIED_PENDING	a PolyC-authored ABI contract compiles two modules against each other	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R0	WP-018	BOOTSTRAP	P0	0	2	4	R0	QUALIFIED_PENDING	a qualified earlier compiler compiles the precursor source set and the precursor runs	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-019	SHARED_INFRA	M1	0	1	18	R1	NOT_QUALIFIED_NO_WITNESS	NONE	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv
+R1	WP-020	BOOTSTRAP	M2	0	0	5	R1	QUALIFIED_PENDING	a qualified earlier compiler compiles the complete in-scope source set and the result runs	c2/work-packages.tsv;c2/work-package-dependencies.tsv;c1/current-authority-join.tsv

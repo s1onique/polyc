@@ -1,0 +1,45 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=work-package-dependencies
+#
+# THE DEPENDENCY EDGES. Every edge names the SOURCE EVIDENCE for the
+# dependency, not just an intuition.
+#
+from_wp	to_wp	evidence
+WP-001	WP-002	src/compile.c calls the CLI-argument structure that src/cli.c owns; the driver argument handling must exist before the pipeline can be entered
+WP-001	WP-006	src/lexer.c and src/parser.c both include containers.h; the AoStr and container primitives are a hard prerequisite of every consumer
+WP-002	WP-003	src/compile.c:compileToAst calls lexToken from src/lexer.c before the parser runs
+WP-002	WP-004	src/compile.c:compileToAst calls parseToAst from src/parser.c
+WP-002	WP-012	src/json.c is included by the compile driver for the dump path
+WP-002	WP-013	src/lsp.c consumes the CliArgs structure that the compile driver populates
+WP-002	WP-014	src/repl.c includes compile.h and reuses the compile pipeline
+WP-002	WP-015	src/transpiler.c includes parser.h and reuses the parse result
+WP-003	WP-004	src/parser.c consumes the token stream that src/lexer.c produces
+WP-004	WP-005	src/ast.c owns the AST node constructors that src/parser.c calls to build the tree
+WP-004	WP-015	src/transpiler.c includes parser.h and reuses the parse result
+WP-005	WP-007	src/ir.c consumes the AST that src/ast.c builds
+WP-006	WP-017	the shared ABI foundation owns the string and container contract that every module in the source set shares
+WP-007	WP-008	src/cfg.c consumes the IR that src/ir.c produces
+WP-007	WP-016	src/memsafe.c analyses the IR that src/ir.c produces
+WP-008	WP-009	src/asm.c generates the assembly from the CFG blocks
+WP-008	WP-010	src/aarch64.c consumes the IR/CFG that the lowering stage produces
+WP-008	WP-011	src/x86_64.c consumes the IR/CFG that the lowering stage produces
+WP-009	WP-010	the AArch64 backend emits through the assembler abstraction
+WP-009	WP-011	the x86-64 backend emits through the assembler abstraction
+WP-001	WP-017	the shared ABI foundation must settle the driver contract before the modules bind to it
+WP-002	WP-017	the shared ABI foundation must settle the pipeline contract
+WP-003	WP-017	the shared ABI foundation must settle the token contract
+WP-004	WP-017	the shared ABI foundation must settle the AST contract
+WP-005	WP-017	the shared ABI foundation must settle the AST layout contract
+WP-008	WP-017	the shared ABI foundation must settle the CFG and recovery contract
+WP-001	WP-018	the precursor generation needs the driver source set
+WP-002	WP-018	the precursor generation needs the compile pipeline source set
+WP-003	WP-018	the precursor generation needs the lexer source set
+WP-004	WP-018	the precursor generation needs the parser source set
+WP-005	WP-018	the precursor generation needs the AST source set
+WP-006	WP-018	the precursor generation needs the container source set
+WP-017	WP-018	the precursor generation needs the shared ABI foundation
+WP-018	WP-019	the correction reserve is sized against the implemented precursor
+WP-018	WP-020	the M2 generation qualification needs a qualified precursor
+WP-019	WP-020	the M2 generation qualification needs the verification reserve in place
+WP-001	WP-011	the x86-64 backend needs the driver argument contract

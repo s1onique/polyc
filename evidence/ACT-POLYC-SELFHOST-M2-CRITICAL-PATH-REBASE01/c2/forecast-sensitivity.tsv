@@ -1,0 +1,32 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=forecast-sensitivity
+#
+# WHICH ASSUMPTION ACTUALLY MOVES THE FORECAST.
+#
+# The rebased model differs from the archived one in exactly one
+# structural respect: the archived model used an UNMEASURED
+# sites-per-ACT rate (FA-04 = 12) and had NO independent
+# critical path. This table varies each assumption over the
+# range that the historical cohorts actually exhibit, and
+# reports the effect on the S05 full-scope forecast.
+#
+# Every row is computed by RE-RUNNING the real package model
+# with the varied parameter over the FULL M2 scope; nothing is
+# asserted and nothing is scaled from a precomputed number.
+#
+# THE BASE ROW uses sites-per-ACT = 1, the MEASURED rate over
+# the only cohorts that have run (9 PolyC subjects against 9
+# implementation ACTs). The archived 12 is carried as a
+# variation, not as the base.
+#
+sensitivity_id	parameter	varied_from	varied_to	total_low	total_base	total_high	critical_base	delta_vs_base	sensitivity_class	evidence
+SENS-00	the model base	BASE	BASE	1637	1897	3247	1146	0	BASE	sites-per-ACT=1 is the MEASURED rate over the 9 implemented PolyC subjects; risk=1.00; correction=0.44 is the measured parser-slice rate
+SENS-01	sites per implementation ACT	1	6	346	407	694	228	-1490	ASSUMPTION_RESTORED	the archived FA-04 assumption was 12 sites/ACT; 6 is the archived LOW sensitivity value
+SENS-02	sites per implementation ACT	1	12	210	257	431	137	-1640	ARCHIVED_ASSUMPTION	the archived FA-04 assumption, which has NO measured cohort; it is the single most load-bearing unmeasured number in the historical model
+SENS-03	risk multiplier on LOW-confidence packages	1.00	1.25	1867	2161	3705	1313	264	ARCHIVED_ASSUMPTION	the archived FA-08 risk multiplier, applied to the packages this ACT rates LOW confidence
+SENS-04	risk multiplier on LOW-confidence packages	1.00	1.50	2101	2430	4164	1483	533	ARCHIVED_UPPER_BOUND	the archived FA-08 sensitivity upper bound
+SENS-05	correction rate	0.44	0.25	1637	1654	3247	997	-243	MEASURED_LOWER_BAND	the archived FA-03 sensitivity lower bound for the correction rate
+SENS-06	correction rate	0.44	0.65	1637	2160	3247	1308	263	MEASURED_UPPER_BAND	the archived FA-03 sensitivity upper bound for the correction rate
+SENS-07	the joint pessimistic corner	BASE	CORNER	264	351	536	196	-1546	JOINT_PESSIMISTIC	sites-per-ACT=12 with the archived risk multiplier at its upper bound and the correction rate at its upper bound
+SENS-08	the joint optimistic corner	BASE	CORNER	1637	1654	3247	997	-243	JOINT_OPTIMISTIC	the measured sites-per-ACT with no risk multiplier and the lowest correction rate

@@ -1,0 +1,294 @@
+#!/bin/sh
+# evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01/c2/capture-work-packages.sh
+#
+# Writes c2/work-packages.tsv with the EXACT 20-column layout the ACT
+# section 4.2 specifies. The generator exists so the column order can
+# never drift: every row is emitted from one fixed field list.
+#
+# Column order (1-based):
+#   1 wp_id            2 source_set_ids   3 subsystem          4 goal
+#   5 milestone        6 blocking_abi     7 predecessor_wp_ids 8 required_gate
+#   9 allowed_C_glue  10 owned_semantics 11 smallest_witness  12 proof_ready
+#  13 low_acts        14 base_acts       15 high_acts         16 cost_basis
+#  17 confidence      18 priority        19 reason            20 next_act_class
+#
+# F-POLYC-TOOLS: orchestration glue. The C2 verifier recomputes every
+# number from this file independently.
+
+set -u
+
+EV="evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01"
+OUT="$EV/c2/work-packages.tsv"
+TMP=$(mktemp /tmp/m2rebase-wp.XXXXXX)
+trap 'rm -f "$TMP"' EXIT INT TERM
+
+{
+  echo "# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01"
+  echo "# ACT_PHASE=C2-IMPL"
+  echo "# EVIDENCE_KIND=work-packages"
+  echo "#"
+  echo "# THE BOOTSTRAP WORK PACKAGES. Source-derived bounded packages, NOT"
+  echo "# one row per if/switch."
+  echo "#"
+  echo "# Each package names the source set it owns, the gate it must"
+  echo "# satisfy, the smallest runnable witness that discharges it, and its"
+  echo "# ACT cost with an EXPLICIT cost basis. Every cost basis names the"
+  echo "# cohort the number came from, or declares the range JUDGEMENTAL."
+  echo "#"
+  echo "# The dependency edges are in c2/work-package-dependencies.tsv."
+  echo "#"
+  printf 'wp_id\tsource_set_ids\tsubsystem\tgoal\tmilestone\tblocking_abi_or_feature\tpredecessor_wp_ids\trequired_gate\tallowed_C_glue\towned_semantics\tsmallest_runnable_witness\tactual_proof_ready\tlow_acts\tbase_acts\thigh_acts\tcost_basis\tconfidence\tpriority\treason\tnext_act_class\n'
+} > "$TMP"
+
+row() {
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9" "${10}" "${11}" "${12}" \
+    "${13}" "${14}" "${15}" "${16}" "${17}" "${18}" "${19}" "${20}" >> "$TMP"
+}
+
+row WP-001 \
+  "SRC-016(main.c);SRC-007(cli.c)" DRIVER \
+  "PolyC-authored driver: argument parsing and the compile entry point" \
+  M2_PRECURSOR NONE NONE P0 NO \
+  "argument handling and the dispatch into the compile pipeline" \
+  "hcc --install-dir=X -c input.HC -o out.o emits a compiler artifact" \
+  YES 2 3 5 \
+  "JUDGEMENTAL: the 9 historical parser implementation ACTs were 1 site per ACT; a driver is 2-3 sites of the same kind" \
+  MEDIUM R0 \
+  "THE EARLIEST GATE: without a PolyC-authored driver there is no compiler-producing precursor, so every other package is unreachable" \
+  HARNESS_QUALIFICATION
+
+row WP-002 \
+  "SRC-009(compile.c);SRC-005(cctrl.c)" COMPILE_DRIVER \
+  "PolyC-authored compile pipeline: read file, lex, parse, emit" \
+  M2_PRECURSOR NONE WP-001 P0 NO \
+  "the compileToAst/compileToAsm pipeline and the control-symbol state" \
+  "a PolyC-authored compileToAsm emits assembly text for a representative source" \
+  NO 3 5 8 \
+  "JUDGEMENTAL: 9 parser decisions took 9 implementation ACTs at 1 site per ACT; the pipeline owns 5 sites of comparable kind" \
+  MEDIUM R0 \
+  "the pipeline is the SECOND step of the precursor and binds the lexer and parser together" \
+  HARNESS_QUALIFICATION
+
+row WP-003 \
+  "SRC-013(lexer.c)" LEXER \
+  "PolyC-authored lexer producing the token stream" \
+  M2_PRECURSOR NONE WP-002 P0 NO \
+  "the token classification and the trivia/scan decisions" \
+  "a PolyC-authored lexer reproduces the token sequence of a representative source" \
+  PARTIAL 4 7 12 \
+  "JUDGEMENTAL: the 9 historical parser slices are the closest cohort (9 ACTs for 9 sites); the lexer owns 7 sites of comparable kind, so the observed 1-site-per-ACT floor is 7" \
+  MEDIUM R0 \
+  "the lexer is the FIRST semantic subsystem the precursor needs, and 6 of its sites already have dormant PolyC prototypes that are selector-OFF today" \
+  FRONT_END_MIGRATION
+
+row WP-004 \
+  "SRC-019(parser.c);SRC-021(prslib.c);SRC-022(prsutil.c)" PARSER \
+  "PolyC-authored parser and AST construction" \
+  M2_PRECURSOR NONE "WP-002,WP-003" P0 NO \
+  "the recursive-descent decisions and the AST node construction" \
+  "a PolyC-authored parser builds an AST for a representative source" \
+  PARTIAL 4 8 14 \
+  "JUDGEMENTAL: 9 historical parser implementation ACTs for 9 sites; the parser owns 8 sites of comparable kind, so the observed floor is 8" \
+  MEDIUM R0 \
+  "nine parser decisions are ALREADY PolyC-authored; this package is the boundary DEFINITION and the remaining parser surface, not a from-scratch rewrite" \
+  FRONT_END_MIGRATION
+
+row WP-005 \
+  "SRC-004(ast.c)" AST \
+  "PolyC-authored AST node construction and the type/state transitions" \
+  M2_FULL NONE WP-004 M1 NO \
+  "the AST node kinds and the ast.h layout contract" \
+  "a PolyC-authored AST builder produces the node kinds the codegen consumes" \
+  NO 3 6 11 \
+  "JUDGEMENTAL: the AST is a stateful module and the 9-site parser cohort does NOT transfer; the range is declared, NOT measured" \
+  LOW R1 \
+  "the AST layout is the TYPE_REPRESENTATION dependency that 95 of the 135 graph edges observe; it is the deepest cut in the whole programme" \
+  STATEFUL_MIGRATION
+
+row WP-006 \
+  "SRC-002(aostr.c);SRC-008(containers.c);SRC-014(list.c)" CONTAINERS \
+  "PolyC-authored string and container primitives" \
+  M2_PRECURSOR NONE WP-001 P0 NO \
+  "the AoStr growth and the container ownership rules" \
+  "a PolyC-authored AoStr passes the string growth cases" \
+  NO 2 4 7 \
+  "JUDGEMENTAL: the 9-site parser cohort at 1 site per ACT gives a floor of 3" \
+  MEDIUM R0 \
+  "the containers are a hard prerequisite of every other package and are pure, so they are the cheapest real work in the programme" \
+  FOUNDATION_MIGRATION
+
+row WP-007 \
+  "SRC-011(ir.c)" IR \
+  "PolyC-authored IR construction and the neutral-boundary contract" \
+  M2_FULL NONE WP-005 M1 NO \
+  "the IR opcode set and the neutral parameter/physical register split" \
+  "a PolyC-authored IR builder produces the opcodes the backend consumes" \
+  NO 4 9 17 \
+  "JUDGEMENTAL: no historical cohort exists for a neutral-boundary module; the range is declared, NOT measured" \
+  LOW R1 \
+  "the IR is the module the earlier IR-BOUNDARY02 regression lived in, so its risk is measured to be higher than a pure module" \
+  STATEFUL_MIGRATION
+
+row WP-008 \
+  "SRC-006(cfg.c)" CFG \
+  "PolyC-authored CFG construction and the recovery/dominance rules" \
+  M2_FULL NONE WP-007 M1 NO \
+  "the dominance and the recovery-point representation" \
+  "a PolyC-authored CFG builder produces the blocks the backend consumes" \
+  NO 3 6 11 \
+  "JUDGEMENTAL: no historical cohort; the recovery edge class (12 edges) is a known risk area" \
+  LOW R1 \
+  "the CFG carries the RECOVERY obligation, one of the three edge classes with a runtime proof requirement" \
+  STATEFUL_MIGRATION
+
+row WP-009 \
+  "SRC-001(asm.c);SRC-020(prsasm.c)" ASSEMBLER \
+  "PolyC-authored assembly emission and the instruction printer" \
+  M2_FULL NONE "WP-008" M1 NO \
+  "the instruction encoding and the format strings" \
+  "a PolyC-authored assembler emits the expected assembly text for a fixture" \
+  NO 3 6 10 \
+  "JUDGEMENTAL: no historical cohort for the assembler" \
+  LOW R1 \
+  "the assembler is the narrowest real COMPILER OUTPUT, so it is the smallest unit that can discharge the P0 real-compiler-output predicate on its own" \
+  HARNESS_QUALIFICATION
+
+row WP-010 \
+  "SRC-010(aarch64.c)" CODEGEN \
+  "PolyC-authored AArch64 backend" \
+  M2_FULL NONE "WP-008,WP-009" M1 NO \
+  "the condition-code selection and the register allocation contract" \
+  "a PolyC-authored AArch64 backend emits the expected assembly for a fixture" \
+  PARTIAL 4 10 20 \
+  "JUDGEMENTAL: the backend is the largest single semantic unit and 2 of its decision sites are ALREADY PolyC-authored, which is evidence the unit is tractable" \
+  LOW R1 \
+  "the backend owns the two migrated A64 condition decisions, so it is the unit with the most existing PolyC precedent" \
+  STATEFUL_MIGRATION
+
+row WP-011 \
+  "SRC-025(x86_64.c);SRC-024(x86.c)" CODEGEN \
+  "PolyC-authored x86-64 backend" \
+  M2_FULL NONE "WP-008,WP-009,WP-001" M1 NO \
+  "the x86-64 register allocation and the legacy AST backend" \
+  "a PolyC-authored x86-64 backend emits the expected assembly for a fixture" \
+  NO 4 9 18 \
+  "JUDGEMENTAL: no historical cohort; 6544 LOC across the two units" \
+  LOW R2 \
+  "the x86-64 backend is NOT on the host-target critical path, so it can proceed in parallel with the AArch64 backend" \
+  STATEFUL_MIGRATION
+
+row WP-012 \
+  "SRC-012(json.c)" JSON \
+  "PolyC-authored JSON emitter" \
+  M2_FULL NONE WP-002 M4 NO \
+  "the JSON value model" \
+  "a PolyC-authored JSON emitter reproduces the fixture output" \
+  NO 1 2 4 \
+  "JUDGEMENTAL: 19 authority rows and 378 LOC make this a small unit" \
+  MEDIUM R3 \
+  "JSON is not on the M2 path, so it is deliberately LAST in the M2 ordering" \
+  PERIPHERAL_MIGRATION
+
+row WP-013 \
+  "SRC-015(lsp.c)" LSP \
+  "PolyC-authored language server" \
+  M2_FULL NONE WP-002 M4 NO \
+  "the LSP request/response model" \
+  "a PolyC-authored LSP responds to a request fixture" \
+  NO 2 5 10 \
+  "JUDGEMENTAL: no historical cohort; 2134 LOC" \
+  LOW R3 \
+  "the LSP is a tool surface, not a compiler-producing path" \
+  PERIPHERAL_MIGRATION
+
+row WP-014 \
+  "SRC-026(repl.c)" REPL \
+  "PolyC-authored REPL" \
+  M2_FULL NONE WP-002 M4 NO \
+  "the REPL evaluation loop" \
+  "a PolyC-authored REPL evaluates a fixture expression" \
+  NO 2 4 9 \
+  "JUDGEMENTAL: no historical cohort; 1568 LOC" \
+  LOW R3 \
+  "the REPL is a tool surface, not a compiler-producing path" \
+  PERIPHERAL_MIGRATION
+
+row WP-015 \
+  "SRC-023(transpiler.c)" TRANSPILER \
+  "PolyC-authored C-to-PolyC transpiler" \
+  M2_FULL NONE WP-004 M4 NO \
+  "the C-to-PolyC source mapping" \
+  "a PolyC-authored transpiler produces the expected output for a C fixture" \
+  NO 2 4 8 \
+  "JUDGEMENTAL: no historical cohort; 1747 LOC" \
+  LOW R3 \
+  "the transpiler is a migration ACCELERATOR, not a compiler-producing path" \
+  PERIPHERAL_MIGRATION
+
+row WP-016 \
+  "SRC-027(memsafe.c)" SUPPORT \
+  "PolyC-authored memory-safety checker" \
+  M2_FULL NONE WP-007 M4 NO \
+  "the memory-safety rules" \
+  "a PolyC-authored checker accepts or rejects the fixture" \
+  NO 1 2 4 \
+  "JUDGEMENTAL: no historical cohort; 328 LOC" \
+  MEDIUM R3 \
+  "a small analyser, not on the M2 path" \
+  PERIPHERAL_MIGRATION
+
+row WP-017 \
+  "WP-001;WP-002;WP-003;WP-004;WP-005;WP-006" SHARED_INFRA \
+  "PolyC-authored ABI and shared-state foundation for the compiler source set" \
+  M2_PRECURSOR NONE "WP-001,WP-002,WP-003,WP-004,WP-005,WP-006" P0 NO \
+  "the shared ABI between the PolyC modules" \
+  "a PolyC-authored ABI contract compiles two modules against each other" \
+  NO 2 4 8 \
+  "JUDGEMENTAL: the archived forecast assumed 3 ACTs for the programme ABI foundation; the range 2/4/8 brackets that assumption" \
+  MEDIUM R0 \
+  "the shared ABI is the coupling that makes the 19-component SCC a REAL migration constraint, and it must be settled before the parts can move independently" \
+  SHARED_INFRASTRUCTURE
+
+row WP-018 \
+  "WP-001;WP-002;WP-003;WP-004;WP-005;WP-006;WP-017" BOOTSTRAP \
+  "Production generation and qualification of the precursor compiler" \
+  M2_PRECURSOR NONE "WP-001,WP-002,WP-003,WP-004,WP-005,WP-006,WP-017" P0 YES \
+  "the producer provenance of the precursor" \
+  "a qualified earlier compiler compiles the precursor source set and the precursor runs" \
+  NO 2 4 7 \
+  "JUDGEMENTAL: the archived forecast assumed 10 ACTs for M2 bootstrap; this package covers only the PRECURSOR generation" \
+  MEDIUM R0 \
+  "this is the package that turns a source set into a COMPILER PRODUCING artifact; without it P0 stays BLOCKED" \
+  BOOTSTRAP_INTEGRATION
+
+row WP-019 \
+  "WP-001..WP-018" SHARED_INFRA \
+  "Correction and verification reserve for the whole M2 scope" \
+  M2_FULL NONE WP-018 M1 NO \
+  "the differential witnesses and the regression suites" \
+  "NONE" \
+  NONE 8 18 36 \
+  "MEASURED_COHORT: the historical correction rate is 0.44 (4 correction ACTs per 9 implementation ACTs) measured on the PARSER cohort only; applied to a stateful compiler programme this is a LOWER bound" \
+  LOW R1 \
+  "the reserve is the transfer of a narrow parser-slice correction rate to stateful compiler modules, and it is the single largest judgemental assumption in the model" \
+  SHARED_INFRASTRUCTURE
+
+row WP-020 \
+  "WP-001..WP-019" BOOTSTRAP \
+  "Generation qualification of the FULL M2 source set and the M2 gate discharge" \
+  M2_FULL NONE "WP-018,WP-019" M2 YES \
+  "the producer provenance of the complete compiler source set" \
+  "a qualified earlier compiler compiles the complete in-scope source set and the result runs" \
+  NO 2 5 9 \
+  "JUDGEMENTAL: the archived forecast assumed 3 ACTs for the M2 generation harness" \
+  MEDIUM R1 \
+  "this is the package that actually DISCHARGES the M2 gate; the predecessor packages only make it reachable" \
+  BOOTSTRAP_INTEGRATION
+
+mv "$TMP" "$OUT"
+trap - EXIT INT TERM
+
+echo "WORK_PACKAGES_WRITTEN=$OUT"
+echo "WORK_PACKAGE_COUNT=$(grep -c '^WP-' "$OUT")"
+echo "WORK_PACKAGE_FIELDS=$(awk -F'\t' '/^WP-/ {print NF; exit}' "$OUT")"
