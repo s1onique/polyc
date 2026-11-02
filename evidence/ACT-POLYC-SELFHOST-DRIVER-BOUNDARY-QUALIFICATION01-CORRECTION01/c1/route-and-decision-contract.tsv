@@ -1,0 +1,142 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=route-and-decision-contract
+#
+# THE INTERPRETATION CONTRACT, FROZEN AT C1 BEFORE THE CORRECTION
+# VERIFIER IS WRITTEN.
+#
+# It states, in advance, HOW the route-scoped and decision-owner
+# questions are to be answered. The verifier and the independent
+# witness implement THIS contract. Neither may change it.
+#
+# ---------------------------------------------------------------------
+# 1. THE FROZEN REQUIRED ROUTE
+# ---------------------------------------------------------------------
+#
+#   --install-dir=X -c input.HC -o out.o
+#
+# The C-selected option field values ON THIS ROUTE, derived from the
+# frozen src/cli.c option table and the frozen route matrix:
+#
+#   emit_object   = TRUE     (the -c flag)
+#   print_tokens  = FALSE    (the -tokens flag is absent)
+#   assemble      = FALSE    (the -S flag is absent)
+#   assemble_only = FALSE    (the -S flag is absent)
+#   asm_outfile   = FALSE    (the -S flag is absent)
+#   emit_dylib    = FALSE    (the -lib flag is absent)
+#   transpile     = FALSE    (the -transpile flag is absent)
+#   print_ast     = FALSE    (the -ast flag is absent)
+#   dump_ir       = FALSE    (the --dump-ir flag is absent)
+#   run           = FALSE    (no -run flag)
+#   lsp           = FALSE
+#   is_cross_compile = FALSE (no --target flag)
+#
+# ---------------------------------------------------------------------
+# 2. THE ROUTE-SCOPE AXIS
+# ---------------------------------------------------------------------
+#
+# A branch is PROVEN_REACHABLE_ON_REQUIRED_ROUTE iff the frozen source
+# shows the branch's guard is TRUE on the required route. A branch
+# whose guard is FALSE on the required route is PROVEN_UNREACHABLE_ON_
+# REQUIRED_ROUTE with a concrete flag-absence argument.
+#
+# PROVEN_UNREACHABLE REQUIRES a concrete control-flow or flag-absence
+# argument. ABSENCE FROM A FIXTURE CORPUS IS NOT AN ARGUMENT.
+#
+# FUNCTION_REACHABLE_ON_ROUTE DOES NOT IMPLY EVERY_BRANCH_WITHIN_
+# FUNCTION_REACHABLE_ON_ROUTE. The route scope is a PER-BRANCH fact.
+#
+# ---------------------------------------------------------------------
+# 3. THE DECISION-OWNER AXIS
+#
+# Three SEPARATE questions are asked of every retained-C candidate:
+#
+#   WHO SELECTS THE INTENT?       the component that decides WHAT the
+#                                  user asked for
+#   WHO SELECTS THE RESULTING
+#   ACTION?                       the component that decides WHICH
+#                                  action is taken
+#   WHO EXECUTES THE ACTION?      the component that performs it
+#
+# The correction-level classification vocabulary is:
+#
+#   POLYC_SEMANTIC_OWNER_C_EXECUTOR
+#       the PolyC driver selected the intent AND the action, and the C
+#       branch merely realises the already-selected action
+#   C_SEMANTIC_OWNER_PROVEN
+#       the C branch makes a policy choice that the PolyC decision did
+#       NOT fully specify
+#   SHARED_DECISION_OR_INSUFFICIENT_SEPARATION
+#       the evidence does not separate the two
+#   UNPROVEN
+#       the distinction cannot be established
+#
+# A C BRANCH THAT CONSUMES A POLYC-SELECTED FIELD IS NOT, BY THAT
+# FACT ALONE, A C POLICY OWNER. The C branch must be shown to MAP the
+# selected value to a SEPARATE C policy choice.
+#
+# A LINKED COUNTERFACTUAL ESTABLISHES CAUSAL INFLUENCE ONLY. IT DOES
+# NOT ESTABLISH EXCLUSIVE AUTHORITY. SUPPRESSING A BRANCH AND SEEING
+# THE BEHAVIOUR CHANGE PROVES THE BRANCH IS IN THE CAUSAL PATH; IT
+# DOES NOT PROVE THE BRANCH IS THE OWNER OF THE DECISION.
+#
+# ---------------------------------------------------------------------
+# 4. THE RESULT DIMENSIONS, KEPT DISTINCT
+# ---------------------------------------------------------------------
+#
+#   RETAINED_C_SEMANTIC_ROWS_WITHIN_32
+#       the historical 32-row classification, PRESERVED AS RECORDED
+#   RETAINED_C_SEMANTIC_BRANCHES_PROVEN_GLOBAL
+#       branch-level branches proven to select behaviour on SOME route
+#   RETAINED_C_SEMANTIC_BRANCHES_PROVEN_REQUIRED_ROUTE
+#       branch-level branches proven to select behaviour ON THE FROZEN
+#       REQUIRED ROUTE
+#
+# THE HISTORICAL 32-ROW COUNT AND THE NEW BRANCH-LEVEL COUNT MAY
+# DIFFER. THEY ARE REPORTED SEPARATELY WITH AN EXPLICIT CROSSWALK AND
+# ARE NEVER CONFLATED.
+#
+# ---------------------------------------------------------------------
+# 5. THE COUNTERFACTUAL CONTRACT
+# ---------------------------------------------------------------------
+#
+# Every counterfactual MUST:
+#
+#   * mutate the FROZEN src/main.c at the exact branch line
+#   * be built by the REAL production CMake build
+#   * be LINKED into the binary that is actually EXECUTED
+#   * record the BASELINE, MUTANT and RESTORED source digests
+#   * record the BASELINE and MUTANT BINARY digests
+#   * record the artifact TYPE, not merely its existence
+#   * RESTORE the source and prove the restoration by digest
+#
+# A SOURCE MUTATION THAT WAS NEVER LINKED INTO THE EXECUTED BINARY
+# IS NOT VALID CAUSAL EVIDENCE.
+#
+# THE PRISTINE STAGE0 COMPILER IS PROTECTED FROM THE MUTATION. THE
+# WORKING PRODUCTION COMPILER IS NEVER REPLACED BY A MUTANT.
+#
+# ---------------------------------------------------------------------
+# 6. THE HISTORICAL BASELINE CONTRACT
+# ---------------------------------------------------------------------
+#
+# Three states are kept DISTINCT:
+#
+#   HISTORICAL_VALUE       what the predecessor recorded
+#   FRESH_MEASUREMENT      what this correction measures NOW
+#   CONSERVATION_VERDICT   whether the two agree
+#
+# A NOT_REMEASURED HISTORICAL VALUE STAYS NOT_REMEASURED. IT IS NEVER
+# CONVERTED INTO A FRESH PASS. A CORRECTION MAY PERFORM A NEW
+# MEASUREMENT, BUT THAT IS NEW EVIDENCE, NOT A CHANGE TO THE HISTORICAL
+# OBSERVATION.
+#
+key	rule
+REQUIRED_ROUTE	--install-dir=X -c input.HC -o out.o
+REACHABILITY_VOCABULARY	PROVEN_REACHABLE | PROVEN_UNREACHABLE | UNPROVEN
+UNREACHABLE_REQUIRES	concrete control-flow or flag-absence argument
+OWNER_VOCABULARY	POLYC_SEMANTIC_OWNER_C_EXECUTOR | C_SEMANTIC_OWNER_PROVEN | SHARED_DECISION_OR_INSUFFICIENT_SEPARATION | UNPROVEN
+COUNTERFACTUAL_REQUIRES	real CMake build + real link + source/object/binary digests + artifact type
+ROUTE_SCOPE_IS	per-branch, not per-function
+HISTORICAL_32_ROWS	preserved as recorded, reported separately from the branch-level counts
+BASELINE_STATES	historical value, fresh measurement and conservation verdict are distinct

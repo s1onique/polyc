@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=source-branch-inventory
+#
+# THE DECISION-BEARING BRANCHES of main() and emitFile(), read
+# from the FROZEN src/main.c at the predecessor close.
+#
+# The source blob OID and every line number are derived from the
+# source itself. The predecessor route matrix is NOT trusted for
+# the line numbers.
+#
+# The REQUIRED ROUTE is the frozen
+#   --install-dir=X -c input.HC -o out.o
+# On that route the C-selected option fields take these values:
+#   emit_object = TRUE   (the -c flag)
+#   print_tokens = FALSE (the -tokens flag is absent)
+#   assemble = FALSE      (the -S flag is absent)
+#   assemble_only = FALSE (the -S flag is absent)
+#   emit_dylib = FALSE    (the -lib flag is absent)
+#   transpile = FALSE     (the -transpile flag is absent)
+#   print_ast = FALSE     (the -ast flag is absent)
+#   dump_ir = FALSE       (the --dump-ir flag is absent)
+#   run = FALSE           (no -run flag)
+#
+# route_scope is per BRANCH, not per FUNCTION.
+#
+branch_id	function	source_blob_oid	source_line	source_interval	condition	input_or_control_origin	required_route_taken	required_route_reachable	whole_cli_reachable	selected_behavior	semantic_owner_candidate	linked_execution_witness	counterfactual_result	confidence
+BR_MAIN_PRINT_CAP_TABLE	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	444	444-452	if (args.print_cap_table)	the CliArgs field print_cap_table, SET BY the C bridge from the PolyC-selected field	NO	PROVEN_UNREACHABLE	YES	print the LLVM capability table and return	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_LSP	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	455	455-460	if (args.lsp)	the CliArgs field lsp, SET BY the C bridge from the PolyC-selected field	NO	PROVEN_UNREACHABLE	YES	run the LSP server	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_CROSS_COMPILE	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	471	471-484	if (args.is_cross_compile)	the CliArgs field is_cross_compile, SET BY the C bridge from the PolyC-selected field	NO	PROVEN_UNREACHABLE	YES	select the cross-compilation clang invocation	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_JIT_OR_REPL	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	491	491-495	if (args.jit || args.repl)	the CliArgs fields jit and repl	NO	PROVEN_UNREACHABLE	YES	define __HCC_JIT__ instead of __HCC_AOT__	C_MECHANICAL_CANDIDATE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_ASSEMBLE	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	497	497-500	if (args.assemble)	the CliArgs field assemble, SET BY the C bridge from the PolyC-selected field	NO	PROVEN_UNREACHABLE	YES	assemble-only: run assemble() and exit	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_REPL	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	506	506-517	if (args.repl)	the CliArgs field repl	NO	PROVEN_UNREACHABLE	YES	run the REPL	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_PRINT_TOKENS	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	519	519-522	if (args.print_tokens)	the CliArgs field print_tokens, SET BY the C bridge from the PolyC-selected field WP_DRIVER_FIELD_PRINT_TOKENS	NO	PROVEN_UNREACHABLE	YES	emit the token stream and exit	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	q2/causal-execution-and-provenance.tsv	ARTIFACT_SUPPRESSED_ON_TOKEN_ROUTE_ONLY	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_TRANSPILE	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	524	524-531	if (args.transpile)	the CliArgs field transpile	NO	PROVEN_UNREACHABLE	YES	emit the transpiled C source	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_COMPILE_TO_AST	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	533	533-538	if (!compileToAst(cc,&args,lexer_flags))	the PARSE RESULT of the input file; the input is selected by the PolyC driver	YES	PROVEN_REACHABLE	YES	parse the input; on failure exit 1, otherwise continue to codegen	C_ENGINE_MECHANICAL	NONE	NOT_EXECUTED	PROVEN_REACHABLE_BY_REQUIRED_ROUTE_TRACE
+BR_MAIN_PRINT_AST	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	540	540-543	if (args.print_ast)	the CliArgs field print_ast	NO	PROVEN_UNREACHABLE	YES	print the AST	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_DUMP_IR	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	545	545-548	if (args.dump_ir)	the CliArgs field dump_ir	NO	PROVEN_UNREACHABLE	YES	dump the IR	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_CFG	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	655	655-668	if (args.cfg_create || args.cfg_create_png || args.cfg_create_svg)	the CliArgs fields cfg_create, cfg_create_png, cfg_create_svg	NO	PROVEN_UNREACHABLE	YES	construct and emit the CFG	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_MAIN_EMIT_FILE_CALL	main	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	670	670-671	emitFile(cc, asmbuf, &args);	the COMPILED ASSEMBLY BUFFER produced by compileToAsm	YES	PROVEN_REACHABLE	YES	select and write the output artifact	C_SEMANTIC_RETAINED_WP001	q2/causal-execution-and-provenance.tsv	ARTIFACT_TYPE_CHANGES_WITH_THE_EMITFILE_BRANCH	PROVEN_REACHABLE_BY_REQUIRED_ROUTE_TRACE
+BR_EMITFILE_EMIT_OBJECT	emitFile	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	250	250-262	if (args->emit_object)	the CliArgs field emit_object, SET BY the C bridge from the PolyC-selected field WP_DRIVER_FIELD_EMIT_OBJECT	YES	PROVEN_REACHABLE	YES	invoke the C compiler with -c and produce a relocatable OBJECT	C_SEMANTIC_RETAINED_WP001	q2/causal-execution-and-provenance.tsv	ARTIFACT_TYPE_CHANGED_OBJECT_TO_EXECUTABLE	PROVEN_REACHABLE_BY_REQUIRED_ROUTE_TRACE
+BR_EMITFILE_ASSEMBLE_ONLY	emitFile	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	263	263-283	else if (args->asm_outfile && args->assemble_only)	the CliArgs fields asm_outfile and assemble_only	NO	PROVEN_UNREACHABLE	YES	write the assembly text to the asm output file	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_EMITFILE_EMIT_DYLIB	emitFile	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	284	284-295	else if (args->emit_dylib)	the CliArgs field emit_dylib	NO	PROVEN_UNREACHABLE	YES	link a shared library	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT
+BR_EMITFILE_LINK_EXECUTE	emitFile	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	296	296-366	else { ... if (args->run) { ... } else { ... } }	the CliArgs field run, and the object-file lists	NO	PROVEN_UNREACHABLE	YES	link an executable and optionally run it	C_SEMANTIC_CANDIDATE_NOT_IN_REQUIRED_ROUTE	NONE	NOT_EXECUTED	PROVEN_UNREACHABLE_BY_FLAG_ABSENT

@@ -1,0 +1,16 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=red-execution-matrix
+#
+# THE EIGHT FROZEN REDs, EXECUTED against the frozen predecessor
+# objects read DIRECTLY from the Git object store.
+#
+red_id	principal	adverse_condition	executed_command_result	rows_affected	REPRODUCED	NOT_REPRODUCED	reason
+R1	YES	frozen AC phase disagrees with the ledger phase	join frozen-phase drift rows	5	REPRODUCED	FROZEN_PHASE_DRIFT_ROWS=5
+R5	YES	ledger cites a witness path absent from the close tree	git ls-tree absent witness paths	1	REPRODUCED	ABSENT_WITNESS_PATHS=1
+R3	YES	ledger criterion rows disagree with its own written summary	rows=[49 0 1 50] summary=[49	0	2	50]	REPRODUCED	-	LEDGER_ROW_SUMMARY_DISAGREEMENT
+R4	NO	handoff count matches neither the ledger rows nor its summary	46 PASS, 0 FAIL, 5 DEFERRED	1	REPRODUCED	-	HANDOFF_LEDGER_COUNT_DISAGREEMENT
+R8	NO	Q0 detector lacks reason tokens the frozen Q0 roster names	6 of 6 tokens absent from the Q0 detector	6	REPRODUCED	Q0_DETECTOR_TOKEN_GAP=6
+R2	NO	ledger claim does not discharge the frozen predicate	see c1/predicate-drift.tsv	0	NOT_REPRODUCED	PREDICATE_BINDING_ANALYSED_IN_C1
+R6	NO	token-route witness counted as required-route proof	see c1/route-and-decision-contract.tsv	0	NOT_REPRODUCED	ROUTE_SCOPE_ANALYSED_IN_C1
+R7	NO	NOT_REMEASURED baseline laundered into a fresh PASS	see c1/historical-count-reconciliation.tsv	0	NOT_REPRODUCED	BASELINE_STATUS_ANALYSED_IN_C1
