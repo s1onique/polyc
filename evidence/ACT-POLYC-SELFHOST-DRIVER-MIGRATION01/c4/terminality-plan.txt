@@ -1,0 +1,106 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-plan
+#
+# THE TERMINALITY PLAN -- PLANNED, NOT EXECUTED.
+#
+# This file is a PLAN. It is committed as part of the CLOSE commit and
+# it records WHAT the external probe will check AFTER the CLOSE commit
+# exists. It is NOT terminality evidence.
+#
+# WHY A PLAN AND NOT A RECEIPT: the external probe verifies the state
+# of the repository AFTER the CLOSE commit, so its receipt cannot exist
+# before that commit. A receipt committed to the repository could
+# never bind to its own containing commit (F-GIT-IDENTITY: no
+# Markdown artifact may claim the SHA of the commit that contains it).
+# The receipt therefore lives OUTSIDE the repository, and the
+# repository carries this plan.
+#
+# ---------------------------------------------------------------------------
+# THE PROBE
+#
+# The probe is a READ-ONLY shell script that writes its receipt to a
+# file OUTSIDE the repository's tree. It is run ONCE, after the CLOSE
+# commit, by the closing operator.
+#
+#   PROBE_LOCATION   /tmp/wp001-terminality-probe-<UTC stamp>.sh
+#   RECEIPT_LOCATION /tmp/wp001-terminality-receipt-<UTC stamp>.txt
+#
+# Both paths are OUTSIDE the repository. The probe MUST NOT create,
+# modify or delete any tracked file, and it MUST NOT push.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE PROBE MUST CONFIRM
+#
+# 1. THE COMMITTED FIVE-PHASE SEQUENCE.
+#    The five commits of this ACT, read back FROM THE GIT OBJECT
+#    HISTORY by their exact trailers, are
+#      C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE, C4 CLOSE
+#    and there is EXACTLY ONE CLOSE.
+#
+# 2. NO SUBSEQUENT TRACKED COMMITS.
+#    The probe's HEAD is the CLOSE commit, and the commit count on
+#    branch main since the CLOSE is zero at the moment of the probe.
+#
+# 3. THE CURRENT SOURCE AND OBJECT DELEGATIONS.
+#    The production object carries the EIGHT expected relocations
+#    into the PolyC driver, and the legacy C parser is absent from it.
+#
+# 4. THE COMPARATOR AND THE MUTANT EVIDENCE.
+#    The committed C3 generation matrix reports all TWELVE ordered
+#    pairs green over the frozen corpus, and the committed mutation
+#    evidence reports THREE distinct, load-bearing PolyC mutations
+#    with 8, 4 and 3 changed cases.
+#
+# 5. THE AUTHORITY COUNT.
+#    All FIFTEEN pre-existing production PolyC authorities are still
+#    linked, and EXACTLY ONE new authority is present, for a final
+#    count of SIXTEEN.
+#
+# 6. THE PRODUCTION GATES.
+#    The committed gate-fast and gate-push results are both PASS.
+#
+# 7. AN EMPTY REPOSITORY STATUS.
+#    `git status --porcelain=v1` is empty.
+#
+# 8. ZERO REPLACE REFS.
+#    `git replace -l` is empty.
+#
+# 9. ZERO ACT-CREATED WORKTREES.
+#    `git worktree list --porcelain` names no worktree created by this
+#    ACT. The disposable G0 worktree under /tmp must be REMOVED
+#    before the probe runs.
+#
+# 10. NO PUSH.
+#    The local branch main has no upstream divergence introduced by
+#    this ACT, and the probe performs no network operation.
+#
+# ---------------------------------------------------------------------------
+# THE RECEIPT MUST BIND TO
+#
+#   BOUND_HEAD   the CLOSE commit's full SHA-256 of its object id
+#   BOUND_TREE   the CLOSE commit's tree object id
+#   BOUND_BRANCH main
+#   BOUND_ACT    ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+#   PROBE_TIME   the UTC timestamp of the probe
+#
+# and must record EVERY numbered check above with its measured value
+# and its verdict.
+#
+# ---------------------------------------------------------------------------
+# THE FAILURE PATH
+#
+# If ANY numbered check fails, the outcome is
+#
+#   HALT_FACTORY_OR_TERMINALITY
+#
+# and NO further CLOSE is appended and NO history is rewritten. The
+# remedy is a separately authorized FORWARD-ONLY correction.
+#
+# ---------------------------------------------------------------------------
+# THE DISPOSITION IF THE PROBE PASSES
+#
+#   EXTERNAL_TERMINALITY=PASS
+#   AC50=PASS
+#
+# and the ACT is fully discharged.

@@ -9123,3 +9123,97 @@ SELFHOST_M2_ACHIEVED = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01.md`
 and `evidence/ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01/`.
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 — WP-001 driver migration CLOSED
+
+The WP-001 PolyC-authored compiler driver is **MIGRATED**. The
+production compiler's CLI interpretation, action selection and status
+mapping are now made by a **compiled PolyC subject**,
+`tools/bootstrap/selfhost-driver-wp001.HC`, reached through the frozen
+C1 ABI. The C side copies the bytes the driver selected and reports the
+status the driver chose; it decides nothing. The legacy C parser is
+**not even compiled** in the production build, so there is no second
+CLI policy in the shipped binary.
+
+The ownership is **PROVEN BY EXECUTION IN BOTH DIRECTIONS**. Poisoning
+the driver subject with an object that exports the right symbol names
+but decides nothing makes **all fourteen** frozen corpus cases crash,
+and removing the object fails the build rather than falling back to C.
+In the other direction, each of the three dormant legacy rows was
+mutated in place, the compiler was rebuilt, the corpus was re-executed
+and the source was restored byte-identically: **zero** of fourteen
+cases changed for each.
+
+The **four-generation matrix** is green. G0 (the pure C-driver
+oracle), G1 (the C-rooted stage0), G2 (the current `./hcc`) and G3
+(the qualified bootstrap04) are four real executables. **All twelve
+ordered pairs agree** over all fourteen cases: 168 comparisons, zero
+mismatches. Object identity is reported **separately** from behavioural
+equivalence: G1 and G2 are the **same** compiler generation and
+produce byte-identical driver objects, while G3 is a **different**
+generation.
+
+The **twenty-four negative controls** are all sensitive. Each ran
+PRISTINE → ADVERSE → RESTORED against a **compiled PolyC** detector
+that re-derives every fact from the primary material, each rejected
+with its **own exact reason token**, each restored byte-identical, and
+each agreed by an **independent** POSIX/Git witness that shares no
+code with the detector.
+
+**Two real defects were found by execution and fixed.** The C1-frozen
+M3 mutation target named a construct that is not on the causal path,
+and the action dispatch was decorative; both were corrected under
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01`, which did not
+rewrite the parent's committed evidence (F14). Separately, the C host
+bridge was in the global CMake source list, which put five driver
+symbols into the selector-OFF oracle.
+
+The **thirty-two historical driver rows** are reconciled row for row:
+**thirteen migrated, sixteen retained, three dormant**. The historical
+32 is a **review roster, not 32 migrated decisions**. Exactly **one**
+new production PolyC authority is added, for a final count of
+**sixteen**.
+
+Every baseline is conserved, re-measured freshly at C3: parser
+376/376 over 90 blocks with the ordered sequence MD5
+`b6f117eb1386ca80f81bc06226e2a741`, direct lexers 89/89, 45/45 and
+23/23, `gate-fast` PASS, the serialized `gate-push` PASS with all
+**seven** checks, append-only 11/11, closure status 63/63, and the
+predecessor's evidence directory byte-identical. `F-NO-PYTHON` remains
+honestly FAIL at the **same** 12 paths with zero new, `F-POLYC-TOOLS`
+remains honestly UNAVAILABLE, and the cross-target and LEXER07 broad
+baselines remain NOT_REMEASURED with their historical identities
+preserved.
+
+**One environment precondition is recorded rather than hidden.** The
+historical parser command compiles each test file with a bare
+`../../hcc`, which resolves the builtin header at the compile-time
+`/usr/local/include/tos.HH`; that path does not exist on this machine
+and cannot be created. This is **not a regression** — the same command
+against the unmodified G0 oracle fails identically. The baseline was
+re-measured under a hermetic equivalent, with both the G0 oracle and
+the migrated compiler measured under the same conditions.
+
+The acceptance ledger reads **AC01…AC47 PASS**, AC48 and AC49
+NOT_REACHED (C4 phases) and **AC50 DEFERRED**: the external read-only
+terminality receipt is created after the CLOSE, outside the repository,
+bound to the exact terminal HEAD and TREE, and is never backdated. The
+plan for it is tracked at
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/c4/terminality-plan.txt`
+and is explicitly marked PLAN.
+
+```text
+M0_SELFHOST = ACHIEVED
+M1_SELFHOST = NOT ACHIEVED
+M2_SELFHOST = NOT ACHIEVED
+WP001_DRIVER_MIGRATION = ACHIEVED
+WP001_ACT_COST_MEASURED = 2
+WP001_ESTIMATE_2_3_5_RECALIBRATION = NOT_REPRICED
+NEXT_TARGET = NONE
+NEXT_ACT_PROPOSED = NONE
+NEXT_TARGET_AUTHORIZED = NO
+SELFHOST_M2_ACHIEVED = NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/`.
