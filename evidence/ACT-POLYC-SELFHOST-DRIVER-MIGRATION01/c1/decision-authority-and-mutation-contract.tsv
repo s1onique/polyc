@@ -1,0 +1,98 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=decision-authority-and-mutation-contract
+#
+# THE EXPECTED OWNERSHIP MAP AND THE FROZEN MUTATION TARGETS.
+#
+# PART 1: THE 32-ROW EXPECTED OWNERSHIP MAP.
+#
+# The `expected_owner` column names, for EVERY ONE of the 32
+# historical WP-001 rows, the component that will own that row's
+# decision AFTER C2. The map is DERIVED FROM THE LIVE SOURCE (the C0
+# census re-measured every row's relocation evidence), NOT assigned
+# from a target count.
+#
+# `future_causal_site` names the exact source location in the NEW
+# PolyC subject that becomes the causal site for that row, so a
+# mutation at that site must be observable.
+#
+# `dormancy` records the three rows that the C0 census proved have
+# ZERO relocations and are therefore DORMANT -- they must stay
+# dormant and must NOT be counted as migrated decisions.
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE FROZEN MUTATION TARGETS.
+#
+# Three DISTINCT PolyC mutation targets are frozen, one per required
+# decision group. Each names the exact source construct to mutate,
+# the expected observable effect, and the case that must change.
+#
+# The three are DISTINCT SOURCE CONSTRUCTS in DISTINCT FUNCTIONS in
+# DISTINCT decision groups. They are not three edits to one site.
+# ---------------------------------------------------------------------------
+#
+# --- PART 1: THE 32-ROW EXPECTED OWNERSHIP MAP -----------------------------
+row_id	source_file	function_id	c0_class	expected_owner_after_c2	future_causal_site	dormancy
+A-C-DRIVER-cli-cliArgsInit-SL	src/cli.c	cliArgsInit	C_MECHANICAL	C_HOST_PLATFORM	none (struct field initialisation only)	NO
+A-C-DRIVER-cli-cliConcatArgv-FC	src/cli.c	cliConcatArgv	DRIVER_SEMANTIC	C_HOST_MECHANICAL	none (formats the list the driver selected)	NO
+A-C-DRIVER-cli-cliGetFileType-FC	src/cli.c	cliGetFileType	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverClassifyFile	NO
+A-C-DRIVER-cli-cliNoInputFiles-FC	src/cli.c	cliNoInputFiles	DRIVER_SEMANTIC	POLYC_DRIVER_STATUS	C_HOST_REPORTS	the decision is the status; the host performs the report	NO
+A-C-DRIVER-cli-cliPanic-SL	src/cli.c	cliPanic	DRIVER_SEMANTIC	C_HOST_REPORTS	none (the failure exit and message are reported from the selected status)	NO
+A-C-DRIVER-cli-cliPanicGeneric-FC	src/cli.c	cliPanicGeneric	C_MECHANICAL	C_HOST_PLATFORM	none (formatting and exit)	NO
+A-C-DRIVER-cli-cliParseArgs-SW1	src/cli.c	cliParseArgs	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverSelectAction + WpDriverMapStatus	NO
+A-C-DRIVER-cli-cliParseAssign-SL	src/cli.c	cliParseAssign	DORMANT	DORMANT_RETAINED_NONE	none (never called)	YES
+A-C-DRIVER-cli-cliParseBoolean-FC	src/cli.c	cliParseBoolean	DORMANT	DORMANT_RETAINED_NONE	none (never called)	YES
+A-C-DRIVER-cli-cliParseDefine-SL	src/cli.c	cliParseDefine	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverValueSource (the -D suffix rule)	NO
+A-C-DRIVER-cli-cliParseInt-FC	src/cli.c	cliParseInt	DORMANT	DORMANT_RETAINED_NONE	none (never called)	YES
+A-C-DRIVER-cli-cliParseNop-SL	src/cli.c	cliParseNop	DRIVER_SEMANTIC	C_HOST_MECHANICAL	none (the flag's value is the flag itself; the field set is driver-selected)	NO
+A-C-DRIVER-cli-cliParseString-SL	src/cli.c	cliParseString	DRIVER_SEMANTIC	C_HOST_MECHANICAL	none (copies the driver-selected value bytes)	NO
+A-C-DRIVER-cli-cliParserFind-FC	src/cli.c	cliParserFind	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverOptMatches + WpDriverClassifyOption	NO
+A-C-DRIVER-cli-cliPrintUsage-FC	src/cli.c	cliPrintUsage	C_MECHANICAL	C_HOST_PLATFORM	none (usage text printing)	NO
+A-C-DRIVER-cli-cliTargetToString-SW1	src/cli.c	cliTargetToString	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverOptionAction (the target selection)	NO
+A-C-DRIVER-cli-cliTerryInfo-FC	src/cli.c	cliTerryInfo	C_MECHANICAL	C_HOST_PLATFORM	none (about-text printing)	NO
+A-C-DRIVER-cli-cliVersionPrint-FC	src/cli.c	cliVersionPrint	C_MECHANICAL	C_HOST_PLATFORM	none (version banner printing)	NO
+A-C-DRIVER-cli-getASMFileName-SW1	src/cli.c	getASMFileName	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverClassifyArgument + WpDriverSelectAction	NO
+A-C-DRIVER-cli-getBuildModeStr-SL	src/cli.c	getBuildModeStr	C_MECHANICAL	C_HOST_PLATFORM	none (build-mode text)	NO
+A-C-DRIVER-cli-gitGetHash-SL	src/cli.c	gitGetHash	C_MECHANICAL	C_HOST_PLATFORM	none (git hash lookup)	NO
+A-C-DRIVER-cli-longestCommand-FC	src/cli.c	longestCommand	C_MECHANICAL	C_HOST_PLATFORM	none (usage-text layout)	NO
+A-C-DRIVER-main-assemble-FC	src/main.c	assemble	C_MECHANICAL	C_SEMANTIC_ENGINE_RETAINED	none (the retained C compilation engine)	NO
+A-C-DRIVER-main-emitFile-FC	src/main.c	emitFile	DRIVER_SEMANTIC	C_SEMANTIC_ENGINE_RETAINED	none (the retained C object emitter; the engine keeps it)	NO
+A-C-DRIVER-main-hccLibInit-SL	src/main.c	hccLibInit	C_MECHANICAL	C_HOST_PLATFORM	none (library init)	NO
+A-C-DRIVER-main-linkLibFlags-FC	src/main.c	linkLibFlags	C_MECHANICAL	C_SEMANTIC_ENGINE_RETAINED	none (link flags of the retained engine)	NO
+A-C-DRIVER-main-main-SW1	src/main.c	main	DRIVER_SEMANTIC	POLYC_DRIVER	tools/bootstrap/selfhost-driver-wp001.HC WpDriverSelectAction + WpDriverMapStatus, reached through the C bridge	NO
+A-C-DRIVER-main-memoryInit-SL	src/main.c	memoryInit	C_MECHANICAL	C_HOST_PLATFORM	none (arena init)	NO
+A-C-DRIVER-main-memoryPrintStats-SL	src/main.c	memoryPrintStats	C_MECHANICAL	C_HOST_PLATFORM	none (memory stats)	NO
+A-C-DRIVER-main-memoryRelease-SL	src/main.c	memoryRelease	C_MECHANICAL	C_HOST_PLATFORM	none (arena release)	NO
+A-C-DRIVER-main-safeSystem-FC	src/main.c	safeSystem	C_MECHANICAL	C_HOST_PLATFORM	none (process exit status reporting)	NO
+A-C-DRIVER-main-writeAsmToTmp-FC	src/main.c	writeAsmToTmp	C_MECHANICAL	C_HOST_PLATFORM	none (file-descriptor I/O)	NO
+#
+# ---------------------------------------------------------------------------
+# THE OWNERSHIP MAP SUMMARY
+# ---------------------------------------------------------------------------
+owner_bucket	row_count	meaning
+POLYC_DRIVER	7	the DECISION moves into the compiled PolyC subject
+POLYC_DRIVER_STATUS	1	the DECISION moves into the PolyC status mapping
+C_HOST_REPORTS	1	the decision is PolyC's; the host performs the failure exit and the message
+C_HOST_MECHANICAL	3	the C side copies bytes the driver selected; it decides nothing
+C_HOST_PLATFORM	14	platform duties: printing, formatting, arena, fd I/O, git hash
+C_SEMANTIC_ENGINE_RETAINED	3	the retained C compilation engine, explicitly tagged, never renamed
+DORMANT_RETAINED_NONE	3	the three rows the C0 census proved are never called
+TOTAL_ROWS	32
+#
+# THE OWNERSHIP MAP HAS EXACTLY 32 ROWS, matching the C0 census row
+# for row. The bucket counts above are MEASURED from the map itself
+# (awk -F'\t' '{print $5}' | sort | uniq -c), not asserted.
+#
+# NOTE ON THE THREE DORMANT ROWS
+# The C0 census proved by relocation measurement that cliParseAssign,
+# cliParseInt and cliParseBoolean are NEVER CALLED. They are NOT
+# migrated decisions and MUST NOT be counted as such. The historical
+# 32 is a REVIEW ROSTER, not 32 migrated decisions.
+#
+# ---------------------------------------------------------------------------
+# PART 2: THE FROZEN MUTATION TARGETS
+# ---------------------------------------------------------------------------
+mutation_id	decision_group	polyc_function	source_construct_to_mutate	mutation	observable_effect_that_must_appear	case_that_must_change	distinctness_argument
+M1_FLAG_ARITY	DG_FLAG_ARITY	WpDriverOptMatches	the exact-match byte comparison loop `if (*ap != an[k]) return 0;`	change the compared byte so that the EXACT match of the "-o" option name fails	"-o" stops being recognised as an option, so it is collected as an UNKNOWN argument and the process reports "Unknown commandline options: -o" instead of compiling	C10_permuted (and C05_missing_o_value)	WpDriverOptMatches is the FLAG CLASSIFICATION function. It is a DIFFERENT function from M2 and M3, it is in a DIFFERENT decision group, and it is reached BEFORE the action dispatch.
+M2_ACTION_DISPATCH	DG_ACTION_DISPATCH	WpDriverSelectAction	the action mapping `if (kind == WP_KIND_EMIT_OBJ) return WP_ACTION_COMPILE_OBJECT;`	change the returned action for the -c option from WP_ACTION_COMPILE_OBJECT to WP_ACTION_NONE	the compile action is no longer selected, so no object is produced and the run ends with the no-input failure instead of emitting an object	C07_compile_object (and C10, C11, C13)	WpDriverSelectAction is the ACTION DISPATCH function. It is a DIFFERENT function from M1 and M3, it is in a DIFFERENT decision group, and M1 cannot change the selected action because M1 only changes whether an option is recognised at all.
+M3_STATUS_PROPAGATION	DG_STATUS_MAPPING	WpDriverMapStatus	the status mapping `if (action == WP_ACTION_NONE) { if (WpDriverUnknownArgCount() > 0) return WP_STATUS_USAGE; return WP_STATUS_NO_INPUT; }`	force the NO_INPUT status for an argv that holds an UNKNOWN argument	the unknown-argument failure is REPLACED by the no-input failure, so the message changes from "Unknown commandline options: ..." to "no input files" while the exit status stays 1	C04_unknown_option (and C09, C14)	WpDriverMapStatus is the STATUS MAPPING function. It is a DIFFERENT function from M1 and M2, it is in a DIFFERENT decision group, and it runs AFTER the action selection, so M2 cannot change which status is produced.

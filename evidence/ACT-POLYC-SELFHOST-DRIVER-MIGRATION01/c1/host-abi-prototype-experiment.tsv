@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=host-abi-prototype-experiment
+#
+# THE DRIVER ABI PROTOTYPE, EXECUTED BEFORE ANY PRODUCTION EDIT.
+#
+# The prototype was compiled by the REAL production compiler
+# (./hcc --install-dir=<prefix> -c abi-proto2.HC -o abi-proto2.o),
+# linked with a C host, and run over positive and adverse cases.
+# The prototype lives OUTSIDE the repository; it is an
+# experiment, not production code.
+#
+key	value	method
+PROTOTYPE_POLYC_SOURCE	abi-proto2.HC	the compiled PolyC subject
+PROTOTYPE_C_HOST_SOURCE	abi-host.c	the C host providing the byte access
+PROTOTYPE_COMPILER	18673eddecd30eb450c244d6cea948a5a4e400685164469061dab862aa9d5972	./hcc, the production compiler
+PROTOTYPE_SUBJECT_SHA256	032855023aa71d326c770fe32b1b0343e291ba5b630579060cd4fabf980f8991	shasum -a 256 abi-proto2.o
+PROTOTYPE_BINARY_SHA256	4265da09452adf4c6c786280e995db9771f381d5efac883630807bba77335ff6	shasum -a 256 abi-proto2
+PROTOTYPE_EXPORTS	2	nm -g abi-proto2.o | the T symbols
+PROTOTYPE_HOST_ONLY_PROVIDES	WpHostArgc, WpHostArgLen, WpHostArgByte	the three mechanical byte accessors
+PROTOTYPE_UNDECLARED_HOST_SYMBOLS	_WpHostArgByte _WpHostArgLen _WpHostArgc 	nm -u abi-proto2.o | the undefined set
+PROTOTYPE_RAW_ARGV_CROSSED	NO	the host never passes argv itself
+PROTOTYPE_VOID_POINTER_CROSSED	NO	no void* in the seam
+PROTOTYPE_LONGJMP_CROSSES_POLYC_FRAMES	NO	none
+PROTOTYPE_REENTRANCY_CLAIM	NOT_ASSUMED_SAFE	the host state is set once in main and never mutated afterwards
+#
+# THE EXECUTED CASES
+#   case                  argv                              decide  valueidx_of_o
+#   POSITIVE_P1           -c input.HC -o out.o             2       4
+#   POSITIVE_P2           --install-dir=/tmp/x -c ... -o   2       5
+#   POSITIVE_P3           -o out.o -c input.HC             2       2
+#   ADVERSE_A1            (no arguments)                   0       n/a
+#   ADVERSE_A2            -c                              0       n/a
+#   ADVERSE_A3            -o            (value MISSING)    0       -1  DOMAIN-CHECKED
+#   ADVERSE_A4            input.HC                        0       n/a
+#   ADVERSE_A5            -c input.HC                     0       n/a
+#   ADVERSE_A6            --bogus                         0       n/a
+#
+# THE DOMAIN CHECK IS LOAD-BEARING. The FIRST prototype
+# version returned valueidx=2 for the invocation `-o` alone,
+# which is an OUT-OF-RANGE argument index (argv has only two
+# entries). The frozen ABI requires the value accessor to
+# reject a MISSING value, so the accessor re-checks the arity
+# and returns -1. The second prototype returns -1 and the
+# decision is unchanged. This was found BY EXECUTION, not by
+# inspection, and it is the concrete reason the ABI carries an
+# explicit domain column at all.
+#
+# THE LIFETIME IS STABLE. The host sets g_argv/g_argc once in
+# main() before any PolyC call and never mutates them, so every
+# borrowed byte pointer stays valid for the whole decision.

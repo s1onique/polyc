@@ -1,0 +1,45 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=g0-driver-fixtures
+#
+# THE FROZEN G0 CLI CORPUS.
+#
+# Every row below was produced by EXECUTING the real G0 binary (the
+# pure C-driver oracle built from the pinned entry commit with the
+# driver selector OFF). Nothing here is a hand-written expected-value
+# table: the stdout/stderr digests, the byte counts, the exit statuses
+# and the first stderr lines are all MEASURED from real process runs.
+#
+# The corpus covers the NORMAL and the ADVERSE reachable invocation
+# forms of the frozen compile route:
+#
+#   NORMAL   C01, C02, C07, C08, C10, C11, C13
+#   ADVERSE  C03, C04, C05, C06, C09, C12, C14
+#
+# The fixture source file is a REAL PolyC program (input.HC):
+#   I64 main(I64 argc, U8 **argv) { return 0; }
+#
+# G0 BINARY
+#   /tmp/wp001-g0-hermetic-bin/hcc
+#   SHA-256 84e9d504555e85a6699a8be73c148907668bf8bcda47eb26310a51f54ebb8819
+#
+# THE CAPTURE COMMAND
+#   sh evidence/.../c0/capture-cli-baseline.sh \
+#      <hcc> <prefix-dir> <out-tsv> <workdir>
+# (every invocation is prefixed with --install-dir=<prefix-dir>)
+#
+case_id	argv_encoded	class	exit_status	stdout_sha256	stderr_sha256	stdout_bytes	stderr_bytes	stderr_first_line
+C01_help	--help	NORMAL	0	cd97f156248dda49fcc3bb8aab87e104fa05e0200dcc99b5df7d86195ad7694c	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3140	0	EMPTY
+C02_version	--version	NORMAL	0	72931b9512b9f3a14c5ea78be1621d741d9ca152e07505a2535c21df07284e87	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	146	0	EMPTY
+C03_no_args		ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	285a28869056ce5771ffd0da6e114a706cb52368ce3d95b45222b940ccbea97f	0	57	hcc: fatal error: no input files
+C04_unknown_option	--bogus	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	f5a03e1073830c07dac5b25fcb7d49f566390b8d229ebd7778cfde4a2ce6ecce	0	44	Error: Unknown commandline options: --bogus
+C05_missing_o_value	-c input.HC -o	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	821423855809b7517f0230aee8d6747f5f6118165fe85f57be4f1824be337030	0	57	Error: Unexpected end of input - expected `-o <option?>`
+C06_nonexistent_src	-c nonexistent.HC -o out.o	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	0f6695afc1e8b253187c27779ce15172aa8cb583930d106040b22cd4637a6900	0	54	ERROR: Failed to open file: nonexistent.HC
+C07_compile_object	-c input.HC -o out.o	NORMAL	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C08_install_dir_eq	--install-dir=/tmp/x -c input.HC -o out2.o	NORMAL	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	8187b43cdfbc5790183c19f26ad3e766a0fb9dc18aaaf35ddba4104015da2ecc	0	61	ERROR: Failed to open file: /tmp/x/include/tos.HH
+C09_o_dashdash	-c input.HC -- -o out3.o	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	1f4bef5e2c041c3f51305fd73fb4fffdaa983b9c1c59a5664def9d2dfe6bffa2	0	39	Error: Unknown commandline options: --
+C10_permuted	-o out4.o -c input.HC	NORMAL	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C11_dup_c	-c -c input.HC -o out5.o	NORMAL	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C12_source_only	input.HC	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	47b2905bc02bc43c2ba080d805b7d7711bdc36c8b90a99b93464cd3f05074700	0	301	ld: warning: search path '/tmp/wp001-c0/prefix/lib' not found
+C13_define_flag	-c input.HC -o out.o -D	NORMAL	0	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	3ea3e779c9e31113125e553ada57aea869ce33ec56f538c14bf9f5d693abd708	0	234	clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+C14_unknown_short	-z input.HC	ADVERSE	1	e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	7e5f54aedcbc7fb76b7d6572c691141df78f35be7c702ebe4689b5309f85a971	0	39	Error: Unknown commandline options: -z

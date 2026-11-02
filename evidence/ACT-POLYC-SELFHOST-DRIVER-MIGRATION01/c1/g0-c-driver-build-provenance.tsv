@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=g0-c-driver-build-provenance
+#
+# THE PURE C REFERENCE DRIVER (G0).
+#
+# G0 is built from the PINNED ENTRY commit in a disposable
+# detached worktree, with the driver selector OFF. At the pinned
+# entry the driver IS the C driver, so the selector-OFF build is
+# the genuine predecessor C driver, NOT a stub and NOT a script.
+#
+# It MAY retain the 15 pre-existing PolyC helper subjects: G0 is
+# C-only FOR THE DRIVER, not for all compiler semantics.
+#
+key	value	method
+G0_WORKTREE_PATH	/tmp/wp001-g0-wt	disposable detached worktree
+G0_WORKTREE_HEAD	2288a80330b9907341cd8a7d62d33cbfe9da5452	git rev-parse HEAD in the worktree
+G0_WORKTREE_BRANCH	DETACHED	git worktree add --detach
+G0_BINARY_PATH	/tmp/wp001-g0-wt/hcc	the production build output
+G0_BINARY_SHA256	a8721b2998512efce5bf87b73af53792135c21d0c13e7bba88c652efa5531d41	shasum -a 256 hcc
+G0_BINARY_SIZE_BYTES	748800	wc -c
+G0_BUILD_COMMAND_1	make bootstrap-stage0	builds build/host-stage0/hcc
+G0_BUILD_COMMAND_2	make all	builds the production ./hcc with the 15 helper subjects
+G0_LINK_LINE_OBJECT_COUNT	40	one .o per line in build/CMakeFiles/hcc.dir/link.txt
+G0_POLYC_AUTHORITY_SYMBOL_COUNT	19	nm -g hcc | grep -cE _Bootstrap|_Abi
+G0_DRIVER_SUBJECT_SYMBOL_COUNT	0	nm -g hcc | grep -c _WpDriver
+G0_DRIVER_SUBJECT_ABSENT	YES	zero _WpDriver symbols
+G0_HOST_BRIDGE_SYMBOL_COUNT	0	nm -g hcc | grep -c _WpDriverHost
+G0_LINK_LINE_NAMES_DRIVER_OBJECT	NO	grep -c selfhost-driver on the link line
+G0_SOURCE_COMMIT	2288a80330b9907341cd8a7d62d33cbfe9da5452	git rev-parse HEAD
+G0_MAIN_C_SHA256	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	shasum -a 256 src/main.c in the G0 worktree
+G0_CLI_C_SHA256	3ee3375ad0d48ec06706162dad5c5e566c0e2e90deb3b9a1a5849d48b7cd0ea0	shasum -a 256 src/cli.c in the G0 worktree
+G0_MAIN_C_BLOB	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	git rev-parse HEAD:src/main.c
+G0_CLI_C_BLOB	d296f8fdeb47646f260a7463a2a43abd5cbc979a	git rev-parse HEAD:src/cli.c
+G0_ENTRYPOINT_SYMBOL	_main	the C process entry point
+G0_ENTRYPOINT_DISASSEMBLY	1	otool -tV, the _main text symbol is present

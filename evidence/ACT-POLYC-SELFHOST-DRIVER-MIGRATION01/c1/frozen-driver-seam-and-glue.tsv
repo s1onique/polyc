@@ -1,0 +1,31 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=frozen-driver-seam-and-glue
+#
+# THE FROZEN SEAM AND THE EXACT C GLUE ROSTER.
+#
+# Every C-side duty that survives the migration is listed here
+# with its role. A C duty that is NOT in this table is forbidden.
+#
+side	item	role	class	forbidden_behaviour
+POLYC	WpDriverClassifyOption	the option-name match decision	DRIVER_SEMANTIC	a C-side option table
+POLYC	WpDriverValueArgIndex	the option value index, domain-checked	DRIVER_SEMANTIC	a C-side arity check
+POLYC	WpDriverSelectAction	the compile-versus-other action choice	DRIVER_SEMANTIC	a C switch over the action codes
+POLYC	WpDriverMapStatus	the failure/exit-status mapping	DRIVER_SEMANTIC	a C-side status table
+POLYC	WpDriverOptionTable	the option names, arities and kinds	DRIVER_SEMANTIC	a duplicated option list in C
+C	WpDriverHostArgc	the argument count	PLATFORM_MECHANICAL	argument interpretation
+C	WpDriverHostArgLen	the byte length of one argument	PLATFORM_MECHANICAL	argument interpretation
+C	WpDriverHostArgByte	the first byte of one argument	PLATFORM_MECHANICAL	argument interpretation
+C	main()	the process entry trampoline	PLATFORM_MECHANICAL	the CLI decision table or the compiler-mode choice
+C	compileToAsm / compileToAst / emitFile	the retained compilation engine	C_SEMANTIC_ENGINE_RETAINED	renaming or re-homing the engine
+C	loggerPanic / cliPanic	the existing diagnostic and termination path	C_SEMANTIC_ENGINE_RETAINED	new C-side error classification
+## THE BRIDGE C SOURCE LOC IS BOUNDED. The bridge consists of the
+# three byte accessors plus the entry trampoline. Each accessor is
+# a two-line function with no branch and no allocation. The total is
+# measured at C2 and recorded in c2/subject-build-and-link-provenance.tsv.
+# The bridge may NOT contain: a flag test, a string compare against
+# an option name, an option enum switch, or a fallback to the C driver.
+#
+# THE FORBIDDEN LIST IS CHECKED MECHANICALLY IN C3.
+# The C3 legacy-dormancy experiment mutates each retired C
+# decision and proves the ON route is unaffected.

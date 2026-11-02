@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=driver-source-derived-cases
+#
+# EACH FROZEN CASE, DERIVED FROM THE LIVE SOURCE, NAMED BY THE
+# DECISION IT EXERCISES.
+#
+# The `decision_id` column names the SEMANTIC DECISION the case
+# exercises. The names are INDEPENDENTLY NAMED here: they are derived
+# from the pinned src/cli.c source structure, not from the file size
+# and not from a target count.
+#
+# `live_source_site` is the pinned source location that owns the
+# decision today. `migrated_site` is the PolyC function that will own
+# it after C2. A case whose `migrated_site` is the same as another
+# case's is grouped by the `decision_group` column, so the three
+# REQUIRED DISTINCT decision groups (flag/arity classification,
+# compile-action dispatch, status/error propagation) are visible.
+#
+# ---------------------------------------------------------------------------
+# THE THREE REQUIRED DISTINCT DECISION GROUPS
+#
+#   DG_FLAG_ARITY      site (a) -- flag and arity classification
+#   DG_ACTION_DISPATCH site (b) -- compile-action dispatch
+#   DG_STATUS_MAPPING  site (c) -- status/error propagation
+#
+# The three are INSEPARABLE IN THE LIVE SOURCE for some rows (the live
+# cli.c computes the action and the status in ONE switch), and that
+# inseparability is RECORDED per row rather than papered over. The
+# `decision_group` column states which group a row's OBSERVABLE
+# effect belongs to, and `live_source_inseparability` states the
+# source fact.
+# ---------------------------------------------------------------------------
+case_id	decision_id	decision_group	live_source_site	live_source_inseparability	migrated_site	source_derivation
+C01_help	D_HELP_ACTION	DG_ACTION_DISPATCH	pinned src/cli.c parsers[] {str_lit("--help"), 0, CLI_HELP, ...}	The live option table maps --help to CLI_HELP and the dispatch switch calls cliPrintUsage() inside the SAME loop iteration that classifies the option; the ACTION and the SIDE EFFECT are one decision in the live source	WpDriverSelectAction + the C bridge's WP_DRIVER_FIELD_HELP mechanical copy	--help is a zero-arity option; the live switch case CLI_HELP calls cliPrintUsage() and sets no CliArgs field
+C02_version	D_VERSION_ACTION	DG_ACTION_DISPATCH	pinned src/cli.c parsers[] {str_lit("--version"), 0, CLI_VERSION, ...}	Same as C01: CLI_VERSION calls cliVersionPrint(args) inside the classification loop	WpDriverSelectAction + the C bridge's WP_DRIVER_FIELD_VERSION mechanical copy	--version is a zero-arity option; the live switch case CLI_VERSION calls cliVersionPrint(args)
+C03_no_args	D_NO_INPUT_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the post-loop `args->infile == NULL && !args->repl && !args->lsp && !args->print_cap_table` check	SEPARATE from the option loop in the live source: the check runs AFTER the loop, so it is its own decision	WpDriverMapStatus returning WP_STATUS_NO_INPUT, with the C bridge performing cliNoInputFiles()	With no argv at all, no option sets an input file and no no-input mode is requested, so the live post-loop check fires
+C04_unknown_option	D_UNKNOWN_ARGUMENT_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the post-loop `args->argc > 0 && !args->jit && !args->run` check	SEPARATE from the option loop in the live source; but the COLLECTION of the unknown argument happens INSIDE the loop, so the live source splits this decision across two sites	WpDriverHasUnknownArgument deciding presence, WpDriverUnknownArgCount counting, and the C bridge formatting the collected list	--bogus matches no option and has no valid file extension, so the live loop collects it into args->argv and the post-loop check reports it
+C05_missing_o_value	D_ARITY_VIOLATION_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the `!next_arg && parser->arg_count > 0` check inside the option loop	INSIDE the option loop in the live source: the arity failure PANICS at the moment the option is classified, before the loop ends	WpDriverArityViolationCount + WpDriverMapStatus returning WP_STATUS_ARITY, with the C bridge reporting the option name	-o has arg_count 1 and is the LAST argument, so next_arg is NULL and the live check panics with "Unexpected end of input - expected `-o <option?>`"
+C06_nonexistent_src	D_COMPILE_ENGINE_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the CLI_OUTPUT_FILENAME case, and the engine in src/main.c	SEPARATE: the CLI accepts the request and the ENGINE reports the failure; the failure is NOT a CLI decision	WpDriverSelectAction returning WP_ACTION_COMPILE_OBJECT, with the engine's own failure retained as C_SEMANTIC_ENGINE_RETAINED	-c nonexistent.HC -o out.o is a well-formed request; the file is missing, so the failure comes from the engine and not from the driver
+C07_compile_object	D_COMPILE_OBJECT_ACTION	DG_ACTION_DISPATCH	pinned src/cli.c parsers[] {str_lit("-c"), 0, CLI_EMIT_OBJECT, ...}	SEPARATE from the status mapping: the live switch sets args->emit_object and the post-loop checks are independent of it	WpDriverSelectAction returning WP_ACTION_COMPILE_OBJECT, with the C bridge setting args->emit_object and copying the -o value	-c is a zero-arity flag that sets CLI_EMIT_OBJECT; with input.HC present and -o out.o carrying the output name, the live route compiles an object
+C08_install_dir_eq	D_EQ_SUFFIX_VALUE_SOURCE	DG_FLAG_ARITY	pinned src/cli.c cliParserFind(), the `arg[parser->optlen] == '='` branch	INSIDE the classification: the "=" form is detected while matching the option, so the value source and the classification are one decision	WpDriverValueSource returning WP_VALUE_SAME, with the C bridge copying the suffix bytes	--install-dir=/tmp/x uses the "=" form, so the value is the SUFFIX of this very argument, not the next one
+C09_o_dashdash	D_UNKNOWN_ARGUMENT_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the same post-loop unknown-argument check as C04	SEPARATE from the option loop, exactly as C04	WpDriverHasUnknownArgument + WpDriverUnknownArgCount	-- matches no option (no option is named "--") and has no valid file extension, so it is collected and reported
+C10_permuted	D_VALUE_SOURCE_NEXT	DG_FLAG_ARITY	pinned src/cli.c, the `parser->arg_count > 0` branch that takes next_arg	INSIDE the option loop: the arity rule decides whether the NEXT argument is the value	WpDriverValueSource returning WP_VALUE_NEXT	-o comes FIRST and takes the NEXT argument (out4.o); the ORDER of the options does not change the value source
+C11_dup_c	D_REPEATED_FLAG_ACTION	DG_ACTION_DISPATCH	pinned src/cli.c, the CLI_EMIT_OBJECT switch case	The live switch sets args->emit_object = 1 for EACH occurrence, so the decision is idempotent	WpDriverSelectAction returning WP_ACTION_COMPILE_OBJECT	-c appears twice; both set the same field, so the observable result is the same as C07
+C12_source_only	D_NO_OUTPUT_ACTION	DG_ACTION_DISPATCH	pinned src/cli.c, the absence of any action-selecting option	SEPARATE: the live source has no action for "a source file and nothing else", so the route falls through to the link stage	WpDriverSelectAction returning WP_ACTION_NONE and the engine's own default route	With only input.HC and no -c/-S/-ast/... option, no action option is present; the live CLI reaches the link stage and fails on the missing runtime library
+C13_define_flag	D_DEFINE_SUFFIX_VALUE	DG_FLAG_ARITY	pinned src/cli.c, the -D entry {str_lit("-D"), 0, CLI_DEFINES_LIST, ...} plus cliParseDefine	INSIDE the classification: cliParserFind matches ANY argument starting with "-D" and cliParseDefine strips exactly two characters	WpDriverValueSource returning WP_VALUE_SAME for the -D option and WpDriverValueOffset returning 2	-D is a zero-arity option whose value is the SUFFIX after exactly two characters; the live -D case matches the "-D" prefix rule
+C14_unknown_short	D_UNKNOWN_ARGUMENT_STATUS	DG_STATUS_MAPPING	pinned src/cli.c, the same post-loop unknown-argument check as C04 and C09	SEPARATE from the option loop, exactly as C04	WpDriverHasUnknownArgument + WpDriverUnknownArgCount	-z matches no option and is not a file, so it is collected and reported; input.HC is ALSO present, which proves the check does not depend on the absence of an input file

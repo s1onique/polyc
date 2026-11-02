@@ -1,0 +1,120 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=generation-producer-dag
+#
+# THE FOUR-GENERATION PRODUCER DAG.
+#
+# G0 is the pure C-driver oracle. G1, G2 and G3 are the SAME PolyC
+# driver source compiled by THREE DISTINCT PRODUCER EXECUTABLES. The
+# producer executables are distinct by content SHA-256, which is the
+# ACT's stated criterion ("Producers must be distinct executables by
+# content SHA").
+#
+# THE OBJECT-IDENTITY FINDING IS REPORTED, NOT ASSUMED:
+#
+#   G1 and G2 produce BYTE-IDENTICAL driver objects. They are the
+#   SAME COMPILER GENERATION reached through two different producer
+#   executables. Their object identity is therefore EXPECTED and
+#   MEASURED, and their behavioural equivalence is trivially implied
+#   by the identical bytes.
+#
+#   G3 produces a DIFFERENT driver object. It is a genuinely
+#   different compiler generation (bootstrap04), and the difference is
+#   OBSERVABLE in the exported symbol roster: G3 exports 22 global
+#   symbols (its `static` functions are emitted as globals) while G1
+#   and G2 export 13.
+#
+# The DAG below is measured, not narrated. Every SHA is a content
+# digest of the artifact named in the row.
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCER EXECUTABLES
+# ---------------------------------------------------------------------------
+producer_id	role	executable_path	producer_sha256	provenance
+G0_PRODUCER	the pure C-driver oracle	/tmp/wp001-g0-hermetic-bin/hcc	84e9d504555e85a6699a8be73c148907668bf8bcda47eb26310a51f54ebb8819	built from the PINNED ENTRY commit 2288a80330b9907341cd8a7d62d33cbfe9da5452 in a disposable detached worktree, with the driver selector OFF and the UNMODIFIED pinned src/cli.c
+G1_PRODUCER	the existing C-rooted stage0	build/host-stage0/hcc	4a8a7c887cdba7899b097a1225492043e2360ca805a099ac7949c724b202babc	the C-rooted stage0 compiler of this tree
+G2_PRODUCER	the current production compiler	./hcc	3de597ede26edd09e5437348288ad16bc34fd6320ad9fb3be6bba5fffa345530	the current production ./hcc of this tree
+G3_PRODUCER	an independently built qualified bootstrap generation	build/runtime-producer/hcc-bootstrap04	3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6	the qualified bootstrap04 generation, built by the runtime-producer chain
+#
+# ---------------------------------------------------------------------------
+# THE COMPILED DRIVER SUBJECT, ONE PER POLYC GENERATION
+# ---------------------------------------------------------------------------
+generation	producer_id	polyc_source	polyc_source_sha256	subject_object	subject_object_sha256	exported_symbol_count	undefined_symbol_count	object_identity_vs_g1
+G1	G1_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	a3349a2e551db6ee8c90da7c1a0face36870d3294658a90e3e5ec4e75899052f	/tmp/wp001-gens/G1-driver.o	3d29e2eb296c5e09cde22aea5ec0168aaa6616c78956a0c9025e47eed8ec9676	13	3	IDENTICAL
+G2	G2_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	a3349a2e551db6ee8c90da7c1a0face36870d3294658a90e3e5ec4e75899052f	/tmp/wp001-gens/G2-driver.o	3d29e2eb296c5e09cde22aea5ec0168aaa6616c78956a0c9025e47eed8ec9676	13	3	IDENTICAL
+G3	G3_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	a3349a2e551db6ee8c90da7c1a0face36870d3294658a90e3e5ec4e75899052f	/tmp/wp001-gens/G3-driver.o	025f27a3430d3ad2f9961112a4381d1a63d7d5b82f2be2fd6b2271436c3644b4	22	3	DIFFERENT
+#
+# ---------------------------------------------------------------------------
+# THE C-ONLY ORACLE (G0) HAS NO DRIVER SUBJECT AT ALL
+# ---------------------------------------------------------------------------
+check	command	result
+G0_DRIVER_SYMBOL_COUNT	nm -g /tmp/wp001-g0-hermetic-bin/hcc | grep -c '_WpDriver'	0
+G0_DRIVER_SUBJECT_IN_LINK	nm -g /tmp/wp001-g0-hermetic-bin/hcc | grep '_WpDriver'	NO_MATCH
+G0_SOURCE_CLI_SHA256	shasum -a 256 /tmp/wp001-g0-wt/src/cli.c	3ee3375ad0d48ec06706162dad5c5e566c0e2e90deb3b9a1a5849d48b7cd0ea0
+G0_SOURCE_CLI_IS_PINNED_UNMODIFIED	cmp the worktree src/cli.c against the pinned commit's blob	IDENTICAL
+#
+# ---------------------------------------------------------------------------
+# THE MEASURED GENERATION DIFFERENCE (G3 vs G1/G2)
+#
+# The exported symbol roster differs because the bootstrap04 generation
+# emits `static` functions as globals. The set of BEHAVIOURALLY
+# REACHABLE exported entry points is the same 13 in G1/G2 and a
+# SUPERSET of 22 in G3; the C bridge only ever calls the 13 that G1/G2
+# provide, so the extra G3 exports are UNREFERENCED by the bridge.
+# ---------------------------------------------------------------------------
+symbol_roster	G1	G2	G3
+WpDriverClassifyOption	yes	yes	yes
+WpDriverClassifyArgument	yes	yes	yes
+WpDriverUnknownArgCount	yes	yes	yes
+WpDriverArityViolationCount	yes	yes	yes
+WpDriverValueArgIndex	yes	yes	yes
+WpDriverValueOffset	yes	yes	yes
+WpDriverOptionField	yes	yes	yes
+WpDriverOptionAction	yes	yes	yes
+WpDriverSelectAction	yes	yes	yes
+WpDriverMapStatus	yes	yes	yes
+WpDriverDecide	yes	yes	yes
+WpDriverSelectedAction	yes	yes	yes
+WpDriverHasUnknownArgument	yes	yes	yes
+WpDriverOptName	no	no	yes
+WpDriverOptArity	no	no	yes
+WpDriverOptKind	no	no	yes
+WpDriverArgByteAt	no	no	yes
+WpDriverArgByteLower	no	no	yes
+WpDriverClassifyFile	no	no	yes
+WpDriverOptMatches	no	no	yes
+WpDriverValueSource	no	no	yes
+WpDriverArityOk	no	no	yes
+EXPORTED_SYMBOL_COUNT	13	13	22
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+PRODUCER_COUNT	4
+PRODUCERS_DISTINCT_BY_EXECUTABLE_SHA	YES
+PRODUCER_ALIAS_PRESENT	NO
+G1_G2_SAME_COMPILER_GENERATION	YES
+G1_G2_OBJECT_IDENTITY	BYTE_IDENTICAL
+G1_G2_OBJECT_SHA256	3d29e2eb296c5e09cde22aea5ec0168aaa6616c78956a0c9025e47eed8ec9676
+G3_DISTINCT_COMPILER_GENERATION	YES
+G3_OBJECT_SHA256	025f27a3430d3ad2f9961112a4381d1a63d7d5b82f2be2fd6b2271436c3644b4
+G0_DRIVER_SYMBOL_COUNT	0
+POLYC_SUBJECT_SOURCE_SHA256	a3349a2e551db6ee8c90da7c1a0face36870d3294658a90e3e5ec4e75899052f
+GENERATION_DAG_STATUS	FROZEN
+#
+# THE COMMANDS THAT PRODUCED THE VALUES ABOVE
+#   shasum -a 256 <producer executable>
+#   shasum -a 256 <subject object>
+#   nm -g <subject object> | grep ' T ' | wc -l
+#   nm -u <subject object> | wc -l
+#   cmp G1-driver.o G2-driver.o ; cmp G2-driver.o G3-driver.o
+#   nm -g <G0 executable> | grep -c '_WpDriver'
+#
+# THE COMMANDS THAT BUILT THE THREE POLYC SUBJECTS
+#   cd /tmp/wp001-gens
+#   <producer> --install-dir=<abs>/build/test-prefix \
+#       -c <abs>/tools/bootstrap/selfhost-driver-wp001.HC -o <gen>-driver.o
+# (the OUTPUT PATH IS RELATIVE on purpose: the compiler prefixes a
+#  "./" to an ABSOLUTE -o path, which is a known compiler behaviour and
+#  is recorded here so the command is reproducible verbatim)

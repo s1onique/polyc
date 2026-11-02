@@ -1,0 +1,128 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c1-conservation-remeasurement
+#
+# THE CONSERVATION BASELINE, RE-MEASURED FRESHLY AT C1.
+#
+# ---------------------------------------------------------------------------
+# AN ENVIRONMENT PRECONDITION WAS DISCOVERED AND IS RECORDED HERE
+#
+# The historical parser command is:
+#
+#   cd src/tests && ../../hcc --install-dir=<abs>/build/test-prefix \
+#       ./run.HC -o <runner> && <runner>
+#
+# The runner compiles each test file with a BARE `../../hcc`, i.e.
+# WITHOUT --install-dir. The compiler's default install prefix is the
+# COMPILE-TIME constant INSTALL_PREFIX, which is "/usr/local" for the
+# production build, so the bare invocation resolves the builtin
+# header at /usr/local/include/tos.HH.
+#
+# ON THIS MACHINE /usr/local/include DOES NOT EXIST and cannot be
+# created (no sudo, /usr/local/include is not writable). The
+# historical command therefore fails with
+#
+#   ERROR: Failed to open file: /usr/local/include/tos.HH
+#
+# THIS IS AN ENVIRONMENT PRECONDITION, NOT A REGRESSION. It was
+# PROVEN by running the SAME command against the UNMODIFIED G0
+# ORACLE, which produces the SAME failure. See the G0 rows below.
+#
+# The baseline was therefore re-measured under a HERMETIC EQUIVALENT:
+# the compiler under test was built with
+# -DCMAKE_INSTALL_PREFIX=<abs>/build/test-prefix, so the bare
+# `../../hcc` of the runner resolves the SAME tos.HH FILE (the same
+# 56333-byte file, at the same content) through the hermetic prefix
+# instead of through /usr/local. The test corpus, the compiler, the
+# header content and the runner are otherwise UNCHANGED.
+#
+# BOTH the G0 oracle and the migrated compiler were measured under
+# the SAME hermetic conditions, so the comparison between them is
+# unaffected by the substitution.
+# ---------------------------------------------------------------------------
+#
+# ---------------------------------------------------------------------------
+# THE PARSER BASELINE
+# ---------------------------------------------------------------------------
+key	value	measured_at
+TEST_PREFIX_TOS_HH_EXISTS	YES	both
+TEST_PREFIX_TOS_HH_BYTES	56333	both
+TEST_PREFIX_LIBTOS_A_EXISTS	YES	both
+TEST_PREFIX_LIBTOS_A_BYTES	157760	both
+PARSER_ASSERTIONS_PASSED	376	G0
+PARSER_ASSERTIONS_PASSED	376	MIGRATED
+PARSER_ASSERTIONS_TOTAL	376	both
+PARSER_TEST_BLOCKS	90	both
+PARSER_FAILED_LINES	0	both
+PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741	G0
+PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741	MIGRATED
+PARSER_ASSERTION_SEQUENCE_MD5_MATCHES_HISTORICAL	YES	both
+PARSER_G0_VS_MIGRATED	BYTE_IDENTICAL_SEQUENCE	both
+PARSER_CONSERVATION_STATUS	PASS	both
+#
+# ---------------------------------------------------------------------------
+# THE THREE DIRECT LEXER DIFFERENTIALS (the production tree)
+# ---------------------------------------------------------------------------
+key	value
+LEXER07_DIRECT_DIFFERENTIAL	PASS
+LEXER07_DIRECT_DIFF_PASS	89
+LEXER07_DIRECT_DIFF_FAIL	0
+LEXER08_DIRECT_DIFFERENTIAL	PASS
+LEXER08_DIRECT_DIFF_PASS	45
+LEXER08_DIRECT_DIFF_FAIL	0
+LEXER09_DIRECT_DIFFERENTIAL	PASS
+LEXER09_DIRECT_DIFF_PASS	23
+LEXER09_DIRECT_DIFF_FAIL	0
+LEXER_DIRECT_STATUS	PASS
+#
+# ---------------------------------------------------------------------------
+# THE OTHER BASELINES
+# ---------------------------------------------------------------------------
+key	value
+F_NO_PYTHON_STATUS	FAIL_KNOWN_BASELINE
+F_NO_PYTHON_TOTAL_PATHS	12
+F_NO_PYTHON_NEW_PATHS	0
+F_POLYC_TOOLS_STATUS	UNAVAILABLE
+F_POLYC_TOOLS_REASON	the canonical checker tools/factory/factory-polyc-tools-check.HC does not exist
+GATE_FAST_STATUS	PASS
+GATE_FAST_CHECKS	diff-check,shell-syntax,doc-invariants,large-file-guard,factory-closure-status
+CROSS_TARGET_PREFIX_STATUS	NOT_REMEASURED
+CROSS_TARGET_PREFIX_HISTORICAL_IDENTITY	67
+C1_CONSERVATION_STATUS	PASS
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS THAT PRODUCED THE VALUES ABOVE
+#
+#   # the hermetic builds (G0 and MIGRATED)
+#   cmake -S ./src -B <build> -G 'Unix Makefiles' \
+#       -DCMAKE_C_COMPILER=$(which cc) -DCMAKE_BUILD_TYPE=Release \
+#       -DCMAKE_INSTALL_PREFIX=<abs>/build/test-prefix \
+#       -DHCC_RUNTIME_OUTPUT_DIRECTORY=<bin> \
+#       -DHCC_ENABLE_JIT=on [-DHCC_USE_SELFHOST_DRIVER_WP001=ON]
+#   cmake --build <build> --target hcc -j 8
+#
+#   # the parser baseline (run from a disposable corpus copy whose
+#   # ../../hcc IS the hermetic binary under test)
+#   cd <corpus>/src/tests
+#   ../../hcc --install-dir=<abs>/build/test-prefix ./run.HC -o <runner>
+#   <runner> > <out> 2>&1
+#   grep -c PASSED <out>            -> 90
+#   grep -c FAILED <out>            -> 0
+#   grep -o 'PASSED: [0-9]*/[0-9]*' <out> | md5
+#                                    -> b6f117eb1386ca80f81bc06226e2a741
+#
+#   make lexer07-direct-differential   -> 89 / 0 / PASS
+#   make lexer08-direct-differential   -> 45 / 0 / PASS
+#   make lexer09-direct-differential   -> 23 / 0 / PASS
+#   ./scripts/quality/factory-no-python-check.sh -> 12 paths
+#   ./scripts/quality/gate-fast.sh -> PASS
+#
+# ---------------------------------------------------------------------------
+# THE ENVIRONMENT-PRECONDITION PROOF (G0 FAILS THE SAME WAY)
+# ---------------------------------------------------------------------------
+key	value
+HISTORICAL_COMMAND_ON_G0	FAILS_WITH_THE_SAME_ERROR
+HISTORICAL_COMMAND_ERROR	Failed to open file: /usr/local/include/tos.HH
+HERMETIC_COMMAND_ON_G0	PASSES_376_OF_376
+HERMETIC_COMMAND_ON_MIGRATED	PASSES_376_OF_376
+PRECONDITION_IS_A_REGRESSION	NO

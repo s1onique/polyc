@@ -1,0 +1,80 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c1-cli-differential-g0-vs-migrated
+#
+# THE G0-vs-MIGRATED CLI DIFFERENTIAL, MEASURED BY REAL PROCESS RUNS.
+#
+# LEFT  = the G0 pure C-driver oracle
+#         /tmp/wp001-g0-hermetic-bin/hcc
+#         SHA-256 84e9d504555e85a6699a8be73c148907668bf8bcda47eb26310a51f54ebb8819
+# RIGHT = the migrated production compiler (selector ON)
+#         ./hcc of this tree
+#
+# The comparator is the four-field comparator frozen in
+# c1/comparator-and-12-pair-contract.md section 1:
+#   exit_status, stdout_sha256, stderr_sha256, stdout_bytes, stderr_bytes
+#
+# The ONE predeclared ENVIRONMENT_EXPLAINED normalization applies to
+# the `commit-hash:` line of C02_version ONLY.
+#
+case_id	g0_exit	on_exit	g0_stdout	on_stdout	g0_stderr	on_stderr	verdict
+C01_help	0	0	cd97f15624	cd97f15624	e3b0c44298	e3b0c44298	MATCH
+C02_version	0	0	72931b9512	36d0f9af3a	e3b0c44298	e3b0c44298	DIFF_ENVIRONMENT_EXPLAINED
+C03_no_args	1	1	e3b0c44298	e3b0c44298	285a288690	285a288690	MATCH
+C04_unknown_option	1	1	e3b0c44298	e3b0c44298	f5a03e1073	f5a03e1073	MATCH
+C05_missing_o_value	1	1	e3b0c44298	e3b0c44298	8214238558	8214238558	MATCH
+C06_nonexistent_src	1	1	e3b0c44298	e3b0c44298	0f6695afc1	0f6695afc1	MATCH
+C07_compile_object	0	0	e3b0c44298	e3b0c44298	3ea3e779c9	3ea3e779c9	MATCH
+C08_install_dir_eq	1	1	e3b0c44298	e3b0c44298	8187b43cdf	8187b43cdf	MATCH
+C09_o_dashdash	1	1	e3b0c44298	e3b0c44298	1f4bef5e2c	1f4bef5e2c	MATCH
+C10_permuted	0	0	e3b0c44298	e3b0c44298	3ea3e779c9	3ea3e779c9	MATCH
+C11_dup_c	0	0	e3b0c44298	e3b0c44298	3ea3e779c9	3ea3e779c9	MATCH
+C12_source_only	1	1	e3b0c44298	e3b0c44298	47b2905bc0	47b2905bc0	MATCH
+C13_define_flag	0	0	e3b0c44298	e3b0c44298	3ea3e779c9	3ea3e779c9	MATCH
+C14_unknown_short	1	1	e3b0c44298	e3b0c44298	7e5f54aedc	7e5f54aedc	MATCH
+#
+# ---------------------------------------------------------------------------
+# THE SUMMARY
+# ---------------------------------------------------------------------------
+key	value
+CASE_COUNT	14
+EXACT_MATCH_COUNT	13
+ENVIRONMENT_EXPLAINED_DIFF_COUNT	1
+UNEXPLAINED_DIFF_COUNT	0
+EXIT_STATUS_MISMATCH_COUNT	0
+STDERR_MISMATCH_COUNT	0
+STDOUT_MISMATCH_COUNT	1
+THE_ONE_DIFFERING_CASE	C02_version
+THE_ONE_DIFFERING_FIELD	the `commit-hash:` line of stdout
+G0_COMMIT_HASH	2288a80330b9907341cd8a7d62d33cbfe9da5452
+ON_COMMIT_HASH	0be7c87e38a43e364cfe5e12f1a1db9e4bcb3f07
+DIFFERENTIAL_STATUS	PASS_UNDER_THE_ONE_PREDECLARED_NORMALIZATION
+#
+# ---------------------------------------------------------------------------
+# THE ENVIRONMENT_EXPLAINED JUSTIFICATION, IN FULL
+#
+# `hcc --version` prints:
+#
+#   hcc v0.0.15-beta
+#   binary: <install-dir>/hcc
+#   commit-hash: <the git commit the binary was built from>
+#   arch: aarch64-apple-darwin
+#   build: Release
+#
+# The `commit-hash:` line is read from the Git object database at
+# BUILD TIME by the retained C function gitGetHash. It reports WHERE
+# the source came from, not WHAT the compiler does. The G0 oracle was
+# built from the pinned entry commit; the migrated binary was built
+# from a tree that contains this ACT's own C2 edits, so the two
+# hashes MUST differ. Every other line of the same stdout is
+# byte-identical, and the stderr and the exit status of the case are
+# byte-identical.
+#
+# The normalization was declared at C1, before the C2 production
+# edits, in c1/comparator-and-12-pair-contract.md section 1.1.
+# ---------------------------------------------------------------------------
+#
+# THE COMMANDS THAT PRODUCED THE VALUES ABOVE
+#   sh evidence/.../c0/capture-cli-baseline.sh <g0>   <prefix> <g0.tsv> <g0wd>
+#   sh evidence/.../c0/capture-cli-baseline.sh <on>   <prefix> <on.tsv> <onwd>
+#   <the four-field comparator over the two TSVs>
