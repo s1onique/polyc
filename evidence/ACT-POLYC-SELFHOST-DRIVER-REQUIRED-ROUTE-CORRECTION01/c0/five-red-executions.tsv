@@ -1,0 +1,42 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-executions
+#
+# THE FIVE REDS, EXECUTED AS REAL PRISTINE -> ADVERSE -> RESTORED CYCLES.
+#
+# THE DETECTOR IS A COMPILED POLYC PROGRAM (F-POLYC-TOOLS):
+#   source   tools/quality/driver-required-route-correction01-red.HC
+#   binary   /tmp/polyc-rrc01-wt/build/red
+#   sha256   414d40a2fcd8779ad3af1e98b8c595d0c970fd3de3daa5da13ab86cd2e514172
+#   built by the REAL production compiler against the hermetic test-prefix
+#   selftest /tmp/polyc-rrc01-wt/build/red SELFTEST -> rc=0 (SILENT)
+#
+# Each detector RE-DERIVES its fact from the PRIMARY material it loads
+# itself. It NEVER reads a status field. Each mode owns a DISTINCT
+# reason token, so a failure names itself.
+
+red_id	detector_reason	cycle	subject_material	expected	status	observed_reason
+R01_UNUSED_ACTION	POLYC_ACTION_NOT_CONSUMED	PRISTINE	the LINKED ON production binary disassembly (otool -tvV)	FIRE	FIRED	POLYC_ACTION_NOT_CONSUMED|REASON_DETAIL=the emission function calls the action accessor zero times (0)
+R01_UNUSED_ACTION	POLYC_ACTION_NOT_CONSUMED	ADVERSE	the same disassembly with an injected call to the accessor in the emitter	SILENT	SILENT
+R02_C_EMISSION_POLICY	C_REQUIRED_ROUTE_DECISION_ACTIVE	PRISTINE	the live src/main.c at the entry tree	FIRE	FIRED	C_REQUIRED_ROUTE_DECISION_ACTIVE|REASON_DETAIL=the C emission path still reads the C request field (1)
+R02_C_EMISSION_POLICY	C_REQUIRED_ROUTE_DECISION_ACTIVE	ADVERSE	the same source with the C field read removed	SILENT	SILENT
+R03_FAKE_OBJECT	EMITTED_ARTIFACT_CLASS_MISMATCH	PRISTINE	the artifact produced by the C-mutated ON build on the frozen -c route	FIRE	FIRED	EMITTED_ARTIFACT_CLASS_MISMATCH|REASON_DETAIL=the emitted artifact is not an object
+R03_FAKE_OBJECT	EMITTED_ARTIFACT_CLASS_MISMATCH	ADVERSE	the genuine object artifact from the unmutated ON build	SILENT	SILENT
+R03_FAKE_OBJECT	EMITTED_ARTIFACT_CLASS_MISMATCH	ADVERSE2	the genuine executable artifact from the alternate route	SILENT	SILENT
+R04_ORACLE_LEAK	C_DRIVER_ORACLE_CONTAMINATED	PRISTINE	the selector-OFF G0 oracle symbol table (nm)	SILENT	SILENT
+R04_ORACLE_LEAK	C_DRIVER_ORACLE_CONTAMINATED	ADVERSE	the selector-ON symbol table, presented as if it were G0	FIRE	FIRED	C_DRIVER_ORACLE_CONTAMINATED|REASON_DETAIL=the selector-OFF oracle carries driver symbols (28)
+R05_BACKDATED_RECEIPT	TERMINALITY_CHRONOLOGY_UNPROVEN	PRISTINE	the tracked CLOSE-tree listing	SILENT	SILENT
+R05_BACKDATED_RECEIPT	TERMINALITY_CHRONOLOGY_UNPROVEN	ADVERSE	the same listing plus this ACT's terminality receipt path	FIRE	FIRED	TERMINALITY_CHRONOLOGY_UNPROVEN|REASON_DETAIL=the CLOSE tree contains this ACT's terminality receipt (1)
+
+# THE RESTORATION STATE
+subject	restored_state	sha256	evidence
+src/main.c	RESTORED byte-for-byte	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	git status --porcelain=v1 in the mutation worktree is EMPTY
+the mutation worktree	RESTORED (no tracked change)	-	git diff is empty against the entry blob b142224d818b1dfd5d4e8431304cdd2d7aaceffc
+
+# NOTE ON R05: the detector was REFINED after the first run.
+# The first run passed the broad substring 'TERMINALITY-RECEIPT', which
+# matched the PREDECESSOR's legitimate receipt file and made the PRISTINE
+# run fire. The detector now requires THIS ACT's exact receipt path AND
+# asserts that the tolerated predecessor path is distinguishable. The
+# refinement is a DETECTOR CORRECTION, not a weakened test: the pristine
+# run is now SILENT and the adverse run still FIRES with its own token.

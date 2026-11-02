@@ -1,0 +1,58 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-16-authorities
+#
+# THE 16 PRODUCTION POLYC AUTHORITIES, RE-CENSUSED FRESH AT C0 over the
+# REAL production link line and the REAL production C objects.
+#
+#   linkin  = the subject object is named by the production link line
+#   defn    = the subject object defines the symbol as a global text symbol
+#   linked  = the symbol is a global text symbol in the linked ./hcc
+#   importingCobjs = the number of production C objects that IMPORT it
+#
+# A DISTINCT AUTHORITY is an independently attributable DECISION, not an
+# object. The 13 PolyC subject OBJECTS on the link line carry 16
+# decisions: 9 parser-slice decisions + 1 ABI + 3 Core + 2 A64 + 1 driver.
+
+authority_id	symbol	production_subject_object	classification	linkin	defn	linked	importingCobjs	verdict
+AUTH-01	_BootstrapCalcPadding	build/parser-padding-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-02	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-03	_BootstrapOperatorPrecedence	build/parser-operator-precedence-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-04	_BootstrapAstBinOpFromToken	build/parser-ast-binop-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-05	_BootstrapAstUnaryOpFromToken	build/parser-ast-unary-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-06	_BootstrapSwitchArmTerminates	build/parser-switch-arm-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	build/parser-compound-block-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-08	_BootstrapDefaultArmTerminates	build/parser-default-arm-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-09	_BootstrapStatementDispatch	build/parser-statement-dispatch-subject.o	PARSER_DECISION	1	1	1	1	VERIFIED
+AUTH-10	_AbiCpaShouldPrintAst	build/selfhost-abi-cpa-subject.o	ABI_DECISION	1	1	1	1	VERIFIED
+AUTH-11	_AbiCoreClassifyCompoundAssign	build/core-operator-subject.o	CORE_DECISION	1	1	1	1	VERIFIED
+AUTH-12	_AbiCoreIsRangeOperator	build/core-operator-subject.o	CORE_DECISION	1	1	1	1	VERIFIED
+AUTH-13	_AbiCoreIsValidPointerOperator	build/core-operator-subject.o	CORE_DECISION	1	1	1	1	VERIFIED
+AUTH-14	_AbiA64CcForV2	build/a64-cmp-cc-subject.o	A64_DECISION	1	1	1	1	VERIFIED
+AUTH-15	_AbiA64CcInvForV2	build/a64-cmp-cc-subject.o	A64_DECISION	1	1	1	1	VERIFIED
+AUTH-16	_WpDriverDecide	build/wp001-driver-subject.o	DRIVER_DECISION	1	1	1	1	VERIFIED
+
+# THE 16-AUTHORITY BASELINE: 15 PREDECESSORS + 1 DRIVER AUTHORITY.
+# 15 predecessor authorities come from ACTs that closed BEFORE this ACT.
+# The 16th is the WP-001 driver authority, counted ONCE, by its DECIDE
+# entry point. THIS ACT COMPLETES that existing authority; it does not
+# add a second driver authority.
+
+group	authorities	note
+PREDECESSOR_AUTHORITIES	15	AUTH-01..AUTH-15; conserved, not re-decided here
+DRIVER_AUTHORITY	1	AUTH-16; ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 (+CORRECTION01..04)
+AUTHORITY_BASELINE	16	the reported baseline; independently re-censused at C0 over the real link line
+
+# THE DELTA THIS ACT MAY CLAIM
+claim	value	justification
+NEW_AUTHORITY_COUNT_DELTA	0	this ACT TRANSFERS an existing decision (the emission action) to its ALREADY-COUNTED owner; it introduces no new independently attributable decision
+AUTHORITY_BASELINE_AFTER	16	the baseline is conserved, not inflated
+
+# THE DRIVER AUTHORITY IN DETAIL (the one this ACT completes)
+driver_symbol	callsites_in_linked_ON_binary	role
+_WpDriverDecide	2	the STATUS decision; consumed by the C CLI parser
+_WpDriverSelectAction	2	the ACTION decision; consumed INTERNALLY by _WpDriverDecide
+_WpDriverSelectedAction	0	the ACTION accessor for the HOST; EXPORTED BUT NOT CONSUMED -- the defect this ACT corrects
+_WpDriverOptionField	1	the FIELD decision; consumed by the C CLI parser
+_WpDriverOptionAction	3	the per-option ACTION decision
+_WpDriverMapStatus	1	the STATUS mapping

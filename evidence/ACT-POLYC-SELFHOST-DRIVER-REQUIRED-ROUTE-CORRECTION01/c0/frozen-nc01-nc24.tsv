@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-nc01-nc24
+#
+# THE 24 NEGATIVE CONTROLS, FROZEN AT C0.
+# Each must execute a REAL adverse change in a disposable copy or build
+# and trigger ONLY its named detector, with pristine and restored state SILENT.
+# For Git-metadata controls, isolated Git-object/fixture copies are used;
+# authoritative history is NEVER corrupted.
+
+nc_id	adverse_change	required_detector_reason	subject_under_test	restore_requirement	detector_kind
+NC01	Wrong entry HEAD or TREE	ENTRY_IDENTITY_MISMATCH	entry identity capture	Capture the identity from an ISOLATED fixture copy with a wrong HEAD; the authoritative entry stays untouched	FILE_SCAN
+NC02	Tamper with frozen WP-001 source/ABI contract	FROZEN_CONTRACT_CHANGED	frozen contract digests	Restore the frozen contract byte-for-byte in the isolated copy	SHA256_DIGEST
+NC03	Drop or duplicate a historical driver row ID	DRIVER_ROW_ROSTER_MISMATCH	32-row roster	Restore the roster byte-for-byte in the isolated copy	SET_JOIN
+NC04	Claim 17 authorities from unchanged 16-baseline decisions	AUTHORITY_DOUBLE_COUNT	authority census	Restore the census byte-for-byte in the isolated copy	COUNT_RECOMPUTE
+NC05	WpDriverSelectedAction defined but unconsumed in production	POLYC_ACTION_NOT_CONSUMED	linked ON binary	Rebuild the real production compiler from restored sources	LINKED_CALLSITE
+NC06	Restore the emit_object C policy in selector ON	LEGACY_C_REQUIRED_ROUTE_POLICY_ACTIVE	selector-ON production compiler	Restore src/main.c byte-for-byte and rebuild	SOURCE_AND_BINARY
+NC07	Selector OFF imports or calls the new action path	G0_ORACLE_POLYC_CONTAMINATION	G0 C-only driver oracle	Rebuild G0 with the selector OFF and no action subject	LINKED_SYMBOL_SCAN
+NC08	Poison driver subject but allow fallback to C	POLYC_DRIVER_FALLBACK_NOT_CLOSED	driver subject + production link	Restore the real driver subject and rebuild	POISON_SUBJECT
+NC09	Remove generated-object prerequisite from effective Make graph	GENERATED_SUBJECT_PREREQUISITE_MISSING	Make build graph	Restore the Makefile byte-for-byte	MAKE_GRAPH_AUDIT
+NC10	Lose CMake action selector/configuration flag	CONFIGURATION_SELECTOR_NOT_APPLIED	CMake cache	Reconfigure from the canonical flags	CONFIG_INSPECTION
+NC11	Alias G1/G2/G3 executables but claim distinct producers	PRODUCER_ALIAS_FALSE_INDEPENDENCE	producer binaries	Restore the distinct producers	BINARY_SHA_COMPARISON
+NC12	Change emitted object to executable while retaining .o suffix	ARTIFACT_KIND_MISMATCH	emitted artifact	Restore the emission path and rebuild	FILE_TYPE_INSPECTION
+NC13	Treat invalid action token as valid zero-valued action	ACTION_STATUS_DOMAIN_COLLISION	action domain	Restore the action domain definition	DOMAIN_PROBE
+NC14	Accept stale/wrong-domain argv/action lifetime	DRIVER_ABI_LIFETIME_BREACH	action transport	Restore the transport	ABI_LIFETIME_PROBE
+NC15	Cross a PolyC stack frame with C longjmp	RECOVERY_BOUNDARY_BREACH	recovery path	Restore the recovery path	STATIC_SOURCE_SCAN
+NC16	Delete the non--c discriminator	ALTERNATE_ACTION_CASE_MISSING	fixture roster	Restore the fixture	ROSTER_CHECK
+NC17	PolyC mutation produces no live artifact/status effect	POLYC_ACTION_CAUSAL_DORMANT	mutant production compiler	Restore the PolyC source and rebuild	CAUSAL_COUNTERFACTUAL
+NC18	Legacy C mutation still changes ON output	LEGACY_C_POLICY_NOT_DORMANT	mutant production compiler	Restore src/main.c and rebuild	CAUSAL_COUNTERFACTUAL
+NC19	Comparator ignores changed artifact class	COMPARATOR_ARTIFACT_INSENSITIVE	semantic comparator	Restore the comparator	COMPARATOR_SELFTEST
+NC20	Comparator ignores changed stderr/exit status	COMPARATOR_DIAGNOSTIC_INSENSITIVE	semantic comparator	Restore the comparator	COMPARATOR_SELFTEST
+NC21	Hidden C policy on required route labelled MECHANICAL	C_POLICY_MISCLASSIFIED_AS_GLUE	branch ownership ledger	Restore the ledger	CLASSIFICATION_RECOMPUTE
+NC22	Whole-CLI -o-/-S guard omitted but claim exhaustive global inventory	WHOLE_CLI_REMAINDER_UNDERCOUNT	global inventory	Restore the inventory	SET_JOIN
+NC23	Trust a precomputed binding_phase_valid despite a later-phase witness	EVIDENCE_PHASE_SELF_ATTESTATION	evidence binding	Restore the evidence	INDEPENDENT_RECOMPUTE
+NC24	Fabricate AC50 PASS in CLOSE before external receipt	TERMINALITY_PREDECLARED_PASS	CLOSE tree	Remove the fabricated AC50 row and restore DEFERRED	LEDGER_RECOMPUTE
+NC_ROWS	24
+NC_UNIQUE_IDS	24
+NC_DUPLICATES	0

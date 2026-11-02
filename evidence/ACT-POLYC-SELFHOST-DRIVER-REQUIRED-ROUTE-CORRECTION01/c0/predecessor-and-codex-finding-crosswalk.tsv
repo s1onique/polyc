@@ -1,0 +1,18 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=predecessor-and-codex-finding-crosswalk
+#
+# THE TWO DECISIVE FINDINGS, CROSSWALKED AGAINST THE INDEPENDENT REVIEW.
+# EACH ROW IS REPRODUCED HERE AGAINST A REAL PRODUCTION BUILD.
+#
+finding_id	independent_review_claim	source_verdict_measured	reproduction	verdict
+BR_EMITFILE_EMIT_OBJECT	C emitFile branches on args->emit_object and that C decision changes the artifact class on the required route	CONFIRMED	src/main.c:250 reads args->emit_object; the linked ON binary loads CliArgs+0x38 at 0x100039294 and branches at 0x100039298 with NO PolyC call on that path	REPRODUCED
+WP_SELECTED_ACTION_NOT_CONSUMED	WpDriverSelectedAction is exported but has no proven production callsite	CONFIRMED	otool -tvV on the linked ON hcc shows _WpDriverSelectedAction ONLY as its own definition label; 0 call sites, while _WpDriverDecide=2 _WpDriverSelectAction=2 _WpDriverOptionField=1	REPRODUCED
+
+# THE FIVE REDS: ADVERSE PREMISE -> EXACT DETECTOR REASON
+red_id	adverse_premise	detector_reason	adverse_experiment	reason_observed
+R01_UNUSED_ACTION	New PolyC action exists but production never consumes it	POLYC_ACTION_NOT_CONSUMED	link the production ON compiler with the driver subject present, then count call sites of the action accessor in the LINKED BINARY	POLYC_ACTION_NOT_CONSUMED
+R02_C_EMISSION_POLICY	C emit_object still decides output class in selector-ON	C_REQUIRED_ROUTE_DECISION_ACTIVE	invert the emit_object predicate in src/main.c:250, rebuild the WHOLE selector-ON production compiler, run the frozen required route	C_REQUIRED_ROUTE_DECISION_ACTIVE
+R03_FAKE_OBJECT	A green compiler invocation writes an executable where an object was required	EMITTED_ARTIFACT_CLASS_MISMATCH	run the frozen -c route and inspect the artifact with file(1) and the target object tools	EMITTED_ARTIFACT_CLASS_MISMATCH
+R04_ORACLE_LEAK	Selector-OFF imports the new action/bridge or delegates to PolyC	C_DRIVER_ORACLE_CONTAMINATED	build the selector-OFF G0 oracle and enumerate every WpDriver symbol in the LINKED BINARY	C_DRIVER_ORACLE_CONTAMINATED
+R05_BACKDATED_RECEIPT	A tracked CLOSE-tree file claims the result of a future probe	TERMINALITY_CHRONOLOGY_UNPROVEN	scan the tracked tree for a committed file asserting a post-CLOSE external probe result	TERMINALITY_CHRONOLOGY_UNPROVEN

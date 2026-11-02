@@ -1,0 +1,66 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=test-prefix-and-conservation-baseline
+#
+# MEASURED FRESH AT C0 AGAINST A REAL PRODUCTION BUILD.
+# The test-prefix was verified POPULATED before the run, so a
+# fail-open exit=0 is not mistaken for success.
+
+key	value
+TEST_PREFIX	/tmp/polyc-rrc01-wt/build/test-prefix
+TEST_PREFIX_TOS_HH_EXISTS	YES
+TEST_PREFIX_LIBTOS_A_EXISTS	YES
+TEST_PREFIX_BIN_HCC	YES (the C0 production compiler)
+PARSER_ASSERTIONS_PASSED	376
+PARSER_ASSERTIONS_TOTAL	376
+PARSER_FAILED_LINES	0
+PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741
+PARSER_ASSERTION_SEQUENCE_MD5_MATCHES_HISTORICAL	YES
+PARSER_CONSERVATION_STATUS	PASS
+LEXER07_DIRECT_DIFF_PASS	89
+LEXER07_DIRECT_DIFF_FAIL	0
+LEXER08_DIRECT_DIFF_PASS	45
+LEXER08_DIRECT_DIFF_FAIL	0
+LEXER09_DIRECT_DIFF_PASS	23
+LEXER09_DIRECT_DIFF_FAIL	0
+LEXER_DIRECT_STATUS	PASS
+LEXER07_BROAD_CORPUS_STATUS	NOT_REMEASURED
+LEXER07_BROAD_CORPUS_HISTORICAL_IDENTITY	7ee761440de83552e751e3c3976c1683
+LEXER07_BROAD_CORPUS_HISTORICAL_FAILS	15
+CROSS_TARGET_PREFIX_STATUS	NOT_REMEASURED
+CROSS_TARGET_PREFIX_HISTORICAL_IDENTITY	67
+F_NO_PYTHON_STATUS	FAIL_KNOWN_BASELINE
+F_NO_PYTHON_TOTAL_PATHS	12
+F_NO_PYTHON_NEW_PATHS	0
+F_POLYC_TOOLS_STATUS	UNAVAILABLE
+F_POLYC_TOOLS_REASON	the canonical checker tools/factory/factory-polyc-tools-check.HC does not exist
+GATE_FAST_STATUS	PASS
+GATE_FAST_CHECKS	diff-check,shell-syntax,doc-invariants,large-file-guard,factory-closure-status
+PRODUCTION_POLYC_AUTHORITIES_AT_ENTRY	16
+PRODUCTION_POLYC_AUTHORITIES_AT_ENTRY_BASELINE_SOURCE	15 predecessors (ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01 VERIFIED_15) + 1 driver authority
+WP001_HISTORICAL_DRIVER_ROWS	32
+
+# THE 12 EXACT F-NO-PYTHON PATH IDS (pre-existing; zero new introduced by this ACT)
+path
+scripts/quality/llvm-byte-memory01-test.sh
+scripts/quality/llvm-cap-table-verifier.py
+scripts/quality/llvm-intops01-test.sh
+scripts/quality/llvm-memory01-red-test.sh
+scripts/quality/llvm-spike-test.sh
+tools/quality/bootstrap02-corpus-runner.py
+tools/quality/bootstrap02-error-corpus.py
+tools/quality/bootstrap03-corpus-runner.py
+tools/quality/bootstrap03-error-corpus.py
+tools/quality/bootstrap04-corpus-runner.py
+tools/quality/bootstrap04-error-corpus.py
+tools/quality/llvm-gep01-test.HC
+
+# THE COMMANDS THAT PRODUCED THE VALUES ABOVE
+  cd src/tests && TMPDIR=<isolated> ../../hcc --install-dir=<abs>/build/test-prefix ./run.HC -o <runner>
+  <runner>  -> rc=0, 376 PASSED assertions, 0 FAILED
+  sed -e 's/\[[0-9;]*m//g' <log> | grep -o 'PASSED: [0-9]*/[0-9]*' | md5 -> b6f117eb1386ca80f81bc06226e2a741
+  make lexer07-direct-differential -> 89 / 0 / PASS
+  make lexer08-direct-differential -> 45 / 0 / PASS
+  make lexer09-direct-differential -> 23 / 0 / PASS
+  ./scripts/quality/factory-no-python-check.sh -> 12 paths
+  ./scripts/quality/gate-fast.sh -> PASS

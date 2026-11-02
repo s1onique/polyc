@@ -1,0 +1,48 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=real-cmake-build-object-link-baseline
+#
+# BOTH EXECUTABLES ARE REAL CMake/Make PRODUCTION BUILDS OF THE ENTRY TREE.
+# They differ ONLY in the driver selector (HCC_USE_SELFHOST_DRIVER_WP001).
+
+program	selector	build_dir	binary_sha256	binary_size	WpDriver_symbols_in_linked_binary
+ON	ON	/tmp/polyc-rrc01-wt/build	900c52326f44fd06a19d695dc66481cf90fe1bdfc40c67017ad6f3234ce2eb21	776272	28
+G0	OFF	/tmp/polyc-rrc01-g0/build/g0	2ca69db1246df949dcfa4cba46261471cdaf0f44cb21454871166e1d06a1f885	748912	0
+
+# G0 ORACLE INDEPENDENCE (NC07 detector precondition)
+check	result
+G0_defines_any_WpDriver	0
+G0_imports_any_WpDriver	0
+G0_relocations_to_WpDriver	0
+G0_other_polyc_authorities_retained	9
+G0_verdict	INDEPENDENT (C-only DRIVER; the other PolyC authorities are retained as the ACT permits)
+
+# THE LINKED-BINARY CALL-SITE COUNTS (the C0 finding WP_SELECTED_ACTION_NOT_CONSUMED)
+symbol	callsites_in_linked_ON_binary
+_WpDriverSelectedAction	0
+_WpDriverDecide	2
+_WpDriverSelectAction	2
+_WpDriverOptionField	1
+_WpDriverOptionAction	3
+_WpDriverMapStatus	1
+
+# THE C BRANCH IN THE LINKED ON BINARY (no PolyC call on the decision path)
+address	instruction	interpretation
+0x100039294	ldr	w8, [x21, #0x38]	load CliArgs+0x38 == args->emit_object
+0x100039298	cbz	w8, 0x10003935c	branch on the C FIELD, not on a PolyC action
+0x10003929c	bl	_writeAsmToTmp	object path entered on the C branch
+
+# THE FROZEN FIXTURE
+fixture_id	path	sha256	content
+FX_ROUTE_REQUIRED	/tmp/polyc-rrc01-ev/fixtures/input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	I64 Main() { return 7; }
+
+# THE REAL ARTIFACT WITNESSES (file(1) on the produced artifact; NOT inferred from the filename)
+witness_id	program	argv	artifact_path	observed
+W_OBJ_G0	G0	--install-dir=PFX -c input.HC -o g0-out.o	/tmp/polyc-rrc01-ev/fixtures/g0-out.o	Mach-O 64-bit object arm64
+W_OBJ_ON	ON	--install-dir=PFX -c input.HC -o on-out.o	/tmp/polyc-rrc01-ev/fixtures/on-out.o	Mach-O 64-bit object arm64
+W_ALT_G0	G0	--install-dir=PFX input.HC -o g0-alt	/tmp/polyc-rrc01-ev/fixtures/g0-alt	Mach-O 64-bit executable arm64
+W_ALT_ON	ON	--install-dir=PFX input.HC -o on-alt	/tmp/polyc-rrc01-ev/fixtures/on-alt	Mach-O 64-bit executable arm64
+W_OBJ_MUT_C_ON	ON+MUTATION	--install-dir=PFX -c input.HC -o mut-out.o	/tmp/polyc-rrc01-ev/fixtures/mut-out.o	Mach-O 64-bit executable arm64
+
+# W_OBJ_MUT_C_ON IS THE PRINCIPAL RED: the C decision ALONE changes the artifact class.
+# The artifact CLASS flipped object -> executable with the PolyC driver UNCHANGED.

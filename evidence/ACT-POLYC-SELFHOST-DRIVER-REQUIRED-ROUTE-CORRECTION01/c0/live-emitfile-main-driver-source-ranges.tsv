@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=live-emitfile-main-driver-source-ranges
+#
+# RECOMPUTED FROM THE REAL ENTRY TREE, NOT FROM THE REVIEW'S LINE NUMBERS.
+# git_blob_oid is the object id of the file content at HEAD 33f93347277c6ce242a93b71ab5f0123ccaea4e5.
+# file_sha256 is over the whole file blob as extracted from that git object.
+
+file	git_blob_oid	file_sha256	lines
+src/main.c	b142224d818b1dfd5d4e8431304cdd2d7aaceffc	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9	683
+src/cli.c	a5c44c0a402e7fe4ceb53bcf8453a7a31052564e	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb	814
+src/cli.h	169428964e6427b6beba7e3ba230c421c3e959f0	d13495487fbd5f64e65a32554d0eafa5a4c9915f6de1c1417ea1bbae4fb2e6d3	146
+src/selfhost-driver-wp001.c	4456062ad29c64bcf05ec58534a2d8444230cd35	fece5640f28a888a924896ee1595b5e233b436669586d922304befb43e8a92a3	77
+src/selfhost-driver-wp001.h	051740093bbf4df8efaf72e1236cbd8da65d09b8	57783cd72d2236ee5b1881e8ec644cffaab7db867ae99eeaf02833c46fa5c6c3	129
+tools/bootstrap/selfhost-driver-wp001.HC	22d977b01d5a93867cd89d67cf8acbcd5f12b843	3c52982e469eda42c512e6de8d28186046d7ab4296709a5fb390a02dbf7d7bcd	883
+src/cmake/VerifyDriverWp001Object.cmake	2fc289be9126a7f3db6474ff1ea633d8af88d26e	d74675b8b0fb2724ab24cc62f778155a229b412696927ec54285c0eccec7805c	175
+src/CMakeLists.txt	ee8c4474688b5ea4e9894a08a2d4729d62d90902	80f019ff49c3f86abc2fb4d6786bbb04624d7fb654536290066365b18764a1ca	2617
+Makefile	ee92e08fe904e98ad0ba21acb3c29892e1650460	33ed6018decb8625ffed94044da466f8c0aca4f3491d6e1af5407dd0d4dfd9f9	8093
+
+# THE FROZEN C BRANCH (the exact bytes that decide object-vs-executable)
+range_id	file	line	bytes	sha256_of_range	source_text
+RANGE_EMITFILE_PREDICATE	src/main.c	250	29	76aa46992c558864d12bb07d913a2c770a67fd74fb24ec50dbb8c0316052d369	    if (args->emit_object) {
+RANGE_EMITFILE_FN	src/main.c	247-262	621	06b34c8bcf56d63c7e21eff6d8031152c1aa80b6530602455b30bc585c66f767	void emitFile(Cctrl *cc, AoStr *asmbuf, CliArgs *args) { ... if (args->emit_object) { ... }
+RANGE_EMITFILE_CALLSITE	src/main.c	671	33	a52f41d8db526fa8f41a3193aef85a5fae00861aca62b257ba74c4183423b81c	    emitFile(cc, asmbuf, &args);
+RANGE_MAIN_EMITFILE_CALL	src/main.c	670	31	b3701e8e933fb815c8a9d036486948098159c3c1aa09773658a6b10056039aa8	    asmbuf = compileToAsm(cc);
+
+# THE POLYC ACTION DECISION (the source that already owns the whole-argv action)
+range_id	file	line	bytes	sha256_of_range	source_text
+RANGE_POLYC_SELECTACTION	tools/bootstrap/selfhost-driver-wp001.HC	600-646	1803	99e07254e84a5c00b5c55cc3a92ad3fa6df26d98ec5fb9aa16f84aac437a9bd3	I64 WpDriverSelectAction() { ... }
+RANGE_POLYC_SELECTEDACTION	tools/bootstrap/selfhost-driver-wp001.HC	734-736	66	55e225299123410f94a8517689bd5d4376a8a06ca6e47268b282f8add8ec1c7b	I64 WpDriverSelectedAction() {   return WpDriverSelectAction(); }
+RANGE_POLYC_FIELD_FOR_ACTION	tools/bootstrap/selfhost-driver-wp001.HC	829-832	138	ed3484b07e41de4b74e21649f89a36380ec9a965c32ad4dc343af13766b238d5	I64 WpDriverFieldForAction(I64 action) { if (action == WP_ACTION_COMPILE_OBJECT) return WP_FIELD_EMIT_OBJECT; return WP_FIELD_NONE; }
+RANGE_POLYC_OPTIONFIELD	tools/bootstrap/selfhost-driver-wp001.HC	835-881	2327	24339bd5e5268184c23d1a82a02e8747caa8443b561bab572f635b59ddd738a0	I64 WpDriverOptionField(I64 optIdx) { ... }
+
+# THE C BRIDGE (mechanical only, per its own header contract)
+range_id	file	line	bytes	sha256_of_range	source_text
+RANGE_CLI_FIELD_SWITCH	src/cli.c	677-732	2942	426a45b5bee63a2734d95d01546635b3fda1c038897fa5dc1b81fa9caa265316	switch (field) { case WP_DRIVER_FIELD_...: args->... = ...; break; }
+RANGE_CLI_EMITOBJECT_SET	src/cli.c	685	79	625808730edc6131fe749ffda1cf1ae2d97b5e5e499d4cedb0dbaa9e72aff0c4	            case WP_DRIVER_FIELD_EMIT_OBJECT:    args->emit_object = 1; break;
+RANGE_CLI_EMITOBJECT_LEGACY	src/cli.c	521	71	be06206f810c0d0511e9b7c8bc195de8ebf85008fac2ad0e3f1ca6bda453820e	            case CLI_EMIT_OBJECT:        args->emit_object = 1; break;
