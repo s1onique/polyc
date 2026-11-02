@@ -1,0 +1,183 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=historical-forecast-reconciliation
+#
+# THE HISTORICAL CENSUS01 M2 FORECAST, REPRODUCED FROM ITS COMMITTED
+# BYTES AND CLASSIFIED AS UNQUALIFIED.
+#
+# Source (committed, historical, immutable under F14):
+#   evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/
+#     c2/forecast.tsv
+#     c2/forecast-assumptions.tsv
+#     c2/migration-scenarios.tsv
+#
+# --------------------------------------------------------------------------
+# 1. THE ARCHIVED FORECAST ROWS, TRANSCRIBED
+# --------------------------------------------------------------------------
+#
+# CMD: cat c2/forecast.tsv
+#
+#   milestone act_low act_base act_high selection_acts implementation_acts
+#             integration_abi_acts bootstrap_acts correction_acts
+#             shared_infrastructure_acts total_effort_sum critical_path_length
+#
+#   M1  154 348 948   3 187 3  3 84 3  348 348
+#   M2  159 355 961   3 187 3 10 84 3  355 355
+#   M3  161 358 967   3 187 3 13 84 3  358 358
+#   M4  201 447 1208  3 187 3 13 84 3  447 447
+#   M2_BELOW_100_ACTS  NOT_SUPPORTED
+#   UNKNOWN_NODES  3
+#
+# --------------------------------------------------------------------------
+# 2. THE ARITHMETIC DEFECT, RECOMPUTED
+# --------------------------------------------------------------------------
+#
+# For the M2 row the DISPLAYED COST COLUMNS are:
+#
+#   selection_acts            =   3
+#   implementation_acts       = 187
+#   integration_abi_acts      =   3
+#   bootstrap_acts            =  10
+#   correction_acts           =  84
+#   shared_infrastructure_acts=   3
+#                                ----
+#   DISPLAYED SUM              = 290
+#
+# CMD: echo $((3+187+3+10+84+3))  ->  290
+#
+# But the row's OWN total_effort_sum column says 355, and its own
+# act_base column says 355.
+#
+#   REPORTED TOTAL            = 355
+#   DISPLAYED SUM             = 290
+#   UNRECONCILED DELTA        =  65
+#   CMD: echo $((355-290))  ->  65
+#
+# The SAME defect is present in EVERY milestone row:
+#   M1: 3+187+3+3+84+3 = 283, reported 348, delta 65
+#   M2: 3+187+3+10+84+3 = 290, reported 355, delta 65
+#   M3: 3+187+3+13+84+3 = 293, reported 358, delta 65
+#   M4: 3+187+3+13+84+3 = 293, reported 447, delta 154
+#
+# So the 65 is a CONSTANT offset for M1/M2/M3 and a different constant
+# for M4. A constant offset that appears identically in three
+# independent milestone rows is the SIGNATURE OF A MODEL DEFECT (a
+# missing term applied uniformly), NOT the signature of real
+# subsystem-specific work.
+#
+# --------------------------------------------------------------------------
+# 3. THE CLASSIFICATION
+# --------------------------------------------------------------------------
+#
+# DELTA_65_CLASSIFICATION = MODEL_DEFECT__A_MISSING_UNNAMED_TERM_IN_THE
+#                           CATEGORY SUM, NOT RESIDUAL FUTURE WORK
+#
+# The archived forecast.tsv contains NO row, column or note that
+# allocates the 65 to any named work category. There is no "other",
+# "contingency", "integration" or "unknown" row that could absorb it.
+#
+# Therefore the 65 CANNOT be re-interpreted as:
+#   - 65 additional migration ACTs,
+#   - a risk reserve,
+#   - a bootstrap allowance,
+#   - or any other future work item.
+#
+# Doing so would be NC20 (INVENTED_COST_RESIDUAL). This ACT therefore
+# RECONCILES the 65 AS A DEFECT and does NOT carry it forward as work.
+#
+# The 290, not the 355, is the arithmetically supported displayed
+# figure for the archived model. That does NOT make 290 CORRECT --
+# it makes 290 the only SELF-CONSISTENT reading of the archived row.
+# The archived row is still UNQUALIFIED as a forecast, for the reasons
+# in section 4.
+#
+# --------------------------------------------------------------------------
+# 4. WHY THE ARCHIVED FORECAST IS UNQUALIFIED
+# --------------------------------------------------------------------------
+#
+# (a) THE CRITICAL PATH COLUMN IS A COPY, NOT A DERIVATION.
+#     CMD: awk -F'\t' 'NR>1 && $1 ~ /^M[1-4]$/ {print $1, $11, $12}' c2/forecast.tsv
+#       M1 348 348
+#       M2 355 355
+#       M3 358 358
+#       M4 447 447
+#     total_effort_sum == critical_path_length for EVERY milestone. A
+#     critical path that always equals the total effort is not a
+#     longest-path computation over a dependency graph; it is the
+#     total copied into a second column.
+#     CENSUS01_M2_CRITICAL_PATH_EQUAL_TOTAL = UNPROVEN
+#
+# (b) THE THROUGHPUT ASSUMPTION IS NOT A MEASUREMENT.
+#     CMD: grep FA-04 c2/forecast-assumptions.tsv
+#       FA-04  decision sites per implementation ACT (base)  12  sites/ACT
+#              assumption; parser decisions were 1 site/ACT and are NOT
+#              representative of entangled bundles   sensitivity 20 / 6
+#     The word "assumption" is IN the basis field. The observed
+#     historical cohort was 1 site per ACT (FA-01/FA-02: 9
+#     implementation ACTs for 9 parser decisions). The model then
+#     used 12 sites/ACT -- TWELVE TIMES the observed rate -- for a
+#     stateful compiler migration.
+#
+# (c) THE CORRECTION RATE IS A NARROW COHORT.
+#     CMD: grep -E 'FA-02|FA-03' c2/forecast-assumptions.tsv
+#       FA-02  4 ACTs  measured: SLICE03-CORRECTION01,
+#              SLICE06-AC11-CORRECTION01, SLICE07-EVIDENCE-CORRECTION01,
+#              SLICE08-EVIDENCE-CORRECTION01
+#       FA-03  0.44  ratio  4 correction ACTs / 9 implementation ACTs
+#     The cohort is the PARSER slice history: 9 implementation ACTs,
+#     4 of them corrected. Applying a parser-slice correction rate to
+#     stateful compiler subsystems (AST/IR/codegen) is a transfer
+#     assumption, not a measurement.
+#
+# (d) THE HISTORICAL DENOMINATOR IS A MIXED POPULATION.
+#     The 187 implementation_acts figure was derived from the
+#     archived authority census, whose rows are FUNCTION-granular
+#     (2,156 functions) and include coarse-function rows
+#     (CONDITIONAL_BEHAVIOUR_SELECTION_FUNCTION_COARSE) whose
+#     `uncertainty` column reads e.g.
+#     FUNCTION_GRANULAR_IF_SITES_1 / _2. So "decision sites" in the
+#     denominator are NOT all single decisions.
+#
+# --------------------------------------------------------------------------
+# 5. THE HISTORICAL SCENARIO TABLE (AS COMMITTED)
+# --------------------------------------------------------------------------
+#
+# CMD: cat c2/migration-scenarios.tsv
+#   ONE_DECISION_PER_ACT   190 bundles  190 190 190
+#     "per-decision transfer at the historical parser rate; an upper
+#      bound, not a plan"
+#   COHERENT_BUNDLES        3 bundles   154 348 948
+#     "the recommended programme shape"
+#   HIGH_RISK_FALLBACK      3 bundles   159 355 961
+#     "all bundles plus bootstrap blockers"
+#
+# NOTE the low values 154/159 are BELOW the per-decision rate of 190
+# while the base values 348/355 are far ABOVE it. The scenario table
+# does not state how a 3-bundle programme reaches 187 implementation
+# ACTs, nor how that reconciles with the 190 one-decision-per-ACT
+# scenario. The scenario shape is internally UNEXPLAINED.
+#
+# --------------------------------------------------------------------------
+# 6. THE MACHINE-READABLE LEDGER
+# --------------------------------------------------------------------------
+#
+key	value	evidence
+HISTORICAL_CENSUS01_M1_LOW_BASE_HIGH	154/348/948	c2/forecast.tsv M1 row
+HISTORICAL_CENSUS01_M2_LOW_BASE_HIGH	159/355/961	c2/forecast.tsv M2 row
+HISTORICAL_CENSUS01_M3_LOW_BASE_HIGH	161/358/967	c2/forecast.tsv M3 row
+HISTORICAL_CENSUS01_M4_LOW_BASE_HIGH	201/447/1208	c2/forecast.tsv M4 row
+HISTORICAL_355_TOTAL	355	c2/forecast.tsv M2 total_effort_sum and act_base
+HISTORICAL_290_DISPLAYED_SUM	290	3+187+3+10+84+3, recomputed
+HISTORICAL_OLD_FORECAST_M2_REPORTED_TOTAL	355	c2/forecast.tsv
+HISTORICAL_OLD_FORECAST_M2_CATEGORY_SUM	290	the six displayed cost columns
+HISTORICAL_OLD_FORECAST_UNRECONCILED_DELTA	65	355-290
+DELTA_65_CLASSIFICATION	MODEL_DEFECT__MISSING_UNNAMED_TERM_IN_CATEGORY_SUM	no row in the archived forecast.tsv allocates the 65 to any named category
+DELTA_65_PRESENT_IN_M1	65	283 displayed vs 348 reported
+DELTA_65_PRESENT_IN_M3	65	293 displayed vs 358 reported
+DELTA_M4_IS_DIFFERENT	154	293 displayed vs 447 reported -- NOT the same constant
+CENSUS01_M2_CRITICAL_PATH_EQUAL_TOTAL	UNPROVEN	total_effort_sum == critical_path_length in every milestone row; no longest-path computation is shown
+FA04_THROUGHPUT_BASIS	assumption (12 sites/ACT)	the archived basis field literally says "assumption"
+FA04_OBSERVED_COHORT_RATE	1 site per ACT	FA-01/FA-02: 9 implementation ACTs for 9 parser decisions
+FA03_CORRECTION_RATE	0.44 (4/9)	parser-slice cohort only
+HISTORICAL_M2_BELOW_100_ACTS	NOT_SUPPORTED	c2/forecast.tsv row
+HISTORICAL_FORECAST_QUALIFICATION	UNQUALIFIED	all four defects above are present in the archived artifact

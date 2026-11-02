@@ -1,0 +1,207 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=predecessor-phase-ac50-audit
+#
+# THE PREDECESSOR CHRONOLOGY AUDIT, ESTABLISHED FROM GIT OBJECT
+# HISTORY AND THE ACTUAL DOCTRINE/TOOL TEXTS -- NOT FROM THE
+# PREDECESSOR'S OWN NARRATIVE.
+#
+# PREDECESSOR = ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+#
+# Four separate questions are answered separately, exactly as this
+# ACT's section 0.3 requires:
+#
+#   CANONICAL_RANGE_STATUS        what scripts/quality/factory-v2-range-check.sh says
+#   FROZEN_AC50_LITERAL_STATUS    what the predecessor's own frozen AC50 text says
+#   C1_EVIDENCE_COMMIT_PRESENT   whether a C1 EVIDENCE commit exists
+#   TERMINALITY_RECEIPT_BINDING   whether an external receipt exists and is bound
+#
+# All command outputs below were actually executed. The digests are of
+# the captured bytes.
+#
+# --------------------------------------------------------------------------
+# 1. THE ACTUAL COMMIT SEQUENCE, DERIVED FROM GIT
+# --------------------------------------------------------------------------
+#
+# CMD: git log --format='%H%x09%s' -4
+#   be4fffc1b06ae6ca5e7fafa4e9ce21f840e13656  C0: RED
+#   f6c271e89d85812a5e09999ebf582f2d3f2fb567  C2: IMPL
+#   83dfbcc26e548d5de9c7a8836a9643bd6b5ef656  C3: EVIDENCE
+#   9ba4ba5ddbbfacb10393514874c829c9f21d5ea4  C4: CLOSE
+#
+# The ACTUAL phase sequence is RED,IMPL,EVIDENCE,CLOSE. There is NO
+# C1 EVIDENCE commit.
+#
+# CMD: git log -1 --format=%B <commit> | grep -E '^(ACT|ACT-Phase|ACT-Verdict):'
+#   be4fffc1...  ACT: ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+#                ACT-Phase: RED
+#   f6c271e8...  ACT: ... / ACT-Phase: IMPL
+#   83dfbcc2...  ACT: ... / ACT-Phase: EVIDENCE
+#   9ba4ba5d...  ACT: ... / ACT-Phase: CLOSE / ACT-Verdict: PASS
+#
+# --------------------------------------------------------------------------
+# 2. CANONICAL_RANGE_STATUS
+# --------------------------------------------------------------------------
+#
+# CMD: ./scripts/quality/factory-v2-range-check.sh \
+#        ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01 \
+#        9ba4ba5ddbbfacb10393514874c829c9f21d5ea4
+#   ACT=ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+#   ENTRY=23546c7ca224d93bc1b765d92dfad9edbf78229c
+#   FIRST=be4fffc1b06ae6ca5e7fafa4e9ce21f840e13656
+#   CLOSE=9ba4ba5ddbbfacb10393514874c829c9f21d5ea4
+#   COMMITS=4
+#   VERDICT=PASS
+#   STATUS=PASS
+#   rc=0
+#
+# WHY COMMITS=4 IS NOT A CANONICAL VIOLATION:
+#
+#   docs/factory/DOCTRINE.md section 21 (Factory v2 mechanics) states:
+#
+#     "No numeric commit-count cap. Commits must be bounded by ACT
+#      scope, contiguous, honestly classified, and individually
+#      meaningful."
+#
+#   scripts/quality/factory-v2-range-check.sh states in its own header:
+#
+#     "No numeric commit-count rule."
+#
+#   The checker's enforced rules are: CLOSE has ACT/ACT-Phase=CLOSE and
+#   exactly one ACT-Verdict; every commit in FIRST..CLOSE carries the same
+#   ACT id with a valid ACT-Phase; FIRST is RED; exactly one CLOSE exists
+#   in FIRST..CLOSE and it is last; supersession trailers appear only on
+#   CLOSE; no commit AFTER CLOSE carries the ACT id.
+#
+#   All of those are satisfied. The four-commit shape is therefore
+#   CANONICALLY LEGAL. It is a DEVIATION FROM THE PREDECESSOR'S OWN
+#   FROZEN TEXT (see section 3), not a doctrine violation.
+#
+# CMD: git log --all-match --grep='^ACT: <id>$' --grep='^ACT-Phase: CLOSE$' --oneline | wc -l
+#   1
+#
+# The cardinality-1 CLOSE invariant (DOCTRINE section 21) holds.
+#
+# --------------------------------------------------------------------------
+# 3. FROZEN_AC50_LITERAL_STATUS  (the literal conflict)
+# --------------------------------------------------------------------------
+#
+# CMD: grep -n 'AC50' docs/acts/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.md
+#
+#   line 859:
+#     | AC50 | C4 | Post-CLOSE external read-only receipt verifies actual
+#                   terminal HEAD/TREE, five trailers, controls, conservation,
+#                   no continuation and discharges AC50 |
+#
+#   lines 191-192:
+#     "Expected successful linear, non-merge ACT range: C0 RED -> C1 EVIDENCE
+#      -> C2 IMPL -> C3 EVIDENCE -> C4 CLOSE (five commits)."
+#
+# The frozen AC50 text REQUIRES the receipt to verify "five trailers".
+# The actual terminal range carries FOUR phase-bearing commits.
+#
+# LITERAL_STATUS = NOT_SATISFIED_AS_WRITTEN
+#
+# The literal AC50 predicate could not be satisfied by the actual
+# history. The predecessor did NOT fabricate a receipt claiming five
+# trailers: its external receipt records ACTUAL_PHASE_SEQUENCE=RED,IMPL,
+# EVIDENCE,CLOSE and ACTUAL_COMMIT_COUNT=4 and states the deviation
+# plainly (DEVIATION_01). That is the honest handling and it is
+# preserved as history under F14.
+#
+# --------------------------------------------------------------------------
+# 4. C1_EVIDENCE_COMMIT_PRESENT
+# --------------------------------------------------------------------------
+#
+# C1_EVIDENCE_COMMIT_PRESENT = NO
+#
+# The C1 EVIDENCE phase's evidence files were committed together with the
+# C3 EVIDENCE phase's files in the C3 commit. The C2 IMPL commit
+# therefore does NOT have a preceding C1 EVIDENCE commit.
+#
+# --------------------------------------------------------------------------
+# 5. TERMINALITY_RECEIPT_BINDING
+# --------------------------------------------------------------------------
+#
+# CMD: ls -la /tmp/a64cc-terminality-receipt-20261102T023649.txt
+#   -rw-r--r-- 1 chistyakov wheel 10305 Nov  2 02:37
+#
+# The receipt EXISTS and is readable OUTSIDE the Git tree. It is NOT
+# committed (correct: the receipt must not live in the tree).
+#
+# CMD: grep -n 'BOUND_HEAD|BOUND_TREE' /tmp/a64cc-terminality-receipt-20261102T023649.txt
+#   BOUND_HEAD=9ba4ba5ddbbfacb10393514874c829c9f21d5ea4
+#   BOUND_TREE=78e6c706863aea2858d1dadb850b0fc30f78d6c4
+#
+# Those are EXACTLY this ACT's EXPECTED_ENTRY_HEAD and EXPECTED_ENTRY_TREE.
+# The receipt is therefore GENUINELY BOUND, not merely claimed.
+#
+# CMD: grep -n 'TERMINALITY=|AC50=|ACT_VERDICT=' <receipt>
+#   TERMINALITY=RECEIPT_EXISTS_AND_IS_BOUND_TO_THE_EXACT_TERMINAL_HEAD_AND_TREE
+#   AC50=DISCHARGED by this receipt
+#   ACT_VERDICT=PASS
+#
+# TERMINALITY_RECEIPT_BINDING = BOUND_EXACT_HEAD_AND_TREE
+#
+# --------------------------------------------------------------------------
+# 6. GOVERNANCE CLASSIFICATION
+# --------------------------------------------------------------------------
+#
+# The missing historical phase is NOT disallowed by actual doctrine:
+#
+#   - DOCTRINE section 21 forbids a numeric commit-count cap.
+#   - The canonical range check has no numeric commit-count rule and
+#     returns STATUS=PASS with COMMITS=4.
+#   - The commit was not backdated, the history was not rewritten, the
+#     receipt was not fabricated to claim five trailers, and the
+#     predecessor is not retroactively mutated (F14).
+#
+# The missing phase therefore does NOT materially block this ACT's
+# next authority: this ACT's own entry expectations are met by the
+# ACTUAL four-commit range plus a genuinely bound external receipt.
+#
+# CLASSIFICATION = HISTORICAL_GOVERNANCE_DEBT
+# BLOCKS_NEXT = NO
+# DISPOSITION = recorded as a governance-debt row; NOT a HALT.
+#
+# This ACT does NOT rewrite the predecessor, does NOT infer a five-commit
+# history, and does NOT treat the literal five-trailer AC50 text as
+# satisfied.
+#
+# --------------------------------------------------------------------------
+# 7. THE FOUR REPORT KEYS, SEPARATELY
+# --------------------------------------------------------------------------
+#
+# CANONICAL_RANGE_STATUS=PASS (COMMITS=4, no numeric commit-count rule)
+# FROZEN_AC50_LITERAL_STATUS=NOT_SATISFIED_AS_WRITTEN (frozen text says "five trailers")
+# C1_EVIDENCE_COMMIT_PRESENT=NO
+# TERMINALITY_RECEIPT_BINDING=BOUND_EXACT_HEAD_AND_TREE
+#
+# --------------------------------------------------------------------------
+# 8. THE MACHINE-READABLE LEDGER
+# --------------------------------------------------------------------------
+#
+key	value	evidence
+PREDECESSOR_ACT_ID	ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01	git log -1 --format=%B HEAD
+PREDECESSOR_ENTRY	23546c7ca224d93bc1b765d92dfad9edbf78229c	factory-v2-range-check.sh ENTRY
+PREDECESSOR_FIRST	be4fffc1b06ae6ca5e7fafa4e9ce21f840e13656	factory-v2-range-check.sh FIRST
+PREDECESSOR_CLOSE	9ba4ba5ddbbfacb10393514874c829c9f21d5ea4	factory-v2-range-check.sh CLOSE
+PREDECESSOR_COMMIT_COUNT	4	factory-v2-range-check.sh COMMITS=4
+PREDECESSOR_ACTUAL_PHASE_SEQUENCE	RED,IMPL,EVIDENCE,CLOSE	git log -1 --format=%B over the 4 commits
+PREDECESSOR_FROZEN_AC50_TEXT	five trailers	docs/acts/...-CORRECTED01.md line 859
+PREDECESSOR_FROZEN_AC50_TEXT_RANGE	C0 RED -> C1 EVIDENCE -> C2 IMPL -> C3 EVIDENCE -> C4 CLOSE (five commits)	docs/acts/...-CORRECTED01.md lines 191-192
+CANONICAL_RANGE_STATUS	PASS	scripts/quality/factory-v2-range-check.sh rc=0 STATUS=PASS
+CANONICAL_RANGE_COMMITS	4	scripts/quality/factory-v2-range-check.sh
+CANONICAL_CLOSE_CARDINALITY	1	git log --all-match --grep ... --oneline | wc -l
+FROZEN_AC50_LITERAL_STATUS	NOT_SATISFIED_AS_WRITTEN	frozen AC50 requires five trailers; four phase-bearing commits exist
+C1_EVIDENCE_COMMIT_PRESENT	NO	git log -4 shows no C1 EVIDENCE commit
+TERMINALITY_RECEIPT_PATH	/tmp/a64cc-terminality-receipt-20261102T023649.txt	ls -la
+TERMINALITY_RECEIPT_IN_GIT_TREE	NO	the path is outside the checkout; git ls-files does not contain it
+TERMINALITY_RECEIPT_BOUND_HEAD	9ba4ba5ddbbfacb10393514874c829c9f21d5ea4	grep BOUND_HEAD
+TERMINALITY_RECEIPT_BOUND_TREE	78e6c706863aea2858d1dadb850b0fc30f78d6c4	grep BOUND_TREE
+TERMINALITY_RECEIPT_BINDING	BOUND_EXACT_HEAD_AND_TREE	BOUND_HEAD/BOUND_TREE equal EXPECTED_ENTRY_HEAD/EXPECTED_ENTRY_TREE
+TERMINALITY_RECEIPT_RECORDS_ACTUAL_COMMIT_COUNT	4	grep ACTUAL_COMMIT_COUNT
+TERMINALITY_RECEIPT_RECORDS_DEVIATION	DEVIATION_01 states the five-commit vs four-commit gap plainly	grep DEVIATION_01
+GOVERNANCE_CLASSIFICATION	HISTORICAL_GOVERNANCE_DEBT	DOCTRINE 21 forbids a numeric commit-count cap
+GOVERNANCE_BLOCKS_NEXT	NO	entry expectations met by the actual range plus a bound receipt
+GOVERNANCE_F14_TREATMENT	predecessor NOT rewritten; five-commit history NOT inferred	F14

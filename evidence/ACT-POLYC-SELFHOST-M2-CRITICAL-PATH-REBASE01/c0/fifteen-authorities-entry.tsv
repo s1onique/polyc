@@ -1,0 +1,70 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=fifteen-authorities-entry
+#
+# EVERY COLUMN BELOW WAS MEASURED FROM THE REAL PRODUCTION OBJECT
+# GRAPH AT THIS ACT's C0 PHASE. No verdict is hand-authored.
+#
+# defn_object       the object that DEFINES the symbol as a global text symbol
+# linkin            1 iff the production link line NAMES that object
+# linked            1 iff the symbol is a global text symbol in the LINKED ./hcc
+# importingCobjs    how many production C objects IMPORT the symbol
+# c_callsite        the src/*.c:line that imports it (the load-bearing C call)
+#
+authority_id	symbol	defn_object	linkin	linked	importingCobjs	c_callsite	source_blob	producer	verdict
+AUTH-01	_BootstrapCalcPadding	build/parser-padding-subject.o	1	1	1	parser.c:452	01091d180fa7fada2399de0e6d4782def943dab3	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-02	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	1	1	1	parser.c:861	30dd0e33be42220eff15d1321feeb1e209bb7712	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-03	_BootstrapOperatorPrecedence	build/parser-operator-precedence-subject.o	1	1	1	prslib.c:1175	5418551a1ddc040e0f5ab18c5653b8d92498702f	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-04	_BootstrapAstBinOpFromToken	build/parser-ast-binop-subject.o	1	1	1	ast.c:246	4b8c32d9af643e861797406ee11331fed41e9778	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-05	_BootstrapAstUnaryOpFromToken	build/parser-ast-unary-subject.o	1	1	1	ast.c:327	a80de3f519bfd12f5644c0c5a2ea11a8c3a7dc17	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-06	_BootstrapSwitchArmTerminates	build/parser-switch-arm-subject.o	1	1	1	parser.c:1534	9d2a47d3cad30848b0094a264ba79c3afce87203	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	build/parser-compound-block-subject.o	1	1	1	parser.c:2223	8c016f8966b6d9acc8805fd1a2c8584ed1e74aa3	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-08	_BootstrapDefaultArmTerminates	build/parser-default-arm-subject.o	1	1	1	parser.c:1729	ef87f0d882135c17a26ea070666b6a2a2f128cda	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-09	_BootstrapStatementDispatch	build/parser-statement-dispatch-subject.o	1	1	1	parser.c:1907	d9fbad217acea1031f0abae35adf0b8b64464b84	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-10	_AbiCpaShouldPrintAst	build/selfhost-abi-cpa-subject.o	1	1	1	compile.c:67	1a48b8f63fb7082d1bb8b7d15a10908beee11f1d	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-11	_AbiCoreClassifyCompoundAssign	build/core-operator-subject.o	1	1	1	prslib.c:1348	41f6b4c506424479d7301709fd44ca424a4edced	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-12	_AbiCoreIsValidPointerOperator	build/core-operator-subject.o	1	1	1	ast.c:992	41f6b4c506424479d7301709fd44ca424a4edced	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-13	_AbiCoreIsRangeOperator	build/core-operator-subject.o	1	1	1	ast.c:2381	41f6b4c506424479d7301709fd44ca424a4edced	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-14	_AbiA64CcForV2	build/a64-cmp-cc-subject.o	1	1	1	aarch64.c:885	6e0776e91fccd6a8a5d2f8a2eb88c22eb1da0a2d	C_ROOTED_STAGE0_HCC	MEASURED
+AUTH-15	_AbiA64CcInvForV2	build/a64-cmp-cc-subject.o	1	1	1	aarch64.c:886	6e0776e91fccd6a8a5d2f8a2eb88c22eb1da0a2d	C_ROOTED_STAGE0_HCC	MEASURED
+#
+# -------------------------------------------------------------------------
+# THE CSET COUNTER-EXAMPLE (MEASURED, NOT ASSERTED)
+# -------------------------------------------------------------------------
+#
+check	value	method
+CSET_SYMBOL_NAME	aarch64EmitCSet	grep -n aarch64EmitCSet src/aarch64.c
+CSET_DEFINITION_LINE	1008	grep -n "^static void aarch64EmitCSet" src/aarch64.c
+CSET_IS_STATIC	1	grep -c "^static void aarch64EmitCSet" src/aarch64.c
+CSET_EXPORTED_SYMBOL_COUNT_IN_LINKED_HCC	0	nm -g build/hcc | grep -c " _aarch64EmitCSet$"
+CSET_BODY_SWITCH_CASE_IRCMP_COUNT	0	grep -cE "switch|case |IR_CMP" over the whole definition body
+CSET_BODY_SHA256	6f66b06f62d46ea997db45821b8f44b4fc900223ffc82c0933c5c49df20903fb	shasum -a 256 over the whole definition body
+CSET_C_CALLERS_IN_AARCH64_C	2	grep -c "aarch64EmitCSet(ctx" src/aarch64.c
+CSET_IS_SEMANTIC_AUTHORITY	NO	static linkage + zero condition selection in body
+CSET_ADAPTER_NOT_COUNTED	YES	no exported symbol; not in the authority roster
+#
+# MEASURED COUNTS
+PRODUCTION_POLYC_AUTHORITIES_MEASURED	15	rows with linkin=1 AND linked=1 AND importingCobjs>=1
+PRODUCTION_POLYC_AUTHORITIES_WITH_ONE_IMPORTER	15	rows with importingCobjs==1
+PRODUCTION_POLYC_AUTHORITIES_ROSTER_SIZE	15	total data rows (AUTH-* rows only)
+STAGE0_PRODUCER_PATH	build/host-stage0/hcc	$(BOOTSTRAP_STAGE0_DIR)/hcc per Makefile
+STAGE0_PRODUCER_SHA256	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085	shasum -a 256 build/host-stage0/hcc
+PRODUCTION_HCC_SHA256	15d2918495f6d2dbcb90dee3e0422c46cb77f840824a30962518e63fd19b37d4	shasum -a 256 build/hcc (the linked hybrid compiler)
+PRODUCTION_LINK_LINE_OBJ_COUNT	40	one .o per line in build/CMakeFiles/hcc.dir/link.txt
+PRODUCTION_POLYC_SUBJECT_OBJ_COUNT	12	subject objects named by the production link line
+#
+# -------------------------------------------------------------------------
+# FOR/INV SEPARATION (MEASURED)
+# -------------------------------------------------------------------------
+# The two AArch64 condition decisions must be DISTINCT symbols with
+# DISTINCT definitions, and CSET must be a THIRD, non-authority site.
+check	value	method
+FOR_SYMBOL	_AbiA64CcForV2	nm -g build/a64-cmp-cc-subject.o
+INV_SYMBOL	_AbiA64CcInvForV2	nm -g build/a64-cmp-cc-subject.o
+FOR_AND_INV_ARE_DISTINCT_SYMBOLS	2	two distinct global text symbols (awk exact-match on $3)
+FOR_AND_INV_DISTINCT_ADDRESSES	2	the two symbols have DIFFERENT addresses
+FOR_EXPORTED_IN_LINKED_HCC	1	nm -g build/hcc | grep -c " _AbiA64CcForV2$"
+INV_EXPORTED_IN_LINKED_HCC	1	nm -g build/hcc | grep -c " _AbiA64CcInvForV2$"
+A64_POLYC_EXPORT_COUNT	2	the a64 subject exports EXACTLY two public semantic functions
+A64_THIRD_EXPORT_ABSENT	YES	YES iff the subject exports EXACTLY the two FOR/INV symbols
+CSET_IN_A64_POLYC_SUBJECT	0	the CSET adapter must NOT live in the PolyC subject

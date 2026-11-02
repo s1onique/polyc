@@ -1,0 +1,236 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=graph-baseline-conflict
+#
+# THE 134 vs 135 HISTORICAL GRAPH DISAGREEMENT, RESOLVED BY MEASUREMENT
+# AND BY NAMING THE GRAPH VERSION -- NOT BY PICKING THE NEWER OR THE
+# LARGER NUMBER.
+#
+# The archived CENSUS01 graph lives at
+#   evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/c1/
+#     graph-nodes.tsv   graph-edges.tsv   unknown-edges.tsv
+#     dormant-polyc-sites.tsv
+#
+# All counts below were recomputed from those committed bytes at this
+# ACT's C0 phase.
+#
+# --------------------------------------------------------------------------
+# 1. THE ARCHIVED GRAPH'S OWN ARITHMETIC
+# --------------------------------------------------------------------------
+#
+# CMD: awk -F'\t' 'NR>1 && $6=="YES"' c1/graph-edges.tsv | wc -l
+#   135
+#
+# CMD: awk -F'\t' 'NR>1{print $4}' c1/graph-edges.tsv | sort | uniq -c
+#   103 CALLS                 (availability, NOT migration-order)
+#    95 TYPE_REPRESENTATION
+#    14 MUTABLE_STATE
+#    14 CALLBACK
+#    12 RECOVERY
+#   ---
+#   238 total raw rows
+#
+# The four MANDATORY edge classes sum to:
+#   95 TYPE_REPRESENTATION
+# + 14 MUTABLE_STATE
+# + 14 CALLBACK
+# + 12 RECOVERY
+# = 135
+#
+# This EXACTLY matches the mandatory-edge count in the same file, so
+# 135 is the file's OWN internal truth.
+#
+# The 103 CALLS rows are mandatory=NO / mandatory_for=AVAILABILITY_ONLY
+# and are NOT part of the mandatory 135.
+#
+# CMD: wc -l < c1/graph-nodes.tsv
+#   53   (52 data rows + 1 header)
+#
+# --------------------------------------------------------------------------
+# 2. THE 134 NUMBER: WHERE IT COMES FROM
+# --------------------------------------------------------------------------
+#
+# HISTORICAL_GRAPH_PREVIOUS_NARRATIVE = 52/134/34/19
+#   The 134 appears in the NARRATIVE of earlier ACTs. It is NOT
+#   derivable from the archived graph file.
+#
+# HISTORICAL_GRAPH_LATEST_TOOL_OUTPUT = 52/135/34/19
+#   The 135 appears as the tool's own printed output in the ABI
+#   foundation recon, and the ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01
+#   CLOSE recorded:
+#     GRAPH_BASE_MANDATORY_EDGES=135
+#     GRAPH_LEDGER_ROWS=135
+#   with the explicit note that the predecessor's narrative 134 "was a
+#   transcription slip" and that "the TOOL'S OWN OUTPUT is the
+#   authority".
+#
+# --------------------------------------------------------------------------
+# 3. THE DISPOSITION
+# --------------------------------------------------------------------------
+#
+# DISPOSITION = THE ARCHIVED CENSUS01 GRAPH FILE ITSELF CARRIES 135
+#              MANDATORY EDGES. THE 134 IS A TRANSCRIPTION SLIP IN A
+#              NARRATIVE, NOT A DIFFERENT GRAPH.
+#
+# This is NOT "picking the larger number". The resolution is:
+#   - the edge set is identified BY EDGE ID, not by count;
+#   - the count is RECOMPUTED from the committed bytes;
+#   - the recomputed count equals what the file's own per-class
+#     breakdown sums to (95+14+14+12 = 135);
+#   - 134 is shown to be unreproducible from the file.
+#
+# HOW THE 134 COULD BE REPRODUCED (and is NOT): dropping exactly ONE
+# mandatory edge yields 134. That is exactly the shape of a
+# transcription slip, and exactly the shape the NC09/NC10 controls must
+# be able to DETECT.
+#
+# --------------------------------------------------------------------------
+# 4. E-TYP-0136: IS IT INCLUDED, EXCLUDED, OR CUT?
+# --------------------------------------------------------------------------
+#
+# CMD: awk -F'\t' 'NR>1 && $1=="E-TYP-0136"' c1/graph-edges.tsv
+#   E-TYP-0136  SYS-COMPILE_DRIVER  SYS-AST  TYPE_REPRESENTATION
+#   TYPE_LAYOUT_BEFORE_SEMANTICS  YES  OBSERVED
+#   "#include \"ast.h\" in src/compile.c"  src/compile.c:1  TYPE_LAYOUT
+#   CFG-PROD-HCC-JIT-ON  HIGH
+#
+# E_TYP_0136_CURRENT_STATUS = PRESENT_AND_MANDATORY_IN_ARCHIVED_GRAPH
+#
+# It is NOT excluded and NOT historically marked cut in the archived
+# BASE graph. It is one of the 95 TYPE_REPRESENTATION edges.
+#
+# IMPORTANT: its evidence is "#include \"ast.h\" in src/compile.c" --
+# that is HEADER INCLUSION ALONE. Under this ACT's section 3.4 that is
+# OBSERVED_LAYOUT_COUPLING, which is a CANDIDATE for the LAYOUT_ONLY
+# classification. It is NOT, by itself, a PROVEN mandatory
+# atomic-migration edge. That reclassification is C1 work and is NOT
+# performed here; at C0 the fact is only that the edge EXISTS in the
+# archived graph and is counted in the 135.
+#
+# The 134-vs-135 alternative hypothesis -- that 134 is right and
+# E-TYP-0136 is the dropped edge -- is therefore NOT supported by the
+# archived bytes: removing it would give 134, but nothing in the
+# archived evidence marks it cut, and the cut ledger that DOES exist
+# (evidence/.../ABI-FOUNDATION-RECON01) records its own cut set.
+#
+# --------------------------------------------------------------------------
+# 5. E-MUT-0137: THE UNSUPPORTED WITNESS
+# --------------------------------------------------------------------------
+#
+# CMD: awk -F'\t' 'NR>1 && $1=="E-MUT-0137"' c1/graph-edges.tsv
+#   E-MUT-0137  SYS-COMPILE_DRIVER  SYS-AST  MUTABLE_STATE
+#   GLOBAL_STATE_OWNERSHIP_BEFORE_SEMANTICS  YES  OBSERVED
+#   "ast.h declares extern globals (ast_line_hint ast_col_hint
+#    ast_file_hint vec_ast_type map_ast_type) consumed by src/compile.c"
+#   src/compile.c:1  GLOBAL_STATE  CFG-PROD-HCC-JIT-ON  HIGH
+#
+# E_MUT_0137_STATUS = PRESENT_AND_MANDATORY_BUT_WITNESS_IS_A_HEADER
+#                      DECLARATION, NOT AN OBJECT-LEVEL PROOF
+#
+# The stated evidence is that ast.h DECLARES extern globals and that
+# src/compile.c CONSUMES them. The edge's own evidence field cites
+# "src/compile.c:1" -- the INCLUDE LINE -- not a use site. So the
+# witness for a MUTABLE_STATE (global-state ownership) edge is a
+# header declaration. That is weaker than the edge's `certainty=HIGH`
+# label and it is NOT an object-level proof of a state transfer.
+#
+# This ACT therefore keeps E-MUT-0137 as an UNSUPPORTED WITNESS: it is
+# present in the graph, it IS counted in the 135, but its evidence does
+# NOT independently prove a runtime global-state ownership obligation.
+# It is a candidate for reclassification to LAYOUT_ONLY or UNKNOWN at
+# C1, and NO new source/object evidence is claimed here to change it.
+#
+# --------------------------------------------------------------------------
+# 6. THE FOUR NAMED GRAPH SCOPES (kept strictly apart)
+# --------------------------------------------------------------------------
+#
+# BASE_GRAPH
+#   = the archived CENSUS01 graph-edges.tsv as committed.
+#   nodes 52, raw edges 238, mandatory 135, mandatory classes
+#   95 TYPE_REPRESENTATION / 14 MUTABLE_STATE / 14 CALLBACK / 12 RECOVERY.
+#   SCC: 34 components, largest 19 (historical claim, recomputed at C1).
+#
+# CURRENT_PRODUCTION_GRAPH
+#   = recomputed from the LIVE current production build at C1.
+#   NOT established at C0. The only C0 fact is that the production
+#   link line names 40 objects, of which 12 are PolyC subject objects.
+#
+# SHADOW_GRAPH
+#   = the ABI-FOUNDATION-RECON01 cut ledger's graph scope. Its cut
+#   claims are NOT production cuts by default: a cut proven against a
+#   SHADOW build is not a cut of the CURRENT PRODUCTION graph.
+#   NC10 exists specifically to detect a shadow cut being claimed as a
+#   production retirement.
+#
+# CONTRACT_GRAPH
+#   = the graph scope of a specific ABI contract (e.g. the
+#   ABI-A64-CMP-CC-2 contract's own edge scope). It is a SUBSET scope
+#   and its counts must never be compared directly against BASE_GRAPH
+#   or CURRENT_PRODUCTION_GRAPH totals.
+#
+# Each scope keeps its OWN count. A count from one scope is NEVER
+# substituted for another (this is the NC09 failure mode).
+#
+# --------------------------------------------------------------------------
+# 7. THE UNKNOWN ROWS
+# --------------------------------------------------------------------------
+#
+# CMD: cat c1/unknown-edges.tsv
+#   4 data rows: U-01, U-02, U-03, U-04
+#
+# NOTE: the ACT's section 0.2 expectation says "three unknowns". The
+# archived graph-edges.tsv carries FOUR unknown-bearing edge rows
+# (U-01..U-04). The archived forecast.tsv carries a row
+# UNKNOWN_NODES=3, which refers to UNKNOWN NODES (graph vertices), not
+# unknown EDGES.
+#
+# So the "three" is a NODE count and the "four header-inline
+# unknown-bearing symbols" is an EDGE count. They are different
+# populations and must not be conflated. This ACT records:
+#
+#   UNKNOWN_NODES (historical forecast row)  = 3
+#   UNKNOWN_EDGES (archived unknown-edges.tsv) = 4
+#   UNKNOWN_NODE_IDS = UNK-callback-dispatch, UNK-format-dispatch,
+#                      UNK-recovery-longjmp  (3 distinct UNK- targets)
+#   plus U-04 which points at UNK-callback-dispatch again
+#
+# --------------------------------------------------------------------------
+# 8. THE DORMANT POLYC SITES
+# --------------------------------------------------------------------------
+#
+# CMD: cat c1/dormant-polyc-sites.tsv
+#   6 rows, all classification=DORMANT_SELECTOR_OFF, all with
+#   linked_definition_in_hcc=0 and object_undefined_import=0.
+#
+# These are the six lexer PolyC delegate sites that the production
+# selector HCC_USE_SELFHOST_COMPONENTS leaves OFF. They are therefore
+# NOT production-reachable and MUST NOT be counted as remaining
+# production authority. This is the NC06 counter-example shape: a
+# dormant C/unlinked site counted as production-reachable.
+#
+# --------------------------------------------------------------------------
+# 9. THE MACHINE-READABLE LEDGER
+# --------------------------------------------------------------------------
+#
+key	value	evidence
+GRAPH_BASE_NODES	52	wc -l < c1/graph-nodes.tsv (53 lines, 1 header)
+GRAPH_BASE_RAW_EDGES	238	awk edge-type histogram over c1/graph-edges.tsv
+GRAPH_BASE_MANDATORY_EDGES	135	awk $6=="YES" over c1/graph-edges.tsv
+GRAPH_BASE_EDGE_TYPE_CALLS	103	awk histogram, availability only
+GRAPH_BASE_EDGE_TYPE_TYPE_REPRESENTATION	95	awk histogram
+GRAPH_BASE_EDGE_TYPE_MUTABLE_STATE	14	awk histogram
+GRAPH_BASE_EDGE_TYPE_CALLBACK	14	awk histogram
+GRAPH_BASE_EDGE_TYPE_RECOVERY	12	awk histogram
+GRAPH_BASE_MANDATORY_ARITHMETIC	95+14+14+12 = 135	the four mandatory classes sum exactly to the mandatory total
+GRAPH_HISTORICAL_BASE	52/135/34/19	nodes/mandatory edges/SCCs/largest SCC
+GRAPH_HISTORICAL_PREVIOUS_NARRATIVE	52/134/34/19	the earlier narrative 134
+GRAPH_134_VS_135_DISPOSITION	THE_ARCHIVED_FILE_CARRIES_135__134_IS_A_NARRATIVE_TRANSCRIPTION_SLIP	recomputed from the committed bytes; 134 is not reproducible from the file
+E_TYP_0136_CURRENT_STATUS	PRESENT_AND_MANDATORY_IN_ARCHIVED_GRAPH	awk $1=="E-TYP-0136"
+E_TYP_0136_EVIDENCE	#include "ast.h" in src/compile.c	header inclusion alone -> OBSERVED_LAYOUT_COUPLING candidate, NOT a proven mandatory atomic-migration edge
+E_MUT_0137_STATUS	PRESENT_AND_MANDATORY_BUT_WITNESS_IS_A_HEADER_DECLARATION	its own evidence cites src/compile.c:1 (the include line), not a use site
+UNKNOWN_NODES	3	archived forecast.tsv UNKNOWN_NODES row (a NODE count)
+UNKNOWN_EDGES	4	archived c1/unknown-edges.tsv U-01..U-04 (an EDGE count)
+DORMANT_POLYC_SITES_NOT_PRODUCTION_REACHABLE	6	c1/dormant-polyc-sites.tsv, all DORMANT_SELECTOR_OFF
+GRAPH_CURRENT_PRODUCTION	NOT_ESTABLISHED_AT_C0	recomputed at C1 from the live build
+GRAPH_SHADOW	ABI_FOUNDATION_RECON01_CUT_LEDGER_SCOPE	shadow cuts are not production cuts (NC10)
+GRAPH_CONTRACT	PER_CONTRACT_SUBSET_SCOPE	never compared directly against BASE or CURRENT totals (NC09)
