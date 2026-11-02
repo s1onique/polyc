@@ -106,6 +106,7 @@ set(HEADERS
     cfg-print.h
     cfg.h
     cli.h
+    selfhost-driver-wp001.h
     compile.h
     config.h
     json.h
@@ -2365,6 +2366,130 @@ add_custom_target(unit-test
     COMMENT "Building and running unit tests"
     USES_TERMINAL
 )
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 C2 IMPL:
+# Link the qualified PolyC COMPILER DRIVER into the production hcc binary
+# and enable the driver delegation.
+#
+# The dedicated selector `HCC_USE_SELFHOST_DRIVER_WP001` is defined here
+# so the production driver delegation is INDEPENDENT of every other
+# selector in this file. It defaults to ON: the production compiler is
+# DRIVEN by the PolyC-authored driver.
+#
+# The selector-OFF build is the G0 C-only driver oracle. It is a
+# SEPARATE EXECUTABLE, not a runtime branch, and it contains ZERO
+# driver PolyC symbols.
+#
+# The same fail-closed discipline as the parser subjects applies: the
+# object is verified for its exported symbols AND its architecture, a
+# producer that exits 0 without producing the object is a hard error,
+# and the production compiler is never linked without a verified driver.
+# ---------------------------------------------------------------------------
+option(HCC_USE_SELFHOST_DRIVER_WP001
+       "Link the PolyC-authored compiler driver into hcc and let it own the CLI decisions. ACT-POLYC-SELFHOST-DRIVER-MIGRATION01."
+       ON)
+
+if (HCC_USE_SELFHOST_DRIVER_WP001)
+    if (NOT DRIVER_WP001_OBJECT)
+        set(DRIVER_WP001_OBJECT "${CMAKE_SOURCE_DIR}/../build/wp001-driver-subject.o")
+    endif()
+
+    if (NOT DRIVER_WP001_TARGET_OBJECT_FORMAT)
+        if (APPLE)
+            set(DRIVER_WP001_TARGET_OBJECT_FORMAT "Mach-O")
+        else()
+            set(DRIVER_WP001_TARGET_OBJECT_FORMAT "ELF")
+        endif()
+    endif()
+
+    if (NOT DRIVER_WP001_NM)
+        set(DRIVER_WP001_NM "${CMAKE_NM}")
+    endif()
+
+    if (DRIVER_WP001_PRODUCER)
+        add_custom_command(
+            OUTPUT "${DRIVER_WP001_OBJECT}"
+            COMMAND "${CMAKE_COMMAND}" -E rm -f "${DRIVER_WP001_OBJECT}"
+            COMMAND "${DRIVER_WP001_PRODUCER}"
+                    --install-dir="${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix"
+                    -c "${CMAKE_SOURCE_DIR}/../tools/bootstrap/selfhost-driver-wp001.HC"
+                    -o "${DRIVER_WP001_OBJECT}"
+            DEPENDS "${CMAKE_SOURCE_DIR}/../tools/bootstrap/selfhost-driver-wp001.HC"
+            COMMENT "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: producing the PolyC driver subject ${DRIVER_WP001_OBJECT}"
+            VERBATIM
+        )
+        message(STATUS "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc SCHEDULES the PolyC driver subject production: ${DRIVER_WP001_OBJECT}")
+    elseif (NOT EXISTS "${DRIVER_WP001_OBJECT}")
+        message(FATAL_ERROR
+            "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: "
+            "REJECT_MISSING_DRIVER_SUBJECT "
+            "the PolyC driver subject ${DRIVER_WP001_OBJECT} does not exist. "
+            "Build it with: "
+            "./hcc --install-dir=<prefix> -c tools/bootstrap/selfhost-driver-wp001.HC -o ${DRIVER_WP001_OBJECT}. "
+            "Or configure with -DDRIVER_WP001_PRODUCER=<stage0 hcc> to have the "
+            "build graph produce it. Refusing to link the production compiler "
+            "without a verified PolyC compiler driver.")
+    else()
+        message(STATUS "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc uses a PREBUILT PolyC driver subject: ${DRIVER_WP001_OBJECT}")
+    endif()
+
+    # ---------------------------------------------------------------------
+    # The single strict verification gate, shared by BOTH modes.
+    #
+    # The verification is a custom TARGET, not an OUTPUT-producing custom
+    # command. A custom command with an OUTPUT file is considered
+    # up-to-date whenever that file exists and is newer than its
+    # dependencies -- which is exactly the stale-stamp hazard. A custom
+    # target's command ALWAYS runs, so the verifier executes on every
+    # relevant production build and the object content is checked every
+    # time.
+    # ---------------------------------------------------------------------
+    add_custom_target(hcc-driver-wp001-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DDRIVER_WP001_OBJECT=${DRIVER_WP001_OBJECT}
+                -DDRIVER_WP001_EXPECTED_SYMBOL=WpDriverDecide
+                -DDRIVER_WP001_TARGET_OBJECT_FORMAT=${DRIVER_WP001_TARGET_OBJECT_FORMAT}
+                -DDRIVER_WP001_NM=${DRIVER_WP001_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyDriverWp001Object.cmake"
+        DEPENDS "${DRIVER_WP001_OBJECT}"
+        COMMENT "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: verifying the PolyC driver subject ${DRIVER_WP001_OBJECT}"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The verification gates the link: the production compiler is never
+    # linked without a verified PolyC compiler driver.
+    add_dependencies(hcc hcc-driver-wp001-verify)
+
+    # The link itself must ALSO depend on the object, so the object is
+    # re-read by the linker whenever it changes.
+    set_property(TARGET hcc APPEND PROPERTY
+        LINK_DEPENDS "${DRIVER_WP001_OBJECT}")
+
+    target_compile_definitions(hcc PRIVATE HCC_USE_SELFHOST_DRIVER_WP001)
+    target_link_libraries(hcc ${DRIVER_WP001_OBJECT})
+
+    # The C HOST BRIDGE is part of the driver component and is linked
+    # ONLY when the selector is ON.
+    #
+    # ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 section 3.1 requires the
+    # G0 C-only oracle to have "no definition, undefined reference,
+    # relocation, static import, link-line input or dynamic symbol for
+    # the new driver subject/host bridge". The bridge DEFINES the
+    # host accessors (_WpDriverHostArgc, _WpDriverHostArgLen,
+    # _WpDriverHostArgByte, _WpDriverHostCopyValue,
+    # _WpDriverHostSetArgv), so linking it unconditionally would put
+    # five driver symbols into the selector-OFF oracle and violate
+    # that requirement.
+    #
+    # The bridge is therefore added to the target's own source list
+    # here, INSIDE the selector branch, and NOT in the global SOURCES
+    # list above.
+    target_sources(hcc PRIVATE "${CMAKE_SOURCE_DIR}/selfhost-driver-wp001.c")
+
+    message(STATUS "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc links the PolyC compiler driver: ${DRIVER_WP001_OBJECT}")
+    message(STATUS "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc VERIFIES the PolyC driver subject (both producer and prebuilt modes)")
+endif()
 
 target_link_libraries(hcc m)
 

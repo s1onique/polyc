@@ -134,6 +134,18 @@ SLICE08_DEFAULT_ARM_OBJ = ./build/parser-default-arm-subject.o
 SLICE09_STATEMENT_DISPATCH_SRC = tools/bootstrap/selfhost-parser-statement-dispatch.HC
 SLICE09_STATEMENT_DISPATCH_OBJ = ./build/parser-statement-dispatch-subject.o
 
+# ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.
+#
+# The PolyC-AUTHORED COMPILER DRIVER (WP-001).
+#
+# The VARIABLES are defined HERE, next to the other subject variables,
+# because the $(PRODUCTION_HCC) rule's PREREQUISITE list is expanded
+# when the rule is READ, and a variable defined later in the file would
+# be EMPTY at that point -- which would silently drop the subject from
+# the build graph. This is the exact failure mode SLICE07 recorded.
+DRIVER_WP001_SRC = tools/bootstrap/selfhost-driver-wp001.HC
+DRIVER_WP001_OBJ = ./build/wp001-driver-subject.o
+
 # ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01.
 #
 # The compiled PolyC AST-visibility decision subject and its PolyC source.
@@ -225,6 +237,7 @@ $(BOOTSTRAP_STAGE0_HCC): $(BOOTSTRAP_STAGE0_SOURCES)
 		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
 		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF \
 		-DHCC_USE_SELFHOST_A64_CMP_CC=OFF \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=OFF \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(BOOTSTRAP_STAGE0_DIR)
 	$(MAKE) -C $(BOOTSTRAP_STAGE0_BUILD) hcc -j2
 	@if [ ! -x "$(BOOTSTRAP_STAGE0_HCC)" ]; then \
@@ -756,6 +769,44 @@ a64-cmp-cc-subject: $(A64_CMP_CC_OBJ)
 #     unrelated cached options such as HCC_ENABLE_JIT, which is what
 #     previously produced a link failure against a missing libtasm.a.
 PRODUCTION_HCC = ./hcc
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 C2 IMPL.
+#
+# The PolyC compiler driver subject.
+#
+# It is produced by the SAME digest-bound stage0 producer that builds the
+# twelve existing production subjects, from real PolyC source, and it
+# is linked into the production ./hcc by src/CMakeLists.txt.
+#
+# The object is verified for ALL NINE of its exported driver symbols AND
+# its architecture. A missing symbol or a wrong-architecture object is
+# REJECTED, never linked. A producer that exits 0 without producing the
+# object is a hard error, never a silent fallback to the legacy C
+# parser.
+# ---------------------------------------------------------------------------
+$(DRIVER_WP001_OBJ): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(DRIVER_WP001_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "wp001-driver-subject: $@ not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@for _s in _WpDriverClassifyOption _WpDriverClassifyArgument \
+	           _WpDriverUnknownArgCount _WpDriverArityViolationCount \
+	           _WpDriverValueArgIndex _WpDriverValueOffset \
+	           _WpDriverOptionField _WpDriverOptionAction _WpDriverSelectAction \
+	           _WpDriverMapStatus _WpDriverDecide _WpDriverSelectedAction; do \
+		nm $@ | grep -q " T $$_s$$" \
+			|| { echo "wp001-driver-subject: symbol $$_s not found in $@" >&2; exit 1; }; \
+	done
+	@echo "DRIVER_WP001_SUBJECT=$@"
+	@echo "DRIVER_WP001_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
+
+driver-wp001-subject: $(DRIVER_WP001_OBJ)
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \
@@ -763,6 +814,7 @@ PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OB
 	$(ABI_CPA_OBJ) \
 	$(CORE_OPERATOR_OBJ) \
 	$(A64_CMP_CC_OBJ) \
+	$(DRIVER_WP001_OBJ) \
 	$(wildcard src/*.c src/asm/*.c) \
 	$(wildcard src/*.h src/asm/*.h) \
 	$(wildcard src/CMakeLists.txt src/asm/CMakeLists.txt) \
@@ -822,6 +874,11 @@ $(PRODUCTION_HCC): $(PRODUCTION_HCC_INPUTS)
 		-DSTATEMENT_DISPATCH_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DSTATEMENT_DISPATCH_SOURCE=$(CURDIR)/$(SLICE09_STATEMENT_DISPATCH_SRC) \
 		-DSTATEMENT_DISPATCH_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_WP001_OBJ) \
+		-DDRIVER_WP001_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DDRIVER_WP001_SOURCE=$(CURDIR)/$(DRIVER_WP001_SRC) \
+		-DDRIVER_WP001_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_ABI_CPA=ON \
 		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
 		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
@@ -946,6 +1003,11 @@ llvm-all: $(PARSER_PADDING_OBJ)
 		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
 		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_WP001_OBJ) \
+		-DDRIVER_WP001_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DDRIVER_WP001_SOURCE=$(CURDIR)/$(DRIVER_WP001_SRC) \
+		-DDRIVER_WP001_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DA64_CMP_CC_OBJECT=$(CURDIR)/$(A64_CMP_CC_OBJ) \
 		-DA64_CMP_CC_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
@@ -1096,6 +1158,11 @@ test-prefix-install: production-hcc runtime-producer
 		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
 		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_WP001_OBJ) \
+		-DDRIVER_WP001_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DDRIVER_WP001_SOURCE=$(CURDIR)/$(DRIVER_WP001_SRC) \
+		-DDRIVER_WP001_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
 		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \

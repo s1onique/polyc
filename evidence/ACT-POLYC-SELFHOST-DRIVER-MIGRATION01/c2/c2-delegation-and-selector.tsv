@@ -1,0 +1,79 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=c2-delegation-and-selector
+#
+# THE DELEGATION PATH AND THE SELECTOR, MEASURED ON THE PRODUCTION
+# BUILD.
+#
+# ---------------------------------------------------------------------------
+# THE SELECTOR
+# ---------------------------------------------------------------------------
+key	value
+SELECTOR_NAME	HCC_USE_SELFHOST_DRIVER_WP001
+SELECTOR_KIND	a dedicated CMake option (src/CMakeLists.txt)
+SELECTOR_DEFAULT	ON for the production target
+SELECTOR_OFF_BUILD	/DHCC_USE_SELFHOST_DRIVER_WP001=OFF
+SELECTOR_OFF_BINARY	/tmp/wp001-off-bin/hcc
+SELECTOR_OFF_BINARY_SHA256	33863a0a542758ce0a9f941cf19e04d539993c0447b7f3268cd86d2a682add7a
+SELECTOR_ON_BINARY	./hcc
+SELECTOR_ON_BINARY_SHA256	fb426583c015119968aeae8ebb3ad4fdc059c48e5b5631575eb326bc60dda46b
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCTION DELEGATION PATH (the selector-ON build)
+# ---------------------------------------------------------------------------
+check	command	measured	result
+ON_DRIVER_SYMBOL_COUNT	nm -g ./hcc | grep -c '_WpDriver'	18	PRESENT
+ON_CLI_RELOCATIONS_INTO_DRIVER	nm -u build/CMakeFiles/hcc.dir/cli.c.o | grep -ci wpdriver	8	PRESENT
+ON_LEGACY_PARSER_IN_OBJECT	nm build/CMakeFiles/hcc.dir/cli.c.o | grep -c '_cliParseArgsLegacy'	0	ABSENT
+#
+# THE EIGHT REAL RELOCATIONS FROM cli.c.o INTO THE POLYC DRIVER
+# ---------------------------------------------------------------------------
+relocation	target
+_WpDriverClassifyArgument	the PolyC argument classifier
+_WpDriverClassifyOption	the PolyC option matcher
+_WpDriverDecide	the PolyC whole-argv decision
+_WpDriverHostCopyValue	the host byte-copy accessor (the C side of the bridge)
+_WpDriverHostSetArgv	the host argv installer (the C side of the bridge)
+_WpDriverOptionField	the PolyC CliArgs-field selector
+_WpDriverValueArgIndex	the PolyC value-index resolver
+_WpDriverValueOffset	the PolyC value-offset resolver
+#
+# ---------------------------------------------------------------------------
+# THE SELECTOR-OFF ORACLE IS DRIVER-C-ONLY
+# ---------------------------------------------------------------------------
+check	command	measured	result
+OFF_DRIVER_SYMBOL_COUNT	nm -g /tmp/wp001-off-bin/hcc | grep -c '_WpDriver'	0	ABSENT
+OFF_CLI_RELOCATIONS_INTO_DRIVER	nm -u /tmp/wp001-off-build/CMakeFiles/hcc.dir/cli.c.o | grep -ci wpdriver	0	ABSENT
+OFF_LEGACY_PARSER_IN_OBJECT	nm /tmp/wp001-off-build/CMakeFiles/hcc.dir/cli.c.o | grep -c '_cliParseArgsLegacy'	1	PRESENT
+OFF_BRIDGE_OBJECT_IN_LINK	find /tmp/wp001-off-build -name 'selfhost-driver-wp001.c.o'	ABSENT	ABSENT
+#
+# The C HOST BRIDGE is linked ONLY inside the selector branch
+# (target_sources(hcc PRIVATE .../selfhost-driver-wp001.c)), so the
+# selector-OFF oracle carries NONE of the five host accessor symbols
+# either. This was a REAL DEFECT FOUND AND FIXED during C2: the
+# bridge was originally in the global SOURCES list, which put five
+# _WpDriverHost* symbols into the selector-OFF oracle and violated
+# ACT section 3.1's requirement that the oracle have "no definition,
+# undefined reference, relocation, static import, link-line input or
+# dynamic symbol for the new driver subject/host bridge".
+#
+# ---------------------------------------------------------------------------
+# THE ARTIFACTS
+# ---------------------------------------------------------------------------
+artifact	path	sha256	loc
+POLYC_DRIVER_SOURCE	tools/bootstrap/selfhost-driver-wp001.HC	a3349a2e551db6ee8c90da7c1a0face36870d3294658a90e3e5ec4e75899052f	849
+POLYC_DRIVER_OBJECT	build/wp001-driver-subject.o	3d29e2eb296c5e09cde22aea5ec0168aaa6616c78956a0c9025e47eed8ec9676	n/a
+C_HOST_BRIDGE_SOURCE	src/selfhost-driver-wp001.c	fece5640f28a888a924896ee1595b5e233b436669586d922304befb43e8a92a3	77
+C_HOST_BRIDGE_HEADER	src/selfhost-driver-wp001.h	57783cd72d2236ee5b1881e8ec644cffaab7db867ae99eeaf02833c46fa5c6c3	n/a
+MIGRATED_CLI_SOURCE	src/cli.c	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb	n/a
+FAIL_CLOSED_VERIFIER	src/cmake/VerifyDriverWp001Object.cmake	n/a	n/a
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+DELEGATION_PATH	MEASURED_PRESENT
+LEGACY_C_DECISION_IN_PRODUCTION	ABSENT
+ORACLE_IS_DRIVER_C_ONLY	YES
+SELECTOR_NAME_FROZEN	YES
+C2_DELEGATION_STATUS	PASS

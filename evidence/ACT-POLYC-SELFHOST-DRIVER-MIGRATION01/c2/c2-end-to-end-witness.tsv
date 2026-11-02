@@ -1,0 +1,63 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=c2-end-to-end-witness
+#
+# THE REAL END-TO-END WITNESS.
+#
+# A PolyC driver that merely returns a fixed exit status cannot PASS.
+# This witness therefore EXECUTES the frozen compile route end to end
+# and checks the PRODUCED OBJECT, not the process status alone.
+#
+# THE FIXTURE
+#   input.HC:
+#     I64 main(I64 argc, U8 **argv) {
+#       return 0;
+#     }
+#
+# ---------------------------------------------------------------------------
+# THE WITNESS
+# ---------------------------------------------------------------------------
+step	command	result
+BUILD_THE_FIXTURE	printf 'I64 main(I64 argc, U8 **argv) {\n  return 0;\n}\n' > input.HC	input.HC written
+COMPILE_THE_OBJECT	hcc --install-dir=<abs>/build/test-prefix -c input.HC -o out.o	exit 0, out.o produced
+OBJECT_SIZE	ls -la out.o	544 bytes
+OBJECT_FORMAT	file out.o	Mach-O 64-bit object arm64
+ENTRY_POINT_PRESENT	nm -g out.o | grep ' T _main'	0000000000000000 T _main
+LINK_THE_OBJECT	cc out.o -o prog	prog produced
+RUN_THE_PROGRAM	./prog	exit 0
+#
+# ---------------------------------------------------------------------------
+# THE MIGRATED COMPILER'S OBJECT IS BYTE-IDENTICAL TO THE ORACLE'S
+# ---------------------------------------------------------------------------
+check	measured	result
+G0_OBJECT_SHA256	cf7c2e60c6832eb239f95df9150d50b9d53e5f8c6456a6396ec649a355bfb9d6	measured from the produced file
+ON_OBJECT_SHA256	cf7c2e60c6832eb239f95df9150d50b9d53e5f8c6456a6396ec649a355bfb9d6	measured from the produced file
+G0_OBJECT_SIZE	544	544
+ON_OBJECT_SIZE	544	544
+G0_VS_ON_OBJECT	cmp g0-out.o out.o	BYTE_IDENTICAL
+#
+# The G0 oracle and the migrated compiler were both run over the SAME
+# fixture with the SAME install prefix, in the SAME directory, and
+# their produced objects are BYTE-IDENTICAL. The migration changed
+# WHO MAKES THE DECISION; it did not change WHAT THE COMPILER
+# PRODUCES.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+REAL_OBJECT_PRODUCED	YES
+OBJECT_IS_A_VALID_TARGET_OBJECT	YES
+ENTRY_POINT_PRESENT	YES
+OBJECT_LINKS_AND_RUNS	YES
+G0_VS_ON_OBJECT	BYTE_IDENTICAL
+C2_END_TO_END_STATUS	PASS
+#
+# THE COMMANDS
+#   cd /tmp/wp001-e2e
+#   <abs>/hcc --install-dir=<abs>/build/test-prefix -c input.HC -o out.o
+#   file out.o ; nm -g out.o | grep ' T _main'
+#   cc out.o -o prog ; ./prog
+#   /tmp/wp001-g0-hermetic-bin/hcc --install-dir=<abs>/build/test-prefix \
+#       -c input.HC -o g0-out.o
+#   cmp g0-out.o out.o

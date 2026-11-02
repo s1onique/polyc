@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=c2-build-and-fail-closed
+#
+# THE BUILD GRAPH AND THE FAIL-CLOSED BEHAVIOUR, MEASURED BY EXECUTION.
+#
+# ---------------------------------------------------------------------------
+# THE BUILD GRAPH
+# ---------------------------------------------------------------------------
+stage	artefact	produced_by
+POLYC_DRIVER_SUBJECT	build/wp001-driver-subject.o	the real production compiler, from tools/bootstrap/selfhost-driver-wp001.HC
+DRIVER_SUBJECT_VERIFICATION	hcc-driver-wp001-verify (a custom TARGET)	src/cmake/VerifyDriverWp001Object.cmake, run on EVERY relevant production build
+PRODUCTION_LINK	./hcc	the hcc target, which DEPENDS on the verification target and LINK_DEPENDS on the subject object
+C_HOST_BRIDGE	src/selfhost-driver-wp001.c	target_sources(hcc PRIVATE ...) INSIDE the selector branch
+#
+# The verification is a custom TARGET and NOT a custom command with an
+# OUTPUT file. A custom command with an OUTPUT file is considered
+# up-to-date whenever that file exists and is newer than its
+# dependencies, which is exactly the stale-stamp hazard the ACT
+# forbids. A custom target's command ALWAYS runs, so the object
+# content is checked on every relevant production build.
+#
+# ---------------------------------------------------------------------------
+# THE FAIL-CLOSED VERIFIER, EXERCISED IN FOUR DIRECTIONS
+# ---------------------------------------------------------------------------
+direction	invocation	reason_token	result
+POSITIVE	cmake -DDRIVER_WP001_OBJECT=<abs>/build/wp001-driver-subject.o ... -P src/cmake/VerifyDriverWp001Object.cmake	DRIVER_WP001_OBJECT_STATUS=PASS	PASS
+NEGATIVE_MISSING	cmake -DDRIVER_WP001_OBJECT=/tmp/wp001-absent.o ... -P src/cmake/VerifyDriverWp001Object.cmake	REJECT_MISSING_DRIVER_SUBJECT	REJECTED
+NEGATIVE_EMPTY	cmake -DDRIVER_WP001_OBJECT=/tmp/wp001-zero-drv.o ... -P src/cmake/VerifyDriverWp001Object.cmake	REJECT_EMPTY_DRIVER_SUBJECT	REJECTED
+NEGATIVE_WRONG_ROSTER	cmake -DDRIVER_WP001_OBJECT=/tmp/wp001-empty-drv.o ... -P src/cmake/VerifyDriverWp001Object.cmake	REJECT_SYMBOL_NAME_MISMATCH	REJECTED
+#
+# The verifier ALSO rejects, by construction and as documented in the
+# script: an invalid object (REJECT_INVALID_OBJECT), a symbol carried
+# only as UNDEFINED (REJECT_UNDEFINED_SYMBOL), a symbol carried only
+# as LOCAL (REJECT_LOCAL_SYMBOL), and a DUPLICATE definition
+# (REJECT_DUPLICATE_DEFINITION).
+#
+# ---------------------------------------------------------------------------
+# THE CONFIGURE STEP ALSO FAILS CLOSED
+# ---------------------------------------------------------------------------
+invocation	result	reason
+cmake -S ./src -B <b> -DHCC_USE_SELFHOST_DRIVER_WP001=ON -DDRIVER_WP001_OBJECT=/tmp/wp001-nonexistent-driver.o	CONFIGURE FAILED, exit 1	CMake Error: PolyC driver subject /tmp/wp001-nonexistent-driver.o does not exist. Refusing to link the production compiler without a verified PolyC compiler driver.
+#
+# ---------------------------------------------------------------------------
+# THE REQUIRED SYMBOL ROSTER (the frozen ABI)
+# ---------------------------------------------------------------------------
+the_verifier_requires	12 symbols, each as a strong global text definition
+WpDriverClassifyOption	required
+WpDriverClassifyArgument	required
+WpDriverUnknownArgCount	required
+WpDriverArityViolationCount	required
+WpDriverValueArgIndex	required
+WpDriverValueOffset	required
+WpDriverOptionField	required
+WpDriverOptionAction	required
+WpDriverSelectAction	required
+WpDriverMapStatus	required
+WpDriverDecide	required
+WpDriverSelectedAction	required
+#
+# The symbol SPELLING is derived from the TARGET OBJECT FORMAT, which
+# is passed in explicitly: Mach-O prefixes C symbols with an
+# underscore, ELF does not. The spelling is NOT hard-coded.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+BUILD_GRAPH_FAILS_CLOSED	YES
+VERIFIER_REJECT_DIRECTIONS_EXERCISED	4
+CONFIGURE_FAILS_CLOSED	YES
+REQUIRED_SYMBOL_COUNT	12
+C2_BUILD_STATUS	PASS

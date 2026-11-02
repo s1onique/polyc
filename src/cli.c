@@ -13,6 +13,7 @@
 #include "config.h"
 #include "containers.h"
 #include "cli.h"
+#include "selfhost-driver-wp001.h"
 #include "util.h"
 #include "version.h"
 
@@ -92,6 +93,40 @@ const char *cliTargetToString(enum CliTarget target) {
         default:
             loggerPanic("Unknown target: %d\n", (int)target);
     }
+}
+
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 C2 IMPL.
+ *
+ * The target selection, factored out of the legacy option switch so
+ * that the legacy path and the PolyC-driven path share ONE
+ * implementation of it. The choice of WHICH target was requested is
+ * made from the option's VALUE, and on the production route the PolyC
+ * driver resolves that value.
+ */
+void cliApplyTarget(CliArgs *args, const char *value) {
+    u64 target_map_len = sizeof(target_map) / sizeof(target_map[0]);
+    AoStr *valid_targets = aoStrNew();
+    for (u64 i = 0; i < target_map_len; ++i) {
+        char *str_target = target_map[i];
+        if (i + 1 != target_map_len) {
+            aoStrCatFmt(valid_targets, "`%s`, ", str_target);
+        } else {
+            aoStrCatFmt(valid_targets, "`%s`", str_target);
+        }
+    }
+    if (!strncmp(value, str_lit("aarch64-apple-darwin"))) {
+        args->target = TARGET_AARCH64_APPLE_DARWIN;
+    } else if (!strncmp(value, str_lit("aarch64-unknown-linux-gnu"))) {
+        args->target = TARGET_AARCH64_UNKNOWN_LINUX_GNU;
+    } else if (!strncmp(value, str_lit("x86_64-apple-darwin"))) {
+        args->target = TARGET_X86_64_APPLE_DARWIN;
+    } else if (!strncmp(value, str_lit("x86_64-unknown-linux-gnu"))) {
+        args->target = TARGET_X86_64_UNKNOWN_LINUX_GNU;
+    } else {
+        loggerPanic("Invalid target: `%s` valid targets are: %s\n",
+                value, valid_targets->data);
+    }
+    args->is_cross_compile = 1;
 }
 
 #define CliNopParser(flag, enum_val, help) \
@@ -405,7 +440,22 @@ void getASMFileName(CliArgs *args, enum CliFileType file_type, char *filename, u
     args->obj_outfile =  mprintf("%s.o", args->infile_no_ext);
 }
 
-int cliParseArgs(CliArgs *args, int argc, char **argv) {
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 C2 IMPL.
+ *
+ * The LEGACY C CLI PARSER.
+ *
+ * This is the selector-OFF reference implementation. It is retained
+ * verbatim so that the C-dormancy experiment can mutate it and prove
+ * that the production route no longer consults it.
+ *
+ * In the production build the PolyC-authored driver owns the decision
+ * and this function is NOT EVEN COMPILED, so there is no second CLI
+ * policy in the shipped binary.
+ */
+#ifdef HCC_USE_SELFHOST_DRIVER_WP001
+/* The production build compiles the PolyC-driven parser instead. */
+#else
+int cliParseArgsLegacy(CliArgs *args, int argc, char **argv) {
     /* move past the program name */
     argc--;
     argv++;
@@ -549,7 +599,197 @@ int cliParseArgs(CliArgs *args, int argc, char **argv) {
     }
     return 1;
 }
+#endif /* !HCC_USE_SELFHOST_DRIVER_WP001 */
 
+int cliParseArgs(CliArgs *args, int argc, char **argv) {
+#ifdef HCC_USE_SELFHOST_DRIVER_WP001
+    return cliParseArgsPolyC(args, argc, argv);
+#else
+    return cliParseArgsLegacy(args, argc, argv);
+#endif
+}
+#ifdef HCC_USE_SELFHOST_DRIVER_WP001
+
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 C2 IMPL.
+ *
+ * THE POLYC-DRIVEN CLI PARSER.
+ *
+ * Every DECISION on this route is made by the compiled PolyC driver and
+ * read back through the frozen seam. This function:
+ *
+ *   1. asks PolyC which argument is an option        (classification)
+ *   2. asks PolyC where that option's value is       (arity/domain)
+ *   3. asks PolyC which CliArgs field to set         (field selection)
+ *   4. copies the value bytes and assigns the field  (mechanical)
+ *
+ * It contains NO option table, NO option name, NO flag test, NO arity
+ * rule and NO action choice. Those all live in
+ * tools/bootstrap/selfhost-driver-wp001.HC.
+ */
+int cliParseArgsPolyC(CliArgs *args, int argc, char **argv) {
+    /* The PolyC driver reads the argument vector through the host
+     * byte accessors, so the host state is installed first and never
+     * mutated afterwards. */
+    WpDriverHostSetArgv(argc, argv);
+
+    int i = 1;   /* argv[0] is the program name */
+    for (; i < argc; i++) {
+        long long opt = WpDriverClassifyOption(i);
+        if (opt < 0) {
+            /* Not an option. The PolyC driver classified the argument;
+             * the C side only routes it. A source file sets the input
+             * file, and anything else is collected for the JIT and
+             * reported as an unknown option, exactly as the live CLI
+             * did. */
+            const char *arg = argv[i];
+            if (WpDriverClassifyArgument(i) == WP_DRIVER_ARG_SOURCE) {
+                getASMFileName(args, HC_SOURCE, (char *)arg, strlen(arg));
+                continue;
+            }
+            args->argc++;
+            listAppend(args->argv, strdup(arg));
+            continue;
+        }
+
+        /* The option is known to PolyC. Ask it which field to set and
+         * where the value is. */
+        long long field = WpDriverOptionField(opt);
+        long long value_index = WpDriverValueArgIndex(i);
+        long long value_offset = 0;
+        char *value = NULL;
+
+        if (value_index >= 0) {
+            value_offset = WpDriverValueOffset(i, opt);
+            value = WpDriverHostCopyValue(value_index, value_offset);
+        } else if (field == WP_DRIVER_FIELD_OUTPUT_FILENAME) {
+            /* A value-taking option whose value is MISSING. The PolyC
+             * driver classified the option but could not resolve its
+             * value; that is the arity decision and it belongs to
+             * PolyC, so the failure is reported through the
+             * PolyC-selected status rather than through a C rule. */
+            long long status = WpDriverDecide();
+            if (status == WP_DRIVER_STATUS_ARITY) {
+                cliPanic("Unexpected end of input - expected `%s <option?>`\n",
+                         argv[i]);
+            }
+        }
+
+        switch (field) {
+            case WP_DRIVER_FIELD_PRINT_AST:      args->print_ast = 1; break;
+            case WP_DRIVER_FIELD_PRINT_TOKENS:   args->print_tokens = 1; break;
+            case WP_DRIVER_FIELD_CFG_CREATE:     args->cfg_create = 1; break;
+            case WP_DRIVER_FIELD_CFG_PNG:        args->cfg_create_png = 1; break;
+            case WP_DRIVER_FIELD_CFG_SVG:        args->cfg_create_svg = 1; break;
+            case WP_DRIVER_FIELD_ASSEMBLE_ONLY:  args->assemble_only = 1; break;
+            case WP_DRIVER_FIELD_WERROR:         args->werror = 1; break;
+            case WP_DRIVER_FIELD_EMIT_OBJECT:    args->emit_object = 1; break;
+            case WP_DRIVER_FIELD_RUN:            args->run = 1; break;
+            case WP_DRIVER_FIELD_JIT:            args->jit = 1; break;
+            case WP_DRIVER_FIELD_MEMSAFE:        args->memsafe = 1; break;
+            case WP_DRIVER_FIELD_REPL:           args->repl = 1; break;
+            case WP_DRIVER_FIELD_LSP:            args->lsp = 1; break;
+            case WP_DRIVER_FIELD_ASSEMBLE:       args->assemble = 1; break;
+            case WP_DRIVER_FIELD_TRANSPILE:      args->transpile = 1; break;
+            case WP_DRIVER_FIELD_TO_STDOUT:      args->to_stdout = 1; break;
+            case WP_DRIVER_FIELD_DUMP_IR:        args->dump_ir = 1; break;
+            case WP_DRIVER_FIELD_DUMP_IR_POOLED: args->dump_ir_pooled = 1; break;
+            case WP_DRIVER_FIELD_EMIT_LLVM:      args->emit_llvm = 1; break;
+            case WP_DRIVER_FIELD_CAP_TABLE:      args->print_cap_table = 1; break;
+            case WP_DRIVER_FIELD_MEM_STATS:      args->print_mem_stats = 1; break;
+            case WP_DRIVER_FIELD_USE_LEGACY_X86: args->use_legacy_x86 = 1; break;
+            case WP_DRIVER_FIELD_FPIC:           args->fPIC = 1; break;
+            case WP_DRIVER_FIELD_EMIT_DYLIB:
+                args->emit_dylib = 1;
+                args->lib_name = value;
+                break;
+            case WP_DRIVER_FIELD_OUTPUT_FILENAME:
+                args->output_filename = value;
+                break;
+            case WP_DRIVER_FIELD_CLIBS:
+                args->clibs = value;
+                break;
+            case WP_DRIVER_FIELD_DEFINES_LIST:
+                if (args->defines_list == NULL) args->defines_list = listNew();
+                listAppend(args->defines_list, value);
+                break;
+            case WP_DRIVER_FIELD_INSTALL_DIR:
+                args->install_dir = value;
+                break;
+            case WP_DRIVER_FIELD_TARGET:
+                cliApplyTarget(args, value);
+                break;
+            case WP_DRIVER_FIELD_HELP:
+                cliPrintUsage();
+                break;
+            case WP_DRIVER_FIELD_VERSION:
+                cliVersionPrint(args);
+                break;
+            case WP_DRIVER_FIELD_TERRY:
+                cliTerryInfo();
+                break;
+            default:
+                break;
+        }
+
+        /* A NEXT-valued option consumed the following argument. */
+        if (value_index == i + 1) i++;
+    }
+
+    /* The remaining checks are the PolyC driver's decision, read back
+     * through the PolyC-selected status.
+     *
+     * The live CLI ran three checks after the option loop, in this
+     * order:
+     *
+     *   1. `-o-` may only be used together with `-S`
+     *   2. the collected unknown arguments are reported
+     *   3. the absence of an input file is reported
+     *
+     * The PolyC driver decides WHICH of these applies (the status),
+     * and the C side only performs the chosen one. The order among
+     * them is the driver's decision too: the status is a single
+     * value, and the C side tests it in the live order. */
+    long long status = WpDriverDecide();
+
+    /* 1. `-o-` may only be used together with `-S`. */
+    if (args->to_stdout && !args->assemble_only) {
+        cliPanic("`-o-` can only be used in conjunction with `-S` for "
+                 "printing assembly to stdout\n");
+    }
+
+    /* 2. The collected unknown arguments are reported. The PolyC
+     * driver decided that an unknown argument is present; the C side
+     * only formats the list it collected. */
+    if (status == WP_DRIVER_STATUS_USAGE) {
+        if (args->argc > 0 && !args->jit && !args->run) {
+            AoStr *s = cliConcatArgv(args);
+            cliPanic("Unknown commandline options: %s\n", s->data);
+        }
+    }
+
+    /* 3. An option whose value is MISSING is an arity violation. The
+     * PolyC driver made the arity decision; the C side reports it. */
+    if (status == WP_DRIVER_STATUS_ARITY) {
+        for (int k = 1; k < argc; k++) {
+            long long o = WpDriverClassifyOption(k);
+            if (o < 0) continue;
+            if (WpDriverValueArgIndex(k) < 0) {
+                cliPanic("Unexpected end of input - expected `%s <option?>`\n",
+                         argv[k]);
+            }
+        }
+    }
+
+    /* 4. The absence of an input file is reported. */
+    if (status == WP_DRIVER_STATUS_NO_INPUT) {
+        if (args->infile == NULL && !args->repl && !args->lsp
+            && !args->print_cap_table) {
+            cliNoInputFiles();
+        }
+    }
+    return 1;
+}
+#endif /* HCC_USE_SELFHOST_DRIVER_WP001 */
 void cliArgsInit(CliArgs *args) {
     memset(args,0,sizeof(CliArgs));
     args->clibs = "";

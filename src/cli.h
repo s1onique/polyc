@@ -125,6 +125,21 @@ void cliArgsInit(CliArgs *args);
 int cliParseArgs(struct CliArgs *cli_args, int argc, char **argv);
 __noreturn void cliPanicGeneric(const char *const_msg, const char *fmt, va_list ap);
 
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.
+ * The target selection, shared by the legacy C parser and the
+ * PolyC-driven parser. */
+void cliApplyTarget(CliArgs *args, const char *value);
+
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.
+ * The legacy C parser is the selector-OFF reference implementation. In
+ * the production build it is not even compiled. */
+int cliParseArgsLegacy(CliArgs *args, int argc, char **argv);
+
+/* ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.
+ * The PolyC-driven parser: every decision is made by the compiled
+ * PolyC driver and read back through the frozen seam. */
+int cliParseArgsPolyC(CliArgs *args, int argc, char **argv);
+
 AoStr *cliConcatArgv(CliArgs *args);
 const char *cliTargetToString(enum CliTarget target);
 
