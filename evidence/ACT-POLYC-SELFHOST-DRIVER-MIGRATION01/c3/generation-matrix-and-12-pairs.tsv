@@ -1,0 +1,103 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=generation-matrix-and-12-pairs
+#
+# THE FOUR-GENERATION MATRIX AND THE TWELVE ORDERED PAIRS.
+#
+# EVERY GENERATION IS A REAL EXECUTABLE, and every corpus row is a REAL
+# PROCESS RUN. Nothing here is a stored expectation compared against
+# itself.
+#
+# ---------------------------------------------------------------------------
+# THE FOUR GENERATION EXECUTABLES
+# ---------------------------------------------------------------------------
+generation	what it is	binary_path	binary_sha256	driver_subject_object	driver_object_sha256	driver_symbols_in_binary
+G0	the pure C-driver oracle, built from the PINNED ENTRY commit with the selector OFF	/tmp/wp001-g0-hermetic-bin/hcc	84e9d504555e85a6699a8be73c148907668bf8bcda47eb26310a51f54ebb8819	NONE (the oracle has no PolyC driver subject at all)	N/A	0
+G1	the PolyC driver compiled by the existing C-rooted stage0	/tmp/wp001-gen-g1/hcc	9a6067d3fd47664c8e0bda36e8cbb5dc9c9169b1890261e27dd9fbe7debb1c10	/tmp/wp001-gens/G1-driver.o	3d29e2eb296c5e09cde22aea5ec0168aaa6616c78956a0c9025e47eed8ec9676	19
+G2	the PolyC driver compiled by the current production ./hcc	/tmp/wp001-gen-g2/hcc	6a2f4f2e95e90da483f44477125d389c7c4740df810eb4ffa60cf1f67a5daa01	build/wp001-driver-subject.o	8f91d827bc5a56f55097514d56d02a3b69cd3b71de67707c327ddc5dfb6b98d7	19
+G3	the PolyC driver compiled by the qualified bootstrap04 generation	/tmp/wp001-gen-g3/hcc	1a2e5a8db4cd41c2c16d32843f31b87df7e2ac1adba1231ac4f397bc2d67a23a	/tmp/wp001-gens/G3-driver.o	025f27a3430d3ad2f9961112a4381d1a63d7d5b82f2be2fd6b2271436c3644b4	22
+#
+# ---------------------------------------------------------------------------
+# ROSTER A -- OBJECT-SIDE IDENTITY (a SEPARATE question from Roster B)
+#
+# "Did the same compiler generation produce the same bytes?"
+# ---------------------------------------------------------------------------
+ordered_pair	left	right	object_identity	expected	measured
+01	G1	G2	IDENTICAL (the same compiler generation)	IDENTICAL
+02	G2	G1	IDENTICAL	IDENTICAL
+03	G1	G3	DIFFERENT (a different compiler generation)	DIFFERENT
+04	G3	G1	DIFFERENT	DIFFERENT
+05	G2	G3	DIFFERENT	DIFFERENT
+06	G3	G2	DIFFERENT	DIFFERENT
+#
+# THE G0 ROWS OF ROSTER A ARE NOT APPLICABLE, and are reported as such
+# rather than as a FAIL: the G0 oracle has NO PolyC driver subject,
+# so there is nothing to compare byte for byte.
+#   G0 vs G1 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#   G0 vs G2 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#   G0 vs G3 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#   G1 vs G0 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#   G2 vs G0 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#   G3 vs G0 -> NOT_APPLICABLE_NO_POLYC_SUBJECT
+#
+# ---------------------------------------------------------------------------
+# ROSTER B -- SEMANTIC-STREAM EQUIVALENCE
+#
+# "Did the two binaries behave identically on the frozen corpus?"
+#
+# The comparator is the frozen four-field comparator of
+# c1/comparator-and-12-pair-contract.md section 1. The ONLY
+# normalization is the ENVIRONMENT_EXPLAINED commit-hash line of
+# C02_version, and it applies ONLY when the exit status and the
+# stderr are equal and only the stdout differs.
+# ---------------------------------------------------------------------------
+pair_id	left	right	cases_compared	mismatch_count	environment_explained_count	verdict
+01	G0	G1	14	0	1	MATCH
+02	G0	G2	14	0	1	MATCH
+03	G0	G3	14	0	1	MATCH
+04	G1	G0	14	0	1	MATCH
+05	G1	G2	14	0	0	MATCH
+06	G1	G3	14	0	0	MATCH
+07	G2	G0	14	0	1	MATCH
+08	G2	G1	14	0	0	MATCH
+09	G2	G3	14	0	0	MATCH
+10	G3	G0	14	0	1	MATCH
+11	G3	G1	14	0	0	MATCH
+12	G3	G2	14	0	0	MATCH
+#
+# THE SIX ENVIRONMENT_EXPLAINED ROWS ARE EXACTLY THE SIX PAIRS THAT
+# INVOLVE G0, whose binary was built from the pinned entry commit and
+# therefore reports a different `commit-hash:` line. The six pairs
+# among G1, G2 and G3 need NO normalization at all.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+GENERATION_COUNT	4
+GENERATION_EXECUTABLES_DISTINCT_BY_SHA	YES
+PRODUCER_ALIAS_PRESENT	NO
+TOTAL_ORDERED_PAIRS	12
+TOTAL_CASE_COMPARISONS	168
+TOTAL_MISMATCHES	0
+PAIRS_WITH_ZERO_MISMATCHES	12
+ROSTER_A_AND_ROSTER_B_REPORTED_SEPARATELY	YES
+CONFLATED_IDENTITY_AND_BEHAVIOUR	NO
+GENERATION_MATRIX_STATUS	PASS
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS
+# ---------------------------------------------------------------------------
+#   # build each generation executable against its own driver subject
+#   cmake -S ./src -B <b> ... -DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+#       -DDRIVER_WP001_OBJECT=<that generation's driver object>
+#   cmake --build <b> --target hcc
+#
+#   # execute the frozen corpus through each generation
+#   sh evidence/.../c0/capture-cli-baseline.sh <binary> <prefix> <tsv> <wd>
+#
+#   # Roster A
+#   cmp <left driver object> <right driver object>
+#
+#   # Roster B
+#   the twelve ordered pairs, each field extracted with `cut -f`

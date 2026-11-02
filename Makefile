@@ -807,6 +807,40 @@ $(DRIVER_WP001_OBJ): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PRE
 	@echo "DRIVER_WP001_SUBJECT_ARCH=$$(file -b "$@" | sed -e 's/.*object //')"
 
 driver-wp001-subject: $(DRIVER_WP001_OBJ)
+
+# ---------------------------------------------------------------------------
+# The WP-001 NEGATIVE-CONTROL DETECTOR.
+#
+# It is a COMPILED PolyC program: the ACT requires a "compiled PolyC
+# verifier", not a shell label reader. It is built by the REAL
+# production compiler and linked against the hermetic test prefix's
+# libtos, exactly like every other PolyC subject in this tree.
+#
+# It is NOT part of the production compiler and is NOT linked into it.
+# It is a quality tool.
+# ---------------------------------------------------------------------------
+DRIVER_MIGRATION01_NC_SRC = tools/quality/driver-migration01-nc.HC
+DRIVER_MIGRATION01_NC_OBJ = build/driver-migration01-nc.o
+DRIVER_MIGRATION01_NC_BIN = build/driver-migration01-nc
+
+.PHONY: driver-migration01-nc
+driver-migration01-nc: $(DRIVER_MIGRATION01_NC_BIN)
+
+$(DRIVER_MIGRATION01_NC_OBJ): $(DRIVER_MIGRATION01_NC_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(DRIVER_MIGRATION01_NC_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-migration01-nc: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_MIGRATION01_NC_BIN): $(DRIVER_MIGRATION01_NC_OBJ)
+	$(C_COMPILER) $(DRIVER_MIGRATION01_NC_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "DRIVER_MIGRATION01_NC=$@"
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \

@@ -1,0 +1,113 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=c3-conservation-and-gates
+#
+# THE CONSERVATION BASELINE AND THE GATES, RE-MEASURED FRESHLY AT C3.
+#
+# ---------------------------------------------------------------------------
+# THE PARSER BASELINE
+#
+# The historical command compiles each test file with a BARE `../../hcc`,
+# which resolves the builtin header at the compile-time INSTALL_PREFIX
+# /usr/local/include/tos.HH. That path does not exist on this machine and
+# cannot be created (no sudo, not writable), so the historical command
+# fails with "Failed to open file: /usr/local/include/tos.HH".
+#
+# THIS IS AN ENVIRONMENT PRECONDITION, NOT A REGRESSION, and it was
+# PROVEN by running the SAME command against the UNMODIFIED G0 ORACLE,
+# which produces the SAME failure.
+#
+# The baseline was therefore re-measured under a HERMETIC EQUIVALENT:
+# the compiler under test is built with
+# -DCMAKE_INSTALL_PREFIX=<abs>/build/test-prefix, so the bare
+# `../../hcc` of the runner resolves the SAME 56333-byte tos.HH
+# through the hermetic prefix instead of through /usr/local. The test
+# corpus, the compiler, the header content and the runner are
+# otherwise UNCHANGED, and BOTH the G0 oracle and the migrated
+# compiler were measured under the SAME conditions.
+# ---------------------------------------------------------------------------
+key	value
+TEST_PREFIX_TOS_HH_EXISTS	YES
+TEST_PREFIX_TOS_HH_BYTES	56333
+TEST_PREFIX_LIBTOS_A_EXISTS	YES
+TEST_PREFIX_LIBTOS_A_BYTES	157760
+FAIL_OPEN_PREFIX_BEHAVIOUR	NOT_TRIGGERED
+PARSER_ASSERTIONS_PASSED	376
+PARSER_ASSERTIONS_TOTAL	376
+PARSER_TEST_BLOCKS	90
+PARSER_FAILED_LINES	0
+PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741
+PARSER_ASSERTION_SEQUENCE_MD5_MATCHES_HISTORICAL	YES
+PARSER_CONSERVATION_STATUS	PASS
+#
+# ---------------------------------------------------------------------------
+# THE THREE DIRECT LEXER DIFFERENTIALS
+# ---------------------------------------------------------------------------
+key	value
+LEXER07_DIRECT_DIFFERENTIAL	PASS
+LEXER07_DIRECT_DIFF_PASS	89
+LEXER07_DIRECT_DIFF_FAIL	0
+LEXER08_DIRECT_DIFFERENTIAL	PASS
+LEXER08_DIRECT_DIFF_PASS	45
+LEXER08_DIRECT_DIFF_FAIL	0
+LEXER09_DIRECT_DIFFERENTIAL	PASS
+LEXER09_DIRECT_DIFF_PASS	23
+LEXER09_DIRECT_DIFF_FAIL	0
+LEXER_DIRECT_STATUS	PASS
+#
+# ---------------------------------------------------------------------------
+# THE OTHER BASELINES
+# ---------------------------------------------------------------------------
+key	value
+LEXER07_BROAD_CORPUS_STATUS	NOT_REMEASURED
+LEXER07_BROAD_CORPUS_HISTORICAL_IDENTITY	7ee761440de83552e751e3c3976c1683
+LEXER07_BROAD_CORPUS_HISTORICAL_FAILS	15
+CROSS_TARGET_PREFIX_STATUS	NOT_REMEASURED
+CROSS_TARGET_PREFIX_HISTORICAL_IDENTITY	67
+F_NO_PYTHON_STATUS	FAIL_KNOWN_BASELINE
+F_NO_PYTHON_TOTAL_PATHS	12
+F_NO_PYTHON_NEW_PATHS	0
+F_POLYC_TOOLS_STATUS	UNAVAILABLE
+F_POLYC_TOOLS_REASON	the canonical checker tools/factory/factory-polyc-tools-check.HC does not exist
+#
+# ---------------------------------------------------------------------------
+# THE ORACLE INDEPENDENCE AND THE EXISTING AUTHORITIES, RE-MEASURED
+# ---------------------------------------------------------------------------
+key	value
+G0_DRIVER_SYMBOLS	0
+ON_DRIVER_SYMBOLS	19
+PRE_EXISTING_AUTHORITIES_RE_MEASURED	15
+PRE_EXISTING_AUTHORITIES_STILL_LINKED	15
+PRE_EXISTING_AUTHORITIES_MISSING	0
+NEW_POLYC_PRODUCTION_AUTHORITIES	1
+PRODUCTION_POLYC_AUTHORITIES_FINAL	16
+#
+# ---------------------------------------------------------------------------
+# THE GATES
+# ---------------------------------------------------------------------------
+key	value
+GATE_FAST_STATUS	PASS
+GATE_FAST_CHECKS	diff-check,shell-syntax,doc-invariants,large-file-guard,factory-closure-status
+GATE_PUSH_STATUS	PASS
+GATE_PUSH_CHECKS	build,install,gep01,aot,jit,lsp,diff-check
+APPEND_ONLY_SUITE	PASS 11 of 11
+CLOSURE_STATUS	PASS 61 of 61 pairs
+F14_PREDECESSOR_EVIDENCE_DIFF	EMPTY (the predecessor's evidence is byte-identical)
+PRODUCTION_DIFF_PATHS	src/CMakeLists.txt src/cli.c src/cli.h src/cmake/VerifyDriverWp001Object.cmake src/selfhost-driver-wp001.c src/selfhost-driver-wp001.h tools/bootstrap/selfhost-driver-wp001.HC
+PRODUCTION_DIFF_TEST_SCRIPT_OR_GATE_MODIFIED	NO
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS
+# ---------------------------------------------------------------------------
+#   cmake -S ./src -B <b> ... -DCMAKE_INSTALL_PREFIX=<abs>/build/test-prefix
+#   cmake --build <b> --target hcc
+#   cd <corpus>/src/tests
+#   ../../hcc --install-dir=<abs>/build/test-prefix ./run.HC -o <runner>
+#   <runner> > <out> 2>&1
+#   grep -o 'PASSED: [0-9]*/[0-9]*' <out> | md5
+#   make lexer07-direct-differential | lexer08 | lexer09
+#   ./scripts/quality/factory-no-python-check.sh
+#   ./scripts/quality/gate-fast.sh
+#   make gate-push
+#   sh scripts/quality/factory-append-only-test.sh
+#   git diff --stat <pinned> HEAD -- evidence/<predecessor>/

@@ -1,0 +1,88 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=causality-and-poisoning
+#
+# THE CAUSAL OWNERSHIP, PROVEN BY EXECUTION IN BOTH DIRECTIONS.
+#
+# Direction 1 (the driver MATTERS): poison the PolyC driver subject
+# and the real compile route must BREAK.
+# Direction 2 (the C path does NOT matter): mutate the legacy C
+# driver's dormant branches and the migrated route must NOT CHANGE.
+#
+# ---------------------------------------------------------------------------
+# DIRECTION 1: POISONING THE POLYC DRIVER SUBJECT
+# ---------------------------------------------------------------------------
+check	measured	result
+POISON_OBJECT_SOURCE	/tmp/wp001-poison.c -- a C object exporting the TWELVE driver symbol NAMES with implementations that decide NOTHING
+POISON_OBJECT_SHA256	0861db1706c4923caab05c20bbfdb04c720e88df9a6beb7d54deb7ed09eb8b08
+VERIFIER_ACCEPTS_THE_POISON	DRIVER_WP001_OBJECT_STATUS=PASS
+POISONED_BINARY_BUILT	YES, exit 0, SHA-256 853ef8b9a6dfe5f9126ec9af5e825ffafeacc15c502eaf879a7416a18a644c25
+POISONED_CASES_DIFFERING_FROM_PRISTINE	14 of 14
+POISONED_EXIT_STATUS	139 (SIGSEGV) on every case
+#
+# THE VERIFIER ACCEPTS THE POISON BECAUSE IT CHECKS THE SYMBOL
+# ROSTER, NOT THE BEHAVIOUR. That is BY DESIGN: the roster check
+# guarantees the subject is a real driver object, and the BEHAVIOUR
+# is proven separately, here, by this experiment. A verifier that
+# tried to check the behaviour would be a second policy, which the
+# ACT forbids.
+#
+# THE CONCLUSION IS UNAMBIGUOUS: the production route READS THE
+# POLYC DRIVER. A subject that decides nothing makes EVERY case
+# crash. There is no fallback to the C parser: the legacy parser is
+# not even compiled into the production build.
+#
+# ---------------------------------------------------------------------------
+# DIRECTION 2: REMOVING THE OBJECT FAILS THE BUILD
+# ---------------------------------------------------------------------------
+check	measured	result
+CONFIGURE_WITH_A_MISSING_SUBJECT	exit 1	FAILED
+REASON_TOKEN	REJECT_MISSING_DRIVER_SUBJECT
+MESSAGE	PolyC driver subject /tmp/wp001-absent-driver.o does not exist. Refusing to link the production compiler without a verified PolyC compiler driver.
+SILENT_FALLBACK_TO_C	NO
+SELECTOR_OFF_BUILD_HAS_NO_DRIVER	0 _WpDriver symbols, and it links because it is the ORACLE, not a fallback
+#
+# ---------------------------------------------------------------------------
+# DIRECTION 3: THE LEGACY C DRIVER IS DORMANT ON THE MIGRATED ROUTE
+# ---------------------------------------------------------------------------
+check	measured	result
+LEGACY_PARSER_IN_PRODUCTION_OBJECT	0 occurrences of _cliParseArgsLegacy
+CLI_RELOCATIONS_INTO_THE_DRIVER	8
+THE_EIGHT	_WpDriverClassifyOption _WpDriverClassifyArgument _WpDriverValueArgIndex _WpDriverValueOffset _WpDriverOptionField _WpDriverDecide _WpDriverHostSetArgv _WpDriverHostCopyValue
+#
+# ---------------------------------------------------------------------------
+# THE C-DORMANCY MUTANTS, EXECUTED
+#
+# Each of the three DORMANT rows was mutated IN PLACE in src/cli.c,
+# the production compiler was REBUILT, the frozen corpus was
+# RE-EXECUTED, and src/cli.c was RESTORED and verified BYTE-IDENTICAL
+# by SHA-256.
+# ---------------------------------------------------------------------------
+dormant_row	mutation	src_cli_c_restored_sha256	restored_byte_identical	cases_changed	verdict
+cliParseAssign	the function returns the constant "MUTANT" instead of walking to the '='	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb	YES	0 of 14	DORMANT_CONFIRMED
+cliParseInt	the value is the constant 4242 instead of strtol(rawarg)	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb	YES	0 of 14	DORMANT_CONFIRMED
+cliParseBoolean	the boolean is the constant 7	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb	YES	0 of 14	DORMANT_CONFIRMED
+#
+# ---------------------------------------------------------------------------
+# THE COMPARATOR'S PROVEN SENSITIVITY (AC23)
+#
+# The comparator must be shown CAPABLE of detecting a representative
+# divergence. Each direction below alters a REAL run and the
+# comparator must report DIFF.
+# ---------------------------------------------------------------------------
+direction	alteration	comparator_verdict
+EXIT_STATUS	the exit status of C07_compile_object changed from 0 to 7	DIFF
+STDERR	the stderr digest of C07_compile_object changed to a null digest	DIFF
+STDOUT	the stdout digest of C01_help changed to a null digest	DIFF
+OBJECT_SIDE	the produced object file was removed from the working directory	produced_object_present_before_removal=YES, after_removal=NO	DETECTED
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT
+# ---------------------------------------------------------------------------
+key	value
+POLYC_DRIVER_IS_LOAD_BEARING	YES
+POISON_BREAKS_ALL_CASES	YES
+SILENT_FALLBACK_TO_C	NO
+C_DORMANCY_MUTANTS_ALL_SILENT	YES
+COMPARATOR_SENSITIVE_IN_ALL_FOUR_DIRECTIONS	YES
+CAUSALITY_STATUS	PASS
