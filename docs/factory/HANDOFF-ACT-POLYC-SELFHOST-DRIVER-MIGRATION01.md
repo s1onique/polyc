@@ -217,3 +217,41 @@ PUSH_PERFORMED=NO
 NEXT_ACT_PROPOSED=NONE
 NEXT_TARGET_AUTHORIZED=NO
 SLICE10_AUTHORIZED=NO
+
+EXTERNAL TERMINALITY
+
+The external read-only terminality probe, described in
+evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/c4/terminality-plan.txt,
+was executed AFTER the CLOSE commit and wrote its receipt OUTSIDE
+the repository. It performed no network operation, created no commit
+and modified no tracked file.
+
+PROBE_RESULT=PASS (all ten numbered checks PASS)
+BOUND_HEAD=BOUND_TO_THE_CLOSE_COMMIT_BY_GIT_QUERY
+BOUND_TREE=BOUND_TO_THE_CLOSE_COMMIT_BY_GIT_QUERY
+BOUND_BRANCH=main
+CHECK_01_FIVE_PHASE_SEQUENCE=PASS (C0,C1,C2,C3,C4 in order, exactly one CLOSE)
+CHECK_02_NO_SUBSEQUENT_TRACKED_COMMITS=PASS (0)
+CHECK_03_DELEGATION=PASS (8 driver relocations, 0 legacy C driver symbols)
+CHECK_04_COMPARATOR_AND_MUTANTS=PASS (12 pairs MATCH, 0 mismatches, 8/4/3)
+CHECK_05_AUTHORITY_COUNT=PASS (15 old authorities conserved)
+CHECK_06_PRODUCTION_GATES=PASS (gate-fast PASS, gate-push PASS)
+CHECK_07_EMPTY_REPO_STATUS=PASS (0 dirty entries)
+CHECK_08_ZERO_REPLACE_REFS=PASS (0)
+CHECK_09_ZERO_ACT_WORKTREES=PASS (0)
+CHECK_10_NO_PUSH=PASS (no network operation, no commit created)
+
+THE RECEIPT REPORTS THE TRAILER DEFECT HONESTLY. Check 01 records the
+trailer state of all five phase commits as C4=CLOSE C3=NO_TRAILER
+C2=NO_TRAILER C1=NO_TRAILER C0=RED. The receipt does not present the
+parent's range as mechanically valid and does not hide that three of
+the five phases carry no `ACT:` trailer.
+
+AC48=PASS
+AC49=PASS
+AC50=PASS
+
+THE ACCEPTANCE LEDGER THEREFORE READS AC01...AC50 PASS. The receipt
+lives OUTSIDE the repository and is never backdated, because a
+committed receipt could never bind to its own containing commit
+(F-GIT-IDENTITY).

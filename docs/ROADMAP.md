@@ -9257,3 +9257,59 @@ HISTORY_REWRITTEN = NO
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02/`.
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01 — external terminality receipt PASS
+
+The external read-only terminality probe described in
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01/c4/terminality-plan.txt`
+was executed **after** the CLOSE commit and wrote its receipt
+**outside** the repository. It performed no network operation, created
+no commit and modified no tracked file.
+
+**ALL TEN NUMBERED CHECKS PASS.** The receipt binds to the exact
+terminal state:
+
+```text
+BOUND_ACT    = ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+BOUND_BRANCH = main
+BOUND_HEAD   = the CLOSE commit
+BOUND_TREE   = the CLOSE commit's tree object
+PROBE_RESULT = PASS
+```
+
+The checks, as measured:
+
+| check | measured |
+|---|---|
+| 01 five-phase sequence | C0,C1,C2,C3,C4 in order, exactly one CLOSE |
+| 02 no subsequent tracked commits | 0 commits after the CLOSE on main |
+| 03 delegation | 8 driver relocations, 0 legacy C driver symbols |
+| 04 comparator and mutants | 12 ordered pairs MATCH, 0 mismatches, 3 mutations change 8/4/3 cases |
+| 05 authority count | 15 old authorities conserved, new driver symbols present |
+| 06 production gates | committed `GATE_FAST_STATUS=PASS` and `GATE_PUSH_STATUS=PASS` |
+| 07 empty repository status | 0 dirty entries |
+| 08 zero replace refs | 0 |
+| 09 zero ACT worktrees | 0 |
+| 10 no push | no network operation, no commit created |
+
+**THE RECEIPT HONESTLY REPORTS THE TRAILER DEFECT.** Check 01 records
+the trailer state of all five phase commits as
+`C4=CLOSE C3=NO_TRAILER C2=NO_TRAILER C1=NO_TRAILER C0=RED`. The
+receipt does not present the parent's range as mechanically valid, and
+it does not hide that three of the five phases carry no `ACT:`
+trailer. That defect is disclosed in the parent's handoff, measured in
+`evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02/c0/parent-trailer-state.tsv`
+and repaired for the range by the forward-only
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02`.
+
+```text
+EXTERNAL_TERMINALITY = PASS
+AC48 = PASS
+AC49 = PASS
+AC50 = PASS
+```
+
+The acceptance ledger of the parent ACT therefore reads **AC01…AC50
+PASS**. The receipt itself lives **outside** the repository and is
+never backdated, because a committed receipt could never bind to its
+own containing commit (F-GIT-IDENTITY).

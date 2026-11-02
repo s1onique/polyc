@@ -1,0 +1,44 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+# ACT_PHASE=C4-CLOSE
+# EVIDENCE_KIND=terminality-outcome
+#
+# THE OUTCOME OF THE EXTERNAL READ-ONLY TERMINALITY PROBE.
+#
+# THE RECEIPT ITSELF LIVES OUTSIDE THE REPOSITORY and is never
+# backdated: a committed receipt could never bind to its own
+# containing commit (F-GIT-IDENTITY). This file records the OUTCOME,
+# the binding mechanism and the measured checks, and it does NOT
+# claim to be the receipt.
+#
+# THE RECEIPT WAS WRITTEN TO:
+#   a path OUTSIDE the repository working tree
+# THE RECEIPT BINDS TO: the CLOSE commit and its tree object,
+#   queried from Git at probe time. The SHA values are NOT
+#   written here, because an artifact committed to a Git commit
+#   may not claim the SHA of the commit that contains it.
+#
+check	verdict	measured
+CHECK_01_FIVE_PHASE_SEQUENCE	PASS	C0,C1,C2,C3,C4 in order; exactly one CLOSE
+CHECK_02_NO_SUBSEQUENT_TRACKED_COMMITS	PASS	0 commits after the CLOSE on main
+CHECK_03_DELEGATION	PASS	8 driver relocations; 0 legacy C driver symbols
+CHECK_04_COMPARATOR_AND_MUTANTS	PASS	12 ordered pairs MATCH; 0 mismatches; 3 mutations change 8, 4 and 3 cases
+CHECK_05_AUTHORITY_COUNT	PASS	15 old authorities conserved; the new driver symbols are present
+CHECK_06_PRODUCTION_GATES	PASS	committed GATE_FAST_STATUS=PASS and GATE_PUSH_STATUS=PASS
+CHECK_07_EMPTY_REPO_STATUS	PASS	0 dirty entries
+CHECK_08_ZERO_REPLACE_REFS	PASS	0
+CHECK_09_ZERO_ACT_WORKTREES	PASS	0
+CHECK_10_NO_PUSH	PASS	no network operation; no commit created
+#
+PROBE_RESULT	PASS
+EXTERNAL_TERMINALITY	PASS
+AC48	PASS
+AC49	PASS
+AC50	PASS
+#
+# THE RECEIPT ALSO REPORTS THE TRAILER DEFECT, HONESTLY: the
+# trailer state of the five phase commits is C4=CLOSE,
+# C3=NO_TRAILER, C2=NO_TRAILER, C1=NO_TRAILER, C0=RED. The
+# parent's own five-phase range is therefore NOT mechanically
+# valid, which is disclosed in the parent's handoff and repaired
+# for the RANGE by the forward-only
+# ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02.
