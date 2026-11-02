@@ -1,0 +1,40 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=historical-act-throughput
+#
+# MEASURED FROM REAL GIT HISTORY AND THE REAL SUBJECT MANIFEST.
+#
+# git log --all over the whole repository yields 79 distinct
+# ACT-POLYC-SELFHOST-* ids, of which 52 carry the canonical
+# "C<n>: <PHASE>" subject form.
+#
+# THE CRITICAL MEASUREMENT is the ratio of IMPLEMENTED SITES
+# to IMPLEMENTATION ACTs. It is measured from the subject
+# manifest of CENSUS01 (9 PolyC authorities, 1 symbol each)
+# joined against the git history.
+#
+# THE FINDING THAT MATTERS FOR THE REBASE: every measured
+# implementation cohort migrated ONE decision site per
+# implementation ACT. The archived forecast assumed 12 sites per
+# ACT (FA-04). The measured rate is 1.0 for the cohorts that
+# have actually run. The archived FA-04 is therefore an
+# ASSUMPTION WITH NO MEASURED COHORT, and this ACT does not
+# inherit it.
+#
+# NOTE ON COMMIT COUNTS vs ACT COUNTS: the commit column below
+# counts COMMITS, because that is what git can measure
+# without interpreting history. A canonical ACT has 5 phase
+# commits (C0..C4). The correction rows count the commits of
+# the correction ACT ids.
+#
+cohort	measure	sites	value	basis
+POLYC_SUBJECT_MANIFEST	sites_implemented_total	9	9	the CENSUS01 subject manifest lists 9 PolyC subjects, each with defined_text_symbols=1
+PARSER_SLICE_IMPL	sites_per_implementation_act	9	1.00	PS-01..PS-09 map one-to-one onto PADDING-DELEGATE01 and SLICE02..SLICE09
+PARSER_SLICE_CORRECTION	correction_acts_per_9_impl_acts	0	0.44	SLICE03-CORRECTION01;SLICE06-AC11-CORRECTION01;SLICE07-EVIDENCE-CORRECTION01;SLICE08-EVIDENCE-CORRECTION01
+PARSER_HARDEN_CORRECTION	correction_rate_harden_cohort	0	2.00	SLICE02-HARDEN01-CORRECTION01 and -CORRECTION02 against 1 hardening ACT
+SURFACE_COHORT	commits_for_one_surface	1	24	SURFACE01 has 8 commits plus SURFACE01-CORRECTION01 with 16 commits
+LEXER04_CORRECTION_CHAIN	commits_for_one_lexer_site	0	30	LEXER04 has 5 commits plus CORRECTION01 6, 03 1, 04 5, 05 6, 06 5, 07 3
+RECON_COHORT	reconnaissance_act_ids_that_implemented_no_site	0	22	22 distinct RECON/SURFACE-RECON/CONSUMER-RECON ACT ids exist; none produced a PolyC subject
+WHOLE_REPO_SELFHOST_ACT_IDS	distinct_act_ids_in_history	NA	79	git log --all --format=%s over the whole repository
+WHOLE_REPO_PHASE_STRUCTURED_IDS	distinct_act_ids_with_canonical_phase_subject	NA	52	git log --all subject lines matching "ACT-POLYC-SELFHOST-* C<n>: <PHASE>"
+CANONICAL_ACT_COMMIT_SHAPE	commits_per_canonical_act	NA	5	a canonical ACT contributes C0 RED, C1 EVIDENCE, C2 IMPL, C3 EVIDENCE, C4 CLOSE

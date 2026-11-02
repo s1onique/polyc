@@ -1,0 +1,47 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c0-finding-refinement
+#
+# REFINEMENT OF A C0 FINDING. C0 is NOT rewritten (F14);
+# this file records the C1-phase refinement of what C0 observed.
+#
+# C0 OBSERVED (verbatim):
+#   "Historical forecast categories sum to 290, not 355; missing 65 is
+#    a model defect, not future work."
+#
+# C0 WAS RIGHT that 290 != 355. C0 WAS IMPRECISE in calling the
+# 65 a MODEL defect. The C1 recomputation of the archived verifier
+# source shows:
+#
+#   1. The forecast FORMULA is closed and fully reproducible. This ACT
+#      recomputed it from tools/quality/whole-compiler-census01-verify.HC
+#      and reproduced all four milestones EXACTLY:
+#        M1=154/348/948  M2=159/355/961  M3=161/358/967  M4=201/447/1208
+#      There is no arithmetic error in the model.
+#   2. The 65 is a DISPLAY defect: the six category columns
+#      (selection..shared_infra) sum to 290 because they report the
+#      per-component TOTALS of the three bundles, not the bundle base
+#      that the total is actually built from. The reported total is
+#        M2 = bundle_base_sum(345) + ABI(3) + blockers(4) + gen(3) = 355
+#      The displayed columns omit the per-bundle "1 + integ + proof"
+#      terms (9), the risk multiplier on B-1 (+59), and the
+#      difference between integ_sum(3) and the bundle base structure.
+#   3. The companion defect is real and already flagged by CENSUS01:
+#      critical_path_length EQUALS total_effort_sum for every milestone.
+#      The archived forecast has NO independently computed critical
+#      path. CENSUS01 itself records "critical-path=sum" as debt.
+#      THIS ACT therefore REPLACES critical_path_length with a real DAG
+#      critical path (c2/work-package-dependencies.tsv).
+#
+# NET EFFECT ON THE REBASE: none on the numbers, all on the
+# CONFIDENCE. The archived M2 159/355/961 is a reproducible, closed
+# formula; its weakness is its ASSUMPTIONS (FA-04 12 sites/ACT and
+# FA-08 1.25 risk multiplier), not its arithmetic. The rebased
+# model therefore attacks the assumptions, not the arithmetic.
+#
+c0_claim	refined_finding	evidence
+"categories sum to 290, not 355"	THE NUMBERS ARE CONFIRMED: the six displayed category columns sum to 290 against a reported total of 355	c2/forecast.tsv of CENSUS01, recomputed by this ACT
+"missing 65 is a model defect"	REFINED: the 65 is a DISPLAY defect, not an arithmetic defect; the underlying formula reproduces all four milestones exactly from the verifier source	c1/original-forecast-provenance.tsv; tools/quality/whole-compiler-census01-verify.HC lines 1089-1186
+"not future work"	CONFIRMED: the 65 is an accounting artefact of the archived presentation and represents no unbudgeted migration work	c1/original-forecast-provenance.tsv
+n/a	NEW FINDING: the archived critical_path_length column equals total_effort_sum for every milestone; there is no independently computed critical path in the archived forecast	c2/forecast.tsv of CENSUS01
+n/a	NEW FINDING: the archived M2_BELOW_100_ACTS=NOT_SUPPORTED verdict rests on m2_low=159>=100; under the archived FA-04 the optimistic bound is still above 100	c2/forecast.tsv and c2/forecast-assumptions.tsv of CENSUS01

@@ -1,0 +1,22 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=m2-target-semantics
+#
+# WHAT A WORKING POLYC-AUTHORED COMPILER ACTUALLY REQUIRES.
+#
+# Every row is a REQUIREMENT of the compiler-producing vertical
+# slice, derived from the REAL source of the real production link.
+# A requirement with no current PolyC source is OPEN, and the row
+# names the experiment that would resolve it.
+#
+req_id	requirement	why_required	current_source	status	resolving_experiment	evidence
+REQ-001	read a source file from the filesystem	the driver must consume an input path	NO_POLYC_SOURCE	OPEN	compile a PolyC source that reads a file and prints its size	c1/source-closure.tsv SRC-016(main.c)
+REQ-002	parse command-line arguments	the compiler is invoked as hcc -c in.HC -o out.o	NO_POLYC_SOURCE	OPEN	compile a PolyC source that parses an argument and echoes it	c1/source-closure.tsv SRC-007(cli.c)
+REQ-003	dispatch into the compile pipeline	the driver must select the compile mode	NO_POLYC_SOURCE	OPEN	compile a PolyC source that dispatches on a mode argument	c1/source-closure.tsv SRC-007(cli.c)
+REQ-004	produce a token stream from the source text	the pipeline lexes before it parses	PARTIAL_6_DORMANT_PROTOTYPES	OPEN	enable the HCC_USE_SELFHOST_COMPONENTS selector and observe the 6 dormant lexer sites	c1/source-closure.tsv SRC-013(lexer.c)
+REQ-005	build an AST from the token stream	the pipeline parses before it lowers	PARTIAL_9_MIGRATED_SITES	OPEN	implement the remaining parser decisions behind the 9 migrated sites	c1/source-closure.tsv SRC-019(parser.c)
+REQ-006	lower a semantically meaningful construct	the compiler must not be a token dumper	NO_POLYC_SOURCE	OPEN	lower one integer addition to an IR node in PolyC	c1/source-closure.tsv SRC-005(cctrl.c)
+REQ-007	emit a real compiler output	the M2 definition requires a working compiler, not a library; the assembler is the narrowest such output	NO_POLYC_SOURCE	OPEN	emit assembly text for a fixture from a PolyC source	c1/source-closure.tsv SRC-001(asm.c)
+REQ-008	own the shared ABI between the modules	the compiler modules must agree on the data layout	NO_POLYC_SOURCE	OPEN	compile two PolyC modules against a shared header contract	c1/source-closure.tsv SRC-002(aostr.c)
+REQ-009	manage process-global mutable state	the compiler carries AST and control-symbol globals	NO_POLYC_SOURCE	OPEN	exercise the global state path in a PolyC source	c1/source-closure.tsv SRC-005(cctrl.c)
+REQ-010	produce a linkable object file	the producer must emit an object the linker accepts	NO_POLYC_SOURCE	OPEN	compile a PolyC source to a .o and link it	c1/source-closure.tsv SRC-009(compile.c)

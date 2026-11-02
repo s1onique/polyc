@@ -1,0 +1,49 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=original-forecast-provenance
+#
+# THE ARCHIVED CENSUS01 FORECAST, DECOMPOSED TO ITS SOURCE.
+#
+# SOURCE: evidence/ACT-POLYC-SELFHOST-WHOLE-COMPILER-AUTHORITY-CENSUS01/
+#         c2/forecast.tsv (produced by the PolyC verifier
+#         tools/quality/whole-compiler-census01-verify.HC).
+#
+# This ACT RECOMPUTED the archived forecast independently from the
+# verifier source and reproduced every milestone EXACTLY:
+#   M1=154/348/948  M2=159/355/961  M3=161/358/967  M4=201/447/1208
+#   M2_BELOW_100_ACTS=NOT_SUPPORTED   UNKNOWN_NODES=3
+# The archived forecast is therefore NOT a mystery: it is a closed
+# formula over three bundles plus four additive programme constants.
+#
+# --- THE EXACT FORMULA (verifier lines 1089-1186) ---
+#   impl   = ceil(sites/12)            [FA-04: 12 sites/ACT]
+#   integ  = 1                         [FA-06]
+#   proof  = 1                         [FA-07]
+#   corr   = ceil((impl+integ)*44/100) [FA-03: measured 0.44]
+#   base   = 1+impl+integ+proof+corr, x1.25 if high_relevance
+#   lo     = 1+ceil(sites/20)+1+1+ceil((lo_impl+1)*25/100)
+#   hi     = ceil((1+ceil(sites/6)+1+1+ceil((hi_impl+1)*65/100))*150/100)
+#   M1     = sum(bundles) + ABI(3)
+#   M2     = M1 + blockers(4) + generation(3)
+#   M3     = M2 + convergence(3)
+#   M4     = M3 + ceil(M2*25/100)
+#
+category	archived_value	source_location	derivation
+BUNDLE_B1_BASE	325	c2/migration-bundles.tsv B-1	impl=ceil(2136/12)=178;integ=1;proof=1;corr=ceil(179*44/100)=79;base=1+178+1+1+79=260;x1.25(high_relevance)=325
+BUNDLE_B2_BASE	15	c2/migration-bundles.tsv B-2	impl=ceil(88/12)=8;integ=1;proof=1;corr=ceil(9*44/100)=4;base=1+8+1+1+4=15
+BUNDLE_B3_BASE	5	c2/migration-bundles.tsv B-3	impl=ceil(9/12)=1;integ=1;proof=1;corr=ceil(2*44/100)=1;base=1+1+1+1+1=5
+BUNDLE_BASE_SUM	345	c3/independent-bundle-and-forecast-recompute.tsv	325+15+5
+SHARED_INFRA_ABI	3	c2/forecast-assumptions.tsv FA-09	the programme ABI foundation
+SELECTION	3	c2/forecast.tsv selection_acts	the bundle count
+BOOTSTRAP_BLOCKERS	4	c2/forecast-assumptions.tsv FA-10	BB-01..BB-04
+GENERATION_HARNESS	3	c2/forecast-assumptions.tsv FA-11	the M2 generation harness
+M1_BASE	348	c2/forecast.tsv M1	345+3
+M2_BASE	355	c2/forecast.tsv M2	348+4+3
+M3_BASE	358	c2/forecast.tsv M3	355+3
+M4_BASE	447	c2/forecast.tsv M4	358+ceil(355*25/100)=358+89
+M2_LOW	159	c2/forecast.tsv M2	152+2(ABI)+3(blk)+2(gen)
+M2_HIGH	961	c2/forecast.tsv M2	943+5(ABI)+8(blk)+5(gen)
+M2_BELOW_100_ACTS	NOT_SUPPORTED	c2/forecast.tsv	verdict is NOT_SUPPORTED when m2_low>=100; the optimistic M2 low is 159
+UNKNOWN_NODES	3	c2/forecast.tsv	three UNK- nodes carried in the graph
+CRITICAL_PATH_DEFECT	355	c2/forecast.tsv critical_path_length	the critical_path_length column EQUALS total_effort_sum for every milestone; it is not an independently computed DAG path
+DISPLAYED_SUM_DEFECT	290	c2/forecast.tsv columns 5..10	selection+implementation+integration_abi+bootstrap+correction+shared_infra=3+187+3+10+84+3=290, which is 65 short of the reported total 355

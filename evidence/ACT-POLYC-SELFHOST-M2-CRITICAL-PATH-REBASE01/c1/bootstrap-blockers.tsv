@@ -1,0 +1,37 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=bootstrap-blockers
+#
+# EVERY PREVIOUSLY OBSERVED BLOCKER, RE-EVALUATED AGAINST THE SELECTED
+# SOURCE CLOSURE. A blocker that does NOT affect the selected
+# compiler-producing source is NOT counted as blocking it.
+#
+# The question each row answers is: "does compiling or running the
+# SELECTED PolyC compiler source actually require this?"
+#
+# Columns: blocker_id, class, source_path, witness, observed_status,
+#          minimal_source_requiring_it, blocks_precursor, blocks_m2,
+#          blocks_m3, safe_workaround, regression_probe, evidence
+#
+blocker_id	class	source_path	witness	observed_status	minimal_source_requiring_it	blocks_precursor	blocks_m2	blocks_m3	safe_workaround	regression_probe	evidence
+BB-01	COMPILER_CORRECTNESS	src/main.c:32 (int is_terminal;) and the global-initializer path	predecessor A64 RES-01; reproduced by the predecessor C2/C3	historical_only__NOT_REMEASURED_BY_THIS_ACT	A PolyC driver with an INITIALISED file-scope global	UNKNOWN	UNKNOWN	UNKNOWN	NONE_YET_DERIVED	compile a PolyC driver with an initialised file-scope global and read argc	evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/c3/residue.tsv
+BB-02	LANGUAGE_INFERENCE	src/ir-optimise.c and src/ir-types.c (the inference and optimiser paths)	predecessor BB-02 with a reported 16GB OOM	UNSUPPORTED_GRAMMAR_CONFIRMED_BY_THIS_ACT	NO	NO	NO	NONE	the ternary operator is simply not used by the selected source; the selected source uses explicit if/else	compile a PolyC expression with a pointer-valued ternary and observe the parse rejection	THIS ACT MEASURED IT: tools/quality/m2-critical-path-rebase01-red.HC failed to compile with "Unexpected integer 1 perhaps you meant ;" on five ternary expressions, so the operator is UNSUPPORTED GRAMMAR not an inference hang
+BB-03	BUILD_CONCURRENCY	src/main.c:35 (#define ASM_TMP_FILE "/tmp/holyc-asm.s")	the hard-coded path is READABLE in the committed source	OBSERVED_IN_SOURCE__RACE_NOT_REMEASURED	any concurrent compiler invocation	NO	NO	NO	SERIALISE every compiler invocation and give each its own TMPDIR; this ACT did exactly that	compile two sources concurrently and observe the shared scratch file	THIS ACT MEASURED IT: the hard-coded path is present at src/main.c:35; the race was AVOIDED by serialisation, NOT fixed
+BB-04	PRODUCER_PROVENANCE	c1/source-closure.tsv	this ACT MEASURED it	CONFIRMED_BY_MEASUREMENT	THE WHOLE M2 BOUNDARY	YES	YES	YES	none; this is the programme itself	n/a	the measured source closure shows 24 semantic C units with NO PolyC source and 0 PolyC-authored compiler sources
+RES-01	COMPILER_CORRECTNESS	src/main.c (initialised file-scope global) and the entry-point emission path	the predecessor A64 RES-01	historical_only__NOT_REMEASURED_BY_THIS_ACT	a PolyC driver with an initialised global	UNKNOWN	UNKNOWN	UNKNOWN	NONE_YET_DERIVED	as BB-01	evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/c3/residue.tsv
+RES-02	ABI_CONFLICT	any translation unit with a duplicate extern "c" declaration of differing return type	the predecessor RES-02	historical_only__NOT_REMEASURED_BY_THIS_ACT	a PolyC module that declares a library function with a different return type than the header	UNKNOWN	UNKNOWN	UNKNOWN	NEVER DO IT: declare the library function exactly as the header does	compile a PolyC module with a conflicting extern "c" declaration	evidence/ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01/c3/residue.tsv
+RES-03	LANGUAGE_GRAMMAR	the array type syntax	the predecessor RES-03	historical_only__NOT_REMEASURED_BY_THIS_ACT	a PolyC module using a three-dimensional array	NO	NO	NO	the selected source closure uses no three-dimensional array	compile a PolyC module with a three-dimensional array	c1/source-closure.tsv: the measured source-closure scan finds the three-dimensional-array pattern in NO semantic unit
+RES-04	LANGUAGE_GRAMMAR	the ternary operator	the predecessor RES-04 and THIS ACT MEASURED IT	CONFIRMED_BY_MEASUREMENT	NO	NO	NO	NO	the selected source closure uses no ternary; write explicit if/else	compile a PolyC expression containing ? : and observe the rejection	THIS ACT MEASURED IT: the compiled PolyC detector tools/quality/m2-critical-path-rebase01-red.HC REJECTED five ternary expressions at parse time, so the operator is UNSUPPORTED GRAMMAR; the historical report of an inference HANG is a DIFFERENT phenomenon and is kept separate
+#
+# THE MEASURED SUMMARY
+#
+key	value
+BLOCKERS_TOTAL	8
+BLOCKERS_BLOCKING_PRECURSOR	1	BB-04 only: no PolyC-authored compiler source set exists
+BLOCKERS_BLOCKING_M2	1	BB-04 only
+BLOCKERS_BLOCKING_M3	1	BB-04 only
+BLOCKERS_LANGUAGE_GRAMMAR_CONFIRMED	2	BB-02 (ternary) and RES-04 (ternary), both measured at this ACT
+BLOCKERS_NOT_BLOCKING_SELECTED_SOURCE	3	BB-02, RES-03, RES-04: the selected source closure uses none of them
+BLOCKERS_HISTORICAL_ONLY_NOT_REMEASURED	3	BB-01, RES-01, RES-02
+BLOCKERS_BUILD_CONCURRENCY	1	BB-03, avoided by serialisation, NOT fixed
+NEW_BLOCKERS_FOUND_BY_THIS_ACT	1	BB-02/RES-04 sharpened: the ternary is UNSUPPORTED GRAMMAR, confirmed by a real compile failure of this ACT s own tool

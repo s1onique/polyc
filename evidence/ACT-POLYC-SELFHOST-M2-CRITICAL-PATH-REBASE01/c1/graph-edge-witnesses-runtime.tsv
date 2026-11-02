@@ -1,0 +1,26 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=graph-edge-witnesses (continued)
+#
+# The remaining witness kinds: SYMBOL_DEPENDENCY (a call to a
+# symbol defined in the other unit) and RUNTIME_STATE (shared
+# mutable global state).
+#
+edge_id	src_node	dst_node	edge_class	witness_kind	witness
+EW-021	SRC-004(ast.c)	SRC-006(cfg.c)	RUNTIME_STATE	GLOBAL_SHARED_STATE	AstNode* currentAstNode in src/ast.c read by src/cfg.c
+EW-022	SRC-006(cfg.c)	SRC-004(ast.c)	RUNTIME_STATE	GLOBAL_SHARED_STATE	currentAstNode in src/ast.c read by src/cfg.c
+EW-023	SRC-005(cctrl.c)	SRC-004(ast.c)	RUNTIME_STATE	GLOBAL_SHARED_STATE	ctrlSymbolMap in src/cctrl.c holds AstNode* values
+EW-024	SRC-004(ast.c)	SRC-005(cctrl.c)	RUNTIME_STATE	GLOBAL_SHARED_STATE	ctrlSymbolMap in src/cctrl.c holds AstNode* values
+EW-025	SRC-013(lexer.c)	SRC-005(cctrl.c)	RUNTIME_STATE	GLOBAL_SHARED_STATE	lexer state in src/lexer.c drives ctrlSymbolMap in src/cctrl.c
+EW-026	SRC-019(parser.c)	SRC-013(lexer.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	nextToken() from src/lexer.c called by src/parser.c
+EW-027	SRC-019(parser.c)	SRC-004(ast.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	AstMakeBinary() from src/ast.c called by src/parser.c
+EW-028	SRC-009(compile.c)	SRC-013(lexer.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	LexerNext() from src/lexer.c called by src/compile.c
+EW-029	SRC-009(compile.c)	SRC-019(parser.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	ParseStatement() from src/parser.c called by src/compile.c
+EW-030	SRC-005(cctrl.c)	SRC-011(ir.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	IrBuild() from src/ir.c called by src/cctrl.c
+EW-031	SRC-011(ir.c)	SRC-008(containers.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	VecPush() from src/containers.c called by src/ir.c
+EW-032	SRC-008(containers.c)	SRC-014(list.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	ListPush() from src/list.c called by src/containers.c
+EW-033	SRC-002(aostr.c)	SRC-008(containers.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	AoStrFromCStr() from src/aostr.c called by src/containers.c
+EW-034	SRC-001(asm.c)	SRC-020(prsasm.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	AsmPrintOperand() from src/asm.c called by src/prsasm.c
+EW-035	SRC-010(aarch64.c)	SRC-001(asm.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	AsmEncode() from src/asm.c called by src/aarch64.c
+EW-036	SRC-010(aarch64.c)	SRC-011(ir.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	IrWalk() from src/ir.c called by src/aarch64.c
+EW-037	SRC-025(x86_64.c)	SRC-024(x86.c)	SYMBOL_DEPENDENCY	CALL_SYMBOL	X86Emit() from src/x86.c called by src/x86_64.c

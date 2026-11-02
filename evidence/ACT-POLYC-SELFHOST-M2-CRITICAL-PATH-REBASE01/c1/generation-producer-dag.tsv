@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-M2-CRITICAL-PATH-REBASE01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=generation-producer-dag
+#
+# THE ACTUAL PRODUCER DAG, REBUILT FROM THE REAL BUILD.
+#
+# Every stage's producer identity, input closure, output and producer
+# digest is MEASURED. The classification is derived from the facts in
+# the row, not asserted:
+#
+#   C_ROOTED                the producer is a C toolchain and it
+#                           compiles C source.
+#   HYBRID                  the producer is the C-rooted compiler and
+#                           it links C objects with compiled PolyC
+#                           HELPER SUBJECTS. It does NOT compile its
+#                           own compiler source set.
+#   POLYC_AUTHORED_COMPILER the producer compiles a PolyC-authored
+#                           COMPILER SOURCE SET. This is the M2 shape.
+#
+# THE CRITICAL DISTINCTION: a stage that compiles PolyC HELPER
+# SUBJECTS is NOT a stage that compiles its own compiler source set.
+#
+# Columns: stage_id, producer_path, producer_sha256, input_closure,
+#          input_language, output_path, output_sha256, input_source_set,
+#          compiles_whole_compiler_source, classification, gate,
+#          gate_status, evidence
+#
+stage_id	producer_path	producer_sha256	input_closure	input_language	output_path	output_sha256	input_source_set	compiles_whole_compiler_source	classification	gate	gate_status	evidence
+GC-01	/usr/bin/gcc	9b11ead1ca76a03d61108ad5bf2c913d6aa8daa7deb9fd28893e847e3680e5e7	46 C translation units + headers	C	build/host-stage0/hcc	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085	C_ONLY	NO	C_ROOTED	P0	PROVEN	Makefile bootstrap-stage0 target; the stage0 producer is the C toolchain
+GC-02	build/host-stage0/hcc	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085	12 tools/bootstrap/*.HC PolyC helper subjects	PolyC	build/*-subject.o	c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22	POLYC_HELPER_SUBJECTS	NO	HYBRID	P1	BLOCKED	Makefile: every subject rule invokes $(BOOTSTRAP_STAGE0_HCC) -c <src.HC> -o <obj>
+GC-03	linker (ld via cc)	n/a	28 C objects + 12 PolyC subject objects + libtasm + libm + libSystem	mixed	build/hcc	15d2918495f6d2dbcb90dee3e0422c46cb77f840824a30962518e63fd19b37d4	C_PLUS_POLYC_HELPERS	NO	HYBRID	P1	BLOCKED	build/CMakeFiles/hcc.dir/link.txt
+GC-04	NONE	-	no PolyC-authored compiler source set exists	-	NONE	-	NONE	YES	UNKNOWN	M2	BLOCKED	c1/source-closure.tsv: all 24 semantic C units still have NO PolyC source
+GC-05	NONE	-	no second independent producer exists	-	NONE	-	NONE	YES	UNKNOWN	M3	BLOCKED	nothing in this tree produces a second generation
+#
+# THE GATE VERDICTS (local to this rebase; NOT Factory phases and NOT
+# the existing G0/G1/G2/G3 labels)
+#
+# P0  source-bound compiler-producing precursor.
+#     A PolyC-authored source set that, when compiled, PRODUCES a
+#     compiler. Today NO such source set exists: the only PolyC
+#     sources in the tree are twelve HELPER SUBJECTS whose output is
+#     a library of decision functions, NOT a compiler.
+# P0_STATUS=BLOCKED (no PolyC-authored compiler source set exists)
+#
+# P1  precursor actually compiled by an earlier qualified producer
+#     and running on representative input.
+#     The stage0 producer compiles the twelve helper subjects, and
+#     the linker binds them into the hybrid ./hcc. That is a C-rooted
+#     compiler with PolyC delegates. It is NOT a precursor COMPILER.
+# P1_STATUS=BLOCKED (the produced artifact is a hybrid C compiler,
+#   not a compiler-producing precursor)
+#
+# M2  the complete in-scope compiler source set and permitted C glue
+#     genuinely compiled by an earlier qualified compiler, program
+#     runs.
+# M2_STATUS=BLOCKED (24 semantic C units have no PolyC source)
+#
+# M3  two independently produced generations converge under a frozen
+#     agreement rule.
+# M3_STATUS=BLOCKED (no second producer exists)
+#
+key	value
+M2_PRODUCER_SOURCE_SET	NOT_YET_PROVEN
+EARLIEST_UNSATISFIED_BOOTSTRAP_GATE	P0
+POLYC_AUTHORED_COMPILER_SOURCE_SET_SIZE	0	number of PolyC sources that constitute a COMPILER source set
+POLYC_HELPER_SUBJECT_SOURCE_SET_SIZE	12	the twelve tools/bootstrap/*.HC helper subjects
+POLYC_HELPER_SUBJECT_TOTAL_LOC	1611	measured from the production link scope
+C_ROOTED_STAGE0_SHA256	fe16a5f737871e3c496113c57194aa595a52b618bd1be0bc6095e54768d47085
+PRODUCTION_HYBRID_HCC_SHA256	15d2918495f6d2dbcb90dee3e0422c46cb77f840824a30962518e63fd19b37d4
+SELFHOST_M0_STATUS	ACHIEVED	C-rooted compiler with 15 compiled PolyC semantic delegates
+SELFHOST_M1_STATUS	NOT_ACHIEVED	semantic ownership not complete: 24 semantic C units remain
+SELFHOST_M2_STATUS	NOT_ACHIEVED	no PolyC-authored compiler source set exists
+SELFHOST_M3_STATUS	NOT_ACHIEVED	no second generation producer exists
