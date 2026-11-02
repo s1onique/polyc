@@ -62,5 +62,7 @@ run_mode SCOPE      "$I/current-classification.tsv" "$I/expect-ownership.tsv"
 run_mode AUTHORITY  "$I/production-authorities.tsv" "$I/expect-authority.tsv"
 run_mode FAMILY     "$I/act-family-inventory.tsv"  "$I/expect-family.tsv"
 run_mode CHRONOLOGY "$I/chronology.tsv"            "$I/expect-chronology.tsv"
+run_mode LINKS      "$I/links.tsv"                 "$I/expect-links.tsv"
+run_mode ACCEPT     "$EV/../q3/acceptance-ledger.tsv" "$I/frozen-ac.tsv"
 
 echo "AUDIT_VERIFIER_RUN=$OUT"

@@ -1,0 +1,21 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01
+# ACT_PHASE=Q3-EVIDENCE
+# EVIDENCE_KIND=gate-results
+#
+# The canonical local gates, RUN AGAINST THE EXACT COMMITTED
+# TREE. A gate is only evidence if it actually ran.
+#
+gate	command	measured	result
+SUBJECT_HEAD	git rev-parse HEAD	01bafab8cd7aac4b07acca3e8a4699b23b89e0ce	MEASURED
+SUBJECT_TREE	git rev-parse HEAD^{tree}	cceaaa0d498f08b2df15f00d6015008b51f2b459	MEASURED
+WORKTREE_DIRTY	git status --porcelain=v1	6	0_DIRTY_TRACKED_ENTRIES
+GATE_FAST	scripts/quality/gate-fast.sh	5 checks, rc=0	PASS
+GATE_PUSH	scripts/quality/gate-push.sh HEAD	rc=0	PASS
+APPEND_ONLY	scripts/quality/factory-append-only-test.sh	11 cases, rc=0	PASS
+COMMIT_MSG_VALIDATOR	scripts/quality/factory-v2-commit-msg-check.sh	3 commits, 0 invalid	PASS
+REPLACE_REFS	git replace -l	0	PASS
+ACT_WORKTREES	git worktree list	0	0_ACT_WORKTREES
+FACTORY_CLOSURE_STATUS	scripts/quality/factory-closure-status-check.sh	rc=0	PASS
+#
+# GATE_FAILURES = 0
+# GATE_STATUS = PASS

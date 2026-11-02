@@ -165,9 +165,35 @@ row FAMILY_GOVERNANCE         "$(val "$I/expect-family.tsv" WP001_GOVERNANCE_COR
 # --- CHRONOLOGY: THE TERMINALITY CLAIM SEPARATIONS -------------------------
 for k in HISTORICAL_TRACKED_OUTCOME_PROVENANCE ORIGINAL_EXTERNAL_RECEIPT \
          FRESH_EXTERNAL_REPLAY HISTORICAL_ACT_TERMINALITY_CONFIRMED \
-         POST_CLOSE_ACT_ID_COMMITS; do
+         POST_CLOSE_ACT_ID_COMMITS CORRECTION04_TERMINAL_CLOSE \
+         HISTORICAL_DUPLICATE_CLOSES; do
   row "CHRONOLOGY_$k" "$(val "$I/expect-chronology.tsv" "$k")" "$(val "$I/chronology.tsv" "$k")"
 done
+
+# --- LINKS: THE LINK PROVENANCE FACTS ---------------------------------------
+for k in TRAILER_MODE MUTANT_LINKED G0_DRIVER_IMPORTS COMPARATOR_FIELDS; do
+  row "LINKS_$k" "$(val "$I/expect-links.tsv" "$k")" "$(val "$I/links.tsv" "$k")"
+done
+
+# The CORRECTION04 terminal close is RECOMPUTED from git, not read.
+# The historical duplicate-close count is RECOMPUTED from the parent's
+# own closes, not read.
+c04="ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04"
+parent="ACT-POLYC-SELFHOST-DRIVER-MIGRATION01"
+c04_close=$(git log --first-parent --format='%H%x00%B%x00' | tr '\0' '\n' | awk -v id="$c04" '
+  /^[0-9a-f]{40}$/ { sha = $0; inact = 0; next }
+  /^ACT: / { if ($0 == "ACT: " id) inact = 1; next }
+  /^ACT-Phase: CLOSE$/ { if (inact && closeref == "") closeref = sha }
+  END { print closeref }
+')
+row CHRONOLOGY_C04_CLOSE_RECOMPUTED "$c04_close" "$(val "$I/chronology.tsv" CORRECTION04_TERMINAL_CLOSE)"
+parent_closes=$(git log --first-parent --format='%H%x00%B%x00' | tr '\0' '\n' | awk -v id="$parent" '
+  /^[0-9a-f]{40}$/ { sha = $0; inact = 0; next }
+  /^ACT: / { if ($0 == "ACT: " id) inact = 1; next }
+  /^ACT-Phase: CLOSE$/ { if (inact) n++ }
+  END { print n + 0 }
+')
+row CHRONOLOGY_DUPLICATE_CLOSES_RECOMPUTED 2 "$parent_closes"
 
 # The POST-CLOSE ACT-id carrier count is RECOMPUTED from git, not read.
 # CORRECTION04's terminal CLOSE is the last commit carrying its ACT id.

@@ -305,6 +305,110 @@ static U8 *CurCell(U8 *name, I64 r) {
 }
 
 // ---------------------------------------------------------------------------
+// LINKS -- NON_ACT_TRAILER_PROMOTED | MUTATION_LINK_PROVENANCE_MISSING
+//         | G0_DRIVER_CONTAMINATED | COMPILER_SEMANTIC_COMPARATOR_INSENSITIVE
+//
+// The LINK PROVENANCE controls. They are one family because they all
+// ask the same question: is the claimed link between a source fact and
+// an observed effect actually PRESENT, or has it been ASSUMED?
+//
+//   TRAILER_MODE             the trailer parsing mode of the phase
+//                            commit. A commit whose trailers were
+//                            NOT parseable must not be counted as an
+//                            ACT phase commit.
+//   MUTANT_LINKED            1 when the mutated source was LINKED into
+//                            the experimental binary
+//   G0_DRIVER_IMPORTS        the number of WP-001 driver symbols the
+//                            C-OFF oracle imports. It must be 0.
+//   COMPARATOR_FIELDS        the number of output fields the
+//                            comparator actually compares
+//                            (exit code, stdout, stderr, artifact).
+//                            It must cover every field that can
+//                            change.
+//
+// The expectations table supplies the required values.
+// ---------------------------------------------------------------------------
+static I32 ModeLinks(I32 argc, U8 **argv) {
+  if (argc < 3) { "REASON_DETAIL=usage: LINKS <links.tsv> <expectations.tsv>\n"; return 2; }
+  if (LoadWithHeader(argv[1]) < 0) { "REASON_DETAIL=links table unreadable\n"; return 2; }
+  if (LoadClaims(argv[2]) < 0) { "REASON_DETAIL=expectations unreadable\n"; return 2; }
+
+  I64 i = 0;
+  while (i < NROW) {
+    U8 *key = Cell("key", i);
+    U8 *value = Cell("value", i);
+    if (StrEq(key, "") == 1) {
+      FailPlain("NON_ACT_TRAILER_PROMOTED", "the links table has a row with no key");
+      return 1;
+    }
+
+    if (StrEq(key, "TRAILER_MODE") == 1) {
+      // A commit whose trailers did not parse is MODE=NON_ACT. It
+      // must not be counted as an ACT phase commit, and promoting it
+      // to one has its OWN reason token.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("NON_ACT_TRAILER_PROMOTED", "the trailer-mode expectation is missing");
+        return 1;
+      }
+      if (StrEq(value, want) != 1) {
+        FailId("NON_ACT_TRAILER_PROMOTED", "the trailer mode differs from the expectation:", value);
+        return 1;
+      }
+    }
+
+    if (StrEq(key, "MUTANT_LINKED") == 1) {
+      // The mutated source must have been LINKED into the binary that
+      // produced the observation. A claim of a difference without the
+      // link is an ASSUMPTION, not a measurement.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("MUTATION_LINK_PROVENANCE_MISSING", "the mutant-link expectation is missing");
+        return 1;
+      }
+      if (StrEq(value, want) != 1) {
+        FailId("MUTATION_LINK_PROVENANCE_MISSING", "the mutant-link provenance differs from the expectation:", value);
+        return 1;
+      }
+    }
+
+    if (StrEq(key, "G0_DRIVER_IMPORTS") == 1) {
+      // The C-OFF oracle must import ZERO WP-001 driver symbols. A
+      // non-zero count means the "independent oracle" is not
+      // independent.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("G0_DRIVER_CONTAMINATED", "the G0-import expectation is missing");
+        return 1;
+      }
+      if (Atoi(value) != Atoi(want)) {
+        FailTwo("G0_DRIVER_CONTAMINATED", "the measured G0 driver-import count differs from the expectation", Atoi(value), Atoi(want));
+        return 1;
+      }
+    }
+
+    if (StrEq(key, "COMPARATOR_FIELDS") == 1) {
+      // The comparator must compare EVERY field that can change: the
+      // exit code, stdout, stderr and the produced artifact. A
+      // comparator that ignores a field cannot detect a difference in
+      // it.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("COMPILER_SEMANTIC_COMPARATOR_INSENSITIVE", "the comparator-field expectation is missing");
+        return 1;
+      }
+      if (Atoi(value) != Atoi(want)) {
+        FailTwo("COMPILER_SEMANTIC_COMPARATOR_INSENSITIVE", "the measured comparator field count differs from the expectation", Atoi(value), Atoi(want));
+        return 1;
+      }
+    }
+
+    i++;
+  }
+  return 0;
+}
+
+// ---------------------------------------------------------------------------
 // ROSTER -- DRIVER_ROSTER_ID_MISSING | DRIVER_ROSTER_ID_DUPLICATE
 //
 // The current-classification table must contain EXACTLY the IDs of the
@@ -751,6 +855,36 @@ static I32 ModeChronology(I32 argc, U8 **argv) {
         return 1;
       }
     }
+    if (StrEq(key, "CORRECTION04_TERMINAL_CLOSE") == 1) {
+      // The CORRECTION04 terminal CLOSE must be identified EXACTLY.
+      // A close that is not the measured terminal close is a
+      // misidentification, and it is reported with its OWN reason
+      // token so that it cannot be confused with a post-CLOSE
+      // carrier omission.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("CORRECTION_CLOSE_IDENTITY_WRONG", "the CORRECTION04 terminal-close expectation is missing");
+        return 1;
+      }
+      if (StrEq(value, want) != 1) {
+        FailId("CORRECTION_CLOSE_IDENTITY_WRONG", "the identified CORRECTION04 terminal close differs from the expectation:", value);
+        return 1;
+      }
+    }
+    if (StrEq(key, "HISTORICAL_DUPLICATE_CLOSES") == 1) {
+      // The parent's TWO terminal CLOSEs are part of the historical
+      // record. A count of zero HIDES the duplicate-close defect that
+      // the correction ACT disclosed, so it has its OWN reason token.
+      U8 *want = Expect(key);
+      if (StrEq(want, "") == 1) {
+        FailPlain("HISTORICAL_CLOSE_DUPLICATE_HIDDEN", "the historical duplicate-close expectation is missing");
+        return 1;
+      }
+      if (Atoi(value) != Atoi(want)) {
+        FailTwo("HISTORICAL_CLOSE_DUPLICATE_HIDDEN", "the measured historical duplicate-close count differs from the expectation", Atoi(value), Atoi(want));
+        return 1;
+      }
+    }
     if (StrEq(key, "HISTORICAL_ACT_TERMINALITY_CONFIRMED") == 1) {
       U8 *want = Expect(key);
       if (StrEq(want, "") == 1) {
@@ -921,6 +1055,7 @@ I32 Main(I32 argc, U8 **argv) {
   if (StrEq(mode, "SCOPE") == 1)      return ModeScope(argc - 1, argv + 1);
   if (StrEq(mode, "AUTHORITY") == 1)  return ModeAuthority(argc - 1, argv + 1);
   if (StrEq(mode, "FAMILY") == 1)     return ModeFamily(argc - 1, argv + 1);
+  if (StrEq(mode, "LINKS") == 1)      return ModeLinks(argc - 1, argv + 1);
   if (StrEq(mode, "CHRONOLOGY") == 1) return ModeChronology(argc - 1, argv + 1);
   if (StrEq(mode, "ACCEPT") == 1)     return ModeAccept(argc - 1, argv + 1);
   if (StrEq(mode, "M2CLASS") == 1)    return ModeM2Class(argc - 1, argv + 1);
