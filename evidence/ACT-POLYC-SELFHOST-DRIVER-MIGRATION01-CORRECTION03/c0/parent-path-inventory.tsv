@@ -1,0 +1,35 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03
+# ACT_PHASE=R0-RED
+# EVIDENCE_KIND=parent-path-inventory
+#
+# THE PARENT ACT'S COMMITTED PATH, INVENTORIED FROM THE GIT
+# OBJECT HISTORY, AND THE DUPLICATE IT CONTAINS.
+#
+# THE PARENT'S CONTRACT REQUIRES EXACTLY FIVE DISTINCT LINEAR
+# COMMITS: C0 RED -> C1 EVIDENCE -> C2 IMPL -> C3 EVIDENCE -> C4 CLOSE,
+# and "the unique fifth CLOSE commit".
+#
+# A COMMIT BELONGS TO THE PARENT'S PATH IF ITS SUBJECT CARRIES
+# THE PARENT'S ACT ID, OR IF IT CARRIES THE PARENT'S ACT:
+# TRAILER. The two criteria are DIFFERENT, and their DISAGREEMENT
+# is exactly the trailer defect recorded by CORRECTION02.
+#
+order	short_sha	subject_phase_label	act_trailer	act_phase_trailer	is_terminal_close
+1	0be7c87e	C0	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	RED	NO
+2	3645738a	C1	NONE	NONE	NO
+3	aa243059	C2	NONE	NONE	NO
+4	1e0dd97d	C3	NONE	NONE	NO
+5	c57a4e8b	C4	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	CLOSE	YES
+6	ec36285c	C4	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	EVIDENCE	NO
+7	2b061fe3	C4	ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	CLOSE	YES
+#
+# THE PARENT'S CONTRACT REQUIRES:
+#   order 1..5 with labels C0 C1 C2 C3 C4, and exactly ONE
+#   is_terminal_close=YES.
+#
+# THE MEASURED PATH HAS SEVEN commits on the parent's path,
+# THREE of them labelled C4, and TWO of them is_terminal_close=YES.
+# THE DUPLICATE IS IRREPARABLE: removing any of them would require
+# amend, rebase, filter-branch, filter-repo, git replace,
+# reset+recommit, squash merge or force push, and every one of those
+# mechanisms is forbidden by the append-only invariant.
