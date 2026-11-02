@@ -9454,3 +9454,49 @@ evidence.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04/`.
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04 — external terminality receipt PASS
+
+The external read-only terminality probe was executed **after**
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04`'s terminal close
+and wrote its receipt **outside** the repository. It performed no
+network operation, created no commit and modified no tracked file.
+
+**ALL TWELVE NUMBERED CHECKS PASS.** The receipt binds to the
+correction's exact terminal state and **supersedes** every earlier
+receipt in this ACT family, because each of them was bound to a path
+whose phase shape does not satisfy the contract.
+
+```text
+BOUND_ACT        = ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04
+BOUND_SUPERSEDES = ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+PROBE_RESULT     = PASS
+```
+
+| check | measured |
+|---|---|
+| 01 five-phase sequence | RED,EVIDENCE,IMPL,EVIDENCE,CLOSE; exactly one CLOSE |
+| 01b parent duplicate disclosed | 3 C4 labels, 2 terminal CLOSEs, disclosed in the parent handoff |
+| 02 no subsequent tracked commits | 0 |
+| 03 delegation | 8 driver relocations, 0 legacy C driver symbols |
+| 04 comparator and mutants | 12 ordered pairs MATCH, 0 mismatches, 8/4/3 |
+| 05 authority count | 15 old authorities conserved |
+| 06 production gates | committed `GATE_FAST_STATUS=PASS` and `GATE_PUSH_STATUS=PASS` |
+| 07 empty repository status | 0 dirty entries |
+| 08 zero replace refs | 0 |
+| 09 zero ACT worktrees | 0 |
+| 10 no push | no network operation, no commit created |
+| **11 no ACT-id commit after the close** | **0** |
+
+CHECK 11 IS THE STRUCTURAL PROOF THAT THE RESOLUTION WORKS: the
+terminal close really is the last commit carrying the ACT id, so the
+range validator's rule 6 is satisfied without a history rewrite.
+
+```text
+EXTERNAL_TERMINALITY = PASS
+AC48 = PASS
+AC49 = PASS
+AC50 = PASS
+```
+
+The receipt lives **outside** the repository and is never backdated.
