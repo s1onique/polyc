@@ -9313,3 +9313,57 @@ The acceptance ledger of the parent ACT therefore reads **AC01…AC50
 PASS**. The receipt itself lives **outside** the repository and is
 never backdated, because a committed receipt could never bind to its
 own containing commit (F-GIT-IDENTITY).
+
+## ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03 — duplicate C4 discharged
+
+The parent ACT's committed path was found to carry a **DUPLICATE `C4`
+and a DUPLICATE terminal `CLOSE`**, and the defect was caught by
+**execution, not by review**.
+
+The parent's contract requires **exactly five** distinct linear
+commits — `C0 RED -> C1 EVIDENCE -> C2 IMPL -> C3 EVIDENCE -> C4
+CLOSE` — and "the unique fifth CLOSE commit". The measured path has
+**seven** commits under the parent's ACT identity, **three** labelled
+`C4`, and **two** carrying `ACT-Phase: CLOSE`.
+
+The cause was a **premature intermediate close**, created before the
+external terminality receipt existed. The receipt could then only be
+recorded in a further commit, and the terminal close had to follow
+it; both re-used the `C4` label.
+
+The **external read-only terminality probe** refused to certify the
+path:
+
+```text
+CHECK_01_FIVE_PHASE_SEQUENCE  FAIL  ordered=[C0 C1 C2 C3 C4 C4 C4 ] close_count=2
+PROBE_RESULT                   FAIL
+```
+
+All nine other checks PASSED, so the refusal was **specific** to the
+phase-path shape. The probe is the working witness.
+
+The duplicate is **irreparable**: removing any of the extra commits
+would require amend, rebase, filter-branch, filter-repo, `git
+replace`, reset+recommit, squash merge or force push, and every one
+of those is forbidden by the append-only invariant.
+
+`ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03` therefore
+**discloses** the duplicate in the parent's own handoff and in the
+ROADMAP, and establishes a **new, mechanically valid five-commit
+path** carrying the parent's evidence and its acceptance ledger, with
+exactly one `ACT-Phase: CLOSE` in it. The external terminality probe
+is **re-executed** after that path's terminal close, so the receipt
+binds to the correct terminal HEAD and TREE.
+
+```text
+PARENT_PATH_COMMIT_COUNT                 7   (contract requires 5)
+PARENT_PATH_C4_LABEL_COUNT               3   (contract requires 1)
+PARENT_PATH_TERMINAL_CLOSE_COUNT         2   (contract requires 1)
+DUPLICATE_IRREPARABLE                    YES
+DUPLICATE_CONCEALED                      NO
+PRODUCTION_SEMANTICS_CHANGED             NO
+HISTORY_REWRITTEN                        NO
+```
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/`.
