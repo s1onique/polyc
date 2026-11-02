@@ -110,3 +110,38 @@ NEXT_ACT
 The external read-only terminality receipt produced against this
 ACT's terminal close is the terminal artifact. It lives OUTSIDE the
 repository and is never backdated.
+
+EXTERNAL TERMINALITY
+
+The external read-only terminality probe was RE-EXECUTED after this
+ACT's terminal close and wrote its receipt OUTSIDE the repository. It
+performed no network operation, created no commit and modified no
+tracked file. It supersedes the parent's earlier receipt, which
+certified a path whose phase shape the contract does not allow.
+
+PROBE_RESULT=PASS (all eleven numbered checks PASS)
+BOUND_ACT=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03
+BOUND_SUPERSEDES=ACT-POLYC-SELFHOST-DRIVER-MIGRATION01
+BOUND_HEAD=BOUND_TO_THE_CLOSE_COMMIT_BY_GIT_QUERY
+BOUND_TREE=BOUND_TO_THE_CLOSE_COMMIT_BY_GIT_QUERY
+CHECK_01_FIVE_PHASE_SEQUENCE=PASS (RED,EVIDENCE,IMPL,EVIDENCE,CLOSE; exactly one CLOSE)
+CHECK_01B_PARENT_DUPLICATE_DISCLOSED=PASS (3 C4 labels, 2 terminal CLOSEs, disclosed)
+CHECK_02_NO_SUBSEQUENT_TRACKED_COMMITS=PASS (0)
+CHECK_03_DELEGATION=PASS (8 driver relocations, 0 legacy C driver symbols)
+CHECK_04_COMPARATOR_AND_MUTANTS=PASS (12 pairs MATCH, 0 mismatches, 8/4/3)
+CHECK_05_AUTHORITY_COUNT=PASS (15 old authorities conserved)
+CHECK_06_PRODUCTION_GATES=PASS (gate-fast PASS, gate-push PASS)
+CHECK_07_EMPTY_REPO_STATUS=PASS (0 dirty entries)
+CHECK_08_ZERO_REPLACE_REFS=PASS (0)
+CHECK_09_ZERO_ACT_WORKTREES=PASS (0)
+CHECK_10_NO_PUSH=PASS (no network operation, no commit created)
+
+AC48=PASS
+AC49=PASS
+AC50=PASS
+
+The receipt lives OUTSIDE the repository and is never backdated,
+because an artifact committed to a Git commit may not claim the SHA
+of the commit that contains it (F-GIT-IDENTITY). The outcome is
+recorded in
+evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03/c4/terminality-outcome.tsv.
