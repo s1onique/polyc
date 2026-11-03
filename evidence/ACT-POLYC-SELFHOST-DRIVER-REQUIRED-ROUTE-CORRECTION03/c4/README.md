@@ -12,6 +12,7 @@ committed.
 
 | file | kind | what it establishes |
 | --- | --- | --- |
+| `interim-status.md` | status | where the ACT stands after the C4 remediation; NOT a closure HANDOFF |
 | `p1-repair-summary.md` | prose | what each P1 finding was, what the repair is, and what the repair does NOT change |
 | `p1-1-red-fresh-build.log` | RED | the committed rule fails a fresh isolated build with NO seeded object |
 | `p1-1-green-fresh-build.log` | GREEN | the repaired rule passes a fresh isolated build with NO seeded object |
@@ -22,9 +23,14 @@ committed.
 | `p1-3-emission-coverage-ledger.tsv` | measurement | each domain's expected and observed classes, with the archive distinction |
 | `abi-domain-coverage.tsv` | measurement | the EXTENDED sixteen-case selected-emission roster |
 | `conservation-16-authorities.tsv` | measurement | the 16 production authorities, re-censused fresh |
+| `conservation-parser-lexer.tsv` | measurement | the parser and lexer conservation, BYTE-IDENTICAL to the historical baseline |
+| `causal-and-dormancy.tsv` | measurement | the PolyC causality result and the C dormancy result |
 | `chronology-and-accounting-correction.md` | prose | the C1 chronology retraction and the 15-versus-8 accounting correction |
 | `self-referential-manifest-hashes.tsv` | measurement | the measured self-referential hash discrepancy in the committed manifests |
 | `covering-manifest.txt` | manifest | the FORWARD-ONLY covering manifest, which EXCLUDES its own hash |
+| `gate-ledger.tsv` | measurement | every gate, every targeted check and every scope check |
+| `gate-fast.log` | log | the fresh `make gate-fast` output |
+| `gate-push.log` | log | the fresh `make gate-push` output |
 
 ## WHAT IS NOT CLAIMED
 
