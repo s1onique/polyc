@@ -1,0 +1,69 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=four-generation-dag-and-ordered-pairs
+#
+# THE FOUR-GENERATION PRODUCER DAG, MEASURED.
+#
+# A producer is an EXECUTABLE. Two producers may legitimately
+# produce byte-identical OBSERVATIONS, because they are the same
+# compiler generation. That is MEASURED, not assumed.
+#
+generation	role	producer_binary	producer_sha256	distinct_producer
+G0	the pure C-driver oracle (selector OFF)	/tmp/rrc02-gens/G0-hcc	a8275742ce26502be58c7a3168899f1f4e9873079f51b8cc8579285b483661a4	1
+G1	the C-rooted stage0	/tmp/rrc02-gens/G1-hcc	55e04fc2eb067ddc7947387192faaae0b2a1207a2aa4cfe35060a3d2bcde2910	1
+G2	the current production compiler	/tmp/rrc02-gens/G2-hcc	0282fba6e8d0936b9873594eed838ddc16000ee76d873f3dc67744c3e55557a2	1
+G3	an independently built qualified bootstrap generation (the PINNED tree)	/tmp/rrc02-gens/G3-hcc	3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6	1
+PRODUCER_DAG_GENERATIONS	4
+PRODUCER_DISTINCT_COUNT	4
+PRODUCER_ALIAS	ABSENT
+#
+# G3 IS BUILT FROM THE PINNED SOURCE TREE. It predates the PolyC
+# driver entirely, so it is a LEGACY generator, not a driver
+# generation. That is why it is a DISTINCT producer identity and
+# why it is expected to differ on the ASSEMBLY BYTES of the
+# -o- WITH -S case. It is NOT expected to differ on any
+# PRECEDENCE fixture.
+#
+# THE 12 ORDERED PAIRWISE COMPARISONS OVER THE FULL COMPARATOR
+# FIELD SET (artifact_class, exit_status, stderr_text,
+# stdout_digest, artifact_present), OVER THE 14 FROZEN FIXTURES.
+#
+ordered_pair	differing_fixtures	differing_fixture_ids	verdict
+G0 vs G1	0		AGREE
+G0 vs G2	0		AGREE
+G0 vs G3	1	fx_prec_stdout_ok	DIFFER
+G1 vs G0	0		AGREE
+G1 vs G2	0		AGREE
+G1 vs G3	1	fx_prec_stdout_ok	DIFFER
+G2 vs G0	0		AGREE
+G2 vs G1	0		AGREE
+G2 vs G3	1	fx_prec_stdout_ok	DIFFER
+G3 vs G0	1	fx_prec_stdout_ok	DIFFER
+G3 vs G1	1	fx_prec_stdout_ok	DIFFER
+G3 vs G2	1	fx_prec_stdout_ok	DIFFER
+PRODUCER_DAG_PAIRS	12
+PAIRS_AGREEING_ON_ALL_FIXTURES	9
+PAIRS_DIFFERING	3
+#
+# THE THREE DIFFERING PAIRS ARE EXACTLY THE PAIRS THAT INVOLVE G3,
+# AND THE SINGLE DIFFERING FIXTURE IS fx_prec_stdout_ok: the -o-
+# WITH -S case, whose condition is SATISFIED. On that fixture the
+# exit status, the artifact class, the stderr and the artifact
+# presence ALL AGREE; only the ASSEMBLY BYTES ON STDOUT differ,
+# because the older pinned-tree generator emits different code.
+#
+# ALL FIVE PRECEDENCE FIXTURES AGREE BETWEEN EVERY PAIR:
+G0 vs G1	ALL FIVE PRECEDENCE FIXTURES AGREE
+G0 vs G2	ALL FIVE PRECEDENCE FIXTURES AGREE
+G0 vs G3	ALL FIVE PRECEDENCE FIXTURES AGREE
+G1 vs G0	ALL FIVE PRECEDENCE FIXTURES AGREE
+G1 vs G2	ALL FIVE PRECEDENCE FIXTURES AGREE
+G1 vs G3	ALL FIVE PRECEDENCE FIXTURES AGREE
+G2 vs G0	ALL FIVE PRECEDENCE FIXTURES AGREE
+G2 vs G1	ALL FIVE PRECEDENCE FIXTURES AGREE
+G2 vs G3	ALL FIVE PRECEDENCE FIXTURES AGREE
+G3 vs G0	ALL FIVE PRECEDENCE FIXTURES AGREE
+G3 vs G1	ALL FIVE PRECEDENCE FIXTURES AGREE
+G3 vs G2	ALL FIVE PRECEDENCE FIXTURES AGREE
+PRECEDENCE_CONSERVED_ACROSS_ALL_PAIRS	YES
+PRECEDENCE_FIXTURE_COUNT	5

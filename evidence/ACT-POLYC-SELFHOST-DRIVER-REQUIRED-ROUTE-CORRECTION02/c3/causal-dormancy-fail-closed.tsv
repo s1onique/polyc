@@ -1,0 +1,148 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=causal-dormancy-fail-closed
+#
+# THE FOUR EXPERIMENTS, EXECUTED AGAINST REAL BUILDS.
+#
+# Every experiment is a REAL mutation in a DISPOSABLE WORKTREE, a REAL
+# rebuild of the WHOLE production compiler, and a REAL observation
+# over the 14-fixture matrix. The authoritative checkout is NEVER
+# mutated.
+#
+# THE COMPARATOR FIELD SET is the frozen five: artifact_class,
+# exit_status, stderr_text, stdout_digest, artifact_present.
+#
+# ---------------------------------------------------------------------------
+# EXPERIMENT 1 -- M-POLYC-PRECEDENCE-01
+# ---------------------------------------------------------------------------
+#
+# HYPOTHESIS: the PolyC-selected status is CAUSAL for the reported
+# diagnostic.
+# MUTATION: the single WP_STATUS_TO_STDOUT return inside
+# WpDriverMapStatus, changed to WP_STATUS_USAGE.
+# MUTATED_BINARY	/tmp/rrc02-gens/M1-hcc
+# MUTATED_BINARY_SHA256	40c4dff103b190d4927e48a59364af7ee69d20ad84bf45285347b433b6f20d7f
+#
+experiment	M-POLYC-PRECEDENCE-01
+hypothesis	the PolyC-selected status is CAUSAL for the reported diagnostic
+mutation	the WP_STATUS_TO_STDOUT return inside WpDriverMapStatus, changed to WP_STATUS_USAGE
+mutation_site_unique	YES
+rebuild_scope	THE WHOLE PRODUCTION COMPILER
+fixture	fx_prec_stdout_bad
+pristine_observation	NONE|1|65b0d72f02b24e950fd3717e9f6ef623|d41d8cd98f00b204e9800998ecf8427e|NO
+mutated_observation	NONE|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|NO
+observed_change	THE STDERR DIGEST CHANGED: the reported diagnostic is no longer the `-o-` text
+fixture	fx_prec_stdout_bad_and_unknown
+pristine_observation	NONE|1|65b0d72f02b24e950fd3717e9f6ef623|d41d8cd98f00b204e9800998ecf8427e|NO
+mutated_observation	NONE|1|53877c06fdc8465f7afe90df2ff9d6e2|d41d8cd98f00b204e9800998ecf8427e|NO
+observed_change	THE STDERR DIGEST CHANGED
+MUTATION_CHANGED_OUTCOME	YES
+POLYC_PRECEDENCE_IS_CAUSAL	PROVEN
+#
+# ---------------------------------------------------------------------------
+# EXPERIMENT 2 -- M-C-LEGACY-02
+# ---------------------------------------------------------------------------
+#
+# HYPOTHESIS: the legacy C `-o-` policy is DORMANT on the selector-ON
+# build and LIVE on the G0 oracle.
+# MUTATION: the DELETION of the whole legacy condition
+# `args->to_stdout && !args->assemble_only` and its body, so the
+# guard never fires. The legacy region keeps its own policy; the
+# selector-ON region has none, because the condition is now the
+# driver's.
+#
+experiment	M-C-LEGACY-02
+hypothesis	the legacy C -o- policy is DORMANT on the selector-ON build and LIVE on the G0 oracle
+mutation	the DELETION of the legacy C -o- guard and its body
+selector_on_pristine	/tmp/rrc02-gens/G2-hcc
+selector_on_mutated	/tmp/rrc02-gens/M2-hcc
+selector_on_mutated_sha256	1d51c9b35f869053406fba1e976d1442af322cead74fcbc6f558932df922c3b3
+selector_on_differing_fixtures	0
+selector_on_output_changed	NO
+g0_pristine	/tmp/rrc02-gens/G0-hcc
+g0_mutated	/tmp/rrc02-gens/M2G0-hcc
+g0_mutated_sha256	5bd8d68ff6125734070c2c725097e52dbea5d8c8a109067c691d76414b8cc119
+g0_differing_fixtures	3
+g0_differing_fixture_ids	fx_prec_stdout_bad,fx_prec_stdout_bad_and_noinput,fx_prec_stdout_bad_and_unknown
+g0_output_changed	YES
+ON_OUTPUT_CHANGED	NO
+G0_OUTPUT_CHANGED	YES
+LEGACY_POLICY_IS_DORMANT_ON_SELECTOR_ON	PROVEN
+LEGACY_POLICY_IS_LIVE_ON_G0	PROVEN
+#
+# ---------------------------------------------------------------------------
+# EXPERIMENT 3 -- M-POLYC-STATUS-03
+# ---------------------------------------------------------------------------
+#
+experiment	M-POLYC-STATUS-03
+hypothesis	the driver's status mapping is CAUSAL for the USAGE diagnostic
+mutation	the WP_STATUS_USAGE return inside WpDriverMapStatus, changed to WP_STATUS_NO_INPUT
+mutation_site_unique	YES
+mutated_binary	/tmp/rrc02-gens/M3-hcc
+mutated_binary_sha256	4ab2906982527d64963186fb23e211280633d61aeb77b71b20db2ddf43a39c34
+fixture	fx_neg_unknown_option
+pristine_observation	NONE|1|53877c06fdc8465f7afe90df2ff9d6e2|d41d8cd98f00b204e9800998ecf8427e|NO
+mutated_observation	OBJECT|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|YES
+observed_change	THE STDERR DIGEST, THE EXIT STATUS, THE ARTIFACT CLASS AND THE ARTIFACT PRESENCE ALL CHANGED: the compiler no longer reports the unknown-option error
+fixture	fx_required_object
+pristine_observation	OBJECT|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|YES
+mutated_observation	OBJECT|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|YES
+observed_change	UNCHANGED: the OBJECT cases are unaffected, as the plan requires
+MUTATION_CHANGED_OUTCOME	YES
+STATUS_MAPPING_IS_CAUSAL	PROVEN
+#
+# ---------------------------------------------------------------------------
+# EXPERIMENT 4 -- M-POLYC-POISON-04
+# ---------------------------------------------------------------------------
+#
+# HYPOTHESIS: an out-of-domain status FAILS CLOSED.
+# MUTATION: the WP_STATUS_TO_STDOUT return inside WpDriverMapStatus,
+# changed to `return 99`, an OUT-OF-DOMAIN status.
+#
+# THE C3 MEASUREMENT FOUND A DEFECT HERE, AND FIXED IT. The FIRST
+# C3 measurement of this experiment, against the C2 source, produced:
+#
+#   exit 0, an ARTIFACT WAS PRODUCED, and NO diagnostic was reported.
+#
+# That is a FAIL-OPEN: the out-of-domain status matched none of the
+# positive equality tests in the C dispatch, so the compiler proceeded
+# as if the driver had selected OK. AC36 requires the opposite.
+#
+# The C3 phase therefore ADDED the R06 RED detector (which FIRED
+# against the C2 source) and the fail-closed guard (which made R06
+# SILENT). The measurement below is against the FIXED source.
+#
+experiment	M-POLYC-POISON-04
+hypothesis	an out-of-domain status FAILS CLOSED
+mutation	the WP_STATUS_TO_STDOUT return inside WpDriverMapStatus, changed to `return 99`
+mutation_site_unique	YES
+mutated_binary	/tmp/rrc02-gens/M4-hcc
+mutated_binary_sha256	8966f19fe6a0d5a12e98eb0ff9256dd200e2a783c6e8165b3f1b6c60e538d1e3
+fixture	fx_prec_stdout_bad
+pristine_observation	NONE|1|65b0d72f02b24e950fd3717e9f6ef623|d41d8cd98f00b204e9800998ecf8427e|NO
+mutated_observation	NONE|1|d4b331c1acc579e77fc031b6409e9d18|d41d8cd98f00b204e9800998ecf8427e|NO
+observed_exit_status	1
+observed_artifact_present	NO
+observed_diagnostic	the invalid-status diagnostic naming the status value 99
+observed_fallback_to_legacy_c	NO
+fixture	fx_required_object
+pristine_observation	OBJECT|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|YES
+mutated_observation	OBJECT|0|c895987c3eed40a8369997257c61d4cf|d41d8cd98f00b204e9800998ecf8427e|YES
+observed_change	UNCHANGED: the poison only fires on the -o- path, so the ordinary compile is unaffected
+POISON_RUN	1	NO
+INVALID_STATUS_FAILS_CLOSED	PROVEN
+NO_FALLBACK	PROVEN
+#
+# ---------------------------------------------------------------------------
+# THE R06 RED DETECTOR
+# ---------------------------------------------------------------------------
+#
+# R06 is the SIXTH precedence RED. It was ADDED at C3, after the
+# measurement above exposed the fail-open. The C0 commit is IMMUTABLE
+# historical evidence and is NOT rewritten (F14).
+#
+R06_TOKEN	POLYC_DRIVER_FALLBACK_NOT_CLOSED
+R06_AGAINST_ENTRY_COMMIT	FIRED (the entry commit has no domain bound and no rejection)
+R06_AGAINST_C2_COMMIT	FIRED (the C2 commit has no domain bound and no rejection)
+R06_AGAINST_C3_SOURCE	SILENT (exit 0) = GREEN
+R06_IN_CANONICAL_GATE	YES (the driver-wp001-precedence-test target runs it)

@@ -560,3 +560,91 @@ allowed for the P0 precursor but must be transparently named
 
 Repository source and Factory doctrine, not external documentation,
 govern the final technical and historical obligations.
+
+---
+
+## 8. C3 amendment: the fail-open the C3 measurement found
+
+### 8.1 What the C3 measurement found
+
+The C3 phase executed the four frozen experiments. The FIRST measurement
+of **M-POLYC-POISON-04** -- the experiment that poisons the driver's
+status so the selected status is out of domain -- produced this against
+the C2 source:
+
+```text
+exit status        0
+artifact produced YES
+diagnostic         NONE
+```
+
+That is a **FAIL-OPEN**. The C-side status dispatch is a set of
+POSITIVE equality tests with no domain bound and no default branch, so
+an out-of-domain status matches NONE of them and the compiler PROCEEDS
+as if the driver had selected `OK`. The authority is silently absent
+and the requested work is performed anyway.
+
+`AC36` requires the opposite: *"An invalid status FAILS CLOSED: no
+artifact, no fallback."* The C2 implementation did not satisfy `AC36`.
+
+### 8.2 What the C3 phase did about it
+
+The C3 phase is authorized to edit `src/cli.c` (section 0.4) and to add
+`tools/quality/driver-required-route-correction02-*.HC` tools. Both were
+used, and the fix is INSIDE the ACT's authorized scope:
+
+1. **`src/selfhost-driver-wp001.h`** gained `WP_DRIVER_STATUS_COUNT`,
+   the EXCLUSIVE UPPER BOUND of the mirrored status domain. The bound
+   and the member count cannot drift apart, because the bound IS the
+   member count.
+
+2. **`src/cli.c`** gained a fail-closed guard, placed BEFORE any
+   diagnostic dispatch:
+
+   ```c
+   if (status < 0 || status >= WP_DRIVER_STATUS_COUNT) {
+       cliPanic("hcc: the driver selected an invalid status (%lld)\n",
+                status);
+       return 0;
+   }
+   ```
+
+   `cliPanic` is `__noreturn` and calls `exit(EXIT_FAILURE)`, so the
+   process exits 1, produces NO artifact, and there is NO fallback to
+   the legacy C decision. The guard is BEFORE the dispatch, so an
+   invalid status can never be reported as one of the valid ones.
+
+3. **`tools/quality/driver-required-route-correction02-red.HC`** gained
+   a SIXTH detector, **R06_FAIL_CLOSED**, with the reason token
+   `POLYC_DRIVER_FALLBACK_NOT_CLOSED`. It re-derives the status domain
+   from the mirrored header and requires that the C dispatch REJECTS a
+   status outside it. It is wired into the canonical
+   `driver-wp001-precedence-test` Make target.
+
+   R06 FIRED against the C2 source and is SILENT against the C3 source.
+   The C0 commit is IMMUTABLE historical evidence and is NOT rewritten
+   (F14); R06 lives in the C3 phase and its RED is recorded in the C3
+   evidence.
+
+### 8.3 What the C3 phase did NOT do
+
+The C3 phase did NOT repair the predecessor's historical debt. That
+debt is CONSERVED, not fixed. The C3 phase did NOT change the
+diagnostic text or the exit status of any valid status: the observable
+delta against the pre-fix build, over the full 14-fixture matrix and
+the FULL five-field comparator, is **ZERO**.
+
+### 8.4 The amended acceptance criteria
+
+Two criteria are affected. Their TEXT is unchanged -- the amendment is
+in the EVIDENCE, not in the predicate.
+
+| Criterion | Text | C3 verdict |
+|---|---|---|
+| `AC28` | The production verifier checks that the status dispatch is exhaustive. | PASS, and at C3 the R06 fail-closed detector is added to the canonical gate. |
+| `AC36` | An invalid status FAILS CLOSED: no artifact, no fallback. | PASS, measured against the FIXED source: exit 1, no artifact, no fallback. |
+
+`AC10` ("the five REDs executed as real PRISTINE -> ADVERSE cycles")
+is a C0 criterion and its C0 adjudication is unchanged. There are now
+SIX RED detectors; the sixth was ADDED at C3 and is recorded in the C3
+evidence.

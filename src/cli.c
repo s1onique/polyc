@@ -767,6 +767,33 @@ int cliParseArgsPolyC(CliArgs *args, int argc, char **argv) {
      * The diagnostic TEXT and the exit status are unchanged. */
     long long status = WpDriverDecide();
 
+    /* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02, C3.
+     *
+     * The status domain is { 0 .. WP_DRIVER_STATUS_COUNT-1 }. A status
+     * OUTSIDE that domain was not selected by the PolyC driver: it is
+     * an invalid authority.
+     *
+     * The dispatch below is a set of POSITIVE equality tests. Without
+     * this guard, an out-of-domain status matches NONE of them and the
+     * compiler PROCEEDS as if the driver had selected OK -- a
+     * FAIL-OPEN, in which the authority is silently absent and the
+     * requested work is performed anyway, producing an artifact.
+     *
+     * The C3 measurement of the M-POLYC-POISON-04 experiment showed
+     * exactly that: the poisoned status 99 made the compiler exit 0
+     * and produce an artifact. AC36 requires the opposite.
+     *
+     * So the invalid status FAILS CLOSED here: no artifact is
+     * produced, and there is NO fallback to the legacy C decision.
+     * The guard is placed BEFORE any diagnostic dispatch, so an
+     * invalid status can never be reported as one of the valid ones.
+     */
+    if (status < 0 || status >= WP_DRIVER_STATUS_COUNT) {
+        cliPanic("hcc: the driver selected an invalid status (%lld)\n",
+                 status);
+        return 0;
+    }
+
     /* 1. `-o-` may only be used together with `-S`. The PolyC driver
      * decided that the `-o-` output target was requested without `-S`.
      * The C side only formats the message the driver selected. */

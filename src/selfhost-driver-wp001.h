@@ -84,6 +84,25 @@ extern long long WpDriverSelectedEmission(void);
  */
 #define WP_DRIVER_STATUS_TO_STDOUT 6
 
+/* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02, C3.
+ *
+ * The EXCLUSIVE UPPER BOUND of the status domain. The domain is
+ * { 0 .. WP_DRIVER_STATUS_COUNT-1 } and the count is the number of
+ * distinct status members, so the bound and the member count cannot
+ * drift apart.
+ *
+ * The bound exists so that the C side can REJECT a status the driver
+ * did not select. Without it, the status dispatch is a set of positive
+ * equality tests: a status OUTSIDE the domain matches none of them,
+ * and the compiler PROCEEDS as if the driver had selected OK. That is
+ * a FAIL-OPEN -- the authority is silently absent and the requested
+ * work is performed anyway.
+ *
+ * AC36 requires an invalid status to FAIL CLOSED: no artifact, no
+ * fallback. The bound is what makes that check expressible.
+ */
+#define WP_DRIVER_STATUS_COUNT 7
+
 /* The action domain, mirrored the same way. */
 
 /* The EMISSION domain, mirrored the same way. It is DISJOINT from both

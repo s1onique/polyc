@@ -922,11 +922,14 @@ $(DRIVER_ROUTE01_TEST_BIN): $(DRIVER_ROUTE01_TEST_OBJ)
 DRIVER_ROUTE02_TEST_SRC  = tools/quality/driver-required-route-correction02-test.HC
 DRIVER_ROUTE02_TEST_OBJ  = build/driver-required-route-correction02-test.o
 DRIVER_ROUTE02_TEST_BIN  = build/driver-required-route-correction02-test
+DRIVER_ROUTE02_RED_SRC   = tools/quality/driver-required-route-correction02-red.HC
+DRIVER_ROUTE02_RED_OBJ   = build/driver-required-route-correction02-red.o
+DRIVER_ROUTE02_RED_BIN   = build/driver-required-route-correction02-red
 DRIVER_ROUTE02_FIXTURE   = tests/driver-wp001/required-route/precedence-source.HC
 DRIVER_ROUTE02_WORKDIR   = build/driver-wp001-precedence
 
 .PHONY: driver-wp001-precedence-test
-driver-wp001-precedence-test: $(DRIVER_ROUTE02_TEST_BIN) $(PRODUCTION_HCC)
+driver-wp001-precedence-test: $(DRIVER_ROUTE02_TEST_BIN) $(DRIVER_ROUTE02_RED_BIN) $(PRODUCTION_HCC)
 	@rm -rf $(DRIVER_ROUTE02_WORKDIR)
 	@mkdir -p $(DRIVER_ROUTE02_WORKDIR)
 	@cp $(DRIVER_ROUTE02_FIXTURE) $(DRIVER_ROUTE02_WORKDIR)/precedence-source.HC
@@ -948,7 +951,52 @@ driver-wp001-precedence-test: $(DRIVER_ROUTE02_TEST_BIN) $(PRODUCTION_HCC)
 		  run_case FX_PREC_STDOUT_UNKNOWN_ONLY USAGE 1 'Unknown commandline options' -c precedence-source.HC -o route.o --bogus-option; \
 		} > precedence-transcript.tsv
 	@$(DRIVER_ROUTE02_TEST_BIN) $(DRIVER_ROUTE02_WORKDIR)/precedence-transcript.tsv
+	@# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02, C3.
+	@# The status dispatch must FAIL CLOSED on an out-of-domain status.
+	@# The R06 detector re-derives the status domain from the mirrored
+	@# domain header and requires that the C dispatch REJECTS a status
+	@# outside it. It is SILENT when the dispatch is fail-closed.
+	@$(DRIVER_ROUTE02_RED_BIN) R06 \
+		src/selfhost-driver-wp001.h WP_DRIVER_STATUS_ WP_DRIVER_STATUS_COUNT \
+		src/cli.c
+	@echo "DRIVER_WP001_FAIL_CLOSED_STATUS=PASS"
 	@echo "DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE02_RED_OBJ): $(DRIVER_ROUTE02_RED_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(DRIVER_ROUTE02_RED_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-required-route-correction02-red: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE02_RED_BIN): $(DRIVER_ROUTE02_RED_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE02_RED_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "DRIVER_ROUTE02_RED=$@"
+
+DRIVER_ROUTE02_NC_SRC = tools/quality/driver-required-route-correction02-nc.HC
+DRIVER_ROUTE02_NC_OBJ = build/driver-required-route-correction02-nc.o
+DRIVER_ROUTE02_NC_BIN = build/driver-required-route-correction02-nc
+
+$(DRIVER_ROUTE02_NC_OBJ): $(DRIVER_ROUTE02_NC_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(DRIVER_ROUTE02_NC_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-required-route-correction02-nc: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE02_NC_BIN): $(DRIVER_ROUTE02_NC_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE02_NC_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "DRIVER_ROUTE02_NC=$@"
 
 $(DRIVER_ROUTE02_TEST_OBJ): $(DRIVER_ROUTE02_TEST_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@rm -f $@

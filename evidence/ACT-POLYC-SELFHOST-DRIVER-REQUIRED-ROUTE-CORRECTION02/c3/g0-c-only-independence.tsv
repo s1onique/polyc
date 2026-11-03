@@ -1,0 +1,27 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=g0-c-only-independence
+#
+# THE G0 C-ONLY ORACLE'S INDEPENDENCE, RE-PROVED AT C3 AGAINST THE
+# FINAL (POST-C3) BINARIES.
+#
+# The C3 phase ADDED the status-domain bound and the fail-closed
+# guard. The G0 oracle links NEITHER the PolyC driver NOR the driver
+# status domain, so the added member and the added guard MUST leave
+# no trace in the G0 binary. This file is that proof.
+#
+G0_BUILD_DIR	/tmp/rrc02-g0build
+G0_CONFIGURE	cmake -S ./src -B /tmp/rrc02-g0build -G 'Unix Makefiles' -DCMAKE_C_COMPILER=/usr/bin/cc -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/tmp/rrc02-g0prefix -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=OFF
+G0_CONFIGURE_RESULT	exit 0
+G0_BUILD	make -j4 hcc
+G0_BUILD_RESULT	exit 0
+G0_BINARY	/tmp/rrc02-gens/G0-hcc
+G0_BINARY_SHA256	a8275742ce26502be58c7a3168899f1f4e9873079f51b8cc8579285b483661a4
+G0_BINARY_FILETYPE	Mach-O 64-bit executable arm64
+G0_DRIVER_SYMBOL_COUNT	0
+G0_DRIVER_RELOC_COUNT	0
+G0_RELOC_LINE_COUNT	30275
+G0_NEW_STATUS_TRACE_SYMBOL_COUNT	0
+G0_NEW_STATUS_TRACE_RELOC_COUNT	0
+G0_R04_VERDICT	SILENT (exit 0) = PROVEN INDEPENDENT
+G0_C_ONLY	PROVEN

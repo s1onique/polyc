@@ -1,0 +1,31 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C3-EVIDENCE
+# THE WHOLE-CLI REMAINDER INVENTORY, MEASURED at C3 against the post-C2 source.
+#
+# Every row is a C-owned decision that is NOT on the required route but
+# remains C-owned on the WHOLE CLI. The rows and the line numbers were
+# re-derived from the post-C2 source at C3; they are MEASURED, not
+# copied from the C0 ledger.
+#
+# The classification column states WHY the decision is retained in C.
+#
+#   C_SEMANTIC_ENGINE_RETAINED  the decision is a FAULT or FAULT-GATE
+#                                concern of the retained C engine, not a
+#                                route or policy choice.
+#   C_WHOLE_CLI_RETAINED         the decision is a whole-CLI mode choice
+#                                outside this ACT authorized scope.
+#
+retained_c_decision	function	source_line_at_c3	scope	classification	note
+BR_CLI_O_DASH_S_GUARD	cliParseArgsPolyC	773	REQUIRED_ROUTE_THEN_WHOLE_CLI	C_SEMANTIC_ENGINE_RETAINED	the -o-/-S condition is now DISPATCHED ON THE POLYC-SELECTED STATUS (WP_DRIVER_STATUS_TO_STDOUT). The C side FORMATS the selected diagnostic and DECIDES NOTHING. The remaining C-owned part is the message TEXT, which is frozen by AC25.
+BR_MAIN_PRINT_TOKENS	main	577	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the --print-tokens mode choice; outside this ACT scope.
+BR_MAIN_TRANSPILE	main	582	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the -transpile mode choice; outside this ACT scope.
+BR_MAIN_COMPILE_TO_AST	main	591	REQUIRED_ROUTE_AS_FAULT_GATE	C_SEMANTIC_ENGINE_RETAINED	the C parser FAULT GATE: compileToAst returns 0 when the retained C parser accumulated errors. The decision is a FAULT COUNT from the retained engine, NOT a route choice.
+BR_MAIN_PRINT_AST	main	598	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the --print-ast mode choice; outside this ACT scope.
+BR_MAIN_DUMP_IR	main	603	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the --dump-ir mode choice; outside this ACT scope.
+BR_MAIN_DUMP_IR_POOLED	main	608	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the pooled --dump-ir mode choice; outside this ACT scope.
+BR_MAIN_EMIT_LLVM	main	614	WHOLE_CLI_COMPILE_TIME_EXCLUDED	C_WHOLE_CLI_RETAINED	the --emit-llvm mode choice; outside this ACT scope.
+BR_MAIN_JIT_OR_REPL	main	549	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the -jit/-repl mode choice; outside this ACT scope.
+BR_MAIN_REPL	main	564	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the -repl mode choice; outside this ACT scope.
+BR_MAIN_ASSEMBLE	main	620	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the -S assembly mode choice; outside this ACT scope.
+BR_MAIN_LSP	main	513	WHOLE_CLI	C_WHOLE_CLI_RETAINED	the -lsp mode choice; outside this ACT scope.
+WHOLE_CLI_REMAINDER_ROWS	12

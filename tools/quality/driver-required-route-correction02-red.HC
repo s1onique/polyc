@@ -22,6 +22,15 @@
 //   R03_ROUTE_REMAINDER_UNMEASURED  REQUIRED_ROUTE_REMAINDER_UNMEASURED
 //   R04_G0_ORACLE_INDEPENDENCE_UNPROVEN  G0_ORACLE_INDEPENDENCE_UNPROVEN
 //   R05_HISTORICAL_DEBT_UNCONSERVE  HISTORICAL_DEBT_NOT_CONSERVED
+//   R06_FAIL_CLOSED                 POLYC_DRIVER_FALLBACK_NOT_CLOSED
+//
+// R06 was ADDED at C3, after the C3 measurement of the M-POLYC-POISON-04
+// experiment showed that the status dispatch FAILED OPEN on an
+// out-of-domain status: the poisoned status 99 matched none of the
+// positive equality tests, so the compiler PROCEEDED and produced an
+// artifact. AC36 requires the opposite. The C0 commit is IMMUTABLE
+// historical evidence and is NOT rewritten (F14); R06 lives here, in
+// the C3 phase, and its RED is recorded in the C3 evidence.
 //
 // F-POLYC-TOOLS: PolyC source, compiled and executed by the real
 // production compiler. No Python, no shell, no external dependency.
@@ -562,6 +571,198 @@ static I32 ModeHistoricalDebtUnconserve(I32 argc, U8 **argv) {
 // ---------------------------------------------------------------------------
 // THE DISPATCHER
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// R06_FAIL_CLOSED -- POLYC_DRIVER_FALLBACK_NOT_CLOSED
+// ---------------------------------------------------------------------------
+//
+// ADVERSE PREMISE: the status dispatch does not FAIL CLOSED on an
+// out-of-domain status.
+//
+// The PolyC driver selects ONE status value. The C side dispatches on
+// it. If the dispatch is a set of POSITIVE equality tests with no
+// domain bound and no default branch, then a status OUTSIDE the
+// domain matches NONE of them and the compiler PROCEEDS as if the
+// status were OK. That is a FAIL-OPEN: the authority is silently
+// absent, the requested work is performed anyway, and an artifact is
+// produced.
+//
+// AC36 requires: "An invalid status FAILS CLOSED: no artifact, no
+// fallback."
+//
+//   argv[1] = the HEADER that mirrors the PolyC status domain
+//   argv[2] = the status-domain member prefix, e.g. WP_DRIVER_STATUS_
+//   argv[3] = the domain bound member name, e.g. WP_DRIVER_STATUS_COUNT
+//   argv[4] = the C source that dispatches on the status
+//
+// The detector RE-DERIVES the domain from the HEADER's own status
+// member defines, and then requires that the C dispatch REJECTS a
+// status outside that domain.
+//
+// A dispatch that lacks the domain bound, or lacks a rejection of an
+// out-of-domain status, is NOT fail-closed.
+// ---------------------------------------------------------------------------
+static I32 ModeFailClosed(I32 argc, U8 **argv) {
+  if (argc < 5) {
+    "REASON_DETAIL=usage: R06 <header> <status-prefix> <domain-bound-member> <c-source>\n";
+    return 2;
+  }
+  I64 size = 0;
+  U8 *buf = FileRead(argv[1], &size);
+  if (buf == NULL) {
+    FailPlain("POLYC_DRIVER_FALLBACK_NOT_CLOSED", "the domain header is unreadable");
+    return 1;
+  }
+  U8 *prefix = argv[2];
+  U8 *bound = argv[3];
+  I64 boundLen = StrLenOf(bound);
+
+  // PASS 1: the domain members the HEADER defines, and the domain
+  // bound member. The bound member's value is the domain's exclusive
+  // upper bound, so the domain is {0 .. bound-1}.
+  I64 i = 0;
+  U8 *line = buf;
+  I64 hasBound = 0;
+  I64 boundValue = -1;
+  I64 memberCount = 0;
+  while (i < size) {
+    if (buf[i] == 10) {
+      U8 save = buf[i];
+      buf[i] = 0;
+      I64 j = 0;
+      while (line[j] == ' ' || line[j] == '\t') j++;
+      I64 isComment = 0;
+      if (line[j] == '*' || line[j] == '/') isComment = 1;
+      if (isComment == 0 && Has(line, "#define") == 1) {
+        U8 *p = line + j + 7;
+        while (*p == ' ' || *p == '\t') p++;
+        if (Has(p, prefix) == 1) {
+          I64 nameLen = 0;
+          while (p[nameLen] != 0 && p[nameLen] != ' ' && p[nameLen] != '\t'
+                 && p[nameLen] != '(') nameLen++;
+          I64 isBound = 0;
+          if (nameLen == boundLen) {
+            I64 k = 0;
+            while (k < boundLen) {
+              if (p[k] != bound[k]) { isBound = 0; break; }
+              k++;
+              if (k == boundLen) isBound = 1;
+            }
+          }
+          // The bound member itself is not a domain member.
+          if (isBound == 0) memberCount++;
+          else {
+            hasBound = 1;
+            U8 *v = p + nameLen;
+            while (*v == ' ' || *v == '\t') v++;
+            I64 val = 0;
+            I64 got = 0;
+            while (*v >= '0' && *v <= '9') { val = val * 10 + (*v - '0'); v++; got = 1; }
+            if (got == 1) boundValue = val;
+          }
+        }
+      }
+      buf[i] = save;
+      line = buf + i + 1;
+    }
+    i++;
+  }
+
+  if (hasBound == 0) {
+    FailPlain("POLYC_DRIVER_FALLBACK_NOT_CLOSED",
+              "the domain header defines no status-domain bound member");
+    return 1;
+  }
+  if (boundValue <= 0) {
+    FailPlain("POLYC_DRIVER_FALLBACK_NOT_CLOSED",
+              "the status-domain bound member has no numeric value");
+    return 1;
+  }
+  if (memberCount != boundValue) {
+    FailOne("POLYC_DRIVER_FALLBACK_NOT_CLOSED",
+            "the domain member count does not match the domain bound",
+            memberCount);
+    return 1;
+  }
+
+  // PASS 2: the C dispatch must REJECT an out-of-domain status.
+  //
+  // The rejection is a comparison of the selected status against the
+  // domain bound: either the status is at least the bound (the
+  // out-of-domain test), or the status is outside an explicit range.
+  //
+  // The guard and the rejection it performs are typically on
+  // DIFFERENT lines: the guard opens a block and the rejection is
+  // inside it. So the detector remembers that a guard was seen and
+  // then looks for the rejection in the lines that FOLLOW, up to the
+  // end of the guard's block.
+  I64 sawGuard = 0;
+  I64 rejects = 0;
+  I64 linesAfterGuard = 0;
+  // The C dispatch lives in a DIFFERENT file from the domain header.
+  // The domain comes from the header; the dispatch comes from the C
+  // source. Both are read here.
+  I64 csize = 0;
+  U8 *cbuf = FileRead(argv[4], &csize);
+  if (cbuf == NULL) {
+    FailPlain("POLYC_DRIVER_FALLBACK_NOT_CLOSED", "the C dispatch source is unreadable");
+    return 1;
+  }
+  buf = cbuf;
+  size = csize;
+  i = 0;
+  line = buf;
+  while (i < size) {
+    if (buf[i] == 10) {
+      U8 save = buf[i];
+      buf[i] = 0;
+      I64 j = 0;
+      while (line[j] == ' ' || line[j] == '\t') j++;
+      I64 isComment = 0;
+      if (line[j] == '*' || line[j] == '/') isComment = 1;
+      if (isComment == 0) {
+        // A guard that compares the SELECTED STATUS against the bound.
+        if (sawGuard == 0 && Has(line, "status") == 1 && Has(line, bound) == 1) {
+          // It must be a RANGE or an inequality, not an equality
+          // against a single member.
+          if (Has(line, ">=") == 1 || Has(line, "<") == 1
+              || Has(line, "!=") == 1 || Has(line, ">") == 1) {
+            sawGuard = 1;
+            linesAfterGuard = 0;
+          }
+        }
+        // The rejection must be a FAIL-CLOSED one: it must not fall
+        // through to the normal path. It is searched for on the guard
+        // line itself and in the lines that follow it.
+        if (sawGuard == 1) {
+          if (Has(line, "cliPanic") == 1 || Has(line, "panic") == 1
+              || Has(line, "loggerPanic") == 1 || Has(line, "exit(") == 1
+              || Has(line, "abort") == 1) {
+            rejects++;
+            sawGuard = 2;
+          } else {
+            linesAfterGuard++;
+            // The guard's block ends at its closing brace.
+            if (Has(line, "}") == 1) sawGuard = 0;
+            // A guard body that does not reject within a small window
+            // is not a fail-closed guard.
+            if (linesAfterGuard > 8) sawGuard = 0;
+          }
+        }
+      }
+      buf[i] = save;
+      line = buf + i + 1;
+    }
+    i++;
+  }
+
+  if (rejects == 0) {
+    FailPlain("POLYC_DRIVER_FALLBACK_NOT_CLOSED",
+              "the out-of-domain status is not rejected by a fail-closed path");
+    return 1;
+  }
+  return 0;
+}
+
 I32 Main(I32 argc, U8 **argv) {
   if (argc < 2) {
     "REASON_DETAIL=usage: <mode> <args...>\n";
@@ -573,6 +774,7 @@ I32 Main(I32 argc, U8 **argv) {
   if (StrEq(mode, "R03") == 1) return ModeRouteRemainderUnmeasured(argc - 1, argv + 1);
   if (StrEq(mode, "R04") == 1) return ModeG0OracleIndependence(argc - 1, argv + 1);
   if (StrEq(mode, "R05") == 1) return ModeHistoricalDebtUnconserve(argc - 1, argv + 1);
+  if (StrEq(mode, "R06") == 1) return ModeFailClosed(argc - 1, argv + 1);
   if (StrEq(mode, "SELFTEST") == 1) {
     if (StrEq("a", "a") == 0) { "SELFTEST_FAILED\n"; return 1; }
     if (StrLenOf("abc") != 3) { "SELFTEST_FAILED\n"; return 1; }
