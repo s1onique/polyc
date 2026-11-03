@@ -1,0 +1,35 @@
+# ACT_PHASE=C4R2-EVIDENCE
+# EVIDENCE_KIND=f1-pristine-build
+#
+# THE PRISTINE ISOLATED CHECKOUT SUITE.
+#
+# The suite was run in a FRESH git worktree at the corrected head, with
+# NO build directory, NO object seeding, NO manual 'make test-prefix-install'
+# and NO hidden setup. Every prerequisite was produced by the build graph.
+#
+# THE COMMANDS
+#     git worktree add --detach <dir> HEAD
+#     cd <dir>
+#     make driver-wp001-correction03-test
+#     make driver-wp001-correction03-emission-test
+#     make driver-wp001-correction03-adverse-test
+#     make driver-wp001-required-route-test
+#     make driver-wp001-precedence-test
+#
+# THE MEASUREMENTS
+DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS
+DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS
+DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS
+DRIVER_WP001_FAIL_CLOSED_STATUS=PASS
+DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS
+DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS=PASS
+#
+# THE PREREQUISITE FAILURE THAT ROUND ONE DID NOT SEE.
+#
+# The libtos.a recipe copied to $(CURDIR)/$@ while $@ is already
+# absolute, so the destination was DOUBLED and the copy FAILED in the
+# pristine checkout. It is invisible in the working tree, where the
+# doubled path happened to resolve. The recipe now uses $@ directly.
+#
+# THE FAILING PRISTINE BUILD LOG IS AT
+#     c4r2/f1-red-pristine-build.log

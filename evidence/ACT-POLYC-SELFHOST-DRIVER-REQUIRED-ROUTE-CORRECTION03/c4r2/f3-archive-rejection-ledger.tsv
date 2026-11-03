@@ -1,0 +1,49 @@
+# ACT_PHASE=C4R2-EVIDENCE
+# EVIDENCE_KIND=f3-archive-rejection-ledger
+#
+# THE ARCHIVE ADVERSE EXPERIMENT LEDGER.
+#
+# Every experiment MUTATES exactly ONE property of ONE side's archive and
+# asserts that the emission witness REJECTS it WITH THE EXPECTED REASON.
+# A nonzero exit status is NOT sufficient: the exact reason token is the
+# evidence.
+#
+# The archive is the DARWIN/BSD form. The layout was MEASURED from the
+# real artifact, not guessed:
+#
+#   the first member's header is at byte 8
+#   the second member's header is at byte 112
+#   each header is 60 bytes
+#   the second member's `#1/12` length DIGITS are at bytes 115 and 116
+#   the second member's extended name `source.o\0` is at byte 172
+#   the second member's size field is at byte 160
+#
+MUTATION	REASON_TOKEN	KIND	REJECTED
+NAME_FORMAT_MUTATION	ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH	NAME_FORMAT	YES
+EMPTY_ARCHIVE	ARCHIVE_NO_MEMBERS	STRUCTURE	YES
+MISSING_MEMBER	ARCHIVE_MEMBER_COUNT_MISMATCH	STRUCTURE	YES
+CORRUPTED_LENGTH	ARCHIVE_MEMBER_SIZE_OUT_OF_BOUNDS	STRUCTURE	YES
+CHANGED_PAYLOAD	ARCHIVE_MEMBER_PAYLOAD_MISMATCH	PAYLOAD	YES
+RENAMED_MEMBER	ARCHIVE_MEMBER_MISSING	MEMBER_IDENTITY	YES
+DUPLICATE_MEMBER	ARCHIVE_DUPLICATE_MEMBER	MEMBER_IDENTITY	YES
+BAD_EXTENDED_NAME	ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH	NAME_FORMAT	YES
+MALFORMED_NAME_ENCODING	ARCHIVE_BAD_EXTENDED_NAME_ENCODING	NAME_ENCODING	YES
+#
+# The INDEPENDENT CROSS-CHECK. The system `ar` extracts a DIFFERENT
+# payload from the name-format-mutated archive, so the witness's verdict is
+# checked against a tool that does not share its code.
+#
+# The TIMESTAMP-ONLY POSITIVE CONTROL. An archive whose members differ
+# ONLY in their timestamps is NOT a semantic difference.
+#
+ARCHIVE_AR_CROSSCHECK	DIFFERENT
+ARCHIVE_TIMESTAMP_ONLY	PASS
+#
+# PROBE_COUNT	9
+# ARCHIVE_ADVERSE_REJECTIONS	9
+# ARCHIVE_ADVERSE_FAILURES	0
+# THE MEASUREMENT IS
+#     DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS
+#
+# THE COMMAND IS
+#     make driver-wp001-correction03-emission-test

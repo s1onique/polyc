@@ -43,6 +43,20 @@ The field naming convention is documented in
 | P2-6 the original C4 causal record | PRESERVED | the committed `c4/causal-and-dormancy.tsv` is NOT modified; the correction is a new forward-only document |
 | P2-7 the interim HEAD field | CLARIFIED | the committed field names the last commit of the remediation WORK; it cannot name the commit that contains the document; the committed document is NOT modified; `c4r2/interim-head-clarification.md` |
 
+## THE FIVE DEFECTS THAT ROUND TWO ALSO FOUND
+
+Round two did not only repair the findings. It also found five further
+defects in the round-one repair, and every one of them is now fixed and
+measured.
+
+| defect | what it was | the decisive measurement |
+| --- | --- | --- |
+| D1 the required-symbol off-by-one | the comparator's symbol scan began at `argv[17]` and therefore SKIPPED its first required symbol, so the symbol requirement and the symbol-string bounds check NEVER RAN in the whole suite | the check now runs 8 times, once per case, and every case passes; `c4r2/f2-adverse-rejection-ledger.tsv` |
+| D2 the doubled archive destination | the `libtos.a` recipe copied to `$(CURDIR)/$@` when `$@` is already absolute, so the destination was doubled and the copy FAILED in a pristine checkout | the pristine isolated checkout builds the archive; `c4r2/f1-pristine-build.log` |
+| D3 the missing Mach-O structural controls | the adverse harness mutated content but never the Mach-O STRUCTURE | three controls, each with its own reason token; `c4r2/f2-adverse-rejection-ledger.tsv` |
+| D4 the position-only member comparison | the witness compared the members BY POSITION, so it could not distinguish a RENAME from a DUPLICATE or an UNEXPECTED member | the member NAME MULTISET is now compared per side; `c4r2/f3-archive-rejection-ledger.tsv` |
+| D5 the unchecked extended-name encoding | the decoder accepted ANY NUL inside the declared length, so an archive with a corrupted length was accepted and a PREFIX OF THE PAYLOAD was reported as the member's name | the decoder rejects a length whose terminator lies at or beyond the Mach-O magic; `c4r2/f3-archive-rejection-ledger.tsv` |
+
 ## THE REMAINING GATE
 
 C4 CLOSE is permitted ONLY after a NEW independent, READ-ONLY review of
