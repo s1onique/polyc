@@ -1,0 +1,24 @@
+# ACT_PHASE=C4-EVIDENCE
+# EVIDENCE_KIND=p1-3-emission-coverage-ledger
+#
+# NEW, FORWARD-ONLY supplemental evidence. These tests were NOT frozen
+# before the implementation: they are added by this remediation and are
+# recorded here as NEW. No claim of preimplementation freezing is made.
+#
+# The expectations are DERIVED FROM THE GENUINE selector-OFF C ORACLE:
+# the class and the architecture of each expected artifact are read from
+# the oracle-produced artifact by the comparator itself, never hardcoded
+# in the harness.
+#
+# The FULL ARTIFACT BYTE result and the ARCHIVE-MEMBER SEMANTIC result
+# are SEPARATE rows. An ar archive header carries nondeterministic
+# metadata, so the full-byte row and the member-semantic row can differ
+# without either being an equivalence failure.
+#
+domain	artifact_index	artifact	expected_class	expected_arch	observed_class_oracle	observed_class_polyc	checks	failures	semantic_result	full_byte_result
+object	0	artifact.bin	MACHO_OBJECT	arm64	MACHO_OBJECT	MACHO_OBJECT	21	0	EQUAL	EQUAL
+assembly	0	artifact.bin	ASSEMBLER_TEXT	none	ASSEMBLER_TEXT	ASSEMBLER_TEXT	21	0	EQUAL	EQUAL
+dylib	0	source.o	MACHO_OBJECT	arm64	MACHO_OBJECT	MACHO_OBJECT	44	0	EQUAL	EQUAL
+dylib	1	libmylib.a	AR_ARCHIVE	none	AR_ARCHIVE	AR_ARCHIVE	44	0	EQUAL	EQUAL
+dylib	2	libmylib.dylib	MACHO_DYLIB	arm64	MACHO_DYLIB	MACHO_DYLIB	44	0	EQUAL	EQUAL
+executable	0	app	MACHO_EXECUTABLE	arm64	MACHO_EXECUTABLE	MACHO_EXECUTABLE	21	0	EQUAL	EQUAL

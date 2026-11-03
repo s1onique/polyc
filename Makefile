@@ -1024,16 +1024,101 @@ $(DRIVER_ROUTE02_TEST_BIN): $(DRIVER_ROUTE02_TEST_OBJ)
 DRIVER_ROUTE03_COMPARE_SRC = tools/quality/driver-required-route-correction03-compare.HC
 DRIVER_ROUTE03_COMPARE_OBJ = build/driver-required-route-correction03-compare.o
 DRIVER_ROUTE03_COMPARE_BIN = build/driver-required-route-correction03-compare
+DRIVER_ROUTE03_EMISSION_SRC = tools/quality/driver-required-route-correction03-emission.HC
+DRIVER_ROUTE03_EMISSION_OBJ = build/driver-required-route-correction03-emission.o
+DRIVER_ROUTE03_EMISSION_BIN = build/driver-required-route-correction03-emission
+DRIVER_ROUTE03_ADVERSE_SRC = tools/quality/driver-required-route-correction03-adverse.HC
+DRIVER_ROUTE03_ADVERSE_OBJ = build/driver-required-route-correction03-adverse.o
+DRIVER_ROUTE03_ADVERSE_BIN = build/driver-required-route-correction03-adverse
 DRIVER_ROUTE03_ABI_SRC = tools/quality/driver-required-route-correction03-abi-probe.HC
 DRIVER_ROUTE03_ABI_OBJ = build/driver-required-route-correction03-abi-probe.o
 DRIVER_ROUTE03_ABI_BIN = build/driver-required-route-correction03-abi-probe
 DRIVER_ROUTE03_WORKDIR = build/driver-wp001-correction03
 DRIVER_ROUTE03_FIXTURE = tests/driver-wp001/required-route/route-source.HC
 
+# ---------------------------------------------------------------------------
+# THE FRESH-BUILD SUBJECT CHAIN (P1-1 repair).
+#
+# The committed rule had NO production rule for the PolyC driver subject the
+# ABI probe links against:
+#
+#   $(DRIVER_ROUTE03_ABI_BIN): ... $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o ...
+#
+# That object was produced only as a SIDE EFFECT of the ON cmake build
+# inside the recipe, which runs AFTER Make has already tried to satisfy the
+# ABI binary's prerequisite. The recipe's `rm -rf $(WORKDIR)` also DELETED
+# it. A fresh isolated build therefore failed with
+#
+#   make: *** No rule to make target `build/driver-wp001-correction03/wp001-driver-subject.o'
+#
+# The repair introduces an EXPLICIT, CORRECTLY ORDERED production chain. Each
+# step has its own rule, its own file target, and its own failure
+# propagation:
+#
+#   1. $(DRIVER_ROUTE03_SUBJECT_OBJ)  the PolyC driver subject, produced by
+#      the REAL stage0 producer from the REAL PolyC source and VERIFIED
+#      (presence, nonzero size, architecture, all exported driver symbols).
+#      A producer that exits 0 without producing the object is a HARD ERROR.
+#   2. $(DRIVER_ROUTE03_OFF_HCC)      the fresh selector-OFF C oracle.
+#   3. $(DRIVER_ROUTE03_ON_HCC)       the fresh selector-ON PolyC compiler.
+#   4. $(DRIVER_ROUTE03_ABI_BIN)      links (1) and is a prerequisite of the
+#      test target, so the subject is ALWAYS resolved BEFORE its consumer.
+#
+# The STAMP mechanism is what prevents a cleanup race. The stamp file is
+# written ONLY after the subject has been produced AND verified, so a
+# cleanup that races with the producer cannot make a required prerequisite
+# disappear after the consumer has been planned.
+# ---------------------------------------------------------------------------
+DRIVER_ROUTE03_SUBJECT_OBJ = $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o
+DRIVER_ROUTE03_SUBJECT_STAMP = $(DRIVER_ROUTE03_WORKDIR)/.wp001-driver-subject.stamp
+DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
+DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
+
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_ABI_BIN)
-	@rm -rf $(DRIVER_ROUTE03_WORKDIR)
+driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)/off $(DRIVER_ROUTE03_WORKDIR)/on
+	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/off/source.HC
+	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/on/source.HC
+	@set -e; \
+	for spec in 'cS:-c -S' 'Sc:-S -c' 'ccS:-c -c -S' 'SSc:-S -S -c' \
+	            'cSc:-c -S -c' 'ScS:-S -c -S' 'c:-c' 'S:-S'; do \
+	  id=$${spec%%:*}; flags=$${spec#*:}; \
+	  rm -f $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
+	        $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin \
+	        $(DRIVER_ROUTE03_WORKDIR)/off/stdout.txt \
+	        $(DRIVER_ROUTE03_WORKDIR)/on/stdout.txt \
+	        $(DRIVER_ROUTE03_WORKDIR)/off/stderr.txt \
+	        $(DRIVER_ROUTE03_WORKDIR)/on/stderr.txt \
+	        $(DRIVER_ROUTE03_WORKDIR)/off/exit.txt \
+	        $(DRIVER_ROUTE03_WORKDIR)/on/exit.txt; \
+	  (cd $(DRIVER_ROUTE03_WORKDIR)/off && \
+	   $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
+	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
+	  (cd $(DRIVER_ROUTE03_WORKDIR)/on && \
+	   $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
+	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
+	  $(DRIVER_ROUTE03_COMPARE_BIN) derive \
+	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
+	    > $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt; \
+	  eclass=$$(sed -n 's/^DERIVED_CLASS\t//p' $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt); \
+	  earch=$$(sed -n 's/^DERIVED_ARCH\t//p' $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt); \
+	  $(DRIVER_ROUTE03_COMPARE_BIN) $$id \
+	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
+	    $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin \
+	    $(DRIVER_ROUTE03_WORKDIR)/off/stdout.txt \
+	    $(DRIVER_ROUTE03_WORKDIR)/on/stdout.txt \
+	    $(DRIVER_ROUTE03_WORKDIR)/off/stderr.txt \
+	    $(DRIVER_ROUTE03_WORKDIR)/on/stderr.txt \
+	    $(DRIVER_ROUTE03_WORKDIR)/off/exit.txt \
+	    $(DRIVER_ROUTE03_WORKDIR)/on/exit.txt \
+	    $$eclass $$earch 0 _main; \
+	done
+	@$(DRIVER_ROUTE03_ABI_BIN)
+	@echo "DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE03_OFF_HCC): $(BOOTSTRAP_STAGE0_HCC) $(PARSER_PADDING_OBJ) $(ABI_CPA_OBJ) $(CORE_OPERATOR_OBJ) $(A64_CMP_CC_OBJ) $(DRIVER_ROUTE03_FIXTURE)
+	@rm -rf $(DRIVER_ROUTE03_WORKDIR)/off-build
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)/off
 	@cmake -S ./src -B $(DRIVER_ROUTE03_WORKDIR)/off-build -G 'Unix Makefiles' \
 		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/off \
@@ -1060,6 +1145,17 @@ driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_A
 		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
 		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 	@$(MAKE) -C $(DRIVER_ROUTE03_WORKDIR)/off-build -j2
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: the selector-OFF oracle $@ was not produced" >&2; \
+		exit 1; \
+	fi
+
+# The fresh selector-ON PolyC production compiler. It links the SAME
+# verified PolyC driver subject the ABI probe links against, so the probe
+# measures the very object the production compiler consumes.
+$(DRIVER_ROUTE03_ON_HCC): $(DRIVER_ROUTE03_SUBJECT_OBJ) $(BOOTSTRAP_STAGE0_HCC) $(PARSER_PADDING_OBJ) $(ABI_CPA_OBJ) $(CORE_OPERATOR_OBJ) $(A64_CMP_CC_OBJ) $(DRIVER_ROUTE03_FIXTURE)
+	@rm -rf $(DRIVER_ROUTE03_WORKDIR)/on-build
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)/on
 	@cmake -S ./src -B $(DRIVER_ROUTE03_WORKDIR)/on-build -G 'Unix Makefiles' \
 		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/on \
@@ -1090,29 +1186,72 @@ driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_A
 		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
 		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
 	@$(MAKE) -C $(DRIVER_ROUTE03_WORKDIR)/on-build -j2
-	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/off/source.HC
-	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/on/source.HC
-	@set -e; \
-	for spec in 'cS:-c -S' 'Sc:-S -c' 'ccS:-c -c -S' 'SSc:-S -S -c' \
-	            'cSc:-c -S -c' 'ScS:-S -c -S' 'c:-c' 'S:-S'; do \
-	  id=$${spec%%:*}; flags=$${spec#*:}; \
-	  (cd $(DRIVER_ROUTE03_WORKDIR)/off && \
-	   $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/off/hcc --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	   >stdout.txt 2>stderr.txt); \
-	  (cd $(DRIVER_ROUTE03_WORKDIR)/on && \
-	   $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/on/hcc --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	   >stdout.txt 2>stderr.txt); \
-	  cmp $(DRIVER_ROUTE03_WORKDIR)/off/stdout.txt $(DRIVER_ROUTE03_WORKDIR)/on/stdout.txt; \
-	  $(DRIVER_ROUTE03_COMPARE_BIN) $$id \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
-	    $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin; \
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: the selector-ON compiler $@ was not produced" >&2; \
+		exit 1; \
+	fi
+
+# The PolyC driver subject. It is produced by the SAME digest-bound stage0
+# producer that builds the production subjects, from the REAL PolyC source.
+# The rule is FAIL-CLOSED at every step:
+#   * a producer that does not produce the object is a hard error;
+#   * a zero-byte object is a hard error;
+#   * an object that is not an object file is a hard error;
+#   * an object missing ANY exported driver symbol is a hard error.
+#
+# The rule does NOT delete the whole work directory. It deletes ONLY the
+# subject object it is about to produce, so it cannot race with, or delete,
+# an actively required prerequisite (the OFF/ON compilers, which are
+# separate rules with their own build directories).
+#
+# The STAMP is written only AFTER the object has been produced AND verified.
+# A cleanup that races with the producer therefore cannot leave a required
+# prerequisite missing: the object is re-checked by its own rule.
+$(DRIVER_ROUTE03_SUBJECT_STAMP): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
+	@rm -f $(DRIVER_ROUTE03_SUBJECT_OBJ)
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(DRIVER_WP001_SRC) \
+		-o $(DRIVER_ROUTE03_SUBJECT_OBJ)
+	@if [ ! -f "$(DRIVER_ROUTE03_SUBJECT_OBJ)" ]; then \
+		echo "driver-wp001-correction03: $(DRIVER_ROUTE03_SUBJECT_OBJ) not produced by the stage0 compiler" >&2; \
+		exit 1; \
+	fi
+	@if [ ! -s "$(DRIVER_ROUTE03_SUBJECT_OBJ)" ]; then \
+		echo "driver-wp001-correction03: $(DRIVER_ROUTE03_SUBJECT_OBJ) is zero bytes" >&2; \
+		exit 1; \
+	fi
+	@case "$$(file -b $(DRIVER_ROUTE03_SUBJECT_OBJ))" in \
+		*"object"*) ;; \
+		*) echo "driver-wp001-correction03: $(DRIVER_ROUTE03_SUBJECT_OBJ) is not an object file" >&2; \
+		   exit 1 ;; \
+	esac
+	@for _s in _WpDriverClassifyOption _WpDriverClassifyArgument \
+	           _WpDriverUnknownArgCount _WpDriverArityViolationCount \
+	           _WpDriverValueArgIndex _WpDriverValueOffset \
+	           _WpDriverOptionField _WpDriverOptionAction _WpDriverSelectAction \
+	           _WpDriverMapStatus _WpDriverDecide _WpDriverSelectedAction \
+	           _WpDriverSelectedEmission; do \
+		nm $(DRIVER_ROUTE03_SUBJECT_OBJ) | grep -q " T $$_s$$" \
+			|| { echo "driver-wp001-correction03: symbol $$_s not found in $(DRIVER_ROUTE03_SUBJECT_OBJ)" >&2; exit 1; }; \
 	done
-	@$(DRIVER_ROUTE03_ABI_BIN)
-	@echo "DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS"
+	@date -u +%Y-%m-%dT%H:%M:%SZ > $@
+
+$(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ missing after its producer rule" >&2; \
+		exit 1; \
+	fi
+	@touch $@
 
 $(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_COMPARE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
 
 $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ)
 	$(C_COMPILER) $(DRIVER_ROUTE03_COMPARE_OBJ) \
@@ -1121,10 +1260,206 @@ $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ)
 $(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ABI_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
 
-$(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o src/selfhost-driver-wp001.c
-	$(C_COMPILER) $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o \
+$(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) src/selfhost-driver-wp001.c
+	$(C_COMPILER) $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) \
 		src/selfhost-driver-wp001.c -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+$(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_EMISSION_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_EMISSION_BIN): $(DRIVER_ROUTE03_EMISSION_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE03_EMISSION_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+$(DRIVER_ROUTE03_ADVERSE_OBJ): $(DRIVER_ROUTE03_ADVERSE_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ADVERSE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_ADVERSE_BIN): $(DRIVER_ROUTE03_ADVERSE_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE03_ADVERSE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# ---------------------------------------------------------------------------
+# THE EMISSION COVERAGE (P1-3).
+#
+# It produces a PRODUCTION EXECUTABLE WITNESS for each of the four
+# EMISSION DOMAINS that the PolyC driver can select:
+#
+#   object      the `-c` route
+#   assembly    the `-S` route
+#   dylib       the `-lib <name>` route, which produces THREE artifacts
+#   executable  the default route, which produces a LINKED EXECUTABLE
+#
+# The EXPECTED class and architecture are DERIVED from the GENUINE
+# selector-OFF C ORACLE artifact, never hardcoded. The link/run OUTCOME is
+# checked for the executable domain.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-emission-test
+driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+	@set -e; \
+	W=$(DRIVER_ROUTE03_WORKDIR)/emission; \
+	rm -rf $$W; \
+	for domain in object assembly dylib executable; do \
+	  for side in off on; do \
+	    rm -rf $$W/$$domain/$$side; \
+	    mkdir -p $$W/$$domain/$$side; \
+	    cp $(DRIVER_ROUTE03_FIXTURE) $$W/$$domain/$$side/source.HC; \
+	  done; \
+	  case $$domain in \
+	    object)     flags="-c";         out="-o artifact.bin"; \
+	                 runcheck=0 ;; \
+	    assembly)   flags="-S";         out="-o artifact.bin"; \
+	                 runcheck=0 ;; \
+	    dylib)      flags="-lib mylib";  out=""; \
+	                 runcheck=0 ;; \
+	    executable) flags="";            out="-o app"; \
+	                 runcheck=1 ;; \
+	  esac; \
+	  for side in off on; do \
+	    if [ "$$side" = off ]; then \
+	      hcc=$(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC); \
+	    else \
+	      hcc=$(CURDIR)/$(DRIVER_ROUTE03_ON_HCC); \
+	    fi; \
+	    ( cd $$W/$$domain/$$side; \
+	      set +e; \
+	      $$hcc --install-dir=$(TEST_PREFIX) $$flags source.HC $$out \
+	        >stdout.txt 2>stderr.txt; \
+	      echo $$? > exit.txt ); \
+	  done; \
+	  earch=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/$$domain/off/source.o \
+	            | sed -n 's/^DERIVED_ARCH\t//p'); \
+	  case $$domain in \
+	    object)     suffixes="artifact.bin MACHO_OBJECT $$earch" ;; \
+	    assembly)   suffixes="artifact.bin ASSEMBLER_TEXT none" ;; \
+	    dylib)      suffixes="source.o MACHO_OBJECT $$earch"; \
+	                 suffixes="$$suffixes libmylib.a AR_ARCHIVE none"; \
+	                 suffixes="$$suffixes libmylib.dylib MACHO_DYLIB $$earch" ;; \
+	    executable) suffixes="app MACHO_EXECUTABLE $$earch" ;; \
+	  esac; \
+	  $(DRIVER_ROUTE03_EMISSION_BIN) $$domain $$domain \
+	    $$W/$$domain/off/ $$W/$$domain/on/ \
+	    $$W/$$domain/off/stdout.txt $$W/$$domain/on/stdout.txt \
+	    $$W/$$domain/off/stderr.txt $$W/$$domain/on/stderr.txt \
+	    $$W/$$domain/off/exit.txt $$W/$$domain/on/exit.txt \
+	    0 none 0 $$suffixes _main; \
+	  if [ $$runcheck = 1 ]; then \
+	    set +e; \
+	    ( cd $$W/$$domain/off && ./app ); \
+	    orun=$$?; \
+	    ( cd $$W/$$domain/on && ./app ); \
+	    prun=$$?; \
+	    set -e; \
+	    echo "RUN_EXIT_OFF=$$orun"; \
+	    echo "RUN_EXIT_ON=$$prun"; \
+	    if [ $$orun -ne $$prun ]; then \
+	      echo "EMISSION_RUN_MISMATCH $$domain: the oracle run exit $$orun differs from the PolyC run exit $$prun" >&2; \
+	      exit 1; \
+	    fi; \
+	  fi; \
+	done
+	@# The EMISSION DOMAIN FAIL-CLOSED check. Every supported selected
+	@# emission value must be CONSUMED by the C consumer with an explicit
+	@# case, and an OUT-OF-DOMAIN value must be REJECTED by the default
+	@# case rather than falling back to a supported emission.
+	@$(DRIVER_ROUTE03_EMISSION_BIN) domain src/main.c
+	@echo "DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS"
+
+# ---------------------------------------------------------------------------
+# THE ADVERSE PROBES (P1-2).
+#
+# Each probe takes a FRESH, ISOLATED copy of a KNOWN-GOOD comparator input,
+# mutates or removes exactly ONE observable, and asserts that the
+# comparator REJECTS the mutated input.
+#
+# No probe may reuse an artifact from an earlier probe or an earlier case.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-adverse-test
+driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+	@set -e; \
+	W=$(DRIVER_ROUTE03_WORKDIR)/adverse; \
+	rm -rf $$W; \
+	mkdir -p $$W/good; \
+	cp $(DRIVER_ROUTE03_FIXTURE) $$W/good/source.HC; \
+	( cd $$W/good; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
+	cp $$W/good/artifact.bin $$W/good/oracle-artifact.bin; \
+	cp $$W/good/stdout.txt $$W/good/oracle-stdout.txt; \
+	cp $$W/good/stderr.txt $$W/good/oracle-stderr.txt; \
+	cp $$W/good/exit.txt $$W/good/oracle-exit.txt; \
+	eclass=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/good/oracle-artifact.bin \
+	          | sed -n 's/^DERIVED_CLASS\t//p'); \
+	earch=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/good/oracle-artifact.bin \
+	          | sed -n 's/^DERIVED_ARCH\t//p'); \
+	printf 'not a mach-o image at all, just text garbage\n' > $$W/good/garbage.bin; \
+	cp $$W/good/oracle-artifact.bin $$W/good/wrong-arch.bin; \
+	printf '\007\000\000\001' | \
+	  dd of=$$W/good/wrong-arch.bin bs=1 seek=4 conv=notrunc 2>/dev/null; \
+	printf 'I64 OtherFunction() {\n    return 3;\n}\n' > $$W/good/other.HC; \
+	( cd $$W/good; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o no-symbol.bin \
+	    >other-stdout.txt 2>other-stderr.txt ); \
+	if [ ! -f $$W/good/no-symbol.bin ]; then \
+		echo "driver-wp001-correction03: the adverse no-symbol artifact was not produced" >&2; \
+		exit 1; \
+	fi; \
+	for mutation in ZERO_BYTE_ARTIFACT MISSING_ARTIFACT IDENTICAL_GARBAGE \
+	                GARBAGE_BOTH_SIDES WRONG_ARCHITECTURE MISSING_SYMBOL \
+	                MISSING_STDERR EXTRA_STDERR STALE_OUTPUT MISSING_EXECUTABLE; do \
+	  rm -rf $$W/$$mutation; \
+	  mkdir -p $$W/$$mutation; \
+	  cp $$W/good/artifact.bin $$W/$$mutation/artifact.bin; \
+	  cp $$W/good/oracle-artifact.bin $$W/$$mutation/oracle-artifact.bin; \
+	  cp $$W/good/stdout.txt $$W/$$mutation/stdout.txt; \
+	  cp $$W/good/stderr.txt $$W/$$mutation/stderr.txt; \
+	  cp $$W/good/exit.txt $$W/$$mutation/exit.txt; \
+	  $(DRIVER_ROUTE03_ADVERSE_BIN) $$mutation $$mutation $$W/$$mutation \
+	    $$W/$$mutation/artifact.bin \
+	    $$W/$$mutation/oracle-artifact.bin \
+	    $$W/good/garbage.bin \
+	    $$W/good/wrong-arch.bin \
+	    $$W/good/no-symbol.bin \
+	    $$W/good/garbage.bin \
+	    $$W/$$mutation/stderr.txt \
+	    $$W/$$mutation/exit.txt; \
+	  set +e; \
+	  $(DRIVER_ROUTE03_COMPARE_BIN) $$mutation \
+	    $$W/$$mutation/oracle-artifact.bin \
+	    $$W/$$mutation/artifact.bin \
+	    $$W/good/stdout.txt \
+	    $$W/$$mutation/stdout.txt \
+	    $$W/good/oracle-stderr.txt \
+	    $$W/$$mutation/stderr.txt \
+	    $$W/good/oracle-exit.txt \
+	    $$W/$$mutation/exit.txt \
+	    $$eclass $$earch 0 _main > $$W/$$mutation/out.txt 2>&1; \
+	  rc=$$?; \
+	  set -e; \
+	  if [ $$rc -eq 0 ]; then \
+	    echo "ADVERSE_PROBE_REJECTION_FAILED $$mutation: the comparator ACCEPTED a mutated observation" >&2; \
+	    cat $$W/$$mutation/out.txt >&2; \
+	    exit 1; \
+	  fi; \
+	  echo "ADVERSE_PROBE_REJECTED $$mutation"; \
+	done
+	@echo "DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS"
 
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 

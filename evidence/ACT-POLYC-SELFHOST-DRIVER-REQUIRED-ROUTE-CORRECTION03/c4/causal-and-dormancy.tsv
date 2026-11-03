@@ -1,0 +1,12 @@
+# ACT_PHASE=C4-EVIDENCE
+# EVIDENCE_KIND=causal-mutation-and-c-dormancy
+#
+# RE-RUN against the REPAIRED build, with fresh isolated selector-OFF
+# and selector-ON production compilers.
+#
+# The two experiments are DISCRIMINATING: each mutates exactly one side
+# and observes the other side.
+#
+experiment_id	subject	mutation	pristine_class	mutated_class	mutated_exit	verdict
+M-POLYC-EMISSION-01	selector-ON production compiler	force assembly when object and assembly are both present	MACHO_OBJECT	MACHO_EXECUTABLE	0	CAUSAL (the ON observable CHANGED)
+M-C-LEGACY-04	selector-OFF C oracle and selector-ON production compiler	require assemble_only=0 before the legacy emit_object branch	OFF MACHO_OBJECT / ON MACHO_OBJECT	OFF ASSEMBLER_TEXT / ON MACHO_OBJECT	0 / 0	C POLICY DORMANT ON ON ROUTE (the ON observable did NOT change)

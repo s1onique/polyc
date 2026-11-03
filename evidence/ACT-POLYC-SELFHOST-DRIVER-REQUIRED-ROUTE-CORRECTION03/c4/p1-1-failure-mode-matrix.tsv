@@ -1,0 +1,16 @@
+# ACT_PHASE=C4-EVIDENCE
+# EVIDENCE_KIND=p1-1-failure-mode-matrix
+#
+# Every failure mode of the CORRECTION03 fresh-build chain is detected
+# INDEPENDENTLY, with its own distinct reason token. No failure is
+# detected by a downstream symptom.
+#
+probe	distinct_reason_token	make_exit	independently_detected
+MISSING_SUBJECT	"the ... missing after its producer rule"	1	YES
+MISSING_PRODUCER	"not produced by the stage0 compiler"	1	YES
+FAILED_PRODUCER	"make: *** [...stamp] Error 3"	3	YES
+ZERO_BYTE_SUBJECT	"not produced by the stage0 compiler"	1	YES
+NON_OBJECT_SUBJECT	"not produced by the stage0 compiler"	1	YES
+CLEANUP_RACE	"the OFF and ON compilers SURVIVE the subject rule"	0	YES
+REPEATED_CLEAN_BUILD_1	"CORRECTION03_TEST_STATUS=PASS"	0	YES
+REPEATED_CLEAN_BUILD_2	"CORRECTION03_TEST_STATUS=PASS"	0	YES

@@ -1,0 +1,311 @@
+./build/host-stage0/hcc \
+		--install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-driver-wp001.HC \
+		-o build/wp001-driver-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+DRIVER_WP001_SUBJECT=build/wp001-driver-subject.o
+DRIVER_WP001_SUBJECT_ARCH=arm64
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o \
+		-DPARSER_PADDING_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DPARSER_PADDING_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-padding.HC \
+		-DPARSER_PADDING_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DCONTROL_FLOW_TOKEN_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-DCONTROL_FLOW_TOKEN_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DOPERATOR_PRECEDENCE_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-DOPERATOR_PRECEDENCE_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o \
+		-DAST_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DAST_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice04.HC \
+		-DAST_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice05.HC \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice06.HC \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-compound-block-subject.o \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice07.HC \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+		-DDEFAULT_ARM_TERMINATES_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o \
+		-DDEFAULT_ARM_TERMINATES_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DDEFAULT_ARM_TERMINATES_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-slice08.HC \
+		-DDEFAULT_ARM_TERMINATES_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-statement-dispatch-subject.o \
+		-DSTATEMENT_DISPATCH_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DSTATEMENT_DISPATCH_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-DSTATEMENT_DISPATCH_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/wp001-driver-subject.o \
+		-DDRIVER_WP001_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DDRIVER_WP001_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-driver-wp001.HC \
+		-DDRIVER_WP001_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/selfhost-abi-cpa-subject.o \
+		-DABI_CPA_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DABI_CPA_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-abi-compile-print-ast.HC \
+		-DABI_CPA_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/core-operator-subject.o \
+		-DCORE_OPERATOR_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DCORE_OPERATOR_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-core-operator.HC \
+		-DCORE_OPERATOR_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/a64-cmp-cc-subject.o \
+		-DA64_CMP_CC_PRODUCER=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/host-stage0/hcc \
+		-DA64_CMP_CC_SOURCE=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/tools/bootstrap/selfhost-a64-cmp-cc-v2.HC \
+		-DA64_CMP_CC_PREFIX=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/bootstrap-prefix \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+-- ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc SCHEDULES the PolyC AST-visibility subject: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/selfhost-abi-cpa-subject.o
+-- ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc links the compiled PolyC AST-visibility decision: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/selfhost-abi-cpa-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc SCHEDULES the PolyC core-operator subject: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/core-operator-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc links the compiled PolyC core-operator decisions: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/core-operator-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc SCHEDULES the PolyC A64 condition-code subject: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/a64-cmp-cc-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc links the compiled PolyC A64 condition-code decisions: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/a64-cmp-cc-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc SCHEDULES the PolyC driver subject production: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/wp001-driver-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc links the PolyC compiler driver: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/wp001-driver-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc VERIFIES the PolyC driver subject (both producer and prebuilt modes)
+-- Configuring done (0.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+[  1%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-control-flow-token-subject.o
+[  2%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+[  4%] Built target hcc-control-flow-token-verify
+[  5%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  6%] ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+[  8%] Built target hcc-operator-precedence-verify
+[  9%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[ 10%] ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+[ 12%] Built target hcc-ast-token-map-verify
+[ 13%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 14%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 17%] Built target hcc-a64-cmp-cc-subject
+[ 18%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 21%] Built target hcc-parser-padding-subject
+[ 22%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 24%] ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+[ 25%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 26%] Built target hcc-ast-unary-token-map-verify
+[ 28%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 29%] ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-switch-arm-subject.o
+[ 30%] Linking C static library libtasm.a
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapSwitchArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapSwitchArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=920
+[ 32%] Built target hcc-switch-arm-token-map-verify
+[ 32%] Built target tasm
+[ 33%] ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=688
+[ 34%] ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapDefaultArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapDefaultArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=864
+[ 34%] Built target hcc-compound-block-token-map-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 36%] Built target hcc-default-arm-token-map-verify
+[ 37%] ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapStatementDispatch TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapStatementDispatch DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1432
+[ 38%] ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: verifying the PolyC driver subject /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/./build/wp001-driver-subject.o
+[ 40%] Built target hcc-statement-dispatch-token-map-verify
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: DRIVER_WP001_OBJECT_STATUS=PASS EXPECTED_SYMBOL=WpDriverDecide TARGET_OBJECT_FORMAT=Mach-O REQUIRED_SYMBOL_COUNT=13 OBJECT_SIZE=22384
+[ 41%] Built target hcc-abi-cpa-subject
+[ 42%] Built target hcc-driver-wp001-verify
+[ 44%] Built target hcc-core-operator-subject
+[ 45%] Building C object CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+[ 45%] Built target hcc-driver-wp001-consumer
+[ 46%] ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01: verifying that the production compiler CONSUMES the PolyC emission action
+-- ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01: DRIVER_WP001_CONSUMPTION_STATUS=PASS PRODUCTION_OBJECT=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o CONSUMED_SYMBOL=_WpDriverSelectedEmission PRODUCTION_OBJECT_SIZE=13192
+[ 46%] Built target hcc-driver-wp001-consumption-verify
+[ 48%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 49%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 52%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 58%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 60%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 61%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+[ 62%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+7 warnings generated.
+[ 64%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+1 warning generated.
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 66%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 70%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 72%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/src/lexer.c:1384:38: warning: unused parameter 'start' [-Wunused-parameter]
+                               char *start,
+                                     ^
+[ 73%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+1 warning generated.
+[ 76%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 82%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 85%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 88%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 94%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[ 97%] Building C object CMakeFiles/hcc.dir/abi-cpa-host.c.o
+[ 98%] Building C object CMakeFiles/hcc.dir/selfhost-driver-wp001.c.o
+[100%] Linking C executable /Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc
+[100%] Built target hcc
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+PRODUCTION_HCC=./hcc
+PRODUCTION_PADDING_AUTHORITY=POLYC
+PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/quality/driver-required-route-correction03-adverse.HC -o build/driver-required-route-correction03-adverse.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+gcc build/driver-required-route-correction03-adverse.o \
+		-L/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib -ltos -lpthread -lc -lm -o build/driver-required-route-correction03-adverse
+./hcc --install-dir=/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix -c tools/quality/driver-required-route-correction03-compare.HC -o build/driver-required-route-correction03-compare.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+gcc build/driver-required-route-correction03-compare.o \
+		-L/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix/lib -ltos -lpthread -lc -lm -o build/driver-required-route-correction03-compare
+ADVERSE_PROBE	ZERO_BYTE_ARTIFACT	ZERO_BYTE_ARTIFACT
+ADVERSE_PROBE_REJECTED ZERO_BYTE_ARTIFACT
+ADVERSE_PROBE	MISSING_ARTIFACT	MISSING_ARTIFACT
+ADVERSE_PROBE_REJECTED MISSING_ARTIFACT
+ADVERSE_PROBE	IDENTICAL_GARBAGE	IDENTICAL_GARBAGE
+ADVERSE_PROBE_REJECTED IDENTICAL_GARBAGE
+ADVERSE_PROBE	GARBAGE_BOTH_SIDES	GARBAGE_BOTH_SIDES
+ADVERSE_PROBE_REJECTED GARBAGE_BOTH_SIDES
+ADVERSE_PROBE	WRONG_ARCHITECTURE	WRONG_ARCHITECTURE
+ADVERSE_PROBE_REJECTED WRONG_ARCHITECTURE
+ADVERSE_PROBE	MISSING_SYMBOL	MISSING_SYMBOL
+ADVERSE_PROBE_REJECTED MISSING_SYMBOL
+ADVERSE_PROBE	MISSING_STDERR	MISSING_STDERR
+ADVERSE_PROBE_REJECTED MISSING_STDERR
+ADVERSE_PROBE	EXTRA_STDERR	EXTRA_STDERR
+ADVERSE_PROBE_REJECTED EXTRA_STDERR
+ADVERSE_PROBE	STALE_OUTPUT	STALE_OUTPUT
+ADVERSE_PROBE_REJECTED STALE_OUTPUT
+ADVERSE_PROBE	MISSING_EXECUTABLE	MISSING_EXECUTABLE
+ADVERSE_PROBE_REJECTED MISSING_EXECUTABLE
+DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS

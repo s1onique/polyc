@@ -1,0 +1,22 @@
+# ACT_PHASE=C4-EVIDENCE
+# EVIDENCE_KIND=p1-2-adverse-probe-rejection-ledger
+#
+# Each probe takes a FRESH, ISOLATED copy of a KNOWN-GOOD comparator input,
+# mutates or removes exactly ONE observable, and the comparator REJECTS it.
+# The rejection reason is the DISTINGUISHING reason for that probe.
+#
+# The comparator VALIDATES every observation BEFORE it compares it, so a
+# probe that makes the two sides AGREE (IDENTICAL_GARBAGE) is still
+# rejected: only the independent validation can reject it.
+#
+probe	mutated_observable	distinct_rejection_reason	comparator_exit	rejected
+ZERO_BYTE_ARTIFACT	zero byte artifact	the PolyC artifact is NONEMPTY	1	YES
+MISSING_ARTIFACT	missing artifact	the PolyC artifact is PRESENT	1	YES
+IDENTICAL_GARBAGE	identical garbage	the oracle artifact has the EXPECTED class	1	YES
+GARBAGE_BOTH_SIDES	garbage both sides	the oracle artifact has the EXPECTED class	1	YES
+WRONG_ARCHITECTURE	wrong architecture	the PolyC artifact has the EXPECTED architecture	1	YES
+MISSING_SYMBOL	missing symbol	the REQUIRED symbols are present in both artifacts	1	YES
+MISSING_STDERR	missing stderr	the stderr transcripts are PRESENT	1	YES
+EXTRA_STDERR	extra stderr	the stderr transcripts are EQUAL	1	YES
+STALE_OUTPUT	stale output	the PolyC artifact has the EXPECTED architecture	1	YES
+MISSING_EXECUTABLE	missing executable	the PolyC artifact is PRESENT	1	YES

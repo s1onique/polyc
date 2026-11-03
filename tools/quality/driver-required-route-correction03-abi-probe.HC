@@ -23,8 +23,19 @@ extern "c" I64 WpDriverSelectedEmission();
 #define WP_EMIT_ASSEMBLY       3
 #define WP_EMIT_DYLIB          4
 
-#define NCASE 8
-#define NARGS 5
+// The DOMAIN COVERAGE.
+//
+// The eight mandatory precedence cases cover the OBJECT and the ASSEMBLY
+// domain. The remaining two SUPPORTED domain values -- the DYNAMIC LIBRARY
+// domain and the EXECUTABLE (default) domain -- are covered here, so that
+// EVERY supported selected-emission value has OBSERVED dispatch behavior
+// and no supported value rests on a DECLARED status alone.
+//
+// The FAIL-CLOSED cases cover the INVALID values: an argv whose arity is
+// violated, and an argv with no source file, must select the UNKNOWN
+// emission rather than falling back to a supported one.
+#define NCASE 16
+#define NARGS 6
 
 static U8 *CASE_ID[NCASE];
 static I64 CASE_NARG[NCASE];
@@ -72,6 +83,73 @@ static U0 InitCases() {
   SetArg(7,0,"hcc"); SetArg(7,1,"-lib"); SetArg(7,2,"name");
   SetArg(7,3,"-S"); SetArg(7,4,"input.HC");
   CASE_NARG[7] = 5; CASE_EXPECT[7] = WP_EMIT_ASSEMBLY;
+
+  // -----------------------------------------------------------------------
+  // THE REMAINING SUPPORTED DOMAINS.
+  // -----------------------------------------------------------------------
+
+  // The DYNAMIC LIBRARY domain: `-lib <name>` with a source file and no
+  // object request and no assembly request selects the dylib.
+  CASE_ID[8] = "DYLIB_ONLY";
+  SetArg(8,0,"hcc"); SetArg(8,1,"-lib"); SetArg(8,2,"name");
+  SetArg(8,3,"input.HC");
+  CASE_NARG[8] = 4; CASE_EXPECT[8] = WP_EMIT_DYLIB;
+
+  // The DYNAMIC LIBRARY domain again, with the `-lib` request AFTER the
+  // source file, so that the whole-argv precedence cannot depend on the
+  // position of the request.
+  CASE_ID[9] = "DYLIB_AFTER_SOURCE";
+  SetArg(9,0,"hcc"); SetArg(9,1,"input.HC"); SetArg(9,2,"-lib");
+  SetArg(9,3,"name");
+  CASE_NARG[9] = 4; CASE_EXPECT[9] = WP_EMIT_DYLIB;
+
+  // The EXECUTABLE (default) domain: a source file and no emission option
+  // at all selects the executable.
+  CASE_ID[10] = "EXECUTABLE_DEFAULT";
+  SetArg(10,0,"hcc"); SetArg(10,1,"input.HC");
+  CASE_NARG[10] = 2; CASE_EXPECT[10] = WP_EMIT_EXECUTE;
+
+  // The EXECUTABLE (default) domain with an output file: the output file
+  // is not an emission request, so the argv still selects the executable.
+  CASE_ID[11] = "EXECUTABLE_DEFAULT_WITH_OUTPUT";
+  SetArg(11,0,"hcc"); SetArg(11,1,"input.HC"); SetArg(11,2,"-o");
+  SetArg(11,3,"out");
+  CASE_NARG[11] = 4; CASE_EXPECT[11] = WP_EMIT_EXECUTE;
+
+  // The DYNAMIC LIBRARY domain outranks the EXECUTABLE domain: a `-lib`
+  // request together with a source file selects the dylib, not the
+  // executable.
+  CASE_ID[12] = "DYLIB_OUTRANKS_EXECUTABLE";
+  SetArg(12,0,"hcc"); SetArg(12,1,"-lib"); SetArg(12,2,"name");
+  SetArg(12,3,"input.HC");
+  SetArg(12,4,"-o"); SetArg(12,5,"out");
+  CASE_NARG[12] = 6; CASE_EXPECT[12] = WP_EMIT_DYLIB;
+
+  // The OBJECT domain outranks the DYNAMIC LIBRARY domain: a `-c`
+  // request together with a `-lib` request selects the object.
+  CASE_ID[13] = "OBJECT_OUTRANKS_DYLIB";
+  SetArg(13,0,"hcc"); SetArg(13,1,"-lib"); SetArg(13,2,"name");
+  SetArg(13,3,"-c"); SetArg(13,4,"input.HC");
+  CASE_NARG[13] = 5; CASE_EXPECT[13] = WP_EMIT_COMPILE_OBJECT;
+
+  // -----------------------------------------------------------------------
+  // THE INVALID / FAIL-CLOSED CASES.
+  // -----------------------------------------------------------------------
+
+  // An option whose value is MISSING is an arity violation. The emission
+  // decision is NOT made on a malformed argv, so the emission is UNKNOWN
+  // and the caller fails closed.
+  CASE_ID[14] = "ARITY_VIOLATION_IS_UNKNOWN";
+  SetArg(14,0,"hcc"); SetArg(14,1,"-lib");
+  CASE_NARG[14] = 2; CASE_EXPECT[14] = WP_EMIT_UNKNOWN;
+
+  // An argv with NO source file and NO emission request selects NO
+  // emission at all. It is the ABSENT case and it is distinct from the
+  // EXECUTABLE case.
+  CASE_ID[15] = "NO_SOURCE_IS_UNKNOWN";
+  SetArg(15,0,"hcc"); SetArg(15,1,"--install-dir");
+  SetArg(15,2,"/tmp/prefix");
+  CASE_NARG[15] = 3; CASE_EXPECT[15] = WP_EMIT_UNKNOWN;
 }
 
 I32 Main(I32 argc, U8 **argv) {
