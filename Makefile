@@ -1036,6 +1036,21 @@ DRIVER_ROUTE03_ABI_BIN = build/driver-required-route-correction03-abi-probe
 DRIVER_ROUTE03_CAPTURE_SRC = tools/quality/driver-required-route-correction03-capture.HC
 DRIVER_ROUTE03_CAPTURE_OBJ = build/driver-required-route-correction03-capture.o
 DRIVER_ROUTE03_CAPTURE_BIN = build/driver-required-route-correction03-capture
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3 -- THE SHARED CONTRACT AND THE EXECUTION-OWNING HARNESS.
+#
+# The CONTRACT is the single validated-observation contract. It is INCLUDED
+# by the comparator and by the emission verifier, so there is exactly ONE
+# Mach-O validator, ONE exit-status codec and ONE archive decoder in the
+# CORRECTION03 evidence path.
+#
+# The HARNESS is the execution owner. It is the only component that runs a
+# compiler.
+DRIVER_ROUTE03_CONTRACT_SRC = tools/quality/driver-required-route-correction03-contract.HC
+DRIVER_ROUTE03_SHA256_SRC = tools/quality/driver-required-route-correction03-sha256.HC
+DRIVER_ROUTE03_HARNESS_SRC = tools/quality/driver-required-route-correction03-harness.HC
+DRIVER_ROUTE03_HARNESS_OBJ = build/driver-required-route-correction03-harness.o
+DRIVER_ROUTE03_HARNESS_BIN = build/driver-required-route-correction03-harness
 DRIVER_ROUTE03_WORKDIR = build/driver-wp001-correction03
 DRIVER_ROUTE03_FIXTURE = tests/driver-wp001/required-route/route-source.HC
 
@@ -1156,56 +1171,79 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
-	rm -rf $$ROOT; \
-	mkdir -p $$ROOT; \
+	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
+	rm -rf $$ROOT $$RUN; \
+	mkdir -p $$ROOT $$RUN; \
+	\
+	$(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) init $(CURDIR)/$$RUN > $$RUN/init.txt; \
+	runid=$$(grep "^HARNESS_RUN_ID" $$RUN/init.txt | cut -f2); \
+	if [ -z "$$runid" ]; then \
+		echo "driver-wp001-correction03: the run context was not allocated" >&2; \
+		exit 1; \
+	fi; \
 	for spec in 'cS:-c -S' 'Sc:-S -c' 'ccS:-c -c -S' 'SSc:-S -S -c' \
 	            'cSc:-c -S -c' 'ScS:-S -c -S' 'c:-c' 'S:-S'; do \
 	  id=$${spec%%:*}; flags=$${spec#*:}; \
+	  offdir=""; ondir=""; \
 	  for side in off on; do \
 	    d=$$ROOT/$$id/$$side; \
 	    rm -rf $$d; \
 	    mkdir -p $$d; \
 	    cp $(DRIVER_ROUTE03_FIXTURE) $$d/source.HC; \
 	  done; \
-	  (cd $$ROOT/$$id/off && \
-	   $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
-	  (cd $$ROOT/$$id/on && \
-	   $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
+	  \
+	  for side in off on; do \
+	    if [ "$$side" = off ]; then \
+	      hcc=$(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC); \
+	      sel=OFF; \
+	    else \
+	      hcc=$(CURDIR)/$(DRIVER_ROUTE03_ON_HCC); \
+	      sel=ON; \
+	    fi; \
+	    ( cd $$ROOT/$$id/$$side && \
+	      $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt $$sel $$id \
+	        $$hcc $(CURDIR)/$$ROOT/$$id/$$side/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	        artifact.bin $(CURDIR)/$$ROOT/$$id/$$side/ \
+	        HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	        -- $$hcc --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
+	        > harness.txt 2>&1 ); \
+	    if [ ! -f $$ROOT/$$id/$$side/harness.txt ]; then \
+	      echo "driver-wp001-correction03: the harness did not run for $$id/$$side" >&2; \
+	      exit 1; \
+	    fi; \
+	    \
+	    evdir=$$(grep "^HARNESS_EVENT_DIR" $$ROOT/$$id/$$side/harness.txt | cut -f2); \
+	    if [ -z "$$evdir" ]; then \
+	      echo "driver-wp001-correction03: the harness reported no event directory for $$id/$$side" >&2; \
+	      cat $$ROOT/$$id/$$side/harness.txt >&2; \
+	      exit 1; \
+	    fi; \
+	    if [ "$$side" = off ]; then offdir=$$evdir; else ondir=$$evdir; fi; \
+	  done; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) derive \
 	    $$ROOT/$$id/off/artifact.bin \
 	    > $$ROOT/$$id/off/derived.txt; \
-	  eclass=$$(sed -n 's/^DERIVED_CLASS\t//p' $$ROOT/$$id/off/derived.txt); \
-	  earch=$$(sed -n 's/^DERIVED_ARCH\t//p' $$ROOT/$$id/off/derived.txt); \
-	  $(DRIVER_ROUTE03_CAPTURE_BIN) $$ROOT/$$id/off/capture.txt $$ROOT/$$id/ledger.txt OFF \
-	    $$ROOT/$$id/off/source.HC $(DRIVER_ROUTE03_FIXTURE) \
-	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
-	    $$ROOT/$$id/off/artifact.bin $$ROOT/$$id/off/stdout.txt \
-	    $$ROOT/$$id/off/stderr.txt $$ROOT/$$id/off/exit.txt \
-	    --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	    > $$ROOT/$$id/off/capture.log 2>&1; \
-	  $(DRIVER_ROUTE03_CAPTURE_BIN) $$ROOT/$$id/on/capture.txt $$ROOT/$$id/ledger.txt ON \
-	    $$ROOT/$$id/on/source.HC $(DRIVER_ROUTE03_FIXTURE) \
-	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) \
-	    $$ROOT/$$id/on/artifact.bin $$ROOT/$$id/on/stdout.txt \
-	    $$ROOT/$$id/on/stderr.txt $$ROOT/$$id/on/exit.txt \
-	    --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
-	    > $$ROOT/$$id/on/capture.log 2>&1; \
+	  eclass=$$(grep "^DERIVED_CLASS" $$ROOT/$$id/off/derived.txt | cut -f2); \
+	  earch=$$(grep "^DERIVED_ARCH" $$ROOT/$$id/off/derived.txt | cut -f2); \
+	  offfiles=$$offdir; \
+	  onfiles=$$ondir; \
+	  osha=$$(grep "^PRODUCER_SHA256" $$offfiles/capture.txt | cut -d" " -f2); \
+	  psha=$$(grep "^PRODUCER_SHA256" $$onfiles/capture.txt | cut -d" " -f2); \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$id \
 	    $$ROOT/$$id/off/artifact.bin \
 	    $$ROOT/$$id/on/artifact.bin \
-	    $$ROOT/$$id/off/stdout.txt \
-	    $$ROOT/$$id/on/stdout.txt \
-	    $$ROOT/$$id/off/stderr.txt \
-	    $$ROOT/$$id/on/stderr.txt \
-	    $$ROOT/$$id/off/exit.txt \
-	    $$ROOT/$$id/on/exit.txt \
+	    $$offfiles/stdout.txt \
+	    $$onfiles/stdout.txt \
+	    $$offfiles/stderr.txt \
+	    $$onfiles/stderr.txt \
+	    $$offfiles/exit.txt \
+	    $$onfiles/exit.txt \
 	    $$eclass $$earch 0 \
-	    $$ROOT/$$id/ledger.txt $$ROOT/$$id/off/capture.txt $$ROOT/$$id/on/capture.txt \
+	    $$RUN/ledger.txt $$offfiles/capture.txt $$onfiles/capture.txt \
+	    $$runid $$id $$osha $$psha \
 	    _main; \
 	done
 	@$(DRIVER_ROUTE03_ABI_BIN)
@@ -1375,7 +1413,7 @@ $(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
 
 # ---------------------------------------------------------------------------
 # ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
-# ROUND 2, F1 -- THE CORRECTED QUALITY-TOOL GRAPH.
+# ROUND 3, F7 -- THE CORRECTED QUALITY-TOOL GRAPH.
 #
 # The COMPILATION of every CORRECTION03 quality tool reads the runtime header
 # from $(TEST_PREFIX)/include/tos.HH, and the LINKING of every one of them
@@ -1393,7 +1431,7 @@ $(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
 # satisfy the dependency graph while the compiler still could not find the
 # header it actually reads.
 # ---------------------------------------------------------------------------
-$(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+$(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_COMPARE_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1417,7 +1455,7 @@ $(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OB
 	$(C_COMPILER) $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) \
 		src/selfhost-driver-wp001.c -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
-$(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+$(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_EMISSION_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1454,6 +1492,26 @@ $(DRIVER_ROUTE03_CAPTURE_OBJ): $(DRIVER_ROUTE03_CAPTURE_SRC) $(PRODUCTION_HCC) $
 
 $(DRIVER_ROUTE03_CAPTURE_BIN): $(DRIVER_ROUTE03_CAPTURE_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_CAPTURE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# THE EXECUTION-OWNING HARNESS.
+#
+# It is the only component that runs a compiler. It owns the run context,
+# the execution-event identity, the argument vector, the environment, the
+# output directory, the exit status and the evidence capture.
+#
+# The SHARED CONTRACT is a NORMAL prerequisite, because the compiler
+# CONSUMES its source.
+$(DRIVER_ROUTE03_HARNESS_OBJ): $(DRIVER_ROUTE03_HARNESS_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_HARNESS_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_HARNESS_BIN): $(DRIVER_ROUTE03_HARNESS_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_HARNESS_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
 # ---------------------------------------------------------------------------
@@ -2339,8 +2397,46 @@ $(TEST_PREFIX_HEADER): src/holyc-lib/tos.HH
 		exit 1; \
 	fi
 
-# The canonical runtime archive. The canonical runtime sources are NORMAL
-# prerequisites because their CONTENT determines the archive's content.
+# The canonical runtime archive.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3, F6 AND F7.
+#
+# F7 -- THE COMPLETE DEPENDENCY GRAPH.
+#
+# The canonical runtime sources are NORMAL prerequisites because their
+# CONTENT determines the archive's content.
+#
+# The INSTALLED RUNTIME HEADER is a NORMAL prerequisite: the archive's
+# producer reads the header from the installed prefix, so a change to the
+# installed header MUST invalidate the archive. Without this
+# prerequisite, the archive could be "up to date" while the header it was
+# built against had changed.
+#
+# The RUNTIME PRODUCER is an ORDER-ONLY prerequisite: the producer's
+# CONTENT is checked by the recipe itself (its SHA-256 is verified against
+# the authorized bootstrap identity), and a rebuild of the producer alone
+# must not silently rebuild the archive, because the archive is rebuilt
+# only when its own inputs change. The producer's change DOES trigger an
+# EXPLICIT REVALIDATION at the acceptance boundary (see the
+# test-prefix-libtos-revalidate target).
+#
+# F6 -- ATOMIC PUBLICATION.
+#
+# The archive is produced at a UNIQUE TEMPORARY PATH in the DESTINATION
+# FILESYSTEM, it is VALIDATED there, and only then is it published to the
+# final target. A failure removes every temporary product.
+#
+# The previous revision published the archive with an unconditional `cp`
+# AFTER the build. When the build failed, the copy still happened, so an
+# INVALID archive was left at the final target, and the next unchanged
+# retry saw the target "up to date" and SUCCEEDED.
+#
+# The required adverse experiment is:
+#
+#     INVALID_ARCHIVE -> FIRST_BUILD_FAIL -> RETRY_FAIL
+#
+# until a genuinely valid archive is rebuilt.
 $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
                        src/holyc-lib/memory.HC src/holyc-lib/io.HC \
                        src/holyc-lib/strings.HC src/holyc-lib/math.HC \
@@ -2356,7 +2452,7 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
                        src/holyc-lib/tooling.HC \
                        src/holyc-lib/defs.HH src/holyc-lib/io_defs.HH \
                        src/holyc-lib/memory_defs.HH src/holyc-lib/tooling_defs.HH \
-                       src/holyc-lib/tos.HH | $(RUNTIME_PRODUCER_PATH)
+                       src/holyc-lib/tos.HH $(TEST_PREFIX_HEADER) | $(RUNTIME_PRODUCER_PATH)
 	@mkdir -p $(dir $@)
 	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
 		echo "test-prefix-libtos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
@@ -2375,11 +2471,14 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
 	fi; \
 	echo "test-prefix-libtos: builder $(LIBTOS_HCC)"; \
 	echo "test-prefix-libtos: HCC_BOOTSTRAP_PROVENANCE_SHA=$$_actual"; \
+	_tmpdir=$$(mktemp -d "$(dir $@).libtos.XXXXXX"); \
+	trap 'rm -rf "$$_tmpdir"' EXIT INT TERM; \
 	cd ./src/holyc-lib; \
 	rm -f all.o errno_shim.o producer_id.o producer_id.c; \
 	(../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true); \
 	if [ ! -f ./all.o ]; then \
 		echo "test-prefix-libtos: FAIL: the producer did not produce all.o" >&2; \
+		echo "test-prefix-libtos:        NO archive was published" >&2; \
 		exit 3; \
 	fi; \
 	cc -O0 -c ./errno_shim.c -o ./errno_shim.o; \
@@ -2388,27 +2487,41 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
 	rm -f ./producer_id.c; \
 	ar rcs ./libtos.a ./all.o ./errno_shim.o ./producer_id.o; \
 	ranlib ./libtos.a; \
-	cp ./libtos.a $@; \
-	if [ ! -s "$@" ]; then \
-		echo "test-prefix-libtos: FAIL: $@ not produced" >&2; \
+	\
+	cp ./libtos.a "$$_tmpdir/libtos.a"; \
+	if [ ! -s "$$_tmpdir/libtos.a" ]; then \
+		echo "test-prefix-libtos: FAIL: the temporary archive was not produced" >&2; \
+		echo "test-prefix-libtos:        NO archive was published" >&2; \
 		exit 2; \
 	fi; \
 	_missing=0; \
 	for _sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
-		if ! nm "$@" 2>/dev/null | grep -q " T $$_sym$$"; then \
+		if ! nm "$$_tmpdir/libtos.a" 2>/dev/null | grep -q " T $$_sym$$"; then \
 			echo "test-prefix-libtos: FAIL: required symbol $$_sym missing from the archive" >&2; \
 			_missing=$$((_missing + 1)); \
 		fi; \
 	done; \
 	if [ $$_missing -ne 0 ]; then \
 		echo "test-prefix-libtos: FAIL: $$_missing required symbol(s) missing" >&2; \
+		echo "test-prefix-libtos:        NO archive was published" >&2; \
 		exit 2; \
 	fi; \
-	if ! strings "$@" 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"; then \
+	if ! strings "$$_tmpdir/libtos.a" 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"; then \
 		echo "test-prefix-libtos: FAIL: the archive producer-id does not contain the authorized SHA-256" >&2; \
+		echo "test-prefix-libtos:        NO archive was published" >&2; \
 		exit 4; \
 	fi; \
-	echo "test-prefix-libtos: complete; $@ verified"
+	\
+	_arch=$$(file -b "$$_tmpdir/libtos.a" 2>/dev/null); \
+	case "$$_arch" in \
+		*current ar archive*) ;; \
+		*) echo "test-prefix-libtos: FAIL: the temporary archive is not an ar archive ($$_arch)" >&2; \
+		   echo "test-prefix-libtos:        NO archive was published" >&2; \
+		   exit 5 ;; \
+	esac; \
+	\
+	mv "$$_tmpdir/libtos.a" "$@"; \
+	echo "test-prefix-libtos: complete; $@ published and verified"
 
 test-prefix-install: production-hcc runtime-producer
 	@if [ ! -x ./hcc ]; then \

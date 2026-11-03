@@ -393,8 +393,14 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
     }
 
     if (cmd == LC_SEGMENT_64) {
-      // The LC_SEGMENT_64 load command is EXACTLY 72 bytes.
-      if (cmdsize != SEGMENT64_SIZE) return MV_SEGMENT_STRUCT;
+      // The LC_SEGMENT_64 load command is AT LEAST 72 bytes: the base
+      // segment_command_64 struct, followed by the section table, which is
+      // 80 bytes per section. A segment with N sections therefore has
+      // cmdsize == 72 + 80 * N.
+      //
+      // The previous revision required cmdsize to be EXACTLY 72, which
+      // rejected every real Mach-O image that carries sections.
+      if (cmdsize < SEGMENT64_SIZE) return MV_SEGMENT_STRUCT;
       if (vm_nsegments >= MV_MAX_SEGMENTS) return MV_SEGMENT_STRUCT;
       // The segment's file extent.
       I64 fileoff = ContractWordAt(buf, size, off + 40);

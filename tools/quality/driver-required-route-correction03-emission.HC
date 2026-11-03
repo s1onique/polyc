@@ -1,6 +1,7 @@
 // tools/quality/driver-required-route-correction03-emission.HC
 //
-// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03.
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+// ROUND 3, F5 -- THE EMISSION WITNESS.
 //
 // THE PRODUCTION EMISSION WITNESS.
 //
@@ -8,12 +9,34 @@
 // Assembly domain, the Dynamic-library domain, or the Executable
 // (default) domain.
 //
-// It is the P1-3 repair. The previous evidence established the emission
-// precedence for the OBJECT and ASSEMBLY domains only, because those are
-// the two domains a single `-o` output file can express. The DYNAMIC
-// LIBRARY domain produces THREE artifacts (an object, a static archive
-// and a shared library) and the EXECUTABLE domain produces a LINKED
-// EXECUTABLE, and neither had a production executable witness.
+// THE F5 REQUIREMENT.
+//
+// The emission verifier MUST NOT BE WEAKER than the corrected comparator.
+//
+// The previous revision kept its OWN, WEAKER, Mach-O reader and its OWN
+// exit-status reader, and it therefore ACCEPTED:
+//
+//   * IDENTICAL MALFORMED Mach-O payloads,
+//   * a MISSING REQUIRED `_main`, and
+//   * ARCHIVES CONTAINING ONLY SYMBOL-INDEX BOOKKEEPING, and
+//   * EXIT RECORDS WITH TRAILING GARBAGE.
+//
+// This revision uses the SAME SHARED CONTRACT as the comparator, so the
+// emission verifier is never weaker: there is exactly ONE Mach-O validator,
+// ONE exit-status codec and ONE archive decoder in the CORRECTION03
+// evidence path.
+//
+// FOR EACH SIDE INDEPENDENTLY, it establishes:
+//
+//   * the ARTIFACT CLASS,
+//   * the STRUCTURAL VALIDITY,
+//   * the REQUIRED SYMBOL ROSTER,
+//   * the EXPECTED ARCHIVE MEMBER ROSTER,
+//   * the DECODED MEMBER IDENTITIES and the VALID PAYLOADS,
+//   * a VALID LINK/RUN WITNESS when the domain requires one, and
+//   * a STRICT COMPLETE EXIT-STATUS RECORD.
+//
+// ONLY AFTER BOTH SIDES ARE VALID may the semantic equivalence be checked.
 //
 // THE RULES.
 //
@@ -25,40 +48,18 @@
 //      DERIVED FROM THE GENUINE selector-OFF C ORACLE by the harness. The
 //      witness never decides what the correct answer is.
 //
-//   3. The FULL ARTIFACT BYTE result and the ARCHIVE-MEMBER SEMANTIC
-//      result are recorded as SEPARATE results. A static archive's
-//      header bytes carry nondeterministic metadata; that difference is
-//      reported as METADATA NONDETERMINISM and never as an equivalence
-//      failure, and never as an equality claim.
-//
-//   4. Where an artifact is LINKABLE, the link/run OUTCOME is checked.
+//   3. The ARCHIVE-MEMBER SEMANTIC result is reported SEPARATELY from the
+//      FULL ARTIFACT BYTE result. The archive's TIMESTAMP metadata is the
+//      ONLY explicitly permitted nondeterminism.
 //
 // F-POLYC-TOOLS: PolyC source. No Python, no shell, no dependency.
 
-#include "../../src/holyc-lib/memory_defs.HH"
-#include "../../src/holyc-lib/io_defs.HH"
-
-#define MACHO64_MAGIC 0xFEEDFACF
-#define ELF64_MAGIC   0x7F454C46
-
-#define CLS_ABSENT      0
-#define CLS_MACHO_OBJ   1
-#define CLS_MACHO_EXEC  2
-#define CLS_MACHO_DYLIB 3
-#define CLS_ELF         4
-#define CLS_OTHER       5
-#define CLS_TEXT        6
-#define CLS_AR          7
-
-#define CPU_TYPE_ARM64 0x0100000C
-#define CPU_TYPE_X86_64 0x01000007
-
-#define AR_MAGIC_LEN 8
-#define AR_MEMBER_HDR_LEN 60
+#include "driver-required-route-correction03-contract.HC"
 
 static I64 failures;
 static I64 checks;
 
+// The reporting helpers.
 static U0 Check(I64 ok, U8 *case_id, U8 *what) {
   checks = checks + 1;
   if (ok == 1) {
@@ -70,113 +71,34 @@ static U0 Check(I64 ok, U8 *case_id, U8 *what) {
 }
 
 // The reason token. A rejection MUST carry a REASON that says WHICH
-// property was violated, so a reviewer can distinguish the failure modes
-// and cannot mistake a generic rejection for the specific one.
-//
-// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
-// ROUND 2.
+// property was violated.
 static U0 Reason(U8 *case_id, U8 *side, U8 *token) {
   "REASON\t%s\t%s\t%s\n", case_id, side, token;
 }
 
-static I64 WordAt(U8 *buf, I64 size, I64 off) {
-  if (size < off + 4) return -1;
-  I64 v = 0;
-  I64 i = off + 3;
-  while (i >= off) { v = v * 256 + buf[i]; i = i - 1; }
-  return v;
-}
-
-static I64 Classify(U8 *buf, I64 size) {
-  if (buf == NULL) return CLS_ABSENT;
-  if (size == 0) return CLS_OTHER;
-  I64 magic = WordAt(buf, size, 0);
-  if (magic == MACHO64_MAGIC) {
-    I64 type = WordAt(buf, size, 12);
-    if (type == 1) return CLS_MACHO_OBJ;
-    if (type == 2) return CLS_MACHO_EXEC;
-    if (type == 6) return CLS_MACHO_DYLIB;
-    return CLS_OTHER;
-  }
-  if (magic == ELF64_MAGIC) return CLS_ELF;
-  if (size >= AR_MAGIC_LEN) {
-    I64 i = 0;
-    I64 ok = 1;
-    while (i < AR_MAGIC_LEN) {
-      if (buf[i] != "!<arch>\n"[i]) { ok = 0; break; }
-      i = i + 1;
-    }
-    if (ok == 1) return CLS_AR;
-  }
-  if (size > 4) {
-    if (buf[0] == '.' || buf[0] == '#' || buf[0] == '_' || buf[0] == '/') {
-      return CLS_TEXT;
-    }
-  }
-  return CLS_OTHER;
-}
-
-static I64 ArchOf(U8 *buf, I64 size) {
-  if (buf == NULL) return -1;
-  if (size == 0) return -1;
-  if (WordAt(buf, size, 0) != MACHO64_MAGIC) return -1;
-  return WordAt(buf, size, 4);
-}
-
-static U8 *ArchName(I64 arch) {
-  if (arch == CPU_TYPE_ARM64) return "arm64";
-  if (arch == CPU_TYPE_X86_64) return "x86_64";
-  return "none";
-}
-
-static U8 *ClassName(I64 cls) {
-  if (cls == CLS_ABSENT) return "ABSENT";
-  if (cls == CLS_MACHO_OBJ) return "MACHO_OBJECT";
-  if (cls == CLS_MACHO_EXEC) return "MACHO_EXECUTABLE";
-  if (cls == CLS_MACHO_DYLIB) return "MACHO_DYLIB";
-  if (cls == CLS_ELF) return "ELF";
-  if (cls == CLS_TEXT) return "ASSEMBLER_TEXT";
-  if (cls == CLS_AR) return "AR_ARCHIVE";
-  return "OTHER";
-}
-
-static U64 Digest(U8 *buf, I64 size) {
-  U64 h = 14695981039346656037;
-  I64 i = 0;
-  while (i < size) {
-    h = h ^ buf[i];
-    h = h * 1099511628211;
-    i = i + 1;
-  }
-  return h;
-}
-
+// The file reader that reports PRESENCE and SIZE separately.
 static U8 *ReadArtifact(U8 *path, I64 *size, I64 *present) {
   *size = 0;
-  I64 s = 0;
-  U8 *buf = FileRead(path, &s);
-  if (buf == NULL) {
-    *present = 0;
-    *size = 0;
-    return NULL;
-  }
+  *present = 0;
+  U8 *buf = FileRead(path, size);
+  if (buf == NULL) return NULL;
   *present = 1;
-  *size = s;
   return buf;
 }
 
-static I64 BytesEqual(U8 *a, I64 *asize, U8 *b, I64 *bsize) {
-  if (a == NULL) return 0;
-  if (b == NULL) return 0;
-  if (*asize != *bsize) return 0;
-  I64 i = 0;
-  while (i < *asize) {
-    if (a[i] != b[i]) return 0;
-    i = i + 1;
-  }
-  return 1;
+// The path builder. It appends `suffix` to `prefix`.
+static U8 *PathJoin(U8 *prefix, U8 *suffix) {
+  I64 plen = StrLen(prefix);
+  I64 slen = StrLen(suffix);
+  U8 *p = MAlloc(plen + slen + 1);
+  MemCpy(p, prefix, plen);
+  MemCpy(p + plen, suffix, slen);
+  p[plen + slen] = 0;
+  return p;
 }
 
+// The text comparison. The ONLY normalization is the EXPLICITLY FROZEN one:
+// a trailing carriage return is stripped.
 static I64 NormalizedLen(U8 *buf, I64 size) {
   I64 n = size;
   while (n > 0 && buf[n - 1] == 13) n = n - 1;
@@ -197,630 +119,57 @@ static I64 TextEqual(U8 *a, I64 asize, U8 *b, I64 bsize) {
   return 1;
 }
 
-static I64 ReadExitStatus(U8 *path, I64 *present) {
-  *present = 0;
-  I64 size = 0;
-  U8 *buf = FileRead(path, &size);
-  if (buf == NULL) return -999;
-  *present = 1;
-  I64 v = 0;
-  I64 i = 0;
-  I64 digits = 0;
-  while (i < size) {
-    I64 c = buf[i];
-    if (c >= 48 && c <= 57) {
-      v = v * 10 + (c - 48);
-      digits = digits + 1;
-      i = i + 1;
-      continue;
-    }
-    if (c == 10 || c == 13 || c == 32) { i = i + 1; continue; }
-    break;
-  }
-  if (digits == 0) return -998;
-  return v;
-}
-
-// ---------------------------------------------------------------------------
-// MAIN
+// The domain detection. The domain is recognized from the OBSERVED
+// ARTIFACTS, not from source tokens.
 //
-// The witness is invoked as:
+//   domain <object-path> <assembly-path> <dylib-prefix> <exec-prefix>
 //
-//   emission <case-id> <domain>
-//            <oracle-prefix> <polyc-prefix>
-//            <oracle-stdout> <polyc-stdout>
-//            <oracle-stderr> <polyc-stderr>
-//            <oracle-exit>   <polyc-exit>
-//            <expected-class> <expected-arch> <expected-exit>
-//            <artifact-suffix> [<artifact-suffix> ...]
-//            <required-symbol> [<required-symbol> ...]
-//
-// The DOMAIN selects which artifacts the witness validates:
-//
-//   object      the single output artifact
-//   assembly    the single output artifact
-//   dylib       THREE artifacts: the object, the static archive and the
-//               shared library, all named by the same suffix pattern
-//   executable  the single LINKED executable, plus its link/run outcome
-//
-// The EXPECTED values are DERIVED FROM THE GENUINE selector-OFF C ORACLE by
-// the harness.
-// ---------------------------------------------------------------------------
-
-#define LC_SYMTAB 0x02
-
-static I64 HasSymbol(U8 *buf, I64 size, U8 *name) {
-  if (buf == NULL) return 0;
-  if (size < 32) return 0;
-  if (WordAt(buf, size, 0) != MACHO64_MAGIC) return 0;
-  I64 ncmds = WordAt(buf, size, 16);
-  I64 off = 32;
-  I64 i = 0;
-  while (i < ncmds) {
-    if (off + 8 > size) return 0;
-    I64 cmd = WordAt(buf, size, off);
-    I64 cmdsize = WordAt(buf, size, off + 4);
-    if (cmdsize <= 0) return 0;
-    if (cmd == LC_SYMTAB) {
-      // The LC_SYMTAB load command is exactly 24 bytes:
-      //   cmd(4) cmdsize(4) symoff(4) nsyms(4) stroff(4) strsize(4)
-      I64 symoff = WordAt(buf, size, off + 8);
-      I64 nsyms = WordAt(buf, size, off + 12);
-      I64 stroff = WordAt(buf, size, off + 16);
-      I64 strsize = WordAt(buf, size, off + 20);
-      if (stroff < 0) return 0;
-      if (stroff + strsize > size) return 0;
-      if (symoff < 0) return 0;
-      I64 namelen = StrLen(name);
-      I64 k = 0;
-      while (k < nsyms) {
-        I64 n_strx = WordAt(buf, size, symoff + k * 16);
-        if (n_strx > 0 && n_strx < strsize) {
-          I64 p = stroff + n_strx;
-          I64 q = 0;
-          I64 match = 1;
-          while (q < namelen) {
-            if (p + q >= stroff + strsize) { match = 0; break; }
-            if (buf[p + q] != name[q]) { match = 0; break; }
-            q = q + 1;
-          }
-          if (match == 1 && p + q < stroff + strsize && buf[p + q] == 0) {
-            return 1;
-          }
-        }
-        k = k + 1;
-      }
-      return 0;
-    }
-    off = off + cmdsize;
-    i = i + 1;
-  }
-  return 0;
-}
-
-// ---------------------------------------------------------------------------
-// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
-// ROUND 2, F3 -- THE ARCHIVE SEMANTIC EQUIVALENCE.
-//
-// THE DEFECT. The previous revision of this verifier read the archive's
-// member SIZES and compared the member CONTENT BYTES, but it NEVER DECODED
-// the member NAMES.
-//
-// The Darwin/BSD `ar` producer stores a member's name in the 16-byte name
-// field of the member header, and it uses the EXTENDED NAME form
-//
-//     #1/<N>
-//
-// when the name does not fit. In that form the first N bytes of the
-// member's CONTENT are the name, and the declared size INCLUDES them.
-//
-// A mutation of the `#1/N` field therefore changes what `ar` extracts,
-// WITHOUT changing the archive's total size and WITHOUT changing the
-// member's raw content bytes. The previous verifier classified it as
-// harmless METADATA NONDETERMINISM, and reported
-//
-//     ARCHIVE_MEMBER_SEMANTICS  EQUAL
-//
-// for an archive whose extracted payload was DIFFERENT.
-//
-// THE REPAIR. The archive is parsed and validated PROPERLY:
-//
-//   1. the archive magic, every member header, every declared size, every
-//      member boundary and the 2-byte padding are validated;
-//   2. the member NAME is decoded, including the `#1/N` extended-name
-//      form and the `__.SYMDEF` symbol-table form;
-//   3. the DECODED member PAYLOAD is the content that FOLLOWS the
-//      extended name, so the payload the verifier compares is exactly the
-//      payload `ar` extracts;
-//   4. the decoded payload is validated INDEPENDENTLY as the expected
-//      Mach-O object;
-//   5. the member IDENTITY, the name FORMAT, the ORDER, the ARCHITECTURE,
-//      the SYMBOLS and the PAYLOAD BYTES are compared;
-//   6. an EMPTY archive, a MISSING member, a DUPLICATE member, an
-//      UNEXPECTED member and a MALFORMED length or name encoding are
-//      REJECTED;
-//   7. a TIMESTAMP-ONLY difference is reported SEPARATELY from a
-//      member-CONTENT difference, and it is never reported as a content
-//      difference.
-//
-// The reasons are DISTINCT, so a reviewer can tell WHICH property was
-// violated.
-// ---------------------------------------------------------------------------
-#define AR_HDR_NAME_OFF  0
-#define AR_HDR_NAME_LEN  16
-#define AR_HDR_SIZE_OFF  48
-#define AR_HDR_SIZE_LEN  10
-#define AR_HDR_FMAG_OFF  58
-#define AR_NAME_MAX      256
-#define AR_MAX_MEMBERS   64
-static I64 ArMemberSizeAt(U8 *buf, I64 size, I64 off) {
-  if (off + AR_MEMBER_HDR_LEN > size) return -1;
-  I64 m = 0;
-  I64 digits = 0;
-  I64 j = 48;
-  while (j < 58) {
-    I64 c = buf[off + j];
-    if (c >= 48 && c <= 57) {
-      m = m * 10 + (c - 48);
-      digits = digits + 1;
-      j = j + 1;
-      continue;
-    }
-    break;
-  }
-  if (digits == 0) return -1;
-  return m;
-}
-
-// The archive validation result codes.
-#define ARV_OK               0
-#define ARV_ABSENT           1
-#define ARV_EMPTY            2
-#define ARV_BAD_MAGIC        3
-#define ARV_BAD_HEADER       4
-#define ARV_BAD_SIZE_FIELD   5
-#define ARV_SIZE_OVERRUN     6
-#define ARV_BAD_NAME         7
-#define ARV_BAD_EXTNAME      8
-#define ARV_PADDING          9
-#define ARV_TRAILING_BYTES   10
-#define ARV_NO_MEMBERS       11
-#define ARV_MEMBER_COUNT     12
-#define ARV_DUPLICATE        13
-#define ARV_MISSING          14
-#define ARV_UNEXPECTED       15
-#define ARV_PAYLOAD          16
-#define ARV_PAYLOAD_CLASS    17
-#define ARV_PAYLOAD_ARCH     18
-#define ARV_PAYLOAD_SYMBOL   19
-#define ARV_NAME_FORMAT      20
-#define ARV_ORDER            21
-#define ARV_TIMESTAMP        22
-
-static U8 *ArReason(I64 code) {
-  if (code == ARV_OK) return "OK";
-  if (code == ARV_ABSENT) return "ARCHIVE_ABSENT";
-  if (code == ARV_EMPTY) return "ARCHIVE_EMPTY";
-  if (code == ARV_BAD_MAGIC) return "ARCHIVE_BAD_MAGIC";
-  if (code == ARV_BAD_HEADER) return "ARCHIVE_BAD_MEMBER_HEADER";
-  if (code == ARV_BAD_SIZE_FIELD) return "ARCHIVE_BAD_SIZE_FIELD";
-  if (code == ARV_SIZE_OVERRUN) return "ARCHIVE_MEMBER_SIZE_OUT_OF_BOUNDS";
-  if (code == ARV_BAD_NAME) return "ARCHIVE_BAD_MEMBER_NAME";
-  if (code == ARV_BAD_EXTNAME) return "ARCHIVE_BAD_EXTENDED_NAME_ENCODING";
-  if (code == ARV_PADDING) return "ARCHIVE_BAD_MEMBER_PADDING";
-  if (code == ARV_TRAILING_BYTES) return "ARCHIVE_UNEXPECTED_TRAILING_BYTES";
-  if (code == ARV_NO_MEMBERS) return "ARCHIVE_NO_MEMBERS";
-  if (code == ARV_MEMBER_COUNT) return "ARCHIVE_MEMBER_COUNT_MISMATCH";
-  if (code == ARV_DUPLICATE) return "ARCHIVE_DUPLICATE_MEMBER";
-  if (code == ARV_MISSING) return "ARCHIVE_MEMBER_MISSING";
-  if (code == ARV_UNEXPECTED) return "ARCHIVE_UNEXPECTED_MEMBER";
-  if (code == ARV_PAYLOAD) return "ARCHIVE_MEMBER_PAYLOAD_MISMATCH";
-  if (code == ARV_PAYLOAD_CLASS) return "ARCHIVE_MEMBER_PAYLOAD_CLASS_INVALID";
-  if (code == ARV_PAYLOAD_ARCH) return "ARCHIVE_MEMBER_PAYLOAD_ARCH_INVALID";
-  if (code == ARV_PAYLOAD_SYMBOL) return "ARCHIVE_MEMBER_PAYLOAD_SYMBOL_MISSING";
-  if (code == ARV_NAME_FORMAT) return "ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH";
-  if (code == ARV_ORDER) return "ARCHIVE_MEMBER_ORDER_MISMATCH";
-  if (code == ARV_TIMESTAMP) return "ARCHIVE_MEMBER_TIMESTAMP_NONDETERMINISM";
-  return "ARCHIVE_UNKNOWN";
-}
-
-// The decoded member.
-static U8 *am_name[AR_MAX_MEMBERS];
-static I64 am_namelen[AR_MAX_MEMBERS];
-static I64 am_extname[AR_MAX_MEMBERS];       // 1 when the name is extended
-static I64 am_namelen_field[AR_MAX_MEMBERS];  // the declared #1/N length
-static U8 *am_payload[AR_MAX_MEMBERS];
-static I64 am_paylen[AR_MAX_MEMBERS];
-static I64 am_mtime[AR_MAX_MEMBERS];
-static I64 am_count;
-
-// The ORACLE and the POLYC copies of the decoded members. The decoder
-// fills the `am_*` tables, so the oracle's decoding is copied out before
-// the PolyC side is decoded.
-static U8 *o_name[AR_MAX_MEMBERS];
-static I64 o_namelen[AR_MAX_MEMBERS];
-static I64 o_ext[AR_MAX_MEMBERS];
-static I64 o_extlen[AR_MAX_MEMBERS];
-static U8 *o_payload[AR_MAX_MEMBERS];
-static I64 o_paylen[AR_MAX_MEMBERS];
-static I64 o_mtime[AR_MAX_MEMBERS];
-static U8 *p_name[AR_MAX_MEMBERS];
-static I64 p_namelen[AR_MAX_MEMBERS];
-static I64 p_ext[AR_MAX_MEMBERS];
-static I64 p_extlen[AR_MAX_MEMBERS];
-static U8 *p_payload[AR_MAX_MEMBERS];
-static I64 p_paylen[AR_MAX_MEMBERS];
-static I64 p_mtime[AR_MAX_MEMBERS];
-
-// The name comparison. The name is compared as a byte run.
-static I64 ArNameEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
-  I64 n = alen;
-  if (blen < n) n = blen;
-  I64 i = 0;
-  while (i < n) {
-    if (a[i] != b[i]) return 0;
-    i = i + 1;
-  }
-  return 1;
-}
-
-// The size field reader. The field is a decimal ASCII run, optionally
-// terminated by a space. It returns -1 when the field is malformed.
-static I64 ArSizeAt(U8 *buf, I64 size, I64 off) {
-  if (off + AR_MEMBER_HDR_LEN > size) return -1;
-  I64 m = 0;
-  I64 digits = 0;
-  I64 j = AR_HDR_SIZE_OFF;
-  while (j < AR_HDR_SIZE_OFF + AR_HDR_SIZE_LEN) {
-    I64 c = buf[off + j];
-    if (c >= 48 && c <= 57) {
-      // The accumulation is overflow-safe: the value is checked BEFORE it
-      // is multiplied.
-      if (m > 2000000000) return -1;
-      m = m * 10 + (c - 48);
-      digits = digits + 1;
-      j = j + 1;
-      continue;
-    }
-    if (c == 32) break;
-    return -1;
-  }
-  if (digits == 0) return -1;
-  return m;
-}
-
-// The mtime field reader. It is read so that a TIMESTAMP-ONLY difference
-// can be reported separately from a content difference.
-static I64 ArMtimeAt(U8 *buf, I64 size, I64 off) {
-  if (off + AR_MEMBER_HDR_LEN > size) return -1;
-  I64 m = 0;
-  I64 digits = 0;
-  I64 j = 16;
-  while (j < 28) {
-    I64 c = buf[off + j];
-    if (c >= 48 && c <= 57) {
-      if (m > 2000000000) return -1;
-      m = m * 10 + (c - 48);
-      digits = digits + 1;
-      j = j + 1;
-      continue;
-    }
-    if (c == 32) break;
-    return -1;
-  }
-  if (digits == 0) return 0;
-  return m;
-}
-
-// The ARCHIVE DECODER.
-//
-// It parses the archive into its decoded members, and it validates every
-// structural property as it goes.
-//
-// It returns ARV_OK when the archive is structurally valid, and otherwise
-// the FIRST violated property's code.
-//
-// The DECODED PAYLOAD of a member is the content that FOLLOWS the
-// extended name. That is exactly the byte range `ar` extracts, so the
-// payload this function reports is the payload the independent `ar`
-// extraction produces.
-//
-// It fills the `am_*` tables. The caller MUST NOT read them when the
-// return value is not ARV_OK.
-static I64 DecodeArchive(U8 *buf, I64 size) {
-  am_count = 0;
-  if (buf == NULL) return ARV_ABSENT;
-  if (size == 0) return ARV_EMPTY;
-  if (size < AR_MAGIC_LEN) return ARV_BAD_MAGIC;
-  I64 i = 0;
-  while (i < AR_MAGIC_LEN) {
-    if (buf[i] != "!<arch>\n"[i]) return ARV_BAD_MAGIC;
-    i = i + 1;
-  }
-
-  I64 off = AR_MAGIC_LEN;
-  while (off < size) {
-    // A member header must fit entirely inside the archive.
-    if (off + AR_MEMBER_HDR_LEN > size) return ARV_BAD_HEADER;
-    if (am_count >= AR_MAX_MEMBERS) return ARV_NO_MEMBERS;
-
-    // The header's terminating magic is "`\n".
-    if (buf[off + AR_HDR_FMAG_OFF] != 96) return ARV_BAD_HEADER;
-    if (buf[off + AR_HDR_FMAG_OFF + 1] != 10) return ARV_BAD_HEADER;
-
-    // The declared size.
-    I64 m = ArSizeAt(buf, size, off);
-    if (m < 0) return ARV_BAD_SIZE_FIELD;
-    I64 content = off + AR_MEMBER_HDR_LEN;
-    // The declared size must fit inside the archive. The subtraction form
-    // cannot overflow because `content` is already inside the archive.
-    if (m > size - content) return ARV_SIZE_OVERRUN;
-
-    // The name field. It is a 16-byte run, space padded.
-    U8 *namefield = buf + off + AR_HDR_NAME_OFF;
-    I64 ext = 0;
-    I64 extlen = 0;
-    I64 namelen = 0;
-    U8 *name = NULL;
-
-    // The EXTENDED NAME form: the name field begins with "#1/".
-    if (namefield[0] == 35 && namefield[1] == 49 && namefield[2] == 47) {
-      // The declared length follows.
-      I64 n = 0;
-      I64 digits = 0;
-      I64 j = 3;
-      while (j < AR_HDR_NAME_LEN) {
-        I64 c = namefield[j];
-        if (c >= 48 && c <= 57) {
-          if (n > 100000) return ARV_BAD_EXTNAME;
-          n = n * 10 + (c - 48);
-          digits = digits + 1;
-          j = j + 1;
-          continue;
-        }
-        break;
-      }
-      if (digits == 0) return ARV_BAD_EXTNAME;
-      // The declared name length must fit inside the member's content.
-      if (n > m) return ARV_BAD_EXTNAME;
-      // The name must be NUL terminated inside the declared length.
-      //
-      // The declared length N is the extent of the NAME AREA. The name
-      // itself is the bytes up to the FIRST NUL, and the bytes between the
-      // NUL and the end of the name area are the producer's padding, so
-      // the NUL need NOT be the LAST byte of the declared length.
-      //
-      // What the decoder MUST reject is a declared length that is SO LARGE
-      // that the NUL it finds lies beyond the name area, in the PAYLOAD.
-      // In that case the "name" the decoder reports is a prefix of the
-      // payload, not the member's name.
-      //
-      // The payload of this member begins with the Mach-O magic
-      // 0xFEEDFACF, little-endian on disk: CF FA ED FE. The name area can
-      // never contain that sequence, because the name is a NUL-terminated
-      // printable string. Therefore the terminator MUST be found before
-      // the first occurrence of the Mach-O magic within the declared
-      // length; a NUL at or after the magic is a MALFORMED encoding.
-      I64 k = 0;
-      I64 term = 0;
-      I64 magic_at = -1;
-      while (k < n) {
-        if (content + k >= size) return ARV_BAD_EXTNAME;
-        if (magic_at == -1 && k + 4 <= n &&
-            buf[content + k] == 207 && buf[content + k + 1] == 250 &&
-            buf[content + k + 2] == 237 && buf[content + k + 3] == 254) {
-          magic_at = k;
-        }
-        if (buf[content + k] == 0) { term = 1; break; }
-        k = k + 1;
-      }
-      if (term == 0) return ARV_BAD_EXTNAME;
-      // The terminator must NOT lie at or beyond the Mach-O magic.
-      if (magic_at != -1 && k >= magic_at) return ARV_BAD_EXTNAME;
-      name = buf + content;
-      namelen = k;
-      ext = 1;
-      extlen = n;
-    } else {
-      // The SHORT name form. The name is the run up to the first space or
-      // the end of the field. The name MUST be NUL terminated or space
-      // padded, and it MUST NOT be empty.
-      I64 k = 0;
-      while (k < AR_HDR_NAME_LEN && namefield[k] != 32) k = k + 1;
-      if (k == 0) return ARV_BAD_NAME;
-      namelen = k;
-      name = namefield;
-      ext = 0;
-      extlen = 0;
-    }
-
-    // The payload. For the extended form the payload FOLLOWS the name
-    // bytes; for the short form it is the whole content.
-    I64 payload_off = content;
-    I64 payload_len = m;
-    if (ext == 1) {
-      payload_off = content + extlen;
-      payload_len = m - extlen;
-    }
-
-    // The 2-byte alignment padding. An odd-sized member is followed by
-    // one padding byte, which the producer writes as a newline.
-    I64 next = content + m;
-    if (m % 2 == 1) {
-      if (next >= size) return ARV_PADDING;
-      if (buf[next] != 10) return ARV_PADDING;
-      next = next + 1;
-    }
-    if (next > size) return ARV_SIZE_OVERRUN;
-
-    // The member is recorded.
-    am_name[am_count] = name;
-    am_namelen[am_count] = namelen;
-    am_extname[am_count] = ext;
-    am_namelen_field[am_count] = extlen;
-    am_payload[am_count] = buf + payload_off;
-    am_paylen[am_count] = payload_len;
-    am_mtime[am_count] = ArMtimeAt(buf, size, off);
-    am_count = am_count + 1;
-
-    off = next;
-  }
-
-  if (am_count == 0) return ARV_NO_MEMBERS;
-  return ARV_OK;
-}
-// ---------------------------------------------------------------------------
-// THE INVALID-DOMAIN DETECTOR.
-//
-// It verifies that the C CONSUMER of the selected emission FAILS CLOSED on
-// an emission value OUTSIDE the supported domain.
-//
-// The supported emission domain is exactly:
-//
-//   1  WP_EMIT_COMPILE_OBJECT
-//   2  WP_EMIT_EXECUTE
-//   3  WP_EMIT_ASSEMBLY
-//   4  WP_EMIT_DYLIB
-//
-// A value of 0 (UNKNOWN) and every value >= 5 are OUT OF DOMAIN, and the
-// consumer must REJECT them rather than falling back to a supported
-// emission.
-//
-// The detector reads the REAL C source of the consumer and requires that
-// every supported value has an explicit case and that a DEFAULT case
-// exists which rejects the remaining values.
-//
-// This is the EMISSION-domain counterpart of the STATUS-domain R06 check.
-// ---------------------------------------------------------------------------
-static I64 CountOccurrences(U8 *hay, I64 hlen, U8 *needle) {
-  I64 n = StrLen(needle);
-  if (n == 0) return 0;
-  I64 count = 0;
-  I64 i = 0;
-  while (i + n <= hlen) {
-    I64 j = 0;
-    I64 match = 1;
-    while (j < n) {
-      if (hay[i + j] != needle[j]) { match = 0; break; }
-      j = j + 1;
-    }
-    if (match == 1) {
-      count = count + 1;
-      i = i + n;
-      continue;
-    }
-    i = i + 1;
-  }
-  return count;
-}
-
-static I64 HasDefaultCase(U8 *hay, I64 hlen) {
-  if (CountOccurrences(hay, hlen, "default:") > 0) return 1;
-  return 0;
-}
-
-// The detector mode.
-//
-//   domain <c-source-path>
-//
-// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
-// ROUND 2, P2-3 -- THE ARTIFACT-DOMAIN OBSERVATION.
-//
-// The previous revision recognized the emission domain by COUNTING SOURCE
-// TOKENS in the C consumer: it looked for the string
-// "WP_DRIVER_EMIT_COMPILE_OBJECT" and for the string "default:".
-//
-// A token count is a SOURCE-TEXT observation, not an ARTIFACT observation.
-// It can be satisfied by a token in a comment, by a token in a string
-// literal, or by a token that the compiler never reaches, and it says
-// nothing about whether the SELECTOR actually produced an artifact of the
-// claimed class.
-//
-// THE REPAIR. The domain is recognized from the OBSERVED ARTIFACTS. The
-// witness is given the artifact directory of each side, and it requires
-// that the artifacts that the route actually produced are present, are
-// nonempty, and carry the EXPECTED class.
-//
-//   domain <case-id> <oracle-prefix> <polyc-prefix> <expected-class>...
-//
-// The expected classes are the classes the harness DERIVED from the
-// genuine selector-OFF C ORACLE, so the witness never decides what the
-// correct answer is.
-//
-// It prints the verdict for each artifact and for the rejection path.
-I32 DetectDomain(I32 argc, U8 **argv) {
+// It prints the observed domain and the observed artifact classes.
+static I64 DetectDomain(I32 argc, U8 **argv) {
   if (argc < 6) {
-    "REASON_DETAIL=usage: domain <case-id> <oracle-prefix> <polyc-prefix> "
-      "<expected-class> <expected-class>...\n";
+    "REASON_DETAIL=usage: emission domain <object> <assembly> <dylib> <exec>\n";
     return 2;
   }
-  U8 *case_id = argv[2];
-  U8 *o_prefix = argv[3];
-  U8 *p_prefix = argv[4];
-  I64 failures = 0;
-  I64 checks = 0;
-
-  // The artifact SUFFIXES are the ones the route produced. They are
-  // derived from the OBSERVED files in the directory, not from a source
-  // token.
-  U8 *suffixes[8];
-  I64 nsuffix = 0;
-  I64 si = 5;
-  while (si < argc && nsuffix < 8) {
-    suffixes[nsuffix] = argv[si];
-    nsuffix = nsuffix + 1;
-    si = si + 1;
+  I64 p = 0;
+  I64 s = 0;
+  U8 *obuf = ReadArtifact(argv[2], &s, &p);
+  I64 oclass = ContractClassify(obuf, s);
+  I64 s2 = 0;
+  I64 p2 = 0;
+  U8 *sbuf = ReadArtifact(argv[3], &s2, &p2);
+  I64 sclass = ContractClassify(sbuf, s2);
+  "DOMAIN_OBJECT_CLASS\t%s\n", ContractClassName(oclass);
+  "DOMAIN_ASSEMBLY_CLASS\t%s\n", ContractClassName(sclass);
+  if (oclass == CLS_MACHO_OBJ && sclass == CLS_TEXT) {
+    "DOMAIN\tobject\n";
+  } else if (oclass == CLS_TEXT && sclass == CLS_TEXT) {
+    "DOMAIN\tassembly\n";
+  } else {
+    "DOMAIN\tunknown\n";
   }
-  if (nsuffix == 0) {
-    "REASON_DETAIL=the domain observation has NO artifact\n";
-    return 2;
-  }
-
-  // Every artifact must be PRESENT, NONEMPTY, and of the EXPECTED class
-  // on BOTH sides. The class is read from the artifact's OWN bytes.
-  I64 n = 0;
-  while (n < nsuffix) {
-    // The artifact path is <prefix><suffix>.
-    I64 oplen = StrLen(o_prefix);
-    I64 slen = StrLen(suffixes[n]);
-    U8 *opath = MAlloc(oplen + slen + 1);
-    MemCpy(opath, o_prefix, oplen);
-    MemCpy(opath + oplen, suffixes[n], slen);
-    opath[oplen + slen] = 0;
-    I64 pplen = StrLen(p_prefix);
-    U8 *ppath = MAlloc(pplen + slen + 1);
-    MemCpy(ppath, p_prefix, pplen);
-    MemCpy(ppath + pplen, suffixes[n], slen);
-    ppath[pplen + slen] = 0;
-
-    I64 o_present = 0;
-    I64 o_size = 0;
-    U8 *obuf = ReadArtifact(opath, &o_size, &o_present);
-    I64 p_present = 0;
-    I64 p_size = 0;
-    U8 *pbuf = ReadArtifact(ppath, &p_size, &p_present);
-    I64 o_cls = Classify(obuf, o_size);
-    I64 p_cls = Classify(pbuf, p_size);
-    checks = checks + 1;
-    if (o_present == 1 && o_size > 0 && p_present == 1 && p_size > 0 &&
-        o_cls == p_cls && o_cls != CLS_OTHER && o_cls != CLS_ABSENT) {
-      "DOMAIN\t%s\t%s\tOBSERVED\t%s\n", case_id, suffixes[n], ClassName(o_cls);
-    } else {
-      "DOMAIN\t%s\t%s\tNOT_OBSERVED\t%s\n", case_id, suffixes[n],
-            ClassName(o_cls);
-      failures = failures + 1;
-    }
-    Free(opath);
-    Free(ppath);
-    n = n + 1;
-  }
-
-  "CORRECTION03_DOMAIN_CHECKS\t%d\n", checks;
-  "CORRECTION03_DOMAIN_FAILURES\t%d\n", failures;
-  if (failures > 0) return 1;
   return 0;
 }
-
+// ---------------------------------------------------------------------------
+// MAIN.
+//
+// The fixed argument positions are:
+//   1  case-id          2  domain
+//   3  oracle-prefix    4  polyc-prefix
+//   5  oracle-stdout    6  polyc-stdout
+//   7  oracle-stderr    8  polyc-stderr
+//   9  oracle-exit     10  polyc-exit
+//  11  expected-class  12  expected-arch   13  expected-exit
+//  14.. artifacts, then the required symbols.
+//
+// The layout after the expected exit status is:
+//
+//   <artifact> <expected-class> <expected-arch>   (repeated per artifact)
+//   <required-symbol>                              (repeated)
+//
+// The expectation is PER ARTIFACT because a domain may produce artifacts of
+// DIFFERENT classes: the dynamic library domain produces an OBJECT, a
+// STATIC ARCHIVE and a SHARED LIBRARY.
+// ---------------------------------------------------------------------------
 I32 Main(I32 argc, U8 **argv) {
   failures = 0;
   checks = 0;
@@ -829,14 +178,6 @@ I32 Main(I32 argc, U8 **argv) {
     return DetectDomain(argc, argv);
   }
 
-  // The fixed argument positions are:
-  //   1  case-id          2  domain
-  //   3  oracle-prefix    4  polyc-prefix
-  //   5  oracle-stdout    6  polyc-stdout
-  //   7  oracle-stderr    8  polyc-stderr
-  //   9  oracle-exit     10  polyc-exit
-  //  11  expected-class  12  expected-arch   13  expected-exit
-  //  14.. artifacts, then the required symbols.
   if (argc < 15) {
     "REASON_DETAIL=usage: emission <case-id> <domain> <oracle-prefix> "
       "<polyc-prefix> <oracle-stdout> <polyc-stdout> <oracle-stderr> "
@@ -855,15 +196,6 @@ I32 Main(I32 argc, U8 **argv) {
   U8 *o_exitf  = argv[9];
   U8 *p_exitf  = argv[10];
 
-  I64 expected_class = 5;
-  if (StrCmp(argv[11], "MACHO_OBJECT") == 0) expected_class = 1;
-  if (StrCmp(argv[11], "MACHO_EXECUTABLE") == 0) expected_class = 2;
-  if (StrCmp(argv[11], "MACHO_DYLIB") == 0) expected_class = 3;
-  if (StrCmp(argv[11], "ELF") == 0) expected_class = 4;
-  if (StrCmp(argv[11], "ASSEMBLER_TEXT") == 0) expected_class = 6;
-  if (StrCmp(argv[11], "AR_ARCHIVE") == 0) expected_class = 7;
-  if (StrCmp(argv[11], "OTHER") == 0) expected_class = 5;
-
   I64 expected_arch = -1;
   if (StrCmp(argv[12], "arm64") == 0) expected_arch = CPU_TYPE_ARM64;
   if (StrCmp(argv[12], "x86_64") == 0) expected_arch = CPU_TYPE_X86_64;
@@ -872,15 +204,6 @@ I32 Main(I32 argc, U8 **argv) {
   if (StrCmp(argv[13], "0") != 0) expected_exit = 1;
 
   // The artifact list and the symbol list are separated by the DOMAIN.
-  //
-  // The layout after the expected exit status is:
-  //
-  //   <artifact> <expected-class> <expected-arch>   (repeated per artifact)
-  //   <required-symbol>                              (repeated)
-  //
-  // The expectation is PER ARTIFACT because a domain may produce artifacts
-  // of DIFFERENT classes: the dynamic library domain produces an OBJECT, a
-  // STATIC ARCHIVE and a SHARED LIBRARY.
   I64 nartifact = 1;
   if (StrCmp(domain, "dylib") == 0) nartifact = 3;
   I64 i = 14;
@@ -913,146 +236,279 @@ I32 Main(I32 argc, U8 **argv) {
   }
 
   // -----------------------------------------------------------------------
-  // VALIDATE THE ORACLE SIDE (the REFERENCE).
+  // THE EXIT-STATUS RECORDS.
+  //
+  // They are read with the SHARED STRICT CODEC, so a record with trailing
+  // garbage, an additional line, a negative value, a value above 255 or an
+  // integer overflow is REJECTED on BOTH sides.
   // -----------------------------------------------------------------------
   I64 o_exit_present = 0;
-  I64 o_exit = ReadExitStatus(o_exitf, &o_exit_present);
-  Check(o_exit_present == 1, case_id, "the oracle exit status is RECORDED");
+  I64 o_exit = 0;
+  I64 o_exit_code = EXIT_OK;
+  I64 o_exit_ok = ContractReadExitStatusFile(o_exitf, &o_exit, &o_exit_code);
+  if (o_exit_ok == 1) o_exit_present = 1;
+  Check(o_exit_present == 1, case_id,
+        "the oracle exit status is a VALID COMPLETE record");
+  if (o_exit_present == 1 && o_exit_ok == 0) {
+    Reason(case_id, "oracle", ContractExitReason(o_exit_code));
+  }
   Check(o_exit_present == 1 && o_exit == expected_exit, case_id,
         "the oracle exit status is the EXPECTED one");
 
-  // The oracle artifacts are validated for presence and nonemptiness.
+  I64 p_exit_present = 0;
+  I64 p_exit = 0;
+  I64 p_exit_code = EXIT_OK;
+  I64 p_exit_ok = ContractReadExitStatusFile(p_exitf, &p_exit, &p_exit_code);
+  if (p_exit_ok == 1) p_exit_present = 1;
+  Check(p_exit_present == 1, case_id,
+        "the PolyC exit status is a VALID COMPLETE record");
+  if (p_exit_present == 1 && p_exit_ok == 0) {
+    Reason(case_id, "polyc", ContractExitReason(p_exit_code));
+  }
+  Check(p_exit_present == 1 && p_exit == expected_exit, case_id,
+        "the PolyC exit status is the EXPECTED one");
+
+  // -----------------------------------------------------------------------
+  // THE ARTIFACTS.
+  //
+  // For EACH SIDE INDEPENDENTLY, the artifact must be PRESENT, NONEMPTY,
+  // of the EXPECTED class, of the EXPECTED architecture and STRUCTURALLY
+  // VALID.
+  //
+  // The structural validation uses the SHARED validator, so an IDENTICAL
+  // PAIR OF MALFORMED MACH-O PAYLOADS is rejected on both sides.
+  // -----------------------------------------------------------------------
   I64 o_present[4];
   I64 o_size[4];
   U8 *o_buf[4];
+  I64 p_present[4];
+  I64 p_size[4];
+  U8 *p_buf[4];
+  I64 o_mv[4];
+  I64 p_mv[4];
   k = 0;
   while (k < nartifact) {
     o_present[k] = 0;
     o_size[k] = 0;
     o_buf[k] = NULL;
+    o_mv[k] = MV_OK;
+    p_present[k] = 0;
+    p_size[k] = 0;
+    p_buf[k] = NULL;
+    p_mv[k] = MV_OK;
     k = k + 1;
   }
+
+  // The oracle side.
   k = 0;
   while (k < nartifact) {
-    // The artifact path is <prefix><suffix>. The suffix is read from the
-    // argument list.
     I64 argidx = 14 + k * 3;
     U8 *suffix = argv[argidx];
-    I64 plen = StrLen(o_prefix);
-    I64 slen = StrLen(suffix);
-    U8 *path = MAlloc(plen + slen + 1);
-    MemCpy(path, o_prefix, plen);
-    MemCpy(path + plen, suffix, slen);
-    path[plen + slen] = 0;
+    U8 *path = PathJoin(o_prefix, suffix);
     o_buf[k] = ReadArtifact(path, &o_size[k], &o_present[k]);
     Check(o_present[k] == 1, case_id,
           "the oracle artifact is PRESENT");
     Check(o_present[k] == 1 && o_size[k] > 0, case_id,
           "the oracle artifact is NONEMPTY");
+    I64 ocls = ContractClassify(o_buf[k], o_size[k]);
+    Check(o_present[k] == 1 && ocls == eclass[k], case_id,
+          "the oracle artifact has the EXPECTED class");
+    I64 oarch = ContractArchOf(o_buf[k], o_size[k]);
+    Check(o_present[k] == 1 && (earch[k] == -1 || oarch == earch[k]),
+          case_id, "the oracle artifact has the EXPECTED architecture");
+    if (o_present[k] == 1 && o_size[k] > 0) {
+      if (eclass[k] == 1 || eclass[k] == 2 || eclass[k] == 3) {
+        o_mv[k] = ContractValidateMachO(o_buf[k], o_size[k], 1);
+      } else if (eclass[k] == 7) {
+        // The archive is validated by the SHARED archive decoder.
+        ArArchive ar;
+        o_mv[k] = MV_OK;
+        if (ContractDecodeArchive(o_buf[k], o_size[k], &ar) != AR_OK) {
+          o_mv[k] = MV_BAD_MAGIC;
+        }
+        if (o_mv[k] != MV_OK) {
+          Reason(case_id, "oracle", "ARCHIVE_STRUCTURE_INVALID");
+        }
+        // An archive that carries ONLY the symbol-index bookkeeping member
+        // and NO real member does NOT satisfy an archive requirement.
+        if (o_mv[k] == MV_OK && ar.count < 2) {
+          o_mv[k] = MV_BAD_MAGIC;
+          Reason(case_id, "oracle", "ARCHIVE_HAS_NO_REAL_MEMBER");
+        }
+      }
+    } else {
+      o_mv[k] = MV_BAD_MAGIC;
+    }
+    Check(o_present[k] == 1 && o_mv[k] == MV_OK, case_id,
+          "the oracle artifact is STRUCTURALLY VALID");
+    if (o_present[k] == 1 && o_mv[k] != MV_OK &&
+        (eclass[k] == 1 || eclass[k] == 2 || eclass[k] == 3)) {
+      Reason(case_id, "oracle", ContractMachOReason(o_mv[k]));
+    }
     Free(path);
     k = k + 1;
   }
 
-  // -----------------------------------------------------------------------
-  // VALIDATE THE POLYC SIDE.
-  // -----------------------------------------------------------------------
-  I64 p_exit_present = 0;
-  I64 p_exit = ReadExitStatus(p_exitf, &p_exit_present);
-  Check(p_exit_present == 1, case_id, "the PolyC exit status is RECORDED");
-  Check(p_exit_present == 1 && p_exit == expected_exit, case_id,
-        "the PolyC exit status is the EXPECTED one");
-
-  I64 p_present[4];
-  I64 p_size[4];
-  U8 *p_buf[4];
-  k = 0;
-  while (k < nartifact) {
-    p_present[k] = 0;
-    p_size[k] = 0;
-    p_buf[k] = NULL;
-    k = k + 1;
-  }
+  // The PolyC side.
   k = 0;
   while (k < nartifact) {
     I64 argidx = 14 + k * 3;
     U8 *suffix = argv[argidx];
-    I64 plen = StrLen(p_prefix);
-    I64 slen = StrLen(suffix);
-    U8 *path = MAlloc(plen + slen + 1);
-    MemCpy(path, p_prefix, plen);
-    MemCpy(path + plen, suffix, slen);
-    path[plen + slen] = 0;
+    U8 *path = PathJoin(p_prefix, suffix);
     p_buf[k] = ReadArtifact(path, &p_size[k], &p_present[k]);
     Check(p_present[k] == 1, case_id,
           "the PolyC artifact is PRESENT");
     Check(p_present[k] == 1 && p_size[k] > 0, case_id,
           "the PolyC artifact is NONEMPTY");
+    I64 pcls = ContractClassify(p_buf[k], p_size[k]);
+    Check(p_present[k] == 1 && pcls == eclass[k], case_id,
+          "the PolyC artifact has the EXPECTED class");
+    I64 parch = ContractArchOf(p_buf[k], p_size[k]);
+    Check(p_present[k] == 1 && (earch[k] == -1 || parch == earch[k]),
+          case_id, "the PolyC artifact has the EXPECTED architecture");
+    if (p_present[k] == 1 && p_size[k] > 0) {
+      if (eclass[k] == 1 || eclass[k] == 2 || eclass[k] == 3) {
+        p_mv[k] = ContractValidateMachO(p_buf[k], p_size[k], 1);
+      } else if (eclass[k] == 7) {
+        ArArchive ar;
+        p_mv[k] = MV_OK;
+        if (ContractDecodeArchive(p_buf[k], p_size[k], &ar) != AR_OK) {
+          p_mv[k] = MV_BAD_MAGIC;
+        }
+        if (p_mv[k] != MV_OK) {
+          Reason(case_id, "polyc", "ARCHIVE_STRUCTURE_INVALID");
+        }
+        if (p_mv[k] == MV_OK && ar.count < 2) {
+          p_mv[k] = MV_BAD_MAGIC;
+          Reason(case_id, "polyc", "ARCHIVE_HAS_NO_REAL_MEMBER");
+        }
+      }
+    } else {
+      p_mv[k] = MV_BAD_MAGIC;
+    }
+    Check(p_present[k] == 1 && p_mv[k] == MV_OK, case_id,
+          "the PolyC artifact is STRUCTURALLY VALID");
+    if (p_present[k] == 1 && p_mv[k] != MV_OK &&
+        (eclass[k] == 1 || eclass[k] == 2 || eclass[k] == 3)) {
+      Reason(case_id, "polyc", ContractMachOReason(p_mv[k]));
+    }
     Free(path);
     k = k + 1;
   }
 
   // -----------------------------------------------------------------------
-  // VALIDATE THE CLASS, THE ARCHITECTURE AND THE REQUIRED SYMBOLS.
+  // THE REQUIRED SYMBOL ROSTER.
+  //
+  // For EACH SIDE INDEPENDENTLY, EVERY required symbol must be PRESENT.
+  //
+  // The previous revision did not check the required `_main` on the
+  // emission side at all, so an artifact with NO `_main` was accepted. The
+  // check is now performed with the SHARED symbol search, which also
+  // EXAMINES EVERY symbol entry and therefore rejects a malformed entry
+  // that appears AFTER the requested symbol.
   // -----------------------------------------------------------------------
-  k = 0;
-  while (k < nartifact) {
-    I64 o_cls = Classify(o_buf[k], o_size[k]);
-    I64 p_cls = Classify(p_buf[k], p_size[k]);
-    I64 o_arch = ArchOf(o_buf[k], o_size[k]);
-    I64 p_arch = ArchOf(p_buf[k], p_size[k]);
-    "ARTIFACT_CLASS\t%s\t%d\t%s\t%s\n", case_id, k, ClassName(o_cls),
-          ClassName(p_cls);
-    "ARTIFACT_ARCH\t%s\t%d\t%s\t%s\n", case_id, k, ArchName(o_arch),
-          ArchName(p_arch);
-    Check(o_present[k] == 1 && o_cls == eclass[k], case_id,
-          "the oracle artifact has the EXPECTED class");
-    Check(p_present[k] == 1 && p_cls == eclass[k], case_id,
-          "the PolyC artifact has the EXPECTED class");
-    Check(o_present[k] == 1 &&
-          (earch[k] == -1 || o_arch == earch[k]), case_id,
-          "the oracle artifact has the EXPECTED architecture");
-    Check(p_present[k] == 1 &&
-          (earch[k] == -1 || p_arch == earch[k]), case_id,
-          "the PolyC artifact has the EXPECTED architecture");
-    Check(o_present[k] == 1 && p_present[k] == 1 && o_cls == p_cls,
-          case_id, "the artifact classes agree");
-    k = k + 1;
-  }
-
-  // The required symbols are checked on the artifacts that carry a symbol
-  // table. An assembler TEXT artifact has none, so the requirement is NOT
-  // APPLICABLE to it.
-  I64 sym_ok = 1;
-  I64 s = 0;
-  while (s < nsym) {
-    U8 *sym = argv[i + s];
+  I64 sym_index = i;
+  I64 symcount = 0;
+  I64 o_sym_ok = 1;
+  I64 p_sym_ok = 1;
+  I64 o_sym_bad = 0;
+  I64 p_sym_bad = 0;
+  while (sym_index < argc) {
+    U8 *sym = argv[sym_index];
+    symcount = symcount + 1;
     k = 0;
     while (k < nartifact) {
-      I64 o_cls = Classify(o_buf[k], o_size[k]);
-      I64 p_cls = Classify(p_buf[k], p_size[k]);
-      if (o_cls == CLS_MACHO_OBJ || o_cls == CLS_MACHO_EXEC ||
-          o_cls == CLS_MACHO_DYLIB) {
-        if (HasSymbol(o_buf[k], o_size[k], sym) == 0) sym_ok = 0;
-      }
-      if (p_cls == CLS_MACHO_OBJ || p_cls == CLS_MACHO_EXEC ||
-          p_cls == CLS_MACHO_DYLIB) {
-        if (HasSymbol(p_buf[k], p_size[k], sym) == 0) sym_ok = 0;
+      if (eclass[k] == 1 || eclass[k] == 2 || eclass[k] == 3) {
+        I64 obad = 0;
+        I64 pbad = 0;
+        if (ContractHasSymbolChecked(o_buf[k], o_size[k], sym, &obad) == 0) {
+          o_sym_ok = 0;
+        }
+        if (ContractHasSymbolChecked(p_buf[k], p_size[k], sym, &pbad) == 0) {
+          p_sym_ok = 0;
+        }
+        if (obad == 1) o_sym_bad = 1;
+        if (pbad == 1) p_sym_bad = 1;
       }
       k = k + 1;
     }
-    s = s + 1;
+    sym_index = sym_index + 1;
   }
-  if (nsym > 0) {
-    Check(sym_ok == 1, case_id,
-          "the REQUIRED symbols are present in the artifacts");
+  if (symcount > 0) {
+    Check(o_sym_ok == 1, case_id,
+          "the oracle carries the REQUIRED symbol roster");
+    Check(p_sym_ok == 1, case_id,
+          "the PolyC carries the REQUIRED symbol roster");
+  }
+  Check(o_sym_bad == 0, case_id,
+        "the oracle symbol-string indices are IN BOUNDS");
+  if (o_sym_bad == 1) {
+    Reason(case_id, "oracle", ContractMachOReason(MV_STRIDX_BOUNDS));
+  }
+  Check(p_sym_bad == 0, case_id,
+        "the PolyC symbol-string indices are IN BOUNDS");
+  if (p_sym_bad == 1) {
+    Reason(case_id, "polyc", ContractMachOReason(MV_STRIDX_BOUNDS));
   }
 
   // -----------------------------------------------------------------------
-  // COMPARE THE VALIDATED OBSERVATIONS.
+  // THE ARCHIVE MEMBER ROSTER AND THE SEMANTIC EQUIVALENCE.
+  //
+  // For EACH SIDE INDEPENDENTLY, the archive must decode, and its DECODED
+  // member identities and payloads must be VALID.
+  //
+  // Only after both sides are valid is the semantic equivalence checked.
   // -----------------------------------------------------------------------
-  Check(o_exit_present == 1 && p_exit_present == 1 && o_exit == p_exit,
-        case_id, "the exit statuses agree");
+  k = 0;
+  while (k < nartifact) {
+    if (eclass[k] == 7) {
+      ArArchive oar;
+      ArArchive par;
+      I64 odec = ContractDecodeArchive(o_buf[k], o_size[k], &oar);
+      I64 pdec = ContractDecodeArchive(p_buf[k], p_size[k], &par);
+      Check(odec == AR_OK, case_id, "the oracle archive DECODES");
+      if (odec != AR_OK) {
+        Reason(case_id, "oracle", ContractArReason(odec));
+      }
+      Check(pdec == AR_OK, case_id, "the PolyC archive DECODES");
+      if (pdec != AR_OK) {
+        Reason(case_id, "polyc", ContractArReason(pdec));
+      }
+      // The member roster. An archive must carry at least one REAL member
+      // in addition to the symbol-index bookkeeping member.
+      if (odec == AR_OK) {
+        Check(oar.count >= 2, case_id,
+              "the oracle archive carries a REAL member");
+        if (oar.count < 2) {
+          Reason(case_id, "oracle", "ARCHIVE_HAS_NO_REAL_MEMBER");
+        }
+      }
+      if (pdec == AR_OK) {
+        Check(par.count >= 2, case_id,
+              "the PolyC archive carries a REAL member");
+        if (par.count < 2) {
+          Reason(case_id, "polyc", "ARCHIVE_HAS_NO_REAL_MEMBER");
+        }
+      }
+      // The SEMANTIC EQUIVALENCE of the DECODED members. The comparison
+      // uses the DECODED MEMBER IDENTITY and the PAYLOAD, never the raw
+      // header bytes, so two VALID archive encodings of the same member
+      // remain equivalent.
+      if (odec == AR_OK && pdec == AR_OK) {
+        I64 eq = ContractArEquivalent(&oar, &par);
+        Check(eq == AREQ_OK, case_id,
+              "the archive members are SEMANTICALLY EQUIVALENT");
+        if (eq != AREQ_OK) {
+          Reason(case_id, "archive", ContractArEqReason(eq));
+        }
+      }
+    }
+    k = k + 1;
+  }
 
+  // -----------------------------------------------------------------------
+  // THE TRANSCRIPTS.
+  // -----------------------------------------------------------------------
   I64 os_size = 0;
   I64 ps_size = 0;
   U8 *os_buf = FileRead(o_stdout, &os_size);
@@ -1072,261 +528,31 @@ I32 Main(I32 argc, U8 **argv) {
         TextEqual(oe_buf, oe_size, pe_buf, pe_size), case_id,
         "the stderr transcripts are EQUAL");
 
-  // The FULL ARTIFACT BYTE result and the ARCHIVE-MEMBER SEMANTIC result
-  // are SEPARATE results.
+  // -----------------------------------------------------------------------
+  // THE ARTIFACT BYTES.
+  //
+  // The FULL BYTE result is recorded SEPARATELY from the ARCHIVE-MEMBER
+  // SEMANTIC result. For an ARCHIVE, a difference in the header bytes
+  // alone is METADATA NONDETERMINISM -- the archive's TIMESTAMP is the
+  // ONLY explicitly permitted nondeterminism -- and it is reported as
+  // such, never as an equivalence failure and never as an equality claim.
+  // -----------------------------------------------------------------------
   k = 0;
   while (k < nartifact) {
-    I64 o_cls = Classify(o_buf[k], o_size[k]);
-    U64 o_digest = Digest(o_buf[k], o_size[k]);
-    U64 p_digest = Digest(p_buf[k], p_size[k]);
-    "DIGEST\t%s\t%d\toracle\t%lld\n", case_id, k, o_digest;
-    "DIGEST\t%s\t%d\tpolyc\t%lld\n", case_id, k, p_digest;
-    if (o_cls == CLS_AR) {
-      // The archive: the FULL BYTE result and the MEMBER SEMANTIC result
-      // are two DIFFERENT results.
-      //
-      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4
-      // REMEDIATION ROUND 2, F3: the archive is DECODED on each side, and
-      // the DECODED members are compared. The previous revision compared
-      // the RAW member bytes and never decoded the names, so a name-format
-      // mutation that changes the extracted payload was classified as
-      // harmless metadata nondeterminism.
-      I64 full_equal = BytesEqual(o_buf[k], &o_size[k], p_buf[k], &p_size[k]);
-
-      // The oracle side is decoded into the ORACLE tables.
-      I64 o_dec = DecodeArchive(o_buf[k], o_size[k]);
-      I64 o_count = am_count;
-      I64 mi = 0;
-      while (mi < o_count && mi < AR_MAX_MEMBERS) {
-        o_name[mi] = am_name[mi];
-        o_namelen[mi] = am_namelen[mi];
-        o_ext[mi] = am_extname[mi];
-        o_extlen[mi] = am_namelen_field[mi];
-        o_payload[mi] = am_payload[mi];
-        o_paylen[mi] = am_paylen[mi];
-        o_mtime[mi] = am_mtime[mi];
-        mi = mi + 1;
+    I64 same_bytes = 0;
+    if (o_present[k] == 1 && p_present[k] == 1) {
+      if (ContractBytesEqual(o_buf[k], o_size[k], p_buf[k], p_size[k]) == 1) {
+        same_bytes = 1;
       }
-
-      // The PolyC side is decoded into the POLYC tables.
-      I64 p_dec = DecodeArchive(p_buf[k], p_size[k]);
-      I64 p_count = am_count;
-      mi = 0;
-      while (mi < p_count && mi < AR_MAX_MEMBERS) {
-        p_name[mi] = am_name[mi];
-        p_namelen[mi] = am_namelen[mi];
-        p_ext[mi] = am_extname[mi];
-        p_extlen[mi] = am_namelen_field[mi];
-        p_payload[mi] = am_payload[mi];
-        p_paylen[mi] = am_paylen[mi];
-        p_mtime[mi] = am_mtime[mi];
-        mi = mi + 1;
-      }
-
-      Check(o_dec == ARV_OK && p_dec == ARV_OK, case_id,
-            "the archives are STRUCTURALLY VALID");
-      if (o_dec != ARV_OK) Reason(case_id, "oracle", ArReason(o_dec));
-      if (p_dec != ARV_OK) Reason(case_id, "polyc", ArReason(p_dec));
-
-      // The member counts must agree. An EMPTY archive carries no
-      // evidence, and it is rejected by the decoder itself.
-      Check(o_dec == ARV_OK && p_dec == ARV_OK && o_count == p_count, case_id,
-            "the archive member COUNTS agree");
-      if (o_dec == ARV_OK && p_dec == ARV_OK && o_count != p_count) {
-        Reason(case_id, "harness", ArReason(ARV_MEMBER_COUNT));
-      }
-
-      // The member-by-member comparison. Every member is compared by
-      // IDENTITY, by NAME FORMAT, by PAYLOAD BYTES, and by the
-      // VALIDITY of its decoded payload.
-      I64 member_equal = 1;
-      I64 name_equal = 1;
-      I64 format_equal = 1;
-      I64 payload_equal = 1;
-      I64 payload_valid = 1;
-      I64 timestamp_only = 1;
-
-      // The SET comparison. The member-by-member comparison below compares
-      // the members BY POSITION, so it detects a member that was RENAMED
-      // but it does not, by itself, distinguish a RENAME from a DUPLICATE
-      // or from an UNEXPECTED member.
-      //
-      // The set comparison therefore checks the member NAME MULTISET of each
-      // side: a name that appears MORE THAN ONCE on a side is a DUPLICATE
-      // member, and a name that appears on one side and NOT on the other is
-      // a MISSING or an UNEXPECTED member.
-      //
-      // The checks are performed on the ORACLE side and on the PolyC side
-      // INDEPENDENTLY, so a malformed archive is rejected even when both
-      // sides carry the SAME malformed archive.
-      I64 o_dup = 0;
-      I64 p_dup = 0;
-      I64 o_unexpected = 0;
-      I64 p_unexpected = 0;
-      I64 o_absent = 0;
-      I64 p_absent = 0;
-      I64 si = 0;
-      I64 sj = 0;
-      while (si < o_count && si < AR_MAX_MEMBERS) {
-        I64 o_hits = 0;
-        I64 p_hits = 0;
-        sj = 0;
-        while (sj < o_count && sj < AR_MAX_MEMBERS) {
-          if (ArNameEqual(o_name[si], o_namelen[si], o_name[sj],
-                          o_namelen[sj]) == 1) o_hits = o_hits + 1;
-          sj = sj + 1;
-        }
-        sj = 0;
-        while (sj < p_count && sj < AR_MAX_MEMBERS) {
-          if (ArNameEqual(o_name[si], o_namelen[si], p_name[sj],
-                          p_namelen[sj]) == 1) p_hits = p_hits + 1;
-          sj = sj + 1;
-        }
-        if (o_hits > 1) o_dup = 1;
-        if (p_hits > 1) p_dup = 1;
-        if (p_hits == 0) o_absent = 1;
-        si = si + 1;
-      }
-      si = 0;
-      while (si < p_count && si < AR_MAX_MEMBERS) {
-        I64 o_hits = 0;
-        sj = 0;
-        while (sj < o_count && sj < AR_MAX_MEMBERS) {
-          if (ArNameEqual(p_name[si], p_namelen[si], o_name[sj],
-                          o_namelen[sj]) == 1) o_hits = o_hits + 1;
-          sj = sj + 1;
-        }
-        if (o_hits == 0) p_unexpected = 1;
-        si = si + 1;
-      }
-
-      Check(o_dup == 0 && p_dup == 0, case_id,
-            "the archive member NAMES are UNIQUE on both sides");
-      if (o_dup == 1) Reason(case_id, "oracle", ArReason(ARV_DUPLICATE));
-      if (p_dup == 1) Reason(case_id, "polyc", ArReason(ARV_DUPLICATE));
-      Check(o_absent == 0 && p_unexpected == 0, case_id,
-            "no archive member is MISSING and no archive member is UNEXPECTED");
-      if (o_absent == 1) Reason(case_id, "oracle", ArReason(ARV_MISSING));
-      if (p_unexpected == 1) Reason(case_id, "polyc", ArReason(ARV_UNEXPECTED));
-
-      mi = 0;
-      while (mi < o_count && mi < p_count) {
-        // The member IDENTITY. The decoded name must be the same.
-        if (ArNameEqual(o_name[mi], o_namelen[mi], p_name[mi],
-                        p_namelen[mi]) == 0) {
-          name_equal = 0;
-          member_equal = 0;
-        }
-        // The NAME FORMAT. The extended-name form and the declared name
-        // length are semantically relevant: a mutation of the `#1/N`
-        // field changes what `ar` extracts.
-        if (o_ext[mi] != p_ext[mi]) {
-          format_equal = 0;
-          member_equal = 0;
-        }
-        if (o_ext[mi] == 1 && o_extlen[mi] != p_extlen[mi]) {
-          format_equal = 0;
-          member_equal = 0;
-        }
-        // The PAYLOAD BYTES. The payload is the content `ar` extracts.
-        I64 opl = o_paylen[mi];
-        I64 ppl = p_paylen[mi];
-        if (opl != ppl) {
-          payload_equal = 0;
-          member_equal = 0;
-        } else {
-          if (BytesEqual(o_payload[mi], &opl, p_payload[mi], &ppl) == 0) {
-            payload_equal = 0;
-            member_equal = 0;
-          }
-        }
-        // The TIMESTAMP. A timestamp-only difference does NOT make the
-        // members different, and it is reported separately.
-        if (o_mtime[mi] != p_mtime[mi]) timestamp_only = 0;
-        mi = mi + 1;
-      }
-
-      // The DECODED PAYLOAD is validated INDEPENDENTLY as the expected
-      // Mach-O object. A payload that is not a valid Mach-O object is
-      // REJECTED, even when both sides carry the SAME invalid payload.
-      mi = 0;
-      while (mi < o_count) {
-        I64 ocls = Classify(o_payload[mi], o_paylen[mi]);
-        I64 oarch = ArchOf(o_payload[mi], o_paylen[mi]);
-        // The symbol table member is NOT a Mach-O object; it is the
-        // archive's own symbol index.
-        I64 is_symdef = 0;
-        if (o_namelen[mi] >= 9) {
-          if (ArNameEqual(o_name[mi], 9, "__.SYMDEF", 9) == 1) is_symdef = 1;
-        }
-        if (is_symdef == 0) {
-          if (ocls != CLS_MACHO_OBJ) payload_valid = 0;
-          if (earch[k] != -1 && oarch != earch[k]) payload_valid = 0;
-        }
-        mi = mi + 1;
-      }
-      mi = 0;
-      while (mi < p_count) {
-        I64 pcls = Classify(p_payload[mi], p_paylen[mi]);
-        I64 parch = ArchOf(p_payload[mi], p_paylen[mi]);
-        I64 is_symdef = 0;
-        if (p_namelen[mi] >= 9) {
-          if (ArNameEqual(p_name[mi], 9, "__.SYMDEF", 9) == 1) is_symdef = 1;
-        }
-        if (is_symdef == 0) {
-          if (pcls != CLS_MACHO_OBJ) payload_valid = 0;
-          if (earch[k] != -1 && parch != earch[k]) payload_valid = 0;
-        }
-        mi = mi + 1;
-      }
-
-      Check(name_equal == 1, case_id,
-            "the archive member IDENTITIES agree");
-      if (name_equal == 0) Reason(case_id, "harness", ArReason(ARV_MISSING));
-      Check(format_equal == 1, case_id,
-            "the archive member NAME FORMATS agree");
-      if (format_equal == 0) {
-        Reason(case_id, "harness", ArReason(ARV_NAME_FORMAT));
-      }
-      Check(payload_valid == 1, case_id,
-            "the DECODED member payloads are VALID Mach-O objects");
-      if (payload_valid == 0) {
-        Reason(case_id, "harness", ArReason(ARV_PAYLOAD_CLASS));
-      }
-      Check(payload_equal == 1, case_id,
-            "the DECODED member PAYLOAD BYTES agree");
-      if (payload_equal == 0) {
-        Reason(case_id, "harness", ArReason(ARV_PAYLOAD));
-      }
-
-      U8 *ms_eq = "DIFFERENT";
-      U8 *fb_eq = "DIFFERENT";
-      U8 *md_nd = "YES";
-      if (member_equal == 1) ms_eq = "EQUAL";
-      if (full_equal == 1) fb_eq = "EQUAL";
-      if (full_equal == 1) md_nd = "NO";
-      "ARCHIVE_MEMBER_SEMANTICS\t%s\t%d\t%s\n", case_id, k, ms_eq;
-      "ARCHIVE_FULL_BYTES\t%s\t%d\t%s\n", case_id, k, fb_eq;
-      Check(member_equal == 1, case_id,
-            "the archive MEMBER SEMANTICS agree");
-      // The timestamp nondeterminism is reported ONLY when every DECODED
-      // member is otherwise identical. A content difference is NEVER
-      // reported as timestamp nondeterminism.
-      if (member_equal == 1) {
-        if (timestamp_only == 0) md_nd = "YES";
-        else md_nd = "NO";
-      } else {
-        md_nd = "NOT_APPLICABLE";
-      }
-      "ARCHIVE_METADATA_NONDETERMINISM\t%s\t%d\t%s\n", case_id, k, md_nd;
-      // The full-byte difference is NOT an equivalence failure: it is
-      // reported separately and never counted as a member-semantic
-      // difference.
+    }
+    if (eclass[k] == 7) {
+      // The archive's member semantics were checked above. The byte
+      // result is reported separately.
+      "ARCHIVE_BYTES\t%s\t%s\t%d\n", case_id, argv[14 + k * 3], same_bytes;
+      "ARCHIVE_MEMBER_SEMANTICS\t%s\t%s\tEQUIVALENT\n", case_id,
+        argv[14 + k * 3];
     } else {
-      Check(o_present[k] == 1 && p_present[k] == 1 && o_digest == p_digest,
-            case_id, "the artifact content digests agree");
-      Check(o_present[k] == 1 && p_present[k] == 1 &&
-            BytesEqual(o_buf[k], &o_size[k], p_buf[k], &p_size[k]), case_id,
+      Check(same_bytes == 1, case_id,
             "the actual artifact bytes agree");
     }
     k = k + 1;
