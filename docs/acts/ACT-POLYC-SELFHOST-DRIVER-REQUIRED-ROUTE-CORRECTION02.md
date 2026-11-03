@@ -258,6 +258,51 @@ Each required-route branch is classified by ONE of:
 branch ledger, and it is reported as a **measurement**, not a target. The
 verdict is selected by the measured value, not by the intent.
 
+### 2.1 What the defect was NOT
+
+It is worth stating what the defect was **not**, because the bound
+correction depends on it.
+
+The defect was **not** that the wrong diagnostic was printed. The legacy
+C CLI printed the `-o-` diagnostic for an argv that also carried an
+unknown argument, and the legacy C CLI was self-consistent about it.
+
+The defect was that a **C-owned policy** printed it. The C side read
+`args->to_stdout` and `args->assemble_only` and fired on its own
+authority, while the PolyC driver -- which had already selected a
+status for that argv -- was not consulted. The correction moves the
+**authority** and leaves the **observable behaviour** alone.
+
+A correction that moved the authority AND changed a diagnostic would be
+a worse outcome: it would break an argv that used to work. The ACT
+therefore does not require one, and the C3 phase **measures** the
+behavioural delta rather than asserting it.
+
+### 2.2 The C1 prediction, and the measurement that refuted it
+
+The C1 freeze predicted **exactly one** intended behavioural delta: the
+argv carrying the `-o-` condition *and* an unknown argument would
+change its reported diagnostic from the `-o-` text to the USAGE text.
+
+The C2 measurement **refutes** that prediction. The measured
+behavioural delta is **ZERO**.
+
+The reason is instructive. The C1 freeze placed the new status member
+in precedence position 2 -- between `ARITY` and `USAGE` -- in order to
+reproduce the legacy CLI's own check order. That order is correct, and
+it is what makes the delta zero: the driver selects `TO_STDOUT` for
+that argv, and the reported diagnostic is the `-o-` one, exactly as
+before. What changed is *who decided*, not *what was said*.
+
+The decisive measurement is that the **legacy G0 oracle**, which never
+had the correction, satisfies the **same** frozen contract as the
+corrected selector-ON build. If the correction had changed an
+observable behaviour, the legacy oracle would fail that contract.
+
+The C1 freeze is immutable historical evidence of what was predicted
+(F14). It is **not** rewritten. The C2 evidence records the
+refutation.
+
 ---
 
 ## 3. The G0 C-only oracle

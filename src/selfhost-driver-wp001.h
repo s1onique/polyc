@@ -71,6 +71,19 @@ extern long long WpDriverSelectedEmission(void);
 #define WP_DRIVER_STATUS_NO_INPUT 4
 #define WP_DRIVER_STATUS_ENGINE   5
 
+/* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.
+ *
+ * The `-o-` output target REQUIRES `-S`. This condition was decided by
+ * the C side, because the status domain could not express it, and a C
+ * policy that fired without consulting the PolyC-selected status could
+ * PREEMPT that status.
+ *
+ * The status domain expresses it now. The value is the SAME SOURCE
+ * VALUE as the PolyC subject's WP_STATUS_TO_STDOUT, and it is the
+ * LARGEST member, so it is DISJOINT from every other status.
+ */
+#define WP_DRIVER_STATUS_TO_STDOUT 6
+
 /* The action domain, mirrored the same way. */
 
 /* The EMISSION domain, mirrored the same way. It is DISJOINT from both

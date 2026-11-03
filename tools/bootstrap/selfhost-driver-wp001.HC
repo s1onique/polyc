@@ -61,6 +61,22 @@ extern "c" U8 *WpDriverHostArgByte(I64 idx);
 #define WP_STATUS_NO_INPUT  4   // no input file
 #define WP_STATUS_ENGINE    5   // the compile engine reported failure
 
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.
+//
+// The `-o-` output target REQUIRES `-S`. This condition was, until
+// this ACT, decided by the C side, because the status domain could
+// not EXPRESS it. The C side therefore fired its own policy and
+// PREEMPTED the PolyC-selected status: an argv whose PolyC status was
+// USAGE reported the C policy's diagnostic instead.
+//
+// The status domain can express it now. The new member is the
+// LARGEST value, so it is DISJOINT from every pre-existing status and
+// it cannot be confused with a valid zero-valued status.
+//
+//   WP_STATUS_TO_STDOUT  the `-o-` output target was requested
+//                        without `-S`
+#define WP_STATUS_TO_STDOUT  6
+
 // The action domain. Actions are >= 1, disjoint from the status domain.
 #define WP_ACTION_COMPILE_OBJECT  1
 #define WP_ACTION_EMIT_ASSEMBLY    2
@@ -676,11 +692,61 @@ I64 WpDriverHasUnknownArgument() {
   return 1;
 }
 
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.
+//
+// WpDriverStdoutNeedsAssembly: was the `-o-` output target requested
+// WITHOUT `-S`?
+//
+// The `-o-` option asks the compiler to write the ASSEMBLY to stdout,
+// which is only meaningful together with `-S`. The live CLI enforced
+// that pairing itself, which made the C side the owner of the
+// decision and let it PREEMPT the PolyC-selected status.
+//
+// The driver already classifies both options -- `-S` is
+// WP_KIND_ASSEMBLY and `-o-` is WP_KIND_STDOUT -- so the condition is
+// decided here from the driver's OWN classification. No option table,
+// no option name, no flag test and no arity rule is added.
+//
+// The condition does NOT depend on the selected action: the live CLI
+// ran it after the option loop and before the unknown-argument
+// report, so it fired whatever else the argv said.
+I64 WpDriverStdoutNeedsAssembly() {
+  I64 i = 1;                    // argv[0] is the program name
+  I64 argc = WpDriverHostArgc();
+  I64 saw_stdout = 0;
+  I64 saw_assembly = 0;
+  while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      I64 kind = WpDriverOptKind(opt);
+      if (kind == WP_KIND_STDOUT) saw_stdout = 1;
+      if (kind == WP_KIND_ASSEMBLY) saw_assembly = 1;
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      // Only a NEXT value consumes the following argument.
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
+    i = i + 1;
+  }
+  if (saw_stdout == 1 && saw_assembly == 0) return 1;
+  return 0;
+}
+
 I64 WpDriverMapStatus(I64 action) {
   // The ARITY decision comes FIRST: an option whose value is missing
   // is an arity violation whatever else the argv says.
   if (WpDriverArityViolationCount() > 0) return WP_STATUS_ARITY;
-  // The UNKNOWN-ARGUMENT decision comes SECOND: the live CLI reports
+  // The TO-STDOUT decision comes SECOND: the live CLI checked the
+  // `-o-`/`-S` pairing right after the option loop and before it
+  // reported the unknown arguments, so this condition fires whatever
+  // else the argv says.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02: this
+  // decision used to live in the C side, where it could PREEMPT the
+  // PolyC-selected status. It is the driver's decision now.
+  if (WpDriverStdoutNeedsAssembly() == 1) return WP_STATUS_TO_STDOUT;
+  // The UNKNOWN-ARGUMENT decision comes THIRD: the live CLI reports
   // the collected unknown arguments even when a source file was also
   // present, so this check does not depend on the selected action.
   //

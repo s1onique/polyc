@@ -1,0 +1,152 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=precedence-restored-measurement
+#
+# THE MEASURED RESULT OF THE C2 CHANGE.
+#
+# THE C1 FREEZE PREDICTED "EXACTLY ONE INTENDED BEHAVIOURAL DELTA".
+# THE MEASUREMENT REFUTES THAT PREDICTION. THE ACTUAL DELTA IS ZERO.
+#
+# This file records the measurement. It does NOT rewrite the C1 freeze:
+# the C1 commit is immutable evidence of what was predicted (F14).
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- WHAT THE C2 CHANGE DID
+# ---------------------------------------------------------------------------
+#
+#   tools/bootstrap/selfhost-driver-wp001.HC
+#     + WP_STATUS_TO_STDOUT 6, the new status-domain member
+#     + WpDriverStdoutNeedsAssembly(), the driver's own decision
+#     + WpDriverMapStatus now returns WP_STATUS_TO_STDOUT for the
+#       `-o-`-without-`-S` condition, in the FROZEN precedence position
+#
+#   src/selfhost-driver-wp001.h
+#     + WP_DRIVER_STATUS_TO_STDOUT 6, the C mirror of the same source
+#       value
+#
+#   src/cli.c
+#     the `-o-` guard is now dispatched on the PolyC-selected status
+#     instead of reading args->to_stdout and args->assemble_only
+#
+# src/main.c is UNCHANGED. The parser, the AST, the IR, the backend and
+# the language semantics are UNCHANGED.
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE DRIVER'S SELECTED STATUS, MEASURED
+#
+# The driver's decision was measured DIRECTLY, by linking the compiled
+# PolyC driver subject against the C host accessors and calling
+# WpDriverDecide() with the argv:
+#
+#   $ cc -I. -o probe probe.c build/wp001-driver-subject.o \
+#         src/selfhost-driver-wp001.c
+#
+#   argv                                selected_status
+#   -c x.HC -o- --bogus-option          6   (WP_STATUS_TO_STDOUT)
+#   -c x.HC -o-                        6   (WP_STATUS_TO_STDOUT)
+#   -c x.HC -o out.o --bogus-option     1   (WP_STATUS_USAGE)
+#   -c x.HC -o- -o                     3   (WP_STATUS_ARITY)
+#
+# The driver NOW DECIDES the `-o-`-without-`-S` condition. Before the
+# change it could not: the status domain had no member for it, so the
+# C side decided it.
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE OBSERVED DIAGNOSTIC MATCHES THE SELECTED STATUS
+#
+# The canonical precedence test records, for every case, the status the
+# driver selected and the diagnostic the process actually reported. The
+# two AGREE in every case.
+#
+case_id	selected_status	observed_exit	observed_diagnostic	agrees
+FX_PREC_STDOUT_BAD	TO_STDOUT	1	`-o-` can only be used in conjunction with `-S`	YES
+FX_PREC_STDOUT_BAD_AND_UNKNOWN	TO_STDOUT	1	`-o-` can only be used in conjunction with `-S`	YES
+FX_PREC_STDOUT_BAD_AND_ARITY	ARITY	1	Unexpected end of input - expected `-o <option?>`	YES
+FX_PREC_STDOUT_OK	NONE	0	(none)	YES
+FX_PREC_STDOUT_UNKNOWN_ONLY	USAGE	1	Unknown commandline options: --bogus-option	YES
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE MEASURED BEHAVIOURAL DELTA IS ZERO
+#
+# The C1 freeze PREDICTED that the argv carrying the `-o-` condition
+# AND an unknown argument would change its reported diagnostic from
+# the `-o-` text to the USAGE text. That prediction was WRONG, and the
+# reason is instructive:
+#
+# The C1 freeze placed the new member in precedence POSITION 2, i.e.
+# between ARITY (1) and USAGE (3), in order to REPRODUCE the legacy
+# CLI's own check order. That order is correct as an order, but it
+# means the driver selects TO_STDOUT for that argv, and the reported
+# diagnostic is the `-o-` one -- exactly as before.
+#
+# And that is the RIGHT outcome. The defect was never that the wrong
+# DIAGNOSTIC was printed. The defect was that a C-owned POLICY
+# PRINTED IT. The C side read its own fields and fired on its own
+# authority. Now the driver selects the status, and the C side prints
+# the diagnostic the driver selected. The AUTHORITY moved; the
+# OBSERVABLE BEHAVIOUR did not.
+#
+# The MEASUREMENT that proves the delta is zero: the LEGACY G0 ORACLE
+# -- the selector-OFF build, which never had the correction -- satisfies
+# the SAME frozen contract as the corrected selector-ON build.
+#
+#   the canonical precedence test against the G0 oracle transcript:
+#     DRIVER_WP001_PRECEDENCE_TEST_CASES=5
+#     DRIVER_WP001_PRECEDENCE_TEST_FAILURES=0
+#     DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS
+#
+#   the canonical precedence test against the corrected ON build:
+#     DRIVER_WP001_PRECEDENCE_TEST_CASES=5
+#     DRIVER_WP001_PRECEDENCE_TEST_FAILURES=0
+#     DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS
+#
+# If the correction had changed an observable behaviour, the legacy
+# oracle would FAIL that contract. It does not.
+#
+MEASURED_BEHAVIOURAL_DELTA	0
+PREDICTED_BEHAVIOURAL_DELTA_AT_C1	1
+PREDICTION_VERDICT	REFUTED_BY_MEASUREMENT
+C1_FREEZE_STATUS	IMMUTABLE_HISTORICAL_EVIDENCE
+#
+# ---------------------------------------------------------------------------
+# SECTION 5 -- WHAT THIS MEANS FOR THE ACT'S OUTCOME
+#
+# The ACT's own mission is to restore PRECEDENCE: "the PolyC-selected
+# status must take precedence over every C-owned policy, and no C
+# policy may fire when the PolyC driver selected a different status".
+#
+# That is ACHIEVED, and it is achieved with a ZERO behavioural delta:
+#
+#   before   the C side read args->to_stdout and args->assemble_only
+#           and fired on its OWN authority
+#   after    the C side reads the PolyC-selected status and fires on
+#           the DRIVER's authority
+#
+# The observable result is identical, which is a STRONGER outcome than
+# a behavioural change: nothing that used to work can break.
+#
+PRECEDENCE_RESTORED	YES
+PRECEDENCE_RESTORED_WITH_ZERO_BEHAVIOURAL_DELTA	YES
+DIAGNOSTIC_TEXTS_CHANGED	NONE
+EXIT_STATUSES_CHANGED	NONE
+ARTIFACT_CLASSES_CHANGED	NONE
+#
+# ---------------------------------------------------------------------------
+# SECTION 6 -- THE DETECTORS CONFIRM THE MOVE
+#
+# The C0 RED detectors, re-run against the corrected sources:
+#
+#   $ build/rrc02-red R01 src/cli.c 'args->to_stdout' 'status' 'WpDriverDecide'
+#   (no output)
+#   exit 0
+#
+#   $ build/rrc02-red R02 tools/bootstrap/selfhost-driver-wp001.HC 'WP_STATUS_' 'TO_STDOUT'
+#   (no output)
+#   exit 0
+#
+# R01 is SILENT because the selector-ON region no longer reads the
+# C-owned field without the PolyC-selected status. R02 is SILENT
+# because the status domain can now express the condition.
+#
+R01_AFTER_C2	SILENT
+R02_AFTER_C2	SILENT

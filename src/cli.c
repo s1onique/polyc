@@ -748,11 +748,29 @@ int cliParseArgsPolyC(CliArgs *args, int argc, char **argv) {
      * The PolyC driver decides WHICH of these applies (the status),
      * and the C side only performs the chosen one. The order among
      * them is the driver's decision too: the status is a single
-     * value, and the C side tests it in the live order. */
+     * value, and the C side tests it in the live order.
+     *
+     * ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.
+     *
+     * Check 1 USED to be the exception. The status domain could not
+     * EXPRESS the `-o-`/`-S` condition, so the C side decided it
+     * itself, by reading args->to_stdout and args->assemble_only. That
+     * C-owned policy fired WITHOUT consulting the PolyC-selected
+     * status, so it could PREEMPT it: an argv whose PolyC status was
+     * USAGE reported this check's diagnostic instead of the driver's.
+     *
+     * The status domain expresses the condition now, as
+     * WP_DRIVER_STATUS_TO_STDOUT, and the driver decides it in the
+     * order frozen at C1. The C side below PERFORMS the chosen
+     * diagnostic; it does not decide anything.
+     *
+     * The diagnostic TEXT and the exit status are unchanged. */
     long long status = WpDriverDecide();
 
-    /* 1. `-o-` may only be used together with `-S`. */
-    if (args->to_stdout && !args->assemble_only) {
+    /* 1. `-o-` may only be used together with `-S`. The PolyC driver
+     * decided that the `-o-` output target was requested without `-S`.
+     * The C side only formats the message the driver selected. */
+    if (status == WP_DRIVER_STATUS_TO_STDOUT) {
         cliPanic("`-o-` can only be used in conjunction with `-S` for "
                  "printing assembly to stdout\n");
     }

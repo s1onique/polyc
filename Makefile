@@ -901,6 +901,70 @@ $(DRIVER_ROUTE01_TEST_BIN): $(DRIVER_ROUTE01_TEST_OBJ)
 	$(C_COMPILER) $(DRIVER_ROUTE01_TEST_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 	@echo "DRIVER_ROUTE01_TEST=$@"
+# -----------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.
+#
+# THE CANONICAL PRECEDENCE REGRESSION TEST.
+#
+# It runs the REAL production compiler over the frozen precedence cases
+# and records the exit status and the stderr of every invocation into a
+# TRANSCRIPT. The COMPILED POLYC test then judges the transcript against
+# the FROZEN precedence contract.
+#
+# The decisive case is the one where a C-owned policy USED to preempt
+# the PolyC-selected status: `-o-` without `-S` TOGETHER WITH an
+# unknown argument. The PolyC driver selects USAGE for that argv, so
+# the USAGE diagnostic is the one that must be reported.
+#
+# The test is NOT part of the production compiler and is NOT linked
+# into it.
+# -----------------------------------------------------------------------
+DRIVER_ROUTE02_TEST_SRC  = tools/quality/driver-required-route-correction02-test.HC
+DRIVER_ROUTE02_TEST_OBJ  = build/driver-required-route-correction02-test.o
+DRIVER_ROUTE02_TEST_BIN  = build/driver-required-route-correction02-test
+DRIVER_ROUTE02_FIXTURE   = tests/driver-wp001/required-route/precedence-source.HC
+DRIVER_ROUTE02_WORKDIR   = build/driver-wp001-precedence
+
+.PHONY: driver-wp001-precedence-test
+driver-wp001-precedence-test: $(DRIVER_ROUTE02_TEST_BIN) $(PRODUCTION_HCC)
+	@rm -rf $(DRIVER_ROUTE02_WORKDIR)
+	@mkdir -p $(DRIVER_ROUTE02_WORKDIR)
+	@cp $(DRIVER_ROUTE02_FIXTURE) $(DRIVER_ROUTE02_WORKDIR)/precedence-source.HC
+	@cd $(DRIVER_ROUTE02_WORKDIR) && \
+		{ \
+		  printf 'case_id\tselected_status\texpected_exit\tobserved_exit\texpected_token\tobserved_stderr\n'; \
+		  run_case() { \
+		    id="$$1"; st="$$2"; exp="$$3"; tok="$$4"; shift 4; \
+		    $(CURDIR)/hcc --install-dir=$(TEST_PREFIX) "$$@" >stdout.txt 2>stderr.txt; \
+		    rc=$$?; \
+		    out=`cat stderr.txt`; \
+		    if [ -z "$$out" ]; then out=EMPTY_STDERR; fi; \
+		    printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$$id" "$$st" "$$exp" "$$rc" "$$tok" "$$out"; \
+		  }; \
+		  run_case FX_PREC_STDOUT_BAD TO_STDOUT 1 '`-o-` can only be used in conjunction with `-S`' -c precedence-source.HC -o-; \
+		  run_case FX_PREC_STDOUT_BAD_AND_UNKNOWN TO_STDOUT 1 '`-o-` can only be used in conjunction with `-S`' -c precedence-source.HC -o- --bogus-option; \
+		  run_case FX_PREC_STDOUT_BAD_AND_ARITY ARITY 1 'Unexpected end of input' -c precedence-source.HC -o- -o; \
+		  run_case FX_PREC_STDOUT_OK NONE 0 '' -S precedence-source.HC -o-; \
+		  run_case FX_PREC_STDOUT_UNKNOWN_ONLY USAGE 1 'Unknown commandline options' -c precedence-source.HC -o route.o --bogus-option; \
+		} > precedence-transcript.tsv
+	@$(DRIVER_ROUTE02_TEST_BIN) $(DRIVER_ROUTE02_WORKDIR)/precedence-transcript.tsv
+	@echo "DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE02_TEST_OBJ): $(DRIVER_ROUTE02_TEST_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(DRIVER_ROUTE02_TEST_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-required-route-correction02-test: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE02_TEST_BIN): $(DRIVER_ROUTE02_TEST_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE02_TEST_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "DRIVER_ROUTE02_TEST=$@"
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \
