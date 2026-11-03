@@ -107,6 +107,35 @@ I32 Main(I32 argc, U8 **argv) {
   //   MISSING_EXECUTABLE   the PolyC artifact is removed AND the exit
   //                        status is replaced by a failing one
   //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+  // ROUND 2 -- THE NEW ADVERSE MUTATIONS.
+  //
+  //   FORGED_EXIT_TRAILING_TEXT   the exit status becomes a malformed record
+  //                               that still PARSES as the expected value
+  //   OVERFLOWING_EXIT            the exit status becomes an integer that
+  //                               overflows
+  //   NEGATIVE_EXIT               the exit status becomes negative
+  //   STALE_BOTH_SIDES            a VALID but STALE artifact is replayed on
+  //                               BOTH sides, with its stale capture record
+  //   STALE_STDOUT_BOTH_SIDES     a VALID but STALE stdout is replayed on
+  //                               BOTH sides
+  //   STALE_STDOUT_ON_ONLY        a VALID but STALE stdout is replayed on
+  //                               the ON side only
+  //   MISSING_CAPTURE             the capture record is removed
+  //   ALTERED_CAPTURE             the capture record's artifact digest is
+  //                               altered so it no longer matches the bytes
+  //
+  // The tool receives the extra witnesses it needs through the argument
+  // vector, so the harness can point each mutation at its own file.
+  //
+  //   argv[12] the stale artifact
+  //   argv[13] the stale stdout
+  //   argv[14] the stale capture record
+  //   argv[15] the oracle capture record
+  //   argv[16] the PolyC capture record
+  //   argv[17] the oracle stdout
+  //   argv[18] the PolyC stdout
+  //
   "ADVERSE_PROBE\t%s\t%s\n", probe_id, mutation;
 
   if (StrCmp(mutation, "ZERO_BYTE_ARTIFACT") == 0) {
@@ -151,6 +180,86 @@ I32 Main(I32 argc, U8 **argv) {
     RemoveFile(argv[4]);
     U8 *fail = "1\n";
     WriteBytes(argv[11], fail, 2);
+  }
+
+  // --- THE NEW ADVERSE MUTATIONS -----------------------------------------
+  if (StrCmp(mutation, "FORGED_EXIT_TRAILING_TEXT") == 0) {
+    // The exit status is a MALFORMED record that still begins with the
+    // EXPECTED value. Only a STRICT reader rejects it.
+    U8 *forged = "0 trailing garbage text\n";
+    WriteBytes(argv[11], forged, StrLen(forged));
+  }
+  if (StrCmp(mutation, "OVERFLOWING_EXIT") == 0) {
+    U8 *big = "99999999999999999999999999\n";
+    WriteBytes(argv[11], big, StrLen(big));
+  }
+  if (StrCmp(mutation, "NEGATIVE_EXIT") == 0) {
+    U8 *neg = "-5\n";
+    WriteBytes(argv[11], neg, StrLen(neg));
+  }
+  if (StrCmp(mutation, "STALE_BOTH_SIDES") == 0) {
+    // A VALID but STALE artifact is replayed on BOTH sides, together with
+    // its OWN stale capture record AND its OWN stale transcripts. The two
+    // sides AGREE, the artifact is VALID, the digests MATCH the stale
+    // capture record, and the byte comparison SUCCEEDS. Only the
+    // INVOCATION PROVENANCE -- the fact that this run's ledger does not
+    // contain the stale invocation -- can reject it.
+    CopyFile(argv[12], argv[4]);
+    CopyFile(argv[12], argv[5]);
+    CopyFile(argv[14], argv[15]);
+    CopyFile(argv[14], argv[16]);
+    CopyFile(argv[19], argv[17]);
+    CopyFile(argv[19], argv[18]);
+    CopyFile(argv[20], argv[10]);
+  }
+  if (StrCmp(mutation, "STALE_STDOUT_BOTH_SIDES") == 0) {
+    // A VALID but STALE stdout is replayed on BOTH sides. The two sides
+    // AGREE, so only the transcript DIGEST in the capture record can
+    // reject it.
+    CopyFile(argv[13], argv[17]);
+    CopyFile(argv[13], argv[18]);
+  }
+  if (StrCmp(mutation, "STALE_STDOUT_ON_ONLY") == 0) {
+    CopyFile(argv[13], argv[18]);
+  }
+  if (StrCmp(mutation, "MISSING_CAPTURE") == 0) {
+    RemoveFile(argv[16]);
+  }
+  if (StrCmp(mutation, "ALTERED_CAPTURE") == 0) {
+    // The capture record's ARTIFACT digest is altered so that it no longer
+    // matches the bytes the comparator was given. A record that is edited
+    // to match a stale file must not become trustworthy.
+    I64 csize = 0;
+    U8 *cbuf = FileRead(argv[16], &csize);
+    if (cbuf != NULL) {
+      // The ARTIFACT_SHA256 field is the ninth field. Its value starts
+      // after the key and the space.
+      I64 i = 0;
+      I64 found = 0;
+      while (i < csize && found < 8) {
+        if (cbuf[i] == 10) found = found + 1;
+        i = i + 1;
+      }
+      // Skip "ARTIFACT_SHA256 ".
+      I64 k = 0;
+      while (i + k < csize && cbuf[i + k] != 32) k = k + 1;
+      i = i + k + 1;
+      if (i < csize) {
+        // The first hexadecimal digit is replaced by a different one.
+        U8 *digit = "0123456789abcdef";
+        I64 d = 0;
+        while (d < 16 && digit[d] != cbuf[i]) d = d + 1;
+        if (d < 16) {
+          U8 replacement = digit[(d + 1) % 16];
+          U8 *joined = MAlloc(csize);
+          MemCpy(joined, cbuf, csize);
+          joined[i] = replacement;
+          FileWrite(argv[16], joined, csize);
+          Free(joined);
+        }
+      }
+      Free(cbuf);
+    }
   }
   return 0;
 }

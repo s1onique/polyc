@@ -1033,8 +1033,89 @@ DRIVER_ROUTE03_ADVERSE_BIN = build/driver-required-route-correction03-adverse
 DRIVER_ROUTE03_ABI_SRC = tools/quality/driver-required-route-correction03-abi-probe.HC
 DRIVER_ROUTE03_ABI_OBJ = build/driver-required-route-correction03-abi-probe.o
 DRIVER_ROUTE03_ABI_BIN = build/driver-required-route-correction03-abi-probe
+DRIVER_ROUTE03_CAPTURE_SRC = tools/quality/driver-required-route-correction03-capture.HC
+DRIVER_ROUTE03_CAPTURE_OBJ = build/driver-required-route-correction03-capture.o
+DRIVER_ROUTE03_CAPTURE_BIN = build/driver-required-route-correction03-capture
 DRIVER_ROUTE03_WORKDIR = build/driver-wp001-correction03
 DRIVER_ROUTE03_FIXTURE = tests/driver-wp001/required-route/route-source.HC
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 2, F1 -- THE TEST-PREFIX ARTIFACTS.
+#
+# The CORRECTION03 quality tools are compiled with
+#
+#     $(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c <src> -o <obj>
+#
+# so the production compiler READS its runtime header from
+#
+#     $(TEST_PREFIX)/include/tos.HH
+#
+# and they are LINKED with
+#
+#     -L$(TEST_PREFIX)/lib -ltos
+#
+# so they consume
+#
+#     $(TEST_PREFIX)/lib/libtos.a
+#
+# The committed rules declared $(BOOTSTRAP_PREFIX_INC)/tos.HH as their
+# prerequisite instead. That is a DIFFERENT FILE: the BOOTSTRAP prefix is
+# the header-only prefix at build/bootstrap-prefix/include, while the TEST
+# prefix is the full install prefix at build/test-prefix. Nothing in the
+# rule's dependency graph produced the file the compiler actually reads,
+# so a pristine isolated checkout failed with
+#
+#     ERROR: Failed to open file: <prefix>/build/test-prefix/include/tos.HH
+#
+# and the build only ever succeeded when a previous `make test-prefix-install`
+# had left a warm prefix behind. That is the warm-tree assumption the
+# Factory forbids.
+#
+# THE REPAIR. The two artifacts that the tools REALLY consume become REAL
+# FILE TARGETS with CONTENT-SENSITIVE prerequisites:
+#
+#   $(TEST_PREFIX)/include/tos.HH   the canonical runtime header, copied
+#                                  from the canonical source header
+#                                  src/holyc-lib/tos.HH
+#   $(TEST_PREFIX)/lib/libtos.a     the canonical runtime archive, produced
+#                                  by the QUALIFIED, provenance-pinned
+#                                  runtime producer from the canonical
+#                                  runtime sources
+#
+# The quality-tool rules then depend on those FILES, not on an unrelated
+# bootstrap stamp. A change to the canonical header or to the canonical
+# runtime sources therefore invalidates the consumers, and DELETING the
+# header while retaining any stamp cannot produce GREEN, because the header
+# itself is a prerequisite.
+#
+# The rule bodies FAIL CLOSED: a producer that exits 0 without producing
+# the artifact is a HARD ERROR, and the archive rule verifies the required
+# runtime symbols and the pinned producer identity before it is accepted.
+#
+# ORDER-ONLY versus NORMAL prerequisites. The dependency on the canonical
+# header and on the canonical runtime archive is NORMAL, because their
+# CONTENT is consumed by the compiler and by the linker, and a content
+# change MUST invalidate the consumer. An order-only prerequisite would
+# suppress that invalidation and reproduce the very defect being repaired.
+#
+# The pinned producer is an ORDER-ONLY prerequisite of the archive rule:
+# the archive does not consume the producer's BYTES, it consumes the
+# producer's BEHAVIOUR, and the producer's identity is separately verified
+# against the frozen constant inside the recipe. A normal prerequisite
+# there would rebuild the archive on every producer retouch without
+# changing any archive content.
+#
+# The two variables are declared HERE, next to the other CORRECTION03
+# variables and BEFORE every rule that uses them, because GNU Make expands
+# a rule's prerequisites when the rule is read. A variable that is assigned
+# after the rule that uses it expands to the EMPTY STRING, which silently
+# removes the prerequisite and reproduces the very defect this ACT
+# repairs.
+# ---------------------------------------------------------------------------
+TEST_PREFIX ?= $(CURDIR)/build/test-prefix
+TEST_PREFIX_HEADER = $(TEST_PREFIX)/include/tos.HH
+TEST_PREFIX_LIBTOS = $(TEST_PREFIX)/lib/libtos.a
 
 # ---------------------------------------------------------------------------
 # THE FRESH-BUILD SUBJECT CHAIN (P1-1 repair).
@@ -1075,43 +1156,57 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
-	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)/off $(DRIVER_ROUTE03_WORKDIR)/on
-	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/off/source.HC
-	@cp $(DRIVER_ROUTE03_FIXTURE) $(DRIVER_ROUTE03_WORKDIR)/on/source.HC
+driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
+	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
+	rm -rf $$ROOT; \
+	mkdir -p $$ROOT; \
 	for spec in 'cS:-c -S' 'Sc:-S -c' 'ccS:-c -c -S' 'SSc:-S -S -c' \
 	            'cSc:-c -S -c' 'ScS:-S -c -S' 'c:-c' 'S:-S'; do \
 	  id=$${spec%%:*}; flags=$${spec#*:}; \
-	  rm -f $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
-	        $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin \
-	        $(DRIVER_ROUTE03_WORKDIR)/off/stdout.txt \
-	        $(DRIVER_ROUTE03_WORKDIR)/on/stdout.txt \
-	        $(DRIVER_ROUTE03_WORKDIR)/off/stderr.txt \
-	        $(DRIVER_ROUTE03_WORKDIR)/on/stderr.txt \
-	        $(DRIVER_ROUTE03_WORKDIR)/off/exit.txt \
-	        $(DRIVER_ROUTE03_WORKDIR)/on/exit.txt; \
-	  (cd $(DRIVER_ROUTE03_WORKDIR)/off && \
+	  for side in off on; do \
+	    d=$$ROOT/$$id/$$side; \
+	    rm -rf $$d; \
+	    mkdir -p $$d; \
+	    cp $(DRIVER_ROUTE03_FIXTURE) $$d/source.HC; \
+	  done; \
+	  (cd $$ROOT/$$id/off && \
 	   $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
 	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
-	  (cd $(DRIVER_ROUTE03_WORKDIR)/on && \
+	  (cd $$ROOT/$$id/on && \
 	   $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
 	   >stdout.txt 2>stderr.txt; echo $$? > exit.txt); \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) derive \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
-	    > $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt; \
-	  eclass=$$(sed -n 's/^DERIVED_CLASS\t//p' $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt); \
-	  earch=$$(sed -n 's/^DERIVED_ARCH\t//p' $(DRIVER_ROUTE03_WORKDIR)/off/derived.txt); \
+	    $$ROOT/$$id/off/artifact.bin \
+	    > $$ROOT/$$id/off/derived.txt; \
+	  eclass=$$(sed -n 's/^DERIVED_CLASS\t//p' $$ROOT/$$id/off/derived.txt); \
+	  earch=$$(sed -n 's/^DERIVED_ARCH\t//p' $$ROOT/$$id/off/derived.txt); \
+	  $(DRIVER_ROUTE03_CAPTURE_BIN) $$ROOT/$$id/off/capture.txt $$ROOT/$$id/ledger.txt OFF \
+	    $$ROOT/$$id/off/source.HC $(DRIVER_ROUTE03_FIXTURE) \
+	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
+	    $$ROOT/$$id/off/artifact.bin $$ROOT/$$id/off/stdout.txt \
+	    $$ROOT/$$id/off/stderr.txt $$ROOT/$$id/off/exit.txt \
+	    --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
+	    > $$ROOT/$$id/off/capture.log 2>&1; \
+	  $(DRIVER_ROUTE03_CAPTURE_BIN) $$ROOT/$$id/on/capture.txt $$ROOT/$$id/ledger.txt ON \
+	    $$ROOT/$$id/on/source.HC $(DRIVER_ROUTE03_FIXTURE) \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) \
+	    $$ROOT/$$id/on/artifact.bin $$ROOT/$$id/on/stdout.txt \
+	    $$ROOT/$$id/on/stderr.txt $$ROOT/$$id/on/exit.txt \
+	    --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
+	    > $$ROOT/$$id/on/capture.log 2>&1; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$id \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
-	    $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/stdout.txt \
-	    $(DRIVER_ROUTE03_WORKDIR)/on/stdout.txt \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/stderr.txt \
-	    $(DRIVER_ROUTE03_WORKDIR)/on/stderr.txt \
-	    $(DRIVER_ROUTE03_WORKDIR)/off/exit.txt \
-	    $(DRIVER_ROUTE03_WORKDIR)/on/exit.txt \
-	    $$eclass $$earch 0 _main; \
+	    $$ROOT/$$id/off/artifact.bin \
+	    $$ROOT/$$id/on/artifact.bin \
+	    $$ROOT/$$id/off/stdout.txt \
+	    $$ROOT/$$id/on/stdout.txt \
+	    $$ROOT/$$id/off/stderr.txt \
+	    $$ROOT/$$id/on/stderr.txt \
+	    $$ROOT/$$id/off/exit.txt \
+	    $$ROOT/$$id/on/exit.txt \
+	    $$eclass $$earch 0 \
+	    $$ROOT/$$id/ledger.txt $$ROOT/$$id/off/capture.txt $$ROOT/$$id/on/capture.txt \
+	    _main; \
 	done
 	@$(DRIVER_ROUTE03_ABI_BIN)
 	@echo "DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS"
@@ -1245,7 +1340,27 @@ $(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
 	fi
 	@touch $@
 
-$(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 2, F1 -- THE CORRECTED QUALITY-TOOL GRAPH.
+#
+# The COMPILATION of every CORRECTION03 quality tool reads the runtime header
+# from $(TEST_PREFIX)/include/tos.HH, and the LINKING of every one of them
+# reads the runtime archive from $(TEST_PREFIX)/lib/libtos.a. Both are now
+# REAL FILE TARGETS with CONTENT-SENSITIVE prerequisites (see the
+# TEST_PREFIX_HEADER and TEST_PREFIX_LIBTOS rules).
+#
+# The prerequisite on the header is NORMAL: the compiler CONSUMES the header
+# bytes, so a change to the canonical header must invalidate the object.
+# The prerequisite on the archive is NORMAL: the linker CONSUMES the archive
+# bytes, so a change to the canonical runtime must invalidate the binary.
+#
+# The BOOTSTRAP prefix header is NOT a prerequisite of these rules. It is a
+# DIFFERENT file, and listing it here is what allowed a pristine checkout to
+# satisfy the dependency graph while the compiler still could not find the
+# header it actually reads.
+# ---------------------------------------------------------------------------
+$(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_COMPARE_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1253,11 +1368,11 @@ $(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $
 		exit 1; \
 	fi
 
-$(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ)
+$(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_COMPARE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
-$(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+$(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ABI_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1265,11 +1380,11 @@ $(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(BOOTSTR
 		exit 1; \
 	fi
 
-$(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) src/selfhost-driver-wp001.c
+$(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) src/selfhost-driver-wp001.c $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_SUBJECT_OBJ) \
 		src/selfhost-driver-wp001.c -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
-$(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+$(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_EMISSION_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1277,11 +1392,11 @@ $(DRIVER_ROUTE03_EMISSION_OBJ): $(DRIVER_ROUTE03_EMISSION_SRC) $(PRODUCTION_HCC)
 		exit 1; \
 	fi
 
-$(DRIVER_ROUTE03_EMISSION_BIN): $(DRIVER_ROUTE03_EMISSION_OBJ)
+$(DRIVER_ROUTE03_EMISSION_BIN): $(DRIVER_ROUTE03_EMISSION_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_EMISSION_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
-$(DRIVER_ROUTE03_ADVERSE_OBJ): $(DRIVER_ROUTE03_ADVERSE_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+$(DRIVER_ROUTE03_ADVERSE_OBJ): $(DRIVER_ROUTE03_ADVERSE_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ADVERSE_SRC) -o $@
 	@if [ ! -f "$@" ]; then \
@@ -1289,8 +1404,23 @@ $(DRIVER_ROUTE03_ADVERSE_OBJ): $(DRIVER_ROUTE03_ADVERSE_SRC) $(PRODUCTION_HCC) $
 		exit 1; \
 	fi
 
-$(DRIVER_ROUTE03_ADVERSE_BIN): $(DRIVER_ROUTE03_ADVERSE_OBJ)
+$(DRIVER_ROUTE03_ADVERSE_BIN): $(DRIVER_ROUTE03_ADVERSE_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_ADVERSE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# The CAPTURE-RECORD GENERATOR. It writes the capture record that binds an
+# observed execution to the observation the comparator reads, and it
+# registers the invocation in the run ledger.
+$(DRIVER_ROUTE03_CAPTURE_OBJ): $(DRIVER_ROUTE03_CAPTURE_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_CAPTURE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_CAPTURE_BIN): $(DRIVER_ROUTE03_CAPTURE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_CAPTURE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
 # ---------------------------------------------------------------------------
@@ -1380,16 +1510,23 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	@echo "DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS"
 
 # ---------------------------------------------------------------------------
-# THE ADVERSE PROBES (P1-2).
+# THE ADVERSE PROBES (P1-2, C4 REMEDIATION ROUND 2).
 #
 # Each probe takes a FRESH, ISOLATED copy of a KNOWN-GOOD comparator input,
-# mutates or removes exactly ONE observable, and asserts that the
-# comparator REJECTS the mutated input.
+# mutates or removes exactly ONE observable, and asserts that the comparator
+# REJECTS the mutated input WITH THE EXPECTED REASON TOKEN.
+#
+# A nonzero exit is NOT enough. The comparator emits a REASON line naming
+# the SPECIFIC violated property, and the probe requires that EXACT token.
+# A probe that is rejected for the WRONG reason is a FAILURE, because it
+# would mean the rejection is accidental rather than designed.
 #
 # No probe may reuse an artifact from an earlier probe or an earlier case.
+# Each probe has its OWN directory, its OWN output files, and its OWN copy
+# of the capture record.
 # ---------------------------------------------------------------------------
 .PHONY: driver-wp001-correction03-adverse-test
-driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	W=$(DRIVER_ROUTE03_WORKDIR)/adverse; \
 	rm -rf $$W; \
@@ -1407,22 +1544,59 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	          | sed -n 's/^DERIVED_CLASS\t//p'); \
 	earch=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/good/oracle-artifact.bin \
 	          | sed -n 's/^DERIVED_ARCH\t//p'); \
+	$(DRIVER_ROUTE03_CAPTURE_BIN) $$W/good/oracle-capture.txt $$W/good/ledger.txt OFF \
+	  $$W/good/source.HC $(DRIVER_ROUTE03_FIXTURE) \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
+	  $$W/good/oracle-artifact.bin $$W/good/oracle-stdout.txt \
+	  $$W/good/oracle-stderr.txt $$W/good/oracle-exit.txt \
+	  --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	  > $$W/good/oracle-capture.log 2>&1; \
 	printf 'not a mach-o image at all, just text garbage\n' > $$W/good/garbage.bin; \
-	cp $$W/good/oracle-artifact.bin $$W/good/wrong-arch.bin; \
-	printf '\007\000\000\001' | \
-	  dd of=$$W/good/wrong-arch.bin bs=1 seek=4 conv=notrunc 2>/dev/null; \
-	printf 'I64 OtherFunction() {\n    return 3;\n}\n' > $$W/good/other.HC; \
+	printf 'I64 OtherFunction() {\n    return 3;\n}\n' > $$W/good/no-symbol.HC; \
 	( cd $$W/good; \
 	  set +e; \
-	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o no-symbol.bin \
-	    >other-stdout.txt 2>other-stderr.txt ); \
-	if [ ! -f $$W/good/no-symbol.bin ]; then \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c no-symbol.HC -o no-symbol.bin \
+	    >no-symbol-stdout.txt 2>no-symbol-stderr.txt ); \
+	if [ ! -s $$W/good/no-symbol.bin ]; then \
 		echo "driver-wp001-correction03: the adverse no-symbol artifact was not produced" >&2; \
 		exit 1; \
 	fi; \
-	for mutation in ZERO_BYTE_ARTIFACT MISSING_ARTIFACT IDENTICAL_GARBAGE \
-	                GARBAGE_BOTH_SIDES WRONG_ARCHITECTURE MISSING_SYMBOL \
-	                MISSING_STDERR EXTRA_STDERR STALE_OUTPUT MISSING_EXECUTABLE; do \
+	printf 'I64 OtherFunction() {\n    return 3;\n}\nI64 main(I64 argc, U8 **argv) {\n    return 0;\n}\n' > $$W/good/other.HC; \
+	( cd $$W/good; \
+	  set +e; \
+	  printf 'STALE STDOUT FROM AN EARLIER RUN\n' > stale-stdout.txt; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
+	    >stale-real-stdout.txt 2>stale-stderr.txt; echo $$? > stale-exit.txt ); \
+	if [ ! -s $$W/good/stale-valid.bin ]; then \
+		echo "driver-wp001-correction03: the adverse stale artifact was not produced" >&2; \
+		exit 1; \
+	fi; \
+	$(DRIVER_ROUTE03_CAPTURE_BIN) $$W/good/stale-capture.txt $$W/good/stale-ledger.txt OFF \
+	  $$W/good/other.HC $(DRIVER_ROUTE03_FIXTURE) \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
+	  $$W/good/stale-valid.bin $$W/good/stale-stdout.txt \
+	  $$W/good/stale-stderr.txt $$W/good/stale-exit.txt \
+	  --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
+	  > $$W/good/stale-capture.log 2>&1; \
+	for spec in \
+	  'ZERO_BYTE_ARTIFACT:the PolyC artifact is NONEMPTY' \
+	  'MISSING_ARTIFACT:the PolyC artifact is PRESENT' \
+	  'IDENTICAL_GARBAGE:the PolyC artifact has the EXPECTED class' \
+	  'GARBAGE_BOTH_SIDES:the PolyC artifact has the EXPECTED class' \
+	  'MISSING_SYMBOL:CAPTURE_DIGEST_MISMATCH' \
+	  'MISSING_STDERR:the stderr transcripts are PRESENT' \
+	  'EXTRA_STDERR:the stderr transcripts are EQUAL' \
+	  'MISSING_EXECUTABLE:the PolyC exit status is a VALID record' \
+	  'FORGED_EXIT_TRAILING_TEXT:EXIT_STATUS_TRAILING_TEXT' \
+	  'OVERFLOWING_EXIT:EXIT_STATUS_INTEGER_OVERFLOW' \
+	  'NEGATIVE_EXIT:EXIT_STATUS_NEGATIVE' \
+	  'STALE_BOTH_SIDES:CAPTURE_INVOCATION_NOT_REGISTERED' \
+	  'STALE_STDOUT_BOTH_SIDES:CAPTURE_DIGEST_MISMATCH' \
+	  'STALE_STDOUT_ON_ONLY:CAPTURE_DIGEST_MISMATCH' \
+	  'MISSING_CAPTURE:CAPTURE_RECORD_MISSING' \
+	  'ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH'; do \
+	  mutation=$${spec%%:*}; \
+	  reason=$${spec#*:}; \
 	  rm -rf $$W/$$mutation; \
 	  mkdir -p $$W/$$mutation; \
 	  cp $$W/good/artifact.bin $$W/$$mutation/artifact.bin; \
@@ -1430,26 +1604,43 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	  cp $$W/good/stdout.txt $$W/$$mutation/stdout.txt; \
 	  cp $$W/good/stderr.txt $$W/$$mutation/stderr.txt; \
 	  cp $$W/good/exit.txt $$W/$$mutation/exit.txt; \
+	  cp $$W/good/oracle-stdout.txt $$W/$$mutation/oracle-stdout.txt; \
+	  cp $$W/good/oracle-stderr.txt $$W/$$mutation/oracle-stderr.txt; \
+	  cp $$W/good/oracle-exit.txt $$W/$$mutation/oracle-exit.txt; \
+	  cp $$W/good/oracle-capture.txt $$W/$$mutation/oracle-capture.txt; \
+	  cp $$W/good/oracle-capture.txt $$W/$$mutation/capture.txt; \
+	  cp $$W/good/ledger.txt $$W/$$mutation/ledger.txt; \
 	  $(DRIVER_ROUTE03_ADVERSE_BIN) $$mutation $$mutation $$W/$$mutation \
 	    $$W/$$mutation/artifact.bin \
 	    $$W/$$mutation/oracle-artifact.bin \
 	    $$W/good/garbage.bin \
-	    $$W/good/wrong-arch.bin \
+	    $$W/good/stale-valid.bin \
 	    $$W/good/no-symbol.bin \
 	    $$W/good/garbage.bin \
 	    $$W/$$mutation/stderr.txt \
-	    $$W/$$mutation/exit.txt; \
+	    $$W/$$mutation/exit.txt \
+	    $$W/good/stale-valid.bin \
+	    $$W/good/stale-stdout.txt \
+	    $$W/good/stale-capture.txt \
+	    $$W/$$mutation/oracle-capture.txt \
+	    $$W/$$mutation/capture.txt \
+	    $$W/$$mutation/oracle-stdout.txt \
+	    $$W/$$mutation/stdout.txt \
+	    $$W/good/stale-stdout.txt \
+	    $$W/good/stale-stderr.txt; \
 	  set +e; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$mutation \
 	    $$W/$$mutation/oracle-artifact.bin \
 	    $$W/$$mutation/artifact.bin \
-	    $$W/good/stdout.txt \
+	    $$W/$$mutation/oracle-stdout.txt \
 	    $$W/$$mutation/stdout.txt \
-	    $$W/good/oracle-stderr.txt \
+	    $$W/$$mutation/oracle-stderr.txt \
 	    $$W/$$mutation/stderr.txt \
-	    $$W/good/oracle-exit.txt \
+	    $$W/$$mutation/oracle-exit.txt \
 	    $$W/$$mutation/exit.txt \
-	    $$eclass $$earch 0 _main > $$W/$$mutation/out.txt 2>&1; \
+	    $$eclass $$earch 0 \
+	    $$W/$$mutation/ledger.txt $$W/$$mutation/oracle-capture.txt $$W/$$mutation/capture.txt \
+	    _main > $$W/$$mutation/out.txt 2>&1; \
 	  rc=$$?; \
 	  set -e; \
 	  if [ $$rc -eq 0 ]; then \
@@ -1457,7 +1648,12 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	    cat $$W/$$mutation/out.txt >&2; \
 	    exit 1; \
 	  fi; \
-	  echo "ADVERSE_PROBE_REJECTED $$mutation"; \
+	  if ! grep -qF "$$reason" $$W/$$mutation/out.txt; then \
+	    echo "ADVERSE_PROBE_REASON_FAILED $$mutation: the expected reason '$$reason' did NOT appear" >&2; \
+	    cat $$W/$$mutation/out.txt >&2; \
+	    exit 1; \
+	  fi; \
+	  echo "ADVERSE_PROBE_REJECTED $$mutation reason=$$reason"; \
 	done
 	@echo "DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS"
 
@@ -1748,6 +1944,101 @@ lsp-test: test-prefix-install
 # hermetic prefix. This is a hermetic-prefix-local measure; the
 # production install at `make install` is untouched.
 TEST_PREFIX ?= $(CURDIR)/build/test-prefix
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 2, F1 -- THE TEST-PREFIX FILE TARGETS.
+#
+# The definitions of TEST_PREFIX_HEADER and TEST_PREFIX_LIBTOS live with
+# the other CORRECTION03 variables, ABOVE the rules that use them, because
+# GNU Make expands a rule's prerequisites when the rule is read.
+#
+# The canonical runtime header. The prerequisite is the canonical source
+# header, so a change to it invalidates this file and, through it, every
+# consumer.
+$(TEST_PREFIX_HEADER): src/holyc-lib/tos.HH
+	@mkdir -p $(dir $@)
+	@cp src/holyc-lib/tos.HH $@
+	@if [ ! -s "$@" ]; then \
+		echo "test-prefix-header: FAIL: $@ not produced" >&2; \
+		exit 1; \
+	fi
+	@if ! cmp -s src/holyc-lib/tos.HH $@; then \
+		echo "test-prefix-header: FAIL: $@ differs from the canonical source header" >&2; \
+		exit 1; \
+	fi
+
+# The canonical runtime archive. The canonical runtime sources are NORMAL
+# prerequisites because their CONTENT determines the archive's content.
+$(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
+                       src/holyc-lib/memory.HC src/holyc-lib/io.HC \
+                       src/holyc-lib/strings.HC src/holyc-lib/math.HC \
+                       src/holyc-lib/vector.HC src/holyc-lib/list.HC \
+                       src/holyc-lib/hashtable.HC src/holyc-lib/set.HC \
+                       src/holyc-lib/bitvec.HC src/holyc-lib/builtins.HC \
+                       src/holyc-lib/coroutines.HC src/holyc-lib/csv.HC \
+                       src/holyc-lib/date.HC src/holyc-lib/dir.HC \
+                       src/holyc-lib/except.HC src/holyc-lib/fzf.HC \
+                       src/holyc-lib/json.HC src/holyc-lib/net.HC \
+                       src/holyc-lib/sqllite.HC src/holyc-lib/stat.HC \
+                       src/holyc-lib/system.HC src/holyc-lib/threads.HC \
+                       src/holyc-lib/tooling.HC \
+                       src/holyc-lib/defs.HH src/holyc-lib/io_defs.HH \
+                       src/holyc-lib/memory_defs.HH src/holyc-lib/tooling_defs.HH \
+                       src/holyc-lib/tos.HH | $(RUNTIME_PRODUCER_PATH)
+	@mkdir -p $(dir $@)
+	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "test-prefix-libtos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \
+		echo "test-prefix-libtos: build it via 'make runtime-producer' first" >&2; \
+		exit 1; \
+	fi
+	@# The whole recipe is ONE shell invocation, because the producer's
+	@# measured identity must be in scope for every step that consumes it.
+	@set -e; \
+	_actual=$$(shasum -a 256 "$(LIBTOS_HCC)" | cut -d' ' -f1); \
+	if [ "$$_actual" != "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" ]; then \
+		echo "test-prefix-libtos: FAIL: builder $(LIBTOS_HCC) has SHA-256 $$_actual" >&2; \
+		echo "test-prefix-libtos:        which does NOT match the authorized bootstrap SHA-256" >&2; \
+		echo "test-prefix-libtos: expected: $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
+		exit 1; \
+	fi; \
+	echo "test-prefix-libtos: builder $(LIBTOS_HCC)"; \
+	echo "test-prefix-libtos: HCC_BOOTSTRAP_PROVENANCE_SHA=$$_actual"; \
+	cd ./src/holyc-lib; \
+	rm -f all.o errno_shim.o producer_id.o producer_id.c; \
+	(../../$(LIBTOS_HCC) --install-dir=$(TEST_PREFIX) -lib tos ./all.HC || true); \
+	if [ ! -f ./all.o ]; then \
+		echo "test-prefix-libtos: FAIL: the producer did not produce all.o" >&2; \
+		exit 3; \
+	fi; \
+	cc -O0 -c ./errno_shim.c -o ./errno_shim.o; \
+	printf 'const char __producer_id[65] = "%s";\n' "$$_actual" > ./producer_id.c; \
+	cc -O0 -c ./producer_id.c -o ./producer_id.o; \
+	rm -f ./producer_id.c; \
+	ar rcs ./libtos.a ./all.o ./errno_shim.o ./producer_id.o; \
+	ranlib ./libtos.a; \
+	cp ./libtos.a $(CURDIR)/$@; \
+	if [ ! -s "$(CURDIR)/$@" ]; then \
+		echo "test-prefix-libtos: FAIL: $@ not produced" >&2; \
+		exit 2; \
+	fi; \
+	_missing=0; \
+	for _sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
+		if ! nm "$(CURDIR)/$@" 2>/dev/null | grep -q " T $$_sym$$"; then \
+			echo "test-prefix-libtos: FAIL: required symbol $$_sym missing from the archive" >&2; \
+			_missing=$$((_missing + 1)); \
+		fi; \
+	done; \
+	if [ $$_missing -ne 0 ]; then \
+		echo "test-prefix-libtos: FAIL: $$_missing required symbol(s) missing" >&2; \
+		exit 2; \
+	fi; \
+	if ! strings "$(CURDIR)/$@" 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"; then \
+		echo "test-prefix-libtos: FAIL: the archive producer-id does not contain the authorized SHA-256" >&2; \
+		exit 4; \
+	fi; \
+	echo "test-prefix-libtos: complete; $@ verified"
+
 test-prefix-install: production-hcc runtime-producer
 	@if [ ! -x ./hcc ]; then \
 		echo "test-prefix-install: ./hcc not found; running 'make all' first" >&2; \
