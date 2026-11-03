@@ -875,31 +875,55 @@ class ArArchive
   I64 count;
 };
 
-// The decimal field reader. The field is a decimal ASCII run of exactly
-// `width` digits, optionally followed by a space. It returns -1 when the
-// field is malformed.
+// The decimal field reader.
+//
+// The `ar` member header's numeric fields are RIGHT-ALIGNED and SPACE-PADDED,
+// not zero-padded: the size field of a 556-byte member is "556       ".
+//
+// The field therefore contains a decimal run followed by spaces. A leading
+// space is permitted, and the run may be empty only when the whole field is
+// spaces (which is a malformed field for the fields this reader is used
+// for).
+//
+// It returns -1 when the field is malformed.
 static I64 ContractArField(U8 *buf, I64 size, I64 off, I64 width) {
   if (off < 0) return -1;
   if (size < off + width) return -1;
-  I64 v = 0;
+  // The leading spaces.
   I64 i = 0;
+  while (i < width && buf[off + i] == 32) i = i + 1;
+  // The decimal run.
+  I64 v = 0;
+  I64 digits = 0;
   while (i < width) {
     I64 c = buf[off + i];
-    if (c < 48 || c > 57) return -1;
+    if (c < 48 || c > 57) break;
     v = v * 10 + (c - 48);
+    digits = digits + 1;
+    i = i + 1;
+  }
+  if (digits == 0) return -1;
+  // The trailing spaces.
+  while (i < width) {
+    if (buf[off + i] != 32) return -1;
     i = i + 1;
   }
   return v;
 }
 
 // The size field reader. The size field is at offset 48 and is ten digits.
+//
+// The field is terminated by the two-byte ARFMAG sequence "`\n" (0x60 0x0A).
+// The previous revision required a SPACE there, which is the GNU `ar`
+// convention, and it therefore rejected every archive that the system
+// `ar` produced.
 static I64 ContractArSizeAt(U8 *buf, I64 size, I64 off) {
   if (off < 0) return -1;
   if (size < off + AR_MEMBER_HDR_LEN) return -1;
   I64 v = ContractArField(buf, size, off + 48, 10);
   if (v < 0) return -1;
-  // The size field is followed by a space.
-  if (buf[off + 58] != 32) return -1;
+  // The size field is terminated by the ARFMAG sequence.
+  if (buf[off + 58] != 96 || buf[off + 59] != 10) return -1;
   return v;
 }
 
@@ -980,13 +1004,30 @@ static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
     I64 name_off = off;
     I64 namelen = 0;
     I64 extended = 0;
-    U8 *name = MAlloc(AR_MEMBER_HDR_LEN + 1);
+    U8 *name = MAlloc(msize + 1);
 
     // The extended form is signalled by "#1/".
+    //
+    // The extended name field is "#1/N" followed by spaces, where N is the
+    // DECIMAL LENGTH of the name that follows the header as the first N
+    // bytes of the member's data. The length is NOT a fixed-width field,
+    // so it is read as a decimal run terminated by a space or by the end
+    // of the name field.
     if (buf[name_off] == 35 && buf[name_off + 1] == 49 && buf[name_off + 2] == 47) {
       extended = 1;
-      I64 extlen = ContractArField(buf, size, name_off + 3, 13);
-      if (extlen < 0 || extlen > 16) return AR_BAD_EXTENDED_NAME;
+      I64 extlen = 0;
+      I64 e = name_off + 3;
+      I64 edigits = 0;
+      while (e < name_off + 16) {
+        I64 c = buf[e];
+        if (c < 48 || c > 57) break;
+        extlen = extlen * 10 + (c - 48);
+        edigits = edigits + 1;
+        e = e + 1;
+      }
+      if (edigits == 0 || extlen <= 0 || extlen > msize) {
+        return AR_BAD_EXTENDED_NAME;
+      }
       // The extended name is the FIRST `extlen` bytes of the payload.
       if (extlen > msize) return AR_BAD_EXTENDED_NAME;
       MemCpy(name, buf + payload_off, extlen);

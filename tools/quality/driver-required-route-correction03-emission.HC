@@ -119,34 +119,94 @@ static I64 TextEqual(U8 *a, I64 asize, U8 *b, I64 bsize) {
   return 1;
 }
 
-// The domain detection. The domain is recognized from the OBSERVED
-// ARTIFACTS, not from source tokens.
+// The domain observation.
 //
-//   domain <object-path> <assembly-path> <dylib-prefix> <exec-prefix>
+// It is given the artifact directory of each side, and it requires that the
+// artifacts that the route actually produced are PRESENT, NONEMPTY, of a
+// SUPPORTED class, and STRUCTURALLY VALID.
 //
-// It prints the observed domain and the observed artifact classes.
+//   domain <case-id> <oracle-prefix> <polyc-prefix> <suffix>...
+//
+// The artifact SUFFIXES are the ones the route produced. They are derived
+// from the OBSERVED files in the directory, not from a source token.
+//
+// It prints the verdict for each artifact.
 static I64 DetectDomain(I32 argc, U8 **argv) {
   if (argc < 6) {
-    "REASON_DETAIL=usage: emission domain <object> <assembly> <dylib> <exec>\n";
+    "REASON_DETAIL=usage: domain <case-id> <oracle-prefix> <polyc-prefix> "
+      "<suffix> <suffix>...\n";
     return 2;
   }
-  I64 p = 0;
-  I64 s = 0;
-  U8 *obuf = ReadArtifact(argv[2], &s, &p);
-  I64 oclass = ContractClassify(obuf, s);
-  I64 s2 = 0;
-  I64 p2 = 0;
-  U8 *sbuf = ReadArtifact(argv[3], &s2, &p2);
-  I64 sclass = ContractClassify(sbuf, s2);
-  "DOMAIN_OBJECT_CLASS\t%s\n", ContractClassName(oclass);
-  "DOMAIN_ASSEMBLY_CLASS\t%s\n", ContractClassName(sclass);
-  if (oclass == CLS_MACHO_OBJ && sclass == CLS_TEXT) {
-    "DOMAIN\tobject\n";
-  } else if (oclass == CLS_TEXT && sclass == CLS_TEXT) {
-    "DOMAIN\tassembly\n";
-  } else {
-    "DOMAIN\tunknown\n";
+  U8 *case_id = argv[2];
+  U8 *o_prefix = argv[3];
+  U8 *p_prefix = argv[4];
+  I64 dfailures = 0;
+  I64 dchecks = 0;
+
+  U8 *suffixes[8];
+  I64 nsuffix = 0;
+  I64 si = 5;
+  while (si < argc && nsuffix < 8) {
+    suffixes[nsuffix] = argv[si];
+    nsuffix = nsuffix + 1;
+    si = si + 1;
   }
+  if (nsuffix == 0) {
+    "REASON_DETAIL=the domain observation has NO artifact\n";
+    return 2;
+  }
+
+  I64 n = 0;
+  while (n < nsuffix) {
+    U8 *opath = PathJoin(o_prefix, suffixes[n]);
+    U8 *ppath = PathJoin(p_prefix, suffixes[n]);
+
+    I64 o_present = 0;
+    I64 o_size = 0;
+    U8 *obuf = ReadArtifact(opath, &o_size, &o_present);
+    I64 p_present = 0;
+    I64 p_size = 0;
+    U8 *pbuf = ReadArtifact(ppath, &p_size, &p_present);
+    I64 o_cls = ContractClassify(obuf, o_size);
+    I64 p_cls = ContractClassify(pbuf, p_size);
+    // The structural validity of each side, with the SHARED validator.
+    I64 o_valid = 1;
+    I64 p_valid = 1;
+    if (o_present == 1 && o_size > 0) {
+      if (o_cls == CLS_MACHO_OBJ || o_cls == CLS_MACHO_EXEC ||
+          o_cls == CLS_MACHO_DYLIB) {
+        if (ContractValidateMachO(obuf, o_size, 1) != MV_OK) o_valid = 0;
+      }
+    } else {
+      o_valid = 0;
+    }
+    if (p_present == 1 && p_size > 0) {
+      if (p_cls == CLS_MACHO_OBJ || p_cls == CLS_MACHO_EXEC ||
+          p_cls == CLS_MACHO_DYLIB) {
+        if (ContractValidateMachO(pbuf, p_size, 1) != MV_OK) p_valid = 0;
+      }
+    } else {
+      p_valid = 0;
+    }
+    dchecks = dchecks + 1;
+    if (o_present == 1 && o_size > 0 && p_present == 1 && p_size > 0 &&
+        o_cls == p_cls && o_cls != CLS_OTHER && o_cls != CLS_ABSENT &&
+        o_valid == 1 && p_valid == 1) {
+      "DOMAIN\t%s\t%s\tOBSERVED\t%s\n", case_id, suffixes[n],
+            ContractClassName(o_cls);
+    } else {
+      "DOMAIN\t%s\t%s\tNOT_OBSERVED\t%s\n", case_id, suffixes[n],
+            ContractClassName(o_cls);
+      dfailures = dfailures + 1;
+    }
+    Free(opath);
+    Free(ppath);
+    n = n + 1;
+  }
+
+  "CORRECTION03_DOMAIN_CHECKS\t%lld\n", dchecks;
+  "CORRECTION03_DOMAIN_FAILURES\t%lld\n", dfailures;
+  if (dfailures > 0) return 1;
   return 0;
 }
 // ---------------------------------------------------------------------------
@@ -323,11 +383,10 @@ I32 Main(I32 argc, U8 **argv) {
         // The archive is validated by the SHARED archive decoder.
         ArArchive ar;
         o_mv[k] = MV_OK;
-        if (ContractDecodeArchive(o_buf[k], o_size[k], &ar) != AR_OK) {
+        I64 odec = ContractDecodeArchive(o_buf[k], o_size[k], &ar);
+        if (odec != AR_OK) {
           o_mv[k] = MV_BAD_MAGIC;
-        }
-        if (o_mv[k] != MV_OK) {
-          Reason(case_id, "oracle", "ARCHIVE_STRUCTURE_INVALID");
+          Reason(case_id, "oracle", ContractArReason(odec));
         }
         // An archive that carries ONLY the symbol-index bookkeeping member
         // and NO real member does NOT satisfy an archive requirement.
@@ -372,11 +431,10 @@ I32 Main(I32 argc, U8 **argv) {
       } else if (eclass[k] == 7) {
         ArArchive ar;
         p_mv[k] = MV_OK;
-        if (ContractDecodeArchive(p_buf[k], p_size[k], &ar) != AR_OK) {
+        I64 pdec = ContractDecodeArchive(p_buf[k], p_size[k], &ar);
+        if (pdec != AR_OK) {
           p_mv[k] = MV_BAD_MAGIC;
-        }
-        if (p_mv[k] != MV_OK) {
-          Reason(case_id, "polyc", "ARCHIVE_STRUCTURE_INVALID");
+          Reason(case_id, "polyc", ContractArReason(pdec));
         }
         if (p_mv[k] == MV_OK && ar.count < 2) {
           p_mv[k] = MV_BAD_MAGIC;
@@ -549,6 +607,17 @@ I32 Main(I32 argc, U8 **argv) {
       // The archive's member semantics were checked above. The byte
       // result is reported separately.
       "ARCHIVE_BYTES\t%s\t%s\t%d\n", case_id, argv[14 + k * 3], same_bytes;
+      // The archive's TIMESTAMP is the ONLY explicitly permitted
+      // nondeterminism. A byte difference whose DECODED members are
+      // equivalent is therefore reported as METADATA NONDETERMINISM, never
+      // as an equivalence failure and never as an equality claim.
+      if (same_bytes == 0) {
+        "ARCHIVE_METADATA_NONDETERMINISM\t%s\t%s\tYES\n", case_id,
+          argv[14 + k * 3];
+      } else {
+        "ARCHIVE_METADATA_NONDETERMINISM\t%s\t%s\tNO\n", case_id,
+          argv[14 + k * 3];
+      }
       "ARCHIVE_MEMBER_SEMANTICS\t%s\t%s\tEQUIVALENT\n", case_id,
         argv[14 + k * 3];
     } else {
