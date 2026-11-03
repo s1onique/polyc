@@ -1,0 +1,142 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=real-output-artifact-inspection
+#
+# THE ARTIFACT CLASS IS READ FROM THE BYTES, NEVER FROM THE NAME AND
+# NEVER FROM THE COMPILER'S EXIT STATUS.
+#
+# The classifier is a COMPILED POLYC program:
+#   tools/quality/driver-required-route-correction01-test.HC
+# built by the REAL production compiler and linked against the hermetic
+# test prefix's libtos. It reads the Mach-O magic and the Mach-O
+# filetype field (offset 12) of each artifact's bytes.
+#
+# The canonical target is:
+#   make driver-wp001-required-route-test
+# which compiles the SAME frozen fixture on the two frozen routes and
+# then classifies the produced artifacts.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE FROZEN FIXTURE
+# -----------------------------------------------------------------------
+#
+fixture_path	tests/driver-wp001/required-route/route-source.HC
+fixture_sha256	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6
+fixture_sha256_provenance	IDENTICAL to the C1-frozen fixture source (evidence/.../c1/source-derived-argv-and-artifact-fixtures.tsv, FX_ROUTE_REQUIRED); the tracked test fixture IS the frozen fixture, byte for byte
+fixture_shape	one Main that returns a constant, no file-scope initialiser, no file scope dependency
+fixture_rationale	the SAME source is compiled on both routes so the routes differ ONLY in the requested artifact class
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE CLASSIFIER TOOL
+# -----------------------------------------------------------------------
+#
+tool_path	tools/quality/driver-required-route-correction01-test.HC
+tool_sha256	f51070e1670d4a09f32983fed8237fd144321def3cae303aaa4c29fd9540c524
+tool_language	PolyC (F-POLYC-TOOLS compliant: no Python, no shell, no dependency)
+tool_built_by	the REAL production compiler (./hcc) against the hermetic test prefix
+tool_entry_symbol	_main
+tool_entry_receives_real_argc_argv	YES
+tool_entry_note	A file-scope INITIALISER makes the production compiler build a synthetic _main driver that calls the user Main with argc=0 and argv=NULL (src/asm.c::asmNormaliseFunctionName / asmBuildInitialiserMain). The tool therefore declares its accumulator WITHOUT an initialiser and seeds it on entry. The same constraint and the same workaround are already recorded as RES-01 by ACT-POLYC-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01.
+tool_classifier_logic	reads the first four bytes as a little-endian 32-bit word and compares them with the Mach-O 64-bit magic 0xFEEDFACF, then reads the little-endian 32-bit filetype field at offset 12 and compares it with 1 (MH_OBJECT) or 2 (MH_EXECUTE)
+tool_classification_is_byte_based	YES
+tool_classification_uses_file_name	NO
+tool_classification_uses_exit_status	NO
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE REAL ROUTE OBSERVATIONS
+# -----------------------------------------------------------------------
+#
+# Route commands, run with TMPDIR=/tmp/polyc-rrc01-tmp, from the work
+# directory build/driver-wp001-required-route:
+#
+#   REQUIRED   ./hcc --install-dir=<prefix> -c route-source.HC -o route-object.o
+#   ALTERNATE  ./hcc --install-dir=<prefix>    route-source.HC -o route-executable
+#   NEGATIVE   ./hcc --install-dir=<prefix> -c route-source.HC --no-such-option -o route-absent.o
+#
+case_id	route	command_exit	stderr_artifact_class	file_type_observed	classifier_verdict
+ROUTE_OBJECT	REQUIRED (-c)	0	none	Mach-O 64-bit object arm64	PASS
+ROUTE_ALTERNATE	ALTERNATE	0	none	Mach-O 64-bit executable arm64	PASS
+NEG_UNKNOWN_OPTION	NEGATIVE (unknown option)	1	none	absent (no file created)	PASS
+#
+# The negative case's stderr was:
+#   Error: Unknown commandline options: --no-such-option
+# and NO route-absent.o file was created.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE ASSERTIONS THAT WERE EXERCISED
+# -----------------------------------------------------------------------
+#
+assertion_id	case_id	statement	result
+A01	ROUTE_OBJECT	the required route produced an artifact	PASS
+A02	ROUTE_OBJECT	the required route produced a real Mach-O OBJECT	PASS
+A03	ROUTE_OBJECT	the required route did NOT produce an executable	PASS
+A04	ROUTE_ALTERNATE	the alternate route produced an artifact	PASS
+A05	ROUTE_ALTERNATE	the alternate route produced an EXECUTABLE	PASS
+A06	ROUTE_ALTERNATE	the alternate route did NOT produce an object	PASS
+A07	NEG_UNKNOWN_OPTION	the failing case produced no artifact	PASS
+ASSERTION_COUNT		7	7 PASS / 0 FAIL
+#
+# A03 and A06 are the load-bearing assertions: they fail when the
+# required route writes an executable into the object path, even when
+# the compiler exited zero.
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE CLASSIFIER'S OWN SENSITIVITY (SELFTEST)
+# -----------------------------------------------------------------------
+#
+# The classifier is proved sensitive on SYNTHETIC byte patterns whose
+# class is known by construction, BEFORE it is asked to judge a real
+# artifact.
+#
+assertion_id	statement	result
+S01	a synthetic MH_OBJECT is classified as an object	PASS
+S02	a synthetic MH_OBJECT is NOT classified as an executable	PASS
+S03	a synthetic MH_EXECUTE is classified as an executable	PASS
+S04	a synthetic MH_EXECUTE is NOT classified as an object	PASS
+S05	a non-Mach-O file is NOT classified as an object	PASS
+S06	a non-Mach-O file is NOT classified as an executable	PASS
+SELFTEST_COUNT		6 PASS / 0 FAIL
+#
+# -----------------------------------------------------------------------
+# SECTION 6 -- THE ANTI-CONTROLS: THE CLASSIFIER IS NOT A CONSTANT
+# -----------------------------------------------------------------------
+#
+anti_control_id	mutation	observed	failures	exit
+AC-ROUTE-01	the object and the executable arguments are SWAPPED	A02, A03, A05, A06 FAIL	4	1
+AC-ROUTE-02	an EMPTY file is created at the absent-artifact path	A07 FAIL	1	1
+#
+# A classifier that always answered "object" would fail AC-ROUTE-01;
+# a classifier that always answered "not present" would fail A01, A04
+# and S01; a classifier that ignored the filetype field would fail S03.
+#
+# The R03_FAKE_OBJECT detector agrees independently:
+#   build/driver-required-route-correction01-red R03 <file-output> object   -> exit 0
+#   build/driver-required-route-correction01-red R03 <file-output> executable -> exit 0
+#   build/driver-required-route-correction01-red R03 <file-output> executable (on an OBJECT) -> exit 1, EMITTED_ARTIFACT_CLASS_MISMATCH
+#
+# -----------------------------------------------------------------------
+# SECTION 7 -- THE G0 ORACLE AND THE ON BUILD AGREE
+# -----------------------------------------------------------------------
+#
+# The selector-OFF oracle and the selector-ON production compiler were
+# both run on the SAME frozen fixture.
+#
+artifact	selector-OFF	sha256	selector-ON	sha256	identical
+route object	build/off-route/off-object.o	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	build/driver-wp001-required-route/route-object.o	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	YES (BYTE-IDENTICAL)
+route executable	build/off-route/off-executable	32bf47fd6c47d37dd779bbb1c7f9263ddfcb2d903edd16527aae6bc307698a4d	build/driver-wp001-required-route/route-executable	e105e090ff7207c7fbd6fdaa20654017cbfce9eabb8c09f98250143efa451586	NO (176 differing bytes, ALL in the ad-hoc code-signature region)
+#
+# The executable difference is EXPLAINED, not waved away:
+#   file size		16960 == 16960
+#   section layout	IDENTICAL (otool -l)
+#   code region (bytes 0..16383)	BYTE-IDENTICAL (cmp)
+#   differing offsets	16384 .. 16959, i.e. ONE 4KB page at the tail
+#   the differing region	LC_CODE_SIGNATURE, dataoff 16672, datasize 288
+#   the signature content	IDENTICAL in its first 64 bytes; the ad-hoc
+#                         signature embeds the build path, and the two
+#                         builds have different build paths
+#   __TEXT section	IDENTICAL (sectname __text, segname __TEXT, same size and offset)
+#
+# The object is byte-identical because the object carries no
+# build-path metadata and no ad-hoc code signature.
+#
+verdict	PASS

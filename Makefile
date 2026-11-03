@@ -799,7 +799,8 @@ $(DRIVER_WP001_OBJ): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PRE
 	           _WpDriverUnknownArgCount _WpDriverArityViolationCount \
 	           _WpDriverValueArgIndex _WpDriverValueOffset \
 	           _WpDriverOptionField _WpDriverOptionAction _WpDriverSelectAction \
-	           _WpDriverMapStatus _WpDriverDecide _WpDriverSelectedAction; do \
+	           _WpDriverMapStatus _WpDriverDecide _WpDriverSelectedAction \
+	           _WpDriverSelectedEmission; do \
 		nm $@ | grep -q " T $$_s$$" \
 			|| { echo "wp001-driver-subject: symbol $$_s not found in $@" >&2; exit 1; }; \
 	done
@@ -841,6 +842,65 @@ $(DRIVER_MIGRATION01_NC_BIN): $(DRIVER_MIGRATION01_NC_OBJ)
 	$(C_COMPILER) $(DRIVER_MIGRATION01_NC_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 	@echo "DRIVER_MIGRATION01_NC=$@"
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+#
+# THE CANONICAL REQUIRED-ROUTE ARTIFACT-CLASS TEST.
+#
+# It compiles the SAME frozen fixture on the two frozen routes and then
+# asks the COMPILED POLYC route test to classify the produced artifacts
+# FROM THEIR BYTES:
+#
+#   the required route   (-c)    MUST produce a Mach-O OBJECT
+#   the alternate route          MUST produce an EXECUTABLE
+#   the negative case            MUST produce NO artifact
+#
+# The classifier is a compiled PolyC program, so the classification is
+# performed by the production compiler's own output, not by a shell
+# heuristic. The test FAILS when the required route writes an
+# executable into the object path, even when the compiler exited zero.
+#
+# The route test is built by the REAL production compiler and linked
+# against the hermetic test prefix's libtos. It is NOT part of the
+# production compiler and is NOT linked into it.
+# ---------------------------------------------------------------------------
+DRIVER_ROUTE01_TEST_SRC  = tools/quality/driver-required-route-correction01-test.HC
+DRIVER_ROUTE01_TEST_OBJ  = build/driver-required-route-correction01-test.o
+DRIVER_ROUTE01_TEST_BIN  = build/driver-required-route-correction01-test
+DRIVER_ROUTE01_FIXTURE   = tests/driver-wp001/required-route/route-source.HC
+DRIVER_ROUTE01_WORKDIR   = build/driver-wp001-required-route
+
+.PHONY: driver-wp001-required-route-test
+driver-wp001-required-route-test: $(DRIVER_ROUTE01_TEST_BIN) $(PRODUCTION_HCC)
+	@rm -rf $(DRIVER_ROUTE01_WORKDIR)
+	@mkdir -p $(DRIVER_ROUTE01_WORKDIR)
+	@cp $(DRIVER_ROUTE01_FIXTURE) $(DRIVER_ROUTE01_WORKDIR)/route-source.HC
+	@cd $(DRIVER_ROUTE01_WORKDIR) && \
+		$(CURDIR)/hcc --install-dir=$(TEST_PREFIX) -c route-source.HC -o route-object.o && \
+		$(CURDIR)/hcc --install-dir=$(TEST_PREFIX) route-source.HC -o route-executable && \
+		! $(CURDIR)/hcc --install-dir=$(TEST_PREFIX) -c route-source.HC --no-such-option -o route-absent.o
+	@$(DRIVER_ROUTE01_TEST_BIN) \
+		$(DRIVER_ROUTE01_WORKDIR)/route-object.o \
+		$(DRIVER_ROUTE01_WORKDIR)/route-executable \
+		$(DRIVER_ROUTE01_WORKDIR)/route-absent.o
+	@echo "DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE01_TEST_OBJ): $(DRIVER_ROUTE01_TEST_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(DRIVER_ROUTE01_TEST_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-required-route-correction01-test: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE01_TEST_BIN): $(DRIVER_ROUTE01_TEST_OBJ)
+	$(C_COMPILER) $(DRIVER_ROUTE01_TEST_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "DRIVER_ROUTE01_TEST=$@"
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 	$(SLICE04_AST_BINOP_OBJ) $(SLICE05_AST_UNARY_OBJ) $(SLICE06_SWITCH_ARM_OBJ) \
 	$(SLICE07_COMPOUND_BLOCK_OBJ) $(SLICE08_DEFAULT_ARM_OBJ) \

@@ -26,6 +26,7 @@
 #include "list.h"
 #include "lsp.h"
 #include "memory.h"
+#include "selfhost-driver-wp001.h"
 #include "transpiler.h"
 #include "types.h"
 #include "util.h"
@@ -244,10 +245,67 @@ int writeAsmToTmp(AoStr *asmbuf) {
     return 1;
 } 
 
+/* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 C2 IMPL.
+ *
+ * THE EMISSION ACTION -- THE C SIDE IS A MECHANICAL EXECUTOR.
+ *
+ * The ARTIFACT CLASS is decided by the compiled PolyC driver. The C
+ * side reads that decision and TRANSLATES it into the platform command
+ * that produces that artifact class. It does NOT re-derive the class
+ * from argv, from args->emit_object, from args->assemble_only, from
+ * args->emit_dylib, or from any default of its own.
+ *
+ * The switch below is a TRANSLATION TABLE from a PolyC-produced code
+ * to a platform command. It contains no option name, no flag test, no
+ * arity rule and no argv inspection. The code it switches on is
+ * produced by WpDriverSelectedEmission() in the compiled PolyC driver.
+ *
+ * Under the selector-OFF build the legacy C driver is used instead,
+ * and it retains its own args->emit_object policy. That is what makes
+ * the selector-OFF binary a genuine oracle for the ORIGINAL C-driver
+ * behaviour.
+ */
 void emitFile(Cctrl *cc, AoStr *asmbuf, CliArgs *args) {
     AoStr *cmd = aoStrNew();
     hccLib lib;
+
+#ifdef HCC_USE_SELFHOST_DRIVER_WP001
+    /* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01.
+     *
+     * The ARTIFACT CLASS is the PolyC driver's decision. This function
+     * CONSUMES it and EXECUTES it. It does not decide it.
+     *
+     * An out-of-domain code is a FAIL-CLOSED error: the compiler
+     * reports it and stops. It NEVER falls back to a legacy C policy,
+     * because a silent fallback would hide the loss of the PolyC
+     * authority this route depends on. */
+    long long emission = WpDriverSelectedEmission();
+    switch (emission) {
+    case WP_DRIVER_EMIT_COMPILE_OBJECT:
+    case WP_DRIVER_EMIT_ASSEMBLY:
+    case WP_DRIVER_EMIT_EXECUTE:
+    case WP_DRIVER_EMIT_DYLIB:
+        break;
+    default:
+        loggerPanic("hcc: the driver selected an invalid emission action (%lld)\n",
+                emission);
+        return;
+    }
+#else
+    /* The selector-OFF oracle keeps the ORIGINAL C-driver policy. */
+    long long emission = 0;
     if (args->emit_object) {
+        emission = WP_DRIVER_EMIT_COMPILE_OBJECT;
+    } else if (args->asm_outfile && args->assemble_only) {
+        emission = WP_DRIVER_EMIT_ASSEMBLY;
+    } else if (args->emit_dylib) {
+        emission = WP_DRIVER_EMIT_DYLIB;
+    } else {
+        emission = WP_DRIVER_EMIT_EXECUTE;
+    }
+#endif
+
+    if (emission == WP_DRIVER_EMIT_COMPILE_OBJECT) {
         writeAsmToTmp(asmbuf);
         char *object_file_name = args->output_filename ? 
                                  args->output_filename :
@@ -260,7 +318,7 @@ void emitFile(Cctrl *cc, AoStr *asmbuf, CliArgs *args) {
                 args->clibs,
                 object_file_name);
         safeSystem(cmd->data, 0);
-    } else if (args->asm_outfile && args->assemble_only) {
+    } else if (emission == WP_DRIVER_EMIT_ASSEMBLY) {
         int fd;
         u64 flags = O_CREAT|O_RDWR|O_TRUNC;
 
@@ -281,7 +339,7 @@ void emitFile(Cctrl *cc, AoStr *asmbuf, CliArgs *args) {
                     (s64)asmbuf->len, written);
         }
         close(fd);
-    } else if (args->emit_dylib) {
+    } else if (emission == WP_DRIVER_EMIT_DYLIB) {
         writeAsmToTmp(asmbuf);
         hccLibInit(cc, &lib,args,args->lib_name);
         aoStrCatPrintf(cmd, "%s -shared -fPIC -c %s -o ./%s",

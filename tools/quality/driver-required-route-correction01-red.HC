@@ -239,13 +239,94 @@ static I32 ModeUnusedAction(I32 argc, U8 **argv) {
 //
 //   argv[1] = the production C source of the emission function
 //   argv[2] = the C field name, e.g. args->emit_object
+//
+// The detector examines ONLY the SELECTOR-ON region of the source: the
+// code between the HCC_USE_SELFHOST_DRIVER_WP001 guard and its #else
+// counterpart. The selector-OFF region is the G0 oracle's own legacy
+// policy, which the ACT explicitly PERMITS to keep args->emit_object.
+//
+// It also IGNORES COMMENT lines, because a comment that NAMES the field
+// it forbids is documentation, not a decision.
+//
+// The detector therefore fails closed on a real policy read and stays
+// silent on a legacy-region read and on a mention in a comment.
 // ---------------------------------------------------------------------------
 static I32 ModeCEmissionPolicy(I32 argc, U8 **argv) {
   if (argc < 3) { "REASON_DETAIL=usage: R02 <c-source> <c-field>\n"; return 2; }
-  I64 n = CountLinesWith(argv[1], argv[2]);
-  if (n < 0) { FailPlain("C_REQUIRED_ROUTE_DECISION_ACTIVE", "C source unreadable"); return 1; }
-  if (n > 0) {
-    FailOne("C_REQUIRED_ROUTE_DECISION_ACTIVE", "the C emission path still reads the C request field", n);
+  I64 size = 0;
+  U8 *buf = FileRead(argv[1], &size);
+  if (buf == NULL) { FailPlain("C_REQUIRED_ROUTE_DECISION_ACTIVE", "C source unreadable"); return 1; }
+
+  // Locate the selector-ON region: from the HCC_USE_SELFHOST_DRIVER_WP001
+  // guard to the #else that pairs with it.
+  //
+  // The pairing is established by NESTING: the #else that ends the
+  // driver's region is the one whose matching #ifdef is the driver's
+  // guard. An unrelated #else elsewhere in the file (for example the
+  // LLVM and JIT feature blocks) does NOT end the driver's region.
+  //
+  // A source that has NO selector guard at all is a source in which the
+  // WHOLE FILE is the selector-ON path: there is no separate legacy
+  // region, so every read of the field is an active policy read. The
+  // detector treats it that way, so it reports the POLICY, not a
+  // missing guard.
+  I64 i = 0;
+  U8 *line = buf;
+  I64 inOn = 1;
+  I64 sawOn = 0;
+  I64 guardDepth = 0;
+  I64 onDepth = 0;
+  I64 hits = 0;
+  while (i < size) {
+    if (buf[i] == 10) {
+      U8 save = buf[i];
+      buf[i] = 0;
+      I64 isComment = 0;
+      I64 j = 0;
+      while (line[j] == ' ' || line[j] == '\t') j++;
+      if (line[j] == '*' || line[j] == '/') isComment = 1;
+      I64 isIfdef = 0;
+      I64 isElse = 0;
+      I64 isEndif = 0;
+      if (isComment == 0) {
+        if (Has(line, "#ifdef") == 1 || Has(line, "#ifndef") == 1 || Has(line, "#if ") == 1) isIfdef = 1;
+        if (Has(line, "#else") == 1) isElse = 1;
+        if (Has(line, "#endif") == 1) isEndif = 1;
+      }
+      if (isIfdef == 1) {
+        guardDepth++;
+        if (Has(line, "HCC_USE_SELFHOST_DRIVER_WP001") == 1) {
+          inOn = 1;
+          sawOn = 1;
+          onDepth = guardDepth;
+        }
+      } else if (isElse == 1) {
+        if (sawOn == 1 && inOn == 1 && guardDepth == onDepth) inOn = 0;
+      } else if (isEndif == 1) {
+        if (guardDepth > 0) guardDepth--;
+        if (sawOn == 1 && inOn == 1 && guardDepth < onDepth) inOn = 1;
+      } else if (inOn == 1 && isComment == 0) {
+        if (Has(line, argv[2]) == 1) hits++;
+      }
+      buf[i] = save;
+      line = buf + i + 1;
+    }
+    i++;
+  }
+  if (line < buf + size) {
+    I64 j = 0;
+    while (line[j] == ' ' || line[j] == '\t') j++;
+    I64 isComment = 0;
+    if (line[j] == '*' || line[j] == '/') isComment = 1;
+    if (inOn == 1 && isComment == 0 && Has(line, argv[2]) == 1) hits++;
+  }
+
+  if (hits > 0) {
+    FailOne("C_REQUIRED_ROUTE_DECISION_ACTIVE", "the selector-ON emission path still reads the C request field", hits);
+    return 1;
+  }
+  if (sawOn == 0) {
+    FailPlain("C_REQUIRED_ROUTE_DECISION_ACTIVE", "the selector-ON region was not found and no policy read was detected");
     return 1;
   }
   return 0;

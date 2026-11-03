@@ -1,0 +1,102 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=selector-on-off-and-fail-closed-builds
+#
+# THE SELECTOR-ON BUILD, THE SELECTOR-OFF ORACLE, AND THE FAIL-CLOSED
+# ADVERSE BUILDS.
+#
+# Each build was performed with the REAL CMake configuration and a
+# populated hermetic installation prefix, and the compiler invocations
+# were SERIALIZED because /tmp/holyc-asm.s is a shared scratch path.
+#
+# BUILD COMMANDS
+#   SELECTOR ON (authoritative checkout)
+#     cmake -S ./src -B ./build -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release \
+#           -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+#           -DDRIVER_WP001_OBJECT=.../build/wp001-driver-subject.o \
+#           -DDRIVER_WP001_PRODUCER=.../build/host-stage0/hcc \
+#           -DDRIVER_WP001_SOURCE=.../tools/bootstrap/selfhost-driver-wp001.HC \
+#           -DDRIVER_WP001_PREFIX=.../build/bootstrap-prefix
+#     cmake --build ./build --target hcc -j1
+#
+#   SELECTOR OFF (the G0 oracle, disposable tree)
+#     cmake -S ./src -B ./build-off -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release \
+#           -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=OFF
+#     cmake --build ./build-off --target hcc -j1
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE THREE PRODUCTIVE BUILDS
+# -----------------------------------------------------------------------
+#
+build_id	selector	build_dir	producer	build_exit	code	linked_binary_sha256	WpDriver_symbols_in_binary
+B-ON-PRISTINE	ON	./build	build/host-stage0/hcc (stage0)	0	0	587bc0df7763356c3572741494b6767a81b8360b9a5200a88feac527e0ea7bc7	1 (the accessor only)
+B-OFF-ORACLE	OFF	./build-off (disposable)	n/a (no PolyC driver is linked)	0	0	834d0347fbd98f8d51911f94730541eca544a3ac9fa0b2fae32acd49591edc0c	0
+B-ON-PRISTINE-2	ON	./build (rebuilt after the WP-001 producer rule was corrected)	build/host-stage0/hcc (stage0)	0	0	see the C2 entry identity	1 (the accessor only)
+#
+# The selector-OFF oracle has ZERO driver symbols, ZERO driver imports
+# and ZERO driver relocations. It is an INDEPENDENT oracle of the
+# ORIGINAL C-driver behaviour, not a relabelled copy of the ON build.
+#
+# R04_ORACLE_LEAK detector against the OFF oracle symbol table:
+#   build/driver-required-route-correction01-red R04 <off-nm-dump> _WpDriver
+#   -> exit 0, SILENT: no contamination.
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE FAIL-CLOSED ADVERSE BUILDS
+# -----------------------------------------------------------------------
+# Every adverse build is a REAL build, not a simulated failure. Each
+# one names a DISTINCT reason token, so a failure identifies its own
+# cause.
+#
+adverse_id	mutation	build_target	observed_reason_token	build_exit	linked
+ADV-01-NO-CONSUMPTION	the production source replaces the WpDriverSelectedEmission() call with a constant	hcc-driver-wp001-consumption-verify	REJECT_POLYC_ACTION_NOT_CONSUMED	2	NO
+ADV-02-DUPLICATE-SOURCE	the production object carries its own definition of the accessor	hcc-driver-wp001-consumption-verify	REJECT_DUPLICATE_ACTION_SOURCE	2	NO
+ADV-03-MISSING-OBJECT	the production object does not exist	hcc-driver-wp001-consumption-verify	REJECT_MISSING_PRODUCTION_OBJECT	2	NO
+ADV-04-MISSING-SUBJECT	the PolyC driver subject does not exist	cmake configure	REJECT_MISSING_DRIVER_SUBJECT	1	NO
+#
+# NONE of the adverse builds produced a linked compiler. The
+# consumption check is a build-graph EDGE (add_dependencies(hcc
+# hcc-driver-wp001-consumption-verify)), not a report that is written
+# after the link.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE BUILD-GRAPH FIX THAT WAS REQUIRED
+# -----------------------------------------------------------------------
+# Two PRE-EXISTING defects in src/CMakeLists.txt blocked a FRESH
+# production build of the driver subject. Both were reproduced on the
+# unmodified C0 tree and are therefore NOT introduced by this ACT.
+#
+# DEFECT 1 -- LITERAL QUOTES IN THE PRODUCER INVOCATION.
+#   The WP-001 producer rule passed --install-dir="<path>". CMake's
+#   VERBATIM mode escapes the argument list ITSELF, so the producer
+#   received the two quote characters as LITERAL path bytes and built
+#   the header path "<prefix>"/include/tos.HH, which does not exist.
+#   Reproduced verbatim:
+#     host-stage0/hcc --install-dir=\"<prefix>\" -c <src> -o <obj>
+#     -> ERROR: Failed to open file: "<prefix>"/include/tos.HH
+#   FIX: the argument is passed WITHOUT literal quotes, which is the
+#   form this file already used for every other producer (see the
+#   --install-dir=${VAR} form at the ABI-CPA, CORE-OPERATOR,
+#   A64-CMP-CC, PARSER-PADDING, CONTROL-FLOW-TOKEN, OPERATOR-PRECEDENCE,
+#   AST-BINOP, COMPOUND-BLOCK and STATEMENT-DISPATCH producer rules).
+#
+# DEFECT 2 -- ABSOLUTE OUTPUT PATH IN THE PRODUCER INVOCATION.
+#   The production compiler's object-emission command prefixes its
+#   output path with "./" (src/main.c, the -o ./%s form). An ABSOLUTE
+#   output path therefore becomes ".//abs/path" and the assembler
+#   cannot open it:
+#     clang -cc1as: error: unable to open output file './/<abs>/x.o'
+#   FIX: the -o argument is RELATIVE to an explicit WORKING_DIRECTORY.
+#
+# The same two defects remain at the AST-UNARY and SWITCH-ARM producer
+# rules in the same file. They are OUT OF THIS ACT'S SCOPE (those
+# subjects are not on the required route) and are recorded as RESIDUE
+# RES-01 rather than silently fixed.
+#
+# REPRODUCTION ON THE UNMODIFIED C0 TREE
+#   git worktree add --detach /tmp/polyc-precheck 33f93347277c6ce242a93b71ab5f0123ccaea4e5
+#   grep -n 'install-dir="' src/CMakeLists.txt
+#   -> 1179, 1334, 2415: the quoted form is present in the C0 tree.
+#   The defect is therefore PRE-EXISTING and NOT introduced by C2.
+#
+verdict	PASS

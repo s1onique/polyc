@@ -1,0 +1,123 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=production-action-consumption
+#
+# THE PRODUCTION COMPILER CONSUMES THE POLYC-SELECTED EMISSION ACTION.
+#
+# A SYMBOL DEFINITION IS NOT CONSUMPTION. This file records the
+# CONSUMPTION evidence: the production object that performs the
+# emission IMPORTS the emission accessor, the linked binary CALLS it
+# from inside the emission function, and the emission function does NOT
+# read the C request field.
+#
+# Every artifact named here was produced by the REAL production build
+# of the authoritative checkout at the C2 working tree.
+#
+# BUILD COMMANDS (serialized, TMPDIR=/tmp/polyc-rrc01-tmp)
+#   cmake -S ./src -B ./build -G 'Unix Makefiles' ... -DHCC_USE_SELFHOST_DRIVER_WP001=ON ...
+#   cmake --build ./build --target hcc -j1
+#   cmake --build ./build --target hcc-driver-wp001-consumption-verify -j1
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE PRODUCTION OBJECT IMPORTS THE ACCESSOR
+# -----------------------------------------------------------------------
+# The production object is compiled by the REAL production compiler with
+# the REAL selector ON, from the REAL production source. The object is
+# the one the production link consumes.
+#
+# nm --format=posix --no-weak build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+#
+measurement	value
+production_object_path	build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+production_object_sha256	8a09fb31b5e7e40c1fb22b13a682449a0989d10c83408363a2e4a173f508f86f
+production_object_size_bytes	13192
+accessor_symbol	_WpDriverSelectedEmission
+accessor_symbol_type	U
+accessor_symbol_meaning	UNDEFINED REFERENCE: the production object IMPORTS the accessor and the linker binds it to the PolyC subject
+accessor_defined_in_production_object	NO
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE LINKED BINARY CALLS THE ACCESSOR FROM THE EMISSION FUNCTION
+# -----------------------------------------------------------------------
+# The call site is FUNCTION-SCOPED: the disassembly window is bounded by
+# the _emitFile label and the next symbol label. A call to the accessor
+# elsewhere in the binary would NOT appear in this window.
+#
+# otool -tV ./hcc
+#
+measurement	value
+linked_binary	./hcc
+linked_binary_sha256	587bc0df7763356c3572741494b6767a81b8360b9a5200a88feac527e0ea7bc7
+emission_function	_emitFile
+emission_function_instruction_count	337
+emission_call_site_address	0x10003908c
+emission_call_instruction	bl	_WpDriverSelectedEmission
+emission_call_count_in_emitFile	1
+accessor_definition_address	0x100021e0
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE C REQUEST FIELD IS NOT READ IN THE EMISSION FUNCTION
+# -----------------------------------------------------------------------
+# The C request field args->emit_object lives at CliArgs+0x70. The
+# emission function's disassembly window contains NO load at offset
+# #0x70, so the C field cannot be the authority on this path.
+#
+measurement	value
+c_request_field	args->emit_object
+c_request_field_struct_offset	0x70
+c_request_field_offset_provenance	src/cli.h typedef struct CliArgs, field order computed from the declaration
+emit_object_load_in_emitFile	NONE
+emit_object_offset_0x70_load_in_emitFile	NONE
+emission_switch_on	WpDriverSelectedEmission() return value
+emission_switch_domain	WP_DRIVER_EMIT_COMPILE_OBJECT, WP_DRIVER_EMIT_ASSEMBLY, WP_DRIVER_EMIT_EXECUTE, WP_DRIVER_EMIT_DYLIB
+out_of_domain_behavior	FAIL CLOSED: loggerPanic("hcc: the driver selected an invalid emission action (%lld)\n", emission); return;
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE FAIL-CLOSED DOMAIN CHECK IS PRESENT IN THE MACHINE CODE
+# -----------------------------------------------------------------------
+# The compiler does not merely receive the action; it VALIDATES it
+# before using it. The range check is visible in the disassembly.
+#
+measurement	value
+domain_check_address	0x100039094
+domain_check_instruction	sub	x8, x0, #0x1
+domain_check_compare	cmp	x8, #0x4
+domain_check_branch	b.hs	0x100039438
+domain_check_semantics	the action code must be in [1,4]; code 0 (absent/invalid) and any code >4 branch to the FAIL-CLOSED path
+fallback_to_legacy_c_policy	NONE: there is no path from an invalid action to the legacy C decision
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE POLYC SUBJECT EXPORTS THE ACCESSOR
+# -----------------------------------------------------------------------
+# The subject is produced by the REAL stage0 compiler from the REAL
+# PolyC driver source. It is the object the production link consumes.
+#
+measurement	value
+polyc_subject_path	build/wp001-driver-subject.o
+polyc_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+polyc_subject_size_bytes	21096
+polyc_subject_type	Mach-O 64-bit object arm64
+accessor_symbol	_WpDriverSelectedEmission
+accessor_symbol_type	T
+accessor_symbol_address	0x21e0
+polyc_subject_exported_symbol_count	15
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 6 -- THE BUILD REFUSES TO LINK WITHOUT CONSUMPTION
+# -----------------------------------------------------------------------
+# The consumption check is a build-graph EDGE, not a report. It is
+# verified by an ADVERSE build in which the production source does NOT
+# call the accessor. The build FAILS with a distinct reason token.
+#
+adverse_case	command_result
+production_source_does_not_call_the_accessor	REJECT_POLYC_ACTION_NOT_CONSUMED: "the production object ... does not IMPORT _WpDriverSelectedEmission ... Refusing to link."
+production_object_defines_its_own_accessor	REJECT_DUPLICATE_ACTION_SOURCE: "the production object ... DEFINES _WpDriverSelectedEmission itself ... Refusing to link."
+production_object_absent	REJECT_MISSING_PRODUCTION_OBJECT: "the production object ... does not exist. The consumption check cannot be skipped: a symbol definition is not consumption."
+polyc_driver_subject_absent_at_configure	REJECT_MISSING_DRIVER_SUBJECT: "the PolyC driver subject ... does not exist ... Refusing to link."
+adverse_build_exit_code	2
+verdict	PASS

@@ -1,0 +1,99 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=main-emitfile-disassembly-and-relocations
+#
+# THE FUNCTION-SCOPED DISASSEMBLY AND RELOCATION PROOF.
+#
+# The claim is about ONE function: the emission function _emitFile in
+# the linked production compiler. This file records the machine code
+# that proves the function CONSUMES the PolyC action and does NOT read
+# the C request field.
+#
+# The disassembly window is bounded by the _emitFile label and the next
+# symbol label. Nothing outside that window is evidence for or
+# against this claim.
+#
+# TOOLS
+#   otool -tV ./hcc
+#   otool -rV build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE CONSUMPTION CALL SITE, IN CONTEXT
+# -----------------------------------------------------------------------
+# The action is fetched, then VALIDATED against the frozen domain
+# before any artifact class is chosen.
+#
+address	instruction	meaning
+0x100039084	bl	_aoStrNew	unchanged pre-existing allocation of the command buffer
+0x100039088	mov	x20, x0
+0x10003908c	bl	_WpDriverSelectedEmission	THE CONSUMPTION: the production emission function calls the compiled PolyC driver
+0x100039090	mov	x23, x0	the action code is kept in x23
+0x100039094	sub	x8, x0, #0x1	domain check: code - 1
+0x100039098	cmp	x8, #0x4	domain check: the code must be in [1,4]
+0x10003909c	b.hs	0x100039438	FAIL CLOSED: code 0 or code >4 leaves through the panic path
+0x1000390a0	cmp	x23, #0x4	the DYLIB arm
+0x1000390a4	b.eq	0x100039110
+0x1000390a8	cmp	x23, #0x3	the ASSEMBLY arm
+0x1000390ac	b.eq	0x10003921c
+0x1000390b0	cmp	x23, #0x1	the COMPILE_OBJECT arm
+0x1000390b4	b.ne	0x10003922c	anything other than 1/3/4 is the EXECUTE arm
+0x1000390b8	mov	x0, x19
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE C REQUEST FIELD IS NOT LOADED IN THE WINDOW
+# -----------------------------------------------------------------------
+# args->emit_object is at CliArgs+0x70. The whole 337-instruction
+# window was searched for a load at that displacement and for any
+# mention of the field's name.
+#
+search	value
+window_instruction_count	337
+loads_at_displacement_0x70	NONE
+loads_at_displacement_0x38	NONE for the CliArgs base pointer; the #0x38 displacements present in the window belong to other bases (the literal pool address of ___stderrp)
+textual_mentions_of_emit_object	NONE
+verdict	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE REAL RELOCATION IN THE PRODUCTION OBJECT
+# -----------------------------------------------------------------------
+# The relocation is the LINKER's view of the consumption. It is not a
+# textual match and not a symbol-table definition.
+#
+# otool -rV build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+#
+relocation_address	type	kind	external	target
+0x00000420	True	long	True	BR26	False	_WpDriverSelectedEmission
+#
+# The BR26 is a branch-and-link relocation against an external symbol:
+# the production object has a CALL SITE for the accessor and the
+# linker will bind it to the PolyC subject.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE POLYC SUBJECT DEFINES THE CALL TARGET
+# -----------------------------------------------------------------------
+# The subject defines the accessor the relocation names. The two facts
+# together are the consumption.
+#
+# nm build/wp001-driver-subject.o
+#
+symbol	type	address
+_WpDriverSelectedEmission	T	0x21e0
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE PRODUCTION LINK BINDS THEM
+# -----------------------------------------------------------------------
+# The linked binary contains BOTH the call site and the definition, and
+# the call site is the only call to the accessor in the emission
+# function.
+#
+# nm ./hcc
+#
+symbol	type
+_WpDriverSelectedEmission	T
+#
+measurement	value
+emission_function	_emitFile
+emission_call_sites_to_accessor	1
+accessor_call_sites_in_whole_binary	1
+accessor_is_defined_and_called	YES
+verdict	PASS

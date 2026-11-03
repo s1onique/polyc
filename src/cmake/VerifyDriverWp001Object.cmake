@@ -76,7 +76,8 @@ set(_dw_required_symbols
     WpDriverSelectAction
     WpDriverMapStatus
     WpDriverDecide
-    WpDriverSelectedAction)
+    WpDriverSelectedAction
+    WpDriverSelectedEmission)
 
 string(REPLACE "\n" ";" _dw_lines "${_dw_nm_output}")
 
@@ -171,5 +172,5 @@ message(STATUS
     "DRIVER_WP001_OBJECT_STATUS=PASS "
     "EXPECTED_SYMBOL=${DRIVER_WP001_EXPECTED_SYMBOL} "
     "TARGET_OBJECT_FORMAT=${DRIVER_WP001_TARGET_OBJECT_FORMAT} "
-    "REQUIRED_SYMBOL_COUNT=12 "
+    "REQUIRED_SYMBOL_COUNT=13 "
     "OBJECT_SIZE=${_dw_size}")

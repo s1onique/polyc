@@ -2408,14 +2408,35 @@ if (HCC_USE_SELFHOST_DRIVER_WP001)
     endif()
 
     if (DRIVER_WP001_PRODUCER)
+        # ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01.
+        #
+        # THE PRODUCER INVOCATION IS QUOTING-CORRECT AND PATH-CORRECT.
+        #
+        # The --install-dir argument is NOT wrapped in literal quotes.
+        # CMake's VERBATIM mode escapes the argument list itself, so an
+        # embedded quote pair reaches the producer as two LITERAL quote
+        # characters. The producer then builds the header path
+        # "<prefix>"/include/tos.HH, with the quotes INSIDE the path,
+        # and the subject is never produced. The unquoted form is the
+        # form this file already uses for every other producer.
+        #
+        # The -o argument is RELATIVE to the working directory. The
+        # production compiler's object-emission command prefixes its
+        # output path with "./", so an ABSOLUTE output path becomes
+        # ".//abs/path" and the assembler cannot open it. A relative
+        # path with a declared working directory is correct for the
+        # compiler and unambiguous for the build graph.
+        file(RELATIVE_PATH _dw001_object_rel
+             "${CMAKE_BINARY_DIR}" "${DRIVER_WP001_OBJECT}")
         add_custom_command(
             OUTPUT "${DRIVER_WP001_OBJECT}"
             COMMAND "${CMAKE_COMMAND}" -E rm -f "${DRIVER_WP001_OBJECT}"
             COMMAND "${DRIVER_WP001_PRODUCER}"
-                    --install-dir="${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix"
+                    --install-dir=${CMAKE_SOURCE_DIR}/../build/bootstrap-prefix
                     -c "${CMAKE_SOURCE_DIR}/../tools/bootstrap/selfhost-driver-wp001.HC"
-                    -o "${DRIVER_WP001_OBJECT}"
+                    -o "${_dw001_object_rel}"
             DEPENDS "${CMAKE_SOURCE_DIR}/../tools/bootstrap/selfhost-driver-wp001.HC"
+            WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
             COMMENT "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: producing the PolyC driver subject ${DRIVER_WP001_OBJECT}"
             VERBATIM
         )
@@ -2456,6 +2477,51 @@ if (HCC_USE_SELFHOST_DRIVER_WP001)
         COMMENT "ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: verifying the PolyC driver subject ${DRIVER_WP001_OBJECT}"
         VERBATIM
         USES_TERMINAL)
+
+    # ---------------------------------------------------------------------
+    # ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+    #
+    # THE CALL-SITE CONSUMPTION CHECK.
+    #
+    # A SYMBOL DEFINITION IS NOT CONSUMPTION. The driver subject may
+    # export WpDriverSelectedEmission and the production compiler may
+    # still never CALL it, in which case the PolyC action is DECORATIVE
+    # and the legacy C policy remains the real authority.
+    #
+    # The check therefore verifies the CONSUMPTION, not the definition.
+    # It reads the PRODUCTION OBJECT that performs the emission and
+    # requires an UNDEFINED REFERENCE to the emission accessor in it: an
+    # object that does not import the accessor cannot be consuming it.
+    #
+    # The check is FAIL-CLOSED. An unreadable object, a missing object
+    # and a missing import all abort the build.
+    #
+    # It is a SEPARATE target from the subject-symbol verification
+    # because it must run AFTER the production object has been compiled,
+    # and because the two checks read different artifacts.
+    # ---------------------------------------------------------------------
+    add_library(hcc-driver-wp001-consumer OBJECT "${CMAKE_SOURCE_DIR}/main.c")
+    target_compile_definitions(hcc-driver-wp001-consumer PRIVATE
+        HCC_USE_SELFHOST_DRIVER_WP001
+        HCC_ENABLE_JIT
+        HCC_GIT_HASH="${HCC_GIT_HASH}"
+        INSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+    target_include_directories(hcc-driver-wp001-consumer PRIVATE "${CMAKE_SOURCE_DIR}")
+
+    add_custom_target(hcc-driver-wp001-consumption-verify
+        COMMAND "${CMAKE_COMMAND}"
+                -DDRIVER_WP001_PRODUCTION_OBJECT=${CMAKE_BINARY_DIR}/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+                -DDRIVER_WP001_TARGET_OBJECT_FORMAT=${DRIVER_WP001_TARGET_OBJECT_FORMAT}
+                -DDRIVER_WP001_NM=${DRIVER_WP001_NM}
+                -P "${CMAKE_SOURCE_DIR}/cmake/VerifyDriverWp001Consumption.cmake"
+        DEPENDS hcc-driver-wp001-consumer
+        COMMENT "ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01: verifying that the production compiler CONSUMES the PolyC emission action"
+        VERBATIM
+        USES_TERMINAL)
+
+    # The consumption check gates the link: the production compiler is
+    # never linked without a verified PolyC emission action consumer.
+    add_dependencies(hcc hcc-driver-wp001-consumption-verify)
 
     # The verification gates the link: the production compiler is never
     # linked without a verified PolyC compiler driver.
