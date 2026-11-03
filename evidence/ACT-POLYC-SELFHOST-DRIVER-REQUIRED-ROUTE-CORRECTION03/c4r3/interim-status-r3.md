@@ -46,6 +46,7 @@ code. The claim is not widened beyond what the mechanism supports.
 | P2-5 -- the alternate archive encoding had NO positive control | ADDRESSED: the self-check builds two encodings and requires them to compare EQUAL |
 | P2-6 -- the archive member identity included its NUL padding | ADDRESSED: the padding is trimmed |
 | P2-7 -- the runtime-archive rule failed in a PRISTINE checkout | ADDRESSED: the `case` pattern is quoted as ONE word |
+| P2-8 -- the pristine runner exceeded the SHELL budget | ADDRESSED: the runner is PolyC and the shell file is REMOVED |
 
 ## THE MEASUREMENTS
 
@@ -122,7 +123,7 @@ VERDICT=PASS
 
 The pristine isolated checkout, at the subject commit, with an EMPTY build
 directory and a `git worktree` that shares no build state with the working
-tree:
+tree (`c4r3/pristine-isolated-suite.tsv`):
 
 ```text
 driver-wp001-correction03-contract-test	0	PASS
@@ -136,6 +137,8 @@ PRISTINE_TARGETS=7
 PRISTINE_FAILURES=0
 PRISTINE_SUITE_STATUS=PASS
 ```
+
+The runner that produces it is `tools/quality/driver-required-route-correction03-pristine.HC`, which is **PolyC**. The first draft of the runner was a shell file of 131 lines, which the `F-POLYC-TOOLS` doctrine forbids: shell is permitted only as bootstrap glue, with a hard maximum of fifty lines, and a new shell file may not implement a test matrix or a multi-step orchestration. The runner was rewritten in PolyC and the shell file was removed. The runner's behaviour is unchanged, and its cleanup is verified: the exclusive lock is released, the isolated worktree is removed, and the repository is left exactly as it was found.
 
 ## THE ENVIRONMENTAL CLASSIFICATION OF TWO FAILURES
 
