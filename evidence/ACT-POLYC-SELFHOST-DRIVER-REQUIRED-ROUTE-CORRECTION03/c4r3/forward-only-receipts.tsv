@@ -1,0 +1,29 @@
+# ACT_PHASE=C4R3-EVIDENCE
+# EVIDENCE_KIND=forward-only-receipts
+#
+# THE FORWARD-ONLY RED / CORRECTION / GREEN RECEIPTS.
+#
+# Every receipt records the OBSERVED behaviour of the defect BEFORE the
+# correction and the OBSERVED behaviour AFTER it, at the REAL execution
+# seam. A receipt that records only the AFTER state is not a receipt.
+#
+# The receipts are FORWARD-ONLY: the historical CORRECTION02 and
+# CORRECTION03-round-two evidence is NOT modified. Each receipt names the
+# commit that introduced the correction, so a reader can find it in the
+# append-only history.
+#
+# receipt	defect_observed_before	correction_observed_after	commit
+F1_the_event_identity_was_deterministic	"two DETERMINISTIC REPETITIONS of the same case received the SAME event id"	"two DETERMINISTIC REPETITIONS of the same case receive DIFFERENT event ids: 7e7db093479f4c2fe3ee70378f3798f05b1f969ec20e570281211d8e2e9be7c5 and 44d94f560800a75353ae53df897f39a728bb3008bb39ef59eb22356f75424eb6"	5a99769f
+F2_the_exit_codec_never_reported_its_reason	"a PRESENT but MALFORMED exit record reported NO codec reason, because the presence flag was set only on success"	"a PRESENT but MALFORMED exit record reports the codec's own token: EXIT_STATUS_TRAILING_TEXT, EXIT_STATUS_INTEGER_OVERFLOW and EXIT_STATUS_NEGATIVE are each observed"	aade9a8e
+F3_the_symbol_table_check_stopped_at_the_first_absence	"the symbol lookup stopped at the first absent symbol and did not check the entries after _main"	"the ENTIRE symbol table is checked, and the out-of-bounds string index and the undersized table are each rejected with their OWN token: MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS and MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS"	2f16d31e
+F4_the_archive_name_comparison_accepted_a_prefix	"the archive member name comparison accepted a COMMON PREFIX, so 'source.o' satisfied a requirement for 'source'"	"the archive member name comparison requires EQUAL LENGTHS and EQUAL BYTES, so 'source.o' and 'source' are DIFFERENT identities"	5ceefd31
+F5_the_emission_verifier_was_weaker_than_the_comparator	"the emission verifier kept its OWN weaker Mach-O reader and its OWN exit-status reader"	"the comparator and the emission verifier share ONE Mach-O validator, ONE exit-status codec and ONE archive decoder"	6c6cc953
+F6_the_runtime_archive_was_published_before_it_was_validated	"the archive was written to its FINAL path and validated afterwards, so an INVALID archive occupied the final path and an unchanged RETRY SUCCEEDED"	"the archive is built at a SAME-FILESYSTEM TEMPORARY path, VALIDATED there with the shared contract, and published by an ATOMIC rename; the measured experiment is INVALID_ARCHIVE -> FIRST_BUILD_FAIL -> RETRY_FAIL"	db9a33b5
+F7_the_build_dependency_graph_was_incomplete	"the shared contract was not a NORMAL prerequisite of the tools that include it, and the installed runtime header was not a NORMAL prerequisite of the runtime archive"	"the dependency graph is complete and the SEVEN probes of the mutation matrix each detect their own failure mode: DELETED_HEADER, CHANGED_HEADER, PRODUCER_CHANGE, CORRUPTED_ARCHIVE, WARM_BUILD, FAILED_RETRY and SERIALIZED_CLEAN_BUILDS"	ec8afc5c
+P2_1_the_subject_stamp_bound_to_no_architecture	"the stamp recorded the literal text 'cputype', because the extraction read the Mach header's FIELD-NAME row"	"the stamp records SUBJECT_ARCH ARM64, and the rule REJECTS an architecture value that is not an architecture name"	df35e545
+P2_2_the_contract_self_check_was_never_executed	"ContractSelfCheck() was defined and compiled into every tool and was NEVER CALLED"	"the comparator gains a selfcheck mode that EXECUTES it, and the self-check is a PREREQUISITE of all four CORRECTION03 targets; the measured result is CONTRACT_SELFTEST_CHECKS 20 and CONTRACT_SELFTEST_FAILURES 0"	3d005d3a
+P2_3_the_stale_stdout_mutation_was_a_no_op	"the 'stale stdout' was byte-identical to the current stdout, because a successful compilation writes NOTHING to stdout"	"the stale stdout witness comes from a REAL earlier invocation whose stdout carried the generated assembly, and the target FAILS if the witness is empty or byte-identical to the current stdout"	aade9a8e
+P2_4_the_altered_capture_probe_edited_the_wrong_field	"the probe located the ARTIFACT_SHA256 field by a fixed LINE OFFSET and was editing a DIFFERENT field"	"the probe locates the field BY ITS KEY, and the key must start a line"	aade9a8e
+P2_5_the_alternate_archive_encoding_had_no_positive_control	"the self-check asserted NOTHING about two VALID ENCODINGS of the SAME identity, so a decoder that rejected every short name would have passed"	"the self-check builds two archives that differ ONLY in the raw representation of the name and requires that both DECODE and that the two member sets compare EQUAL"	df35e545
+P2_6_the_archive_member_identity_included_its_nul_padding	"the decoded identity of the member 'good.o' was the twelve bytes 'good.o\0\0\0\0\0\0', so a requirement for the member 'good.o' was NOT satisfied by an archive that carried it"	"the padding is trimmed, so the decoded identity is the member's actual name"	db9a33b5
+P2_7_the_runtime_archive_rule_failed_in_a_pristine_checkout	"the rule's case pattern '*current ar archive*' is THREE shell words, so /bin/sh -- dash -- raised a SYNTAX ERROR on the second word 'ar'; the working tree did not expose the defect because the artifact was already present"	"the pattern is quoted as ONE word, and the rule runs to completion under /bin/sh in the pristine isolated checkout"	23444940

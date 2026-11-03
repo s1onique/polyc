@@ -1,0 +1,29 @@
+# ACT_PHASE=C4R3-EVIDENCE
+# EVIDENCE_KIND=gate-push-checks
+#
+# THE PUSH GATE'S OWN CHECKS.
+#
+# The push gate was run ALONE, at the subject commit, after the pristine
+# suite had finished. Every check passed.
+#
+# The FIRST run of the push gate in this round FAILED with
+#
+#   CHECK=aot STATUS=FAIL
+#   REASON=aot emitted test-failure markers despite zero exit status
+#
+# and the underlying cause was visible in the raw transcript:
+#
+#   clang: error: no such file or directory: '/tmp/holyc-asm.s'
+#
+# The cause was that the pristine suite was running CONCURRENTLY with the
+# gate. The two runs destroyed each other's scratch file. The gate was
+# re-run ALONE and every check passed. The pristine runner now takes an
+# EXCLUSIVE LOCK on the scratch path.
+#
+# check	status
+aot	PASS
+build	PASS
+diff-check	PASS
+install	PASS
+jit	PASS
+lsp	PASS
