@@ -423,6 +423,23 @@ I32 Main(I32 argc, U8 **argv) {
   checks = 0;
 
   // -----------------------------------------------------------------------
+  // THE CONTRACT SELF-CHECK MODE.
+  //
+  //   selfcheck
+  //
+  // The SHARED CONTRACT's own guarantees are ASSERTED by a self-check that
+  // is INDEPENDENT of the comparison mode: the exit-status codec's round
+  // trip and its rejections, and the archive member-name equality. The
+  // self-check is EXECUTED, not merely compiled: a contract whose
+  // guarantees are never exercised is not a contract.
+  // -----------------------------------------------------------------------
+  if (argc == 2 && StrCmp(argv[1], "selfcheck") == 0) {
+    I64 sc_failures = ContractSelfCheck();
+    if (sc_failures != 0) return 1;
+    return 0;
+  }
+
+  // -----------------------------------------------------------------------
   // THE DERIVATION MODE.
   //
   //   derive <artifact>

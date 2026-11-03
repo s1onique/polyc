@@ -1171,7 +1171,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1443,6 +1443,24 @@ $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ) $(TEST_PREFIX_LIBTO
 	$(C_COMPILER) $(DRIVER_ROUTE03_COMPARE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
+# ---------------------------------------------------------------------------
+# THE SHARED CONTRACT'S SELF-CHECK.
+#
+# The contract's guarantees -- the exit-status codec's round trip over the
+# COMPLETE set of process exit statuses, the codec's rejections of a
+# malformed record, and the archive member-name equality -- are ASSERTED by
+# a self-check that is EXECUTED. A contract whose guarantees are only
+# compiled and never exercised is not a contract.
+#
+# The self-check is a PREREQUISITE of every CORRECTION03 target, so a
+# regression in the shared contract fails the whole correction03 suite
+# rather than one mode of it.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-contract-test
+driver-wp001-correction03-contract-test: $(DRIVER_ROUTE03_COMPARE_BIN)
+	@$(DRIVER_ROUTE03_COMPARE_BIN) selfcheck
+	@echo "DRIVER_WP001_CORRECTION03_CONTRACT_TEST_STATUS=PASS"
+
 $(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
 	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ABI_SRC) -o $@
@@ -1530,7 +1548,7 @@ $(DRIVER_ROUTE03_HARNESS_BIN): $(DRIVER_ROUTE03_HARNESS_OBJ) $(TEST_PREFIX_LIBTO
 # checked for the executable domain.
 # ---------------------------------------------------------------------------
 .PHONY: driver-wp001-correction03-emission-test
-driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-emission-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	W=$(DRIVER_ROUTE03_WORKDIR)/emission; \
 	rm -rf $$W; \
@@ -1909,7 +1927,7 @@ $(DRIVER_ROUTE03_MUT_HCC): $(DRIVER_ROUTE03_MUT_OBJ) $(BOOTSTRAP_STAGE0_HCC) $(P
 	fi
 
 .PHONY: driver-wp001-correction03-causal-test
-driver-wp001-correction03-causal-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_MUT_HCC) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-causal-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_MUT_HCC) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	M=$(DRIVER_ROUTE03_MUT_DIR); \
 	rm -rf $$M/pristine $$M/mutated; \
@@ -1962,7 +1980,7 @@ driver-wp001-correction03-causal-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_RO
 # or is byte-identical to the current stdout.
 # ---------------------------------------------------------------------------
 .PHONY: driver-wp001-correction03-adverse-test
-driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	W=$(DRIVER_ROUTE03_WORKDIR)/adverse; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/adverse-run; \
