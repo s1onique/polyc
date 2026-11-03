@@ -1906,7 +1906,10 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	  'STALE_STDOUT_BOTH_SIDES:CAPTURE_DIGEST_MISMATCH' \
 	  'STALE_STDOUT_ON_ONLY:CAPTURE_DIGEST_MISMATCH' \
 	  'MISSING_CAPTURE:CAPTURE_RECORD_MISSING' \
-	  'ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH'; do \
+	  'ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH' \
+	  'OUT_OF_BOUNDS_NSYMS:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
+	  'UNDERSIZED_SYMBOL_TABLE:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
+	  'OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS'; do \
 	  mutation=$${spec%%:*}; \
 	  reason=$${spec#*:}; \
 	  rm -rf $$W/$$mutation; \
@@ -2329,14 +2332,14 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
 	rm -f ./producer_id.c; \
 	ar rcs ./libtos.a ./all.o ./errno_shim.o ./producer_id.o; \
 	ranlib ./libtos.a; \
-	cp ./libtos.a $(CURDIR)/$@; \
-	if [ ! -s "$(CURDIR)/$@" ]; then \
+	cp ./libtos.a $@; \
+	if [ ! -s "$@" ]; then \
 		echo "test-prefix-libtos: FAIL: $@ not produced" >&2; \
 		exit 2; \
 	fi; \
 	_missing=0; \
 	for _sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
-		if ! nm "$(CURDIR)/$@" 2>/dev/null | grep -q " T $$_sym$$"; then \
+		if ! nm "$@" 2>/dev/null | grep -q " T $$_sym$$"; then \
 			echo "test-prefix-libtos: FAIL: required symbol $$_sym missing from the archive" >&2; \
 			_missing=$$((_missing + 1)); \
 		fi; \
@@ -2345,7 +2348,7 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
 		echo "test-prefix-libtos: FAIL: $$_missing required symbol(s) missing" >&2; \
 		exit 2; \
 	fi; \
-	if ! strings "$(CURDIR)/$@" 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"; then \
+	if ! strings "$@" 2>/dev/null | grep -qF "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)"; then \
 		echo "test-prefix-libtos: FAIL: the archive producer-id does not contain the authorized SHA-256" >&2; \
 		exit 4; \
 	fi; \

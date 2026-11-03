@@ -73,6 +73,121 @@ static I64 TruncateFile(U8 *path) {
   return 1;
 }
 
+// ---------------------------------------------------------------------------
+// THE MACH-O STRUCTURAL MUTATION HELPERS.
+//
+// These three mutate the Mach-O STRUCTURE of the PolyC artifact in place.
+// They are the MANDATORY structural controls that the comparator's
+// independent validation must reject:
+//
+//   OUT_OF_BOUNDS_NSYMS         the LC_SYMTAB command declares MORE
+//                               symbols than the file can hold
+//   UNDERSIZED_SYMBOL_TABLE     the LC_SYMTAB command declares a symbol
+//                               table whose extent does not fit in the file
+//   OUT_OF_BOUNDS_STRING_ENTRY  a symbol entry's string index points
+//                               outside the string table
+//
+// Each mutation is applied to a COPY, and each must be rejected by the
+// comparator with its OWN reason token. A comparator that accepted any
+// of them would be able to be satisfied by a malformed image.
+//
+// The mutations need the LOCATION of the LC_SYMTAB load command, so the
+// probe re-walks the load commands of the artifact it was given.
+// ---------------------------------------------------------------------------
+
+// The probe reads a little-endian 32-bit word.
+static I64 ReadWord32(U8 *buf, I64 size, I64 off) {
+  if (off < 0 || off + 4 > size) return -1;
+  return buf[off] + buf[off + 1] * 256 + buf[off + 2] * 65536 +
+         buf[off + 3] * 16777216;
+}
+
+// The probe writes a little-endian 32-bit word.
+static I64 WriteWord32(U8 *buf, I64 size, I64 off, I64 value) {
+  if (off < 0 || off + 4 > size) return 0;
+  buf[off] = value % 256;
+  buf[off + 1] = (value / 256) % 256;
+  buf[off + 2] = (value / 65536) % 256;
+  buf[off + 3] = (value / 16777216) % 256;
+  return 1;
+}
+
+// The probe finds the offset of the LC_SYMTAB load command. It returns -1
+// when there is no such command, which makes the mutation FAIL CLOSED.
+static I64 FindSymtabCmd(U8 *buf, I64 size) {
+  if (size < 32) return -1;
+  I64 ncmds = ReadWord32(buf, size, 16);
+  I64 sizeofcmds = ReadWord32(buf, size, 20);
+  if (ncmds < 0 || ncmds > 4096) return -1;
+  if (sizeofcmds < 0 || 32 + sizeofcmds > size) return -1;
+  I64 off = 32;
+  I64 limit = 32 + sizeofcmds;
+  I64 i = 0;
+  while (i < ncmds) {
+    if (off > limit - 8) return -1;
+    I64 cmd = ReadWord32(buf, size, off);
+    I64 cmdsize = ReadWord32(buf, size, off + 4);
+    if (cmdsize < 8) return -1;
+    if (cmdsize > limit - off) return -1;
+    if (cmd == 2) return off;
+    off = off + cmdsize;
+    i = i + 1;
+  }
+  return -1;
+}
+
+// The probe applies a Mach-O structural mutation to the PolyC artifact.
+static I64 MutateMachO(U8 *path, U8 *mutation) {
+  I64 size = 0;
+  U8 *buf = FileRead(path, &size);
+  if (buf == NULL) return 0;
+  I64 cmd = FindSymtabCmd(buf, size);
+  if (cmd < 0) {
+    Free(buf);
+    return 0;
+  }
+  I64 done = 0;
+  if (StrCmp(mutation, "OUT_OF_BOUNDS_NSYMS") == 0) {
+    // The symbol count is the FOURTH word of the LC_SYMTAB command.
+    // It is raised to a value that cannot fit in the file.
+    I64 symoff = ReadWord32(buf, size, cmd + 8);
+    if (symoff >= 0 && symoff <= size) {
+      I64 maxfit = (size - symoff) / 16;
+      done = WriteWord32(buf, size, cmd + 12, maxfit + 1000);
+    }
+  }
+  if (StrCmp(mutation, "UNDERSIZED_SYMBOL_TABLE") == 0) {
+    // The symbol count is raised to a value that does NOT fit at the
+    // symbol table's offset, so the table is undersized relative to its
+    // declaration.
+    I64 symoff = ReadWord32(buf, size, cmd + 8);
+    if (symoff >= 0 && symoff <= size) {
+      I64 maxfit = (size - symoff) / 16;
+      // A count of maxfit + 1 entries does NOT fit at symoff.
+      done = WriteWord32(buf, size, cmd + 12, maxfit + 1);
+    }
+  }
+  if (StrCmp(mutation, "OUT_OF_BOUNDS_STRING_ENTRY") == 0) {
+    // The FIRST symbol entry's string index is pointed OUTSIDE the
+    // string table. The symbol table's own extent is left intact, so
+    // ONLY the string index is out of bounds.
+    I64 symoff = ReadWord32(buf, size, cmd + 8);
+    I64 nsyms = ReadWord32(buf, size, cmd + 12);
+    I64 strsize = ReadWord32(buf, size, cmd + 20);
+    if (symoff >= 0 && symoff <= size && nsyms > 0 &&
+        symoff + 16 <= size && strsize >= 0) {
+      // The index is the string table's own size, which is one past its
+      // last valid byte.
+      done = WriteWord32(buf, size, symoff, strsize);
+    }
+  }
+  if (done == 1) {
+    FileWrite(path, buf, size);
+  }
+  Free(buf);
+  return done;
+}
+
 I32 Main(I32 argc, U8 **argv) {
   if (argc < 4) {
     "REASON_DETAIL=usage: adverse <probe-id> <mutation> <work-dir>\n";
@@ -259,6 +374,29 @@ I32 Main(I32 argc, U8 **argv) {
         }
       }
       Free(cbuf);
+    }
+  }
+  // --- THE MACH-O STRUCTURAL ADVERSE MUTATIONS ----------------------------
+  //
+  // The helpers are at FILE SCOPE, above Main. Each mutation is applied to
+  // a COPY of the PolyC artifact, and each must be rejected by the
+  // comparator with its OWN reason token.
+  if (StrCmp(mutation, "OUT_OF_BOUNDS_NSYMS") == 0) {
+    if (MutateMachO(argv[4], mutation) == 0) {
+      "ADVERSE_MUTATION_FAILED\tOUT_OF_BOUNDS_NSYMS\n";
+      return 3;
+    }
+  }
+  if (StrCmp(mutation, "UNDERSIZED_SYMBOL_TABLE") == 0) {
+    if (MutateMachO(argv[4], mutation) == 0) {
+      "ADVERSE_MUTATION_FAILED\tUNDERSIZED_SYMBOL_TABLE\n";
+      return 3;
+    }
+  }
+  if (StrCmp(mutation, "OUT_OF_BOUNDS_STRING_ENTRY") == 0) {
+    if (MutateMachO(argv[4], mutation) == 0) {
+      "ADVERSE_MUTATION_FAILED\tOUT_OF_BOUNDS_STRING_ENTRY\n";
+      return 3;
     }
   }
   return 0;

@@ -1299,7 +1299,18 @@ I32 Main(I32 argc, U8 **argv) {
   // out of range is REJECTED with its OWN reason, not silently treated as
   // a missing symbol.
   // -----------------------------------------------------------------------
-  I64 i = 17;
+  // The REQUIRED SYMBOLS are the TRAILING arguments, beginning IMMEDIATELY
+  // after the PolyC capture record at argv[15]. They therefore begin at
+  // argv[16].
+  //
+  // The previous revision began the scan at argv[17], which SKIPPED the
+  // FIRST required symbol. The consequence was that the symbol requirement
+  // was SILENTLY DROPPED: with one required symbol the scan saw NO symbol at
+  // all, so neither the "the REQUIRED symbols are present" check nor the
+  // symbol-string bounds check ever ran. A malformed image whose symbol
+  // string index pointed outside the string table was therefore accepted.
+  // The off-by-one is corrected here.
+  I64 i = 16;
   I64 nsym = 0;
   I64 sym_ok = 1;
   I64 o_stridx_bad = 0;
