@@ -3013,7 +3013,7 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
 	\
 	_arch=$$(file -b "$$_tmpdir/libtos.a" 2>/dev/null); \
 	case "$$_arch" in \
-		*current ar archive*) ;; \
+		*"current ar archive"*) ;; \
 		*) echo "test-prefix-libtos: FAIL: the temporary archive is not an ar archive ($$_arch)" >&2; \
 		   echo "test-prefix-libtos:        NO archive was published" >&2; \
 		   exit 5 ;; \
