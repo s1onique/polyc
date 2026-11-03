@@ -55,6 +55,16 @@ static I64 BytesEqual(U8 *a, U8 *b) {
   return 1;
 }
 
+static I64 StringsEqual(U8 *a, U8 *b) {
+  I64 i = 0;
+  while (a[i] != 0 && b[i] != 0) {
+    if (a[i] != b[i]) return 0;
+    i = i + 1;
+  }
+  if (a[i] == 0 && b[i] == 0) return 1;
+  return 0;
+}
+
 static U0 Check(I64 ok, U8 *case_id, U8 *what) {
   if (ok == 1) {
     "%s\t%s\tPASS\n", case_id, what;
@@ -80,10 +90,7 @@ I32 Main(I32 argc, U8 **argv) {
         "the oracle produced an artifact");
   Check(polyc_class[0] != 'A' || polyc_class[1] != 'B', case_id,
         "the PolyC compiler produced an artifact");
-  Check(oracle_class[0] == polyc_class[0] && oracle_class[1] == polyc_class[1]
-        && oracle_class[2] == polyc_class[2] && oracle_class[3] == polyc_class[3]
-        && oracle_class[4] == polyc_class[4] && oracle_class[5] == polyc_class[5]
-        && oracle_class[6] == polyc_class[7], case_id,
+  Check(StringsEqual(oracle_class, polyc_class) == 1, case_id,
         "the artifact classes agree");
   Check(BytesEqual(oracle, polyc) == 1, case_id,
         "the actual artifact bytes agree");

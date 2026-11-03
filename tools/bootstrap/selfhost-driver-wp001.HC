@@ -982,10 +982,18 @@ I64 WpDriverOptionField(I64 optIdx) {
 // the compiler: an explicit object request wins, then the assembly
 // request, then the shared-object request. With none of them present
 // the argv selects the executable.
+//
+// The priority is a property of the WHOLE argv. A later option does not
+// overwrite an earlier higher-priority request. This preserves the C
+// oracle's object > assembly > dylib > executable precedence without
+// returning the semantic decision to C.
 I64 WpDriverSelectedEmission() {
   I64 argc = WpDriverHostArgc();
   I64 i = 1;                    // argv[0] is the program name
   I64 emission = WP_EMIT_UNKNOWN;
+  I64 saw_object = 0;
+  I64 saw_assembly = 0;
+  I64 saw_dylib = 0;
 
   while (i < argc) {
     I64 opt = WpDriverClassifyOption(i);
@@ -994,9 +1002,9 @@ I64 WpDriverSelectedEmission() {
       // emission decision is not made on a malformed argv.
       if (WpDriverArityOk(i, opt) == 0) return WP_EMIT_UNKNOWN;
       I64 kind = WpDriverOptKind(opt);
-      if (kind == WP_KIND_EMIT_OBJ) emission = WP_EMIT_COMPILE_OBJECT;
-      if (kind == WP_KIND_ASSEMBLY) emission = WP_EMIT_ASSEMBLY;
-      if (kind == WP_KIND_SOURCE) emission = WP_EMIT_DYLIB;
+      if (kind == WP_KIND_EMIT_OBJ) saw_object = 1;
+      if (kind == WP_KIND_ASSEMBLY) saw_assembly = 1;
+      if (kind == WP_KIND_SOURCE) saw_dylib = 1;
       I64 src = WpDriverValueSource(i, opt);
       i = i + 1;
       // Only a NEXT value consumes the following argument.
@@ -1004,6 +1012,15 @@ I64 WpDriverSelectedEmission() {
       continue;
     }
     i = i + 1;
+  }
+
+  // Apply the C oracle's whole-argv branch order after collecting the
+  // requests. The first matching branch wins, so argument order cannot
+  // change the selected artifact class.
+  if (saw_object == 1) emission = WP_EMIT_COMPILE_OBJECT;
+  if (saw_object == 0 && saw_assembly == 1) emission = WP_EMIT_ASSEMBLY;
+  if (saw_object == 0 && saw_assembly == 0 && saw_dylib == 1) {
+    emission = WP_EMIT_DYLIB;
   }
 
   // With no emission option present, the argv selects the executable --

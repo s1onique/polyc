@@ -1024,11 +1024,14 @@ $(DRIVER_ROUTE02_TEST_BIN): $(DRIVER_ROUTE02_TEST_OBJ)
 DRIVER_ROUTE03_COMPARE_SRC = tools/quality/driver-required-route-correction03-compare.HC
 DRIVER_ROUTE03_COMPARE_OBJ = build/driver-required-route-correction03-compare.o
 DRIVER_ROUTE03_COMPARE_BIN = build/driver-required-route-correction03-compare
+DRIVER_ROUTE03_ABI_SRC = tools/quality/driver-required-route-correction03-abi-probe.HC
+DRIVER_ROUTE03_ABI_OBJ = build/driver-required-route-correction03-abi-probe.o
+DRIVER_ROUTE03_ABI_BIN = build/driver-required-route-correction03-abi-probe
 DRIVER_ROUTE03_WORKDIR = build/driver-wp001-correction03
 DRIVER_ROUTE03_FIXTURE = tests/driver-wp001/required-route/route-source.HC
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN)
+driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_ABI_BIN)
 	@rm -rf $(DRIVER_ROUTE03_WORKDIR)
 	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)/off $(DRIVER_ROUTE03_WORKDIR)/on
 	@cmake -S ./src -B $(DRIVER_ROUTE03_WORKDIR)/off-build -G 'Unix Makefiles' \
@@ -1067,7 +1070,7 @@ driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN)
 		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
 		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
 		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
-		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_WP001_OBJ) \
+		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o \
 		-DDRIVER_WP001_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
 		-DDRIVER_WP001_SOURCE=$(CURDIR)/$(DRIVER_WP001_SRC) \
 		-DDRIVER_WP001_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
@@ -1104,6 +1107,7 @@ driver-wp001-correction03-test: $(DRIVER_ROUTE03_COMPARE_BIN)
 	    $(DRIVER_ROUTE03_WORKDIR)/off/artifact.bin \
 	    $(DRIVER_ROUTE03_WORKDIR)/on/artifact.bin; \
 	done
+	@$(DRIVER_ROUTE03_ABI_BIN)
 	@echo "DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS"
 
 $(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
@@ -1113,6 +1117,14 @@ $(DRIVER_ROUTE03_COMPARE_OBJ): $(DRIVER_ROUTE03_COMPARE_SRC) $(PRODUCTION_HCC) $
 $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ)
 	$(C_COMPILER) $(DRIVER_ROUTE03_COMPARE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+$(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ABI_SRC) -o $@
+
+$(DRIVER_ROUTE03_ABI_BIN): $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o src/selfhost-driver-wp001.c
+	$(C_COMPILER) $(DRIVER_ROUTE03_ABI_OBJ) $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o \
+		src/selfhost-driver-wp001.c -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 

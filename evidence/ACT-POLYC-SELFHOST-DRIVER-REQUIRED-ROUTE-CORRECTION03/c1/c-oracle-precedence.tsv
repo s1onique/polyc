@@ -1,0 +1,11 @@
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c-oracle-observed-precedence
+case_id	flags	oracle_artifact_class	derived_priority	rule_source
+object_only	-c	MACHO_OBJECT	1	src/main.c legacy emit_object branch
+assembly_only	-S	ASSEMBLER_TEXT	2	src/main.c legacy assembly branch
+object_assembly	-c -S	MACHO_OBJECT	1	src/main.c legacy emit_object branch precedes assembly
+assembly_object	-S -c	MACHO_OBJECT	1	src/main.c legacy emit_object branch precedes assembly
+object_duplicate	-c -c	MACHO_OBJECT	1	src/main.c legacy emit_object branch
+assembly_duplicate	-S -S	ASSEMBLER_TEXT	2	src/main.c legacy assembly branch
+object_assembly_object	-c -S -c	MACHO_OBJECT	1	src/main.c legacy emit_object branch precedes assembly
+assembly_object_assembly	-S -c -S	MACHO_OBJECT	1	src/main.c legacy emit_object branch precedes assembly
