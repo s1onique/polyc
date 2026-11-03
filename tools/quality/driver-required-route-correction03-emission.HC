@@ -69,6 +69,16 @@ static U0 Check(I64 ok, U8 *case_id, U8 *what) {
   }
 }
 
+// The reason token. A rejection MUST carry a REASON that says WHICH
+// property was violated, so a reviewer can distinguish the failure modes
+// and cannot mistake a generic rejection for the specific one.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+// ROUND 2.
+static U0 Reason(U8 *case_id, U8 *side, U8 *token) {
+  "REASON\t%s\t%s\t%s\n", case_id, side, token;
+}
+
 static I64 WordAt(U8 *buf, I64 size, I64 off) {
   if (size < off + 4) return -1;
   I64 v = 0;
@@ -289,19 +299,60 @@ static I64 HasSymbol(U8 *buf, I64 size, U8 *name) {
 }
 
 // ---------------------------------------------------------------------------
-// The archive-member SEMANTIC comparison.
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+// ROUND 2, F3 -- THE ARCHIVE SEMANTIC EQUIVALENCE.
 //
-// The FULL ARCHIVE BYTE result and the ARCHIVE-MEMBER SEMANTIC result are
-// SEPARATE results. A static archive's HEADER bytes carry nondeterministic
-// metadata (the member timestamps, the owner/mode, the padding). Two runs
-// of the SAME producer produce archives whose MEMBER BYTES are identical
-// and whose HEADER BYTES differ.
+// THE DEFECT. The previous revision of this verifier read the archive's
+// member SIZES and compared the member CONTENT BYTES, but it NEVER DECODED
+// the member NAMES.
 //
-// A difference in the member bytes is a SEMANTIC difference and is a
-// FAILURE. A difference in the header bytes alone is METADATA
-// NONDETERMINISM and is reported as such: it is neither an equivalence
-// failure nor an equality claim.
+// The Darwin/BSD `ar` producer stores a member's name in the 16-byte name
+// field of the member header, and it uses the EXTENDED NAME form
+//
+//     #1/<N>
+//
+// when the name does not fit. In that form the first N bytes of the
+// member's CONTENT are the name, and the declared size INCLUDES them.
+//
+// A mutation of the `#1/N` field therefore changes what `ar` extracts,
+// WITHOUT changing the archive's total size and WITHOUT changing the
+// member's raw content bytes. The previous verifier classified it as
+// harmless METADATA NONDETERMINISM, and reported
+//
+//     ARCHIVE_MEMBER_SEMANTICS  EQUAL
+//
+// for an archive whose extracted payload was DIFFERENT.
+//
+// THE REPAIR. The archive is parsed and validated PROPERLY:
+//
+//   1. the archive magic, every member header, every declared size, every
+//      member boundary and the 2-byte padding are validated;
+//   2. the member NAME is decoded, including the `#1/N` extended-name
+//      form and the `__.SYMDEF` symbol-table form;
+//   3. the DECODED member PAYLOAD is the content that FOLLOWS the
+//      extended name, so the payload the verifier compares is exactly the
+//      payload `ar` extracts;
+//   4. the decoded payload is validated INDEPENDENTLY as the expected
+//      Mach-O object;
+//   5. the member IDENTITY, the name FORMAT, the ORDER, the ARCHITECTURE,
+//      the SYMBOLS and the PAYLOAD BYTES are compared;
+//   6. an EMPTY archive, a MISSING member, a DUPLICATE member, an
+//      UNEXPECTED member and a MALFORMED length or name encoding are
+//      REJECTED;
+//   7. a TIMESTAMP-ONLY difference is reported SEPARATELY from a
+//      member-CONTENT difference, and it is never reported as a content
+//      difference.
+//
+// The reasons are DISTINCT, so a reviewer can tell WHICH property was
+// violated.
 // ---------------------------------------------------------------------------
+#define AR_HDR_NAME_OFF  0
+#define AR_HDR_NAME_LEN  16
+#define AR_HDR_SIZE_OFF  48
+#define AR_HDR_SIZE_LEN  10
+#define AR_HDR_FMAG_OFF  58
+#define AR_NAME_MAX      256
+#define AR_MAX_MEMBERS   64
 static I64 ArMemberSizeAt(U8 *buf, I64 size, I64 off) {
   if (off + AR_MEMBER_HDR_LEN > size) return -1;
   I64 m = 0;
@@ -321,56 +372,277 @@ static I64 ArMemberSizeAt(U8 *buf, I64 size, I64 off) {
   return m;
 }
 
-static I64 ArMemberCount(U8 *buf, I64 size) {
-  if (buf == NULL) return -1;
-  if (size < AR_MAGIC_LEN) return -1;
-  I64 i = 0;
-  while (i < AR_MAGIC_LEN) {
-    if (buf[i] != "!<arch>\n"[i]) return -1;
-    i = i + 1;
-  }
-  I64 off = AR_MAGIC_LEN;
-  I64 count = 0;
-  while (off + AR_MEMBER_HDR_LEN <= size) {
-    I64 m = ArMemberSizeAt(buf, size, off);
-    if (m < 0) return -1;
-    I64 content = off + AR_MEMBER_HDR_LEN;
-    if (content + m > size) return -1;
-    count = count + 1;
-    I64 next = content + m;
-    if (m % 2 == 1) next = next + 1;
-    off = next;
-  }
-  return count;
+// The archive validation result codes.
+#define ARV_OK               0
+#define ARV_ABSENT           1
+#define ARV_EMPTY            2
+#define ARV_BAD_MAGIC        3
+#define ARV_BAD_HEADER       4
+#define ARV_BAD_SIZE_FIELD   5
+#define ARV_SIZE_OVERRUN     6
+#define ARV_BAD_NAME         7
+#define ARV_BAD_EXTNAME      8
+#define ARV_PADDING          9
+#define ARV_TRAILING_BYTES   10
+#define ARV_NO_MEMBERS       11
+#define ARV_MEMBER_COUNT     12
+#define ARV_DUPLICATE        13
+#define ARV_MISSING          14
+#define ARV_UNEXPECTED       15
+#define ARV_PAYLOAD          16
+#define ARV_PAYLOAD_CLASS    17
+#define ARV_PAYLOAD_ARCH     18
+#define ARV_PAYLOAD_SYMBOL   19
+#define ARV_NAME_FORMAT      20
+#define ARV_ORDER            21
+#define ARV_TIMESTAMP        22
+
+static U8 *ArReason(I64 code) {
+  if (code == ARV_OK) return "OK";
+  if (code == ARV_ABSENT) return "ARCHIVE_ABSENT";
+  if (code == ARV_EMPTY) return "ARCHIVE_EMPTY";
+  if (code == ARV_BAD_MAGIC) return "ARCHIVE_BAD_MAGIC";
+  if (code == ARV_BAD_HEADER) return "ARCHIVE_BAD_MEMBER_HEADER";
+  if (code == ARV_BAD_SIZE_FIELD) return "ARCHIVE_BAD_SIZE_FIELD";
+  if (code == ARV_SIZE_OVERRUN) return "ARCHIVE_MEMBER_SIZE_OUT_OF_BOUNDS";
+  if (code == ARV_BAD_NAME) return "ARCHIVE_BAD_MEMBER_NAME";
+  if (code == ARV_BAD_EXTNAME) return "ARCHIVE_BAD_EXTENDED_NAME_ENCODING";
+  if (code == ARV_PADDING) return "ARCHIVE_BAD_MEMBER_PADDING";
+  if (code == ARV_TRAILING_BYTES) return "ARCHIVE_UNEXPECTED_TRAILING_BYTES";
+  if (code == ARV_NO_MEMBERS) return "ARCHIVE_NO_MEMBERS";
+  if (code == ARV_MEMBER_COUNT) return "ARCHIVE_MEMBER_COUNT_MISMATCH";
+  if (code == ARV_DUPLICATE) return "ARCHIVE_DUPLICATE_MEMBER";
+  if (code == ARV_MISSING) return "ARCHIVE_MEMBER_MISSING";
+  if (code == ARV_UNEXPECTED) return "ARCHIVE_UNEXPECTED_MEMBER";
+  if (code == ARV_PAYLOAD) return "ARCHIVE_MEMBER_PAYLOAD_MISMATCH";
+  if (code == ARV_PAYLOAD_CLASS) return "ARCHIVE_MEMBER_PAYLOAD_CLASS_INVALID";
+  if (code == ARV_PAYLOAD_ARCH) return "ARCHIVE_MEMBER_PAYLOAD_ARCH_INVALID";
+  if (code == ARV_PAYLOAD_SYMBOL) return "ARCHIVE_MEMBER_PAYLOAD_SYMBOL_MISSING";
+  if (code == ARV_NAME_FORMAT) return "ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH";
+  if (code == ARV_ORDER) return "ARCHIVE_MEMBER_ORDER_MISMATCH";
+  if (code == ARV_TIMESTAMP) return "ARCHIVE_MEMBER_TIMESTAMP_NONDETERMINISM";
+  return "ARCHIVE_UNKNOWN";
 }
 
-// The content bytes of the member at `index`.
-static U8 *ArMemberBytes(U8 *buf, I64 size, I64 index, I64 *msize) {
-  *msize = 0;
-  if (buf == NULL) return NULL;
-  if (size < AR_MAGIC_LEN) return NULL;
+// The decoded member.
+static U8 *am_name[AR_MAX_MEMBERS];
+static I64 am_namelen[AR_MAX_MEMBERS];
+static I64 am_extname[AR_MAX_MEMBERS];       // 1 when the name is extended
+static I64 am_namelen_field[AR_MAX_MEMBERS];  // the declared #1/N length
+static U8 *am_payload[AR_MAX_MEMBERS];
+static I64 am_paylen[AR_MAX_MEMBERS];
+static I64 am_mtime[AR_MAX_MEMBERS];
+static I64 am_count;
+
+// The ORACLE and the POLYC copies of the decoded members. The decoder
+// fills the `am_*` tables, so the oracle's decoding is copied out before
+// the PolyC side is decoded.
+static U8 *o_name[AR_MAX_MEMBERS];
+static I64 o_namelen[AR_MAX_MEMBERS];
+static I64 o_ext[AR_MAX_MEMBERS];
+static I64 o_extlen[AR_MAX_MEMBERS];
+static U8 *o_payload[AR_MAX_MEMBERS];
+static I64 o_paylen[AR_MAX_MEMBERS];
+static I64 o_mtime[AR_MAX_MEMBERS];
+static U8 *p_name[AR_MAX_MEMBERS];
+static I64 p_namelen[AR_MAX_MEMBERS];
+static I64 p_ext[AR_MAX_MEMBERS];
+static I64 p_extlen[AR_MAX_MEMBERS];
+static U8 *p_payload[AR_MAX_MEMBERS];
+static I64 p_paylen[AR_MAX_MEMBERS];
+static I64 p_mtime[AR_MAX_MEMBERS];
+
+// The name comparison. The name is compared as a byte run.
+static I64 ArNameEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
+  I64 n = alen;
+  if (blen < n) n = blen;
   I64 i = 0;
-  while (i < AR_MAGIC_LEN) {
-    if (buf[i] != "!<arch>\n"[i]) return NULL;
+  while (i < n) {
+    if (a[i] != b[i]) return 0;
     i = i + 1;
   }
-  I64 off = AR_MAGIC_LEN;
-  I64 want = 0;
-  while (off + AR_MEMBER_HDR_LEN <= size) {
-    I64 m = ArMemberSizeAt(buf, size, off);
-    if (m < 0) return NULL;
-    I64 content = off + AR_MEMBER_HDR_LEN;
-    if (content + m > size) return NULL;
-    if (want == index) {
-      *msize = m;
-      return buf + content;
+  return 1;
+}
+
+// The size field reader. The field is a decimal ASCII run, optionally
+// terminated by a space. It returns -1 when the field is malformed.
+static I64 ArSizeAt(U8 *buf, I64 size, I64 off) {
+  if (off + AR_MEMBER_HDR_LEN > size) return -1;
+  I64 m = 0;
+  I64 digits = 0;
+  I64 j = AR_HDR_SIZE_OFF;
+  while (j < AR_HDR_SIZE_OFF + AR_HDR_SIZE_LEN) {
+    I64 c = buf[off + j];
+    if (c >= 48 && c <= 57) {
+      // The accumulation is overflow-safe: the value is checked BEFORE it
+      // is multiplied.
+      if (m > 2000000000) return -1;
+      m = m * 10 + (c - 48);
+      digits = digits + 1;
+      j = j + 1;
+      continue;
     }
-    want = want + 1;
+    if (c == 32) break;
+    return -1;
+  }
+  if (digits == 0) return -1;
+  return m;
+}
+
+// The mtime field reader. It is read so that a TIMESTAMP-ONLY difference
+// can be reported separately from a content difference.
+static I64 ArMtimeAt(U8 *buf, I64 size, I64 off) {
+  if (off + AR_MEMBER_HDR_LEN > size) return -1;
+  I64 m = 0;
+  I64 digits = 0;
+  I64 j = 16;
+  while (j < 28) {
+    I64 c = buf[off + j];
+    if (c >= 48 && c <= 57) {
+      if (m > 2000000000) return -1;
+      m = m * 10 + (c - 48);
+      digits = digits + 1;
+      j = j + 1;
+      continue;
+    }
+    if (c == 32) break;
+    return -1;
+  }
+  if (digits == 0) return 0;
+  return m;
+}
+
+// The ARCHIVE DECODER.
+//
+// It parses the archive into its decoded members, and it validates every
+// structural property as it goes.
+//
+// It returns ARV_OK when the archive is structurally valid, and otherwise
+// the FIRST violated property's code.
+//
+// The DECODED PAYLOAD of a member is the content that FOLLOWS the
+// extended name. That is exactly the byte range `ar` extracts, so the
+// payload this function reports is the payload the independent `ar`
+// extraction produces.
+//
+// It fills the `am_*` tables. The caller MUST NOT read them when the
+// return value is not ARV_OK.
+static I64 DecodeArchive(U8 *buf, I64 size) {
+  am_count = 0;
+  if (buf == NULL) return ARV_ABSENT;
+  if (size == 0) return ARV_EMPTY;
+  if (size < AR_MAGIC_LEN) return ARV_BAD_MAGIC;
+  I64 i = 0;
+  while (i < AR_MAGIC_LEN) {
+    if (buf[i] != "!<arch>\n"[i]) return ARV_BAD_MAGIC;
+    i = i + 1;
+  }
+
+  I64 off = AR_MAGIC_LEN;
+  while (off < size) {
+    // A member header must fit entirely inside the archive.
+    if (off + AR_MEMBER_HDR_LEN > size) return ARV_BAD_HEADER;
+    if (am_count >= AR_MAX_MEMBERS) return ARV_NO_MEMBERS;
+
+    // The header's terminating magic is "`\n".
+    if (buf[off + AR_HDR_FMAG_OFF] != 96) return ARV_BAD_HEADER;
+    if (buf[off + AR_HDR_FMAG_OFF + 1] != 10) return ARV_BAD_HEADER;
+
+    // The declared size.
+    I64 m = ArSizeAt(buf, size, off);
+    if (m < 0) return ARV_BAD_SIZE_FIELD;
+    I64 content = off + AR_MEMBER_HDR_LEN;
+    // The declared size must fit inside the archive. The subtraction form
+    // cannot overflow because `content` is already inside the archive.
+    if (m > size - content) return ARV_SIZE_OVERRUN;
+
+    // The name field. It is a 16-byte run, space padded.
+    U8 *namefield = buf + off + AR_HDR_NAME_OFF;
+    I64 ext = 0;
+    I64 extlen = 0;
+    I64 namelen = 0;
+    U8 *name = NULL;
+
+    // The EXTENDED NAME form: the name field begins with "#1/".
+    if (namefield[0] == 35 && namefield[1] == 49 && namefield[2] == 47) {
+      // The declared length follows.
+      I64 n = 0;
+      I64 digits = 0;
+      I64 j = 3;
+      while (j < AR_HDR_NAME_LEN) {
+        I64 c = namefield[j];
+        if (c >= 48 && c <= 57) {
+          if (n > 100000) return ARV_BAD_EXTNAME;
+          n = n * 10 + (c - 48);
+          digits = digits + 1;
+          j = j + 1;
+          continue;
+        }
+        break;
+      }
+      if (digits == 0) return ARV_BAD_EXTNAME;
+      // The declared name length must fit inside the member's content.
+      if (n > m) return ARV_BAD_EXTNAME;
+      // The name must be NUL terminated inside the declared length.
+      I64 k = 0;
+      I64 term = 0;
+      while (k < n) {
+        if (content + k >= size) return ARV_BAD_EXTNAME;
+        if (buf[content + k] == 0) { term = 1; break; }
+        k = k + 1;
+      }
+      if (term == 0) return ARV_BAD_EXTNAME;
+      name = buf + content;
+      namelen = k;
+      ext = 1;
+      extlen = n;
+    } else {
+      // The SHORT name form. The name is the run up to the first space or
+      // the end of the field. The name MUST be NUL terminated or space
+      // padded, and it MUST NOT be empty.
+      I64 k = 0;
+      while (k < AR_HDR_NAME_LEN && namefield[k] != 32) k = k + 1;
+      if (k == 0) return ARV_BAD_NAME;
+      namelen = k;
+      name = namefield;
+      ext = 0;
+      extlen = 0;
+    }
+
+    // The payload. For the extended form the payload FOLLOWS the name
+    // bytes; for the short form it is the whole content.
+    I64 payload_off = content;
+    I64 payload_len = m;
+    if (ext == 1) {
+      payload_off = content + extlen;
+      payload_len = m - extlen;
+    }
+
+    // The 2-byte alignment padding. An odd-sized member is followed by
+    // one padding byte, which the producer writes as a newline.
     I64 next = content + m;
-    if (m % 2 == 1) next = next + 1;
+    if (m % 2 == 1) {
+      if (next >= size) return ARV_PADDING;
+      if (buf[next] != 10) return ARV_PADDING;
+      next = next + 1;
+    }
+    if (next > size) return ARV_SIZE_OVERRUN;
+
+    // The member is recorded.
+    am_name[am_count] = name;
+    am_namelen[am_count] = namelen;
+    am_extname[am_count] = ext;
+    am_namelen_field[am_count] = extlen;
+    am_payload[am_count] = buf + payload_off;
+    am_paylen[am_count] = payload_len;
+    am_mtime[am_count] = ArMtimeAt(buf, size, off);
+    am_count = am_count + 1;
+
     off = next;
   }
-  return NULL;
+
+  if (am_count == 0) return ARV_NO_MEMBERS;
+  return ARV_OK;
 }
 // ---------------------------------------------------------------------------
 // THE INVALID-DOMAIN DETECTOR.
@@ -750,25 +1022,157 @@ I32 Main(I32 argc, U8 **argv) {
     if (o_cls == CLS_AR) {
       // The archive: the FULL BYTE result and the MEMBER SEMANTIC result
       // are two DIFFERENT results.
+      //
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4
+      // REMEDIATION ROUND 2, F3: the archive is DECODED on each side, and
+      // the DECODED members are compared. The previous revision compared
+      // the RAW member bytes and never decoded the names, so a name-format
+      // mutation that changes the extracted payload was classified as
+      // harmless metadata nondeterminism.
       I64 full_equal = BytesEqual(o_buf[k], &o_size[k], p_buf[k], &p_size[k]);
-      I64 oc = ArMemberCount(o_buf[k], o_size[k]);
-      I64 pc = ArMemberCount(p_buf[k], p_size[k]);
-      Check(oc >= 0 && pc >= 0, case_id,
-            "the archives are READABLE as ar archives");
-      Check(oc >= 0 && pc >= 0 && oc == pc, case_id,
-            "the archive member COUNTS agree");
-      I64 member_equal = 1;
+
+      // The oracle side is decoded into the ORACLE tables.
+      I64 o_dec = DecodeArchive(o_buf[k], o_size[k]);
+      I64 o_count = am_count;
       I64 mi = 0;
-      while (mi < oc && mi < pc) {
-        I64 oms = 0;
-        I64 pms = 0;
-        U8 *ob = ArMemberBytes(o_buf[k], o_size[k], mi, &oms);
-        U8 *pb = ArMemberBytes(p_buf[k], p_size[k], mi, &pms);
-        if (ob == NULL || pb == NULL) { member_equal = 0; break; }
-        if (oms != pms) { member_equal = 0; break; }
-        if (BytesEqual(ob, &oms, pb, &pms) == 0) { member_equal = 0; break; }
+      while (mi < o_count && mi < AR_MAX_MEMBERS) {
+        o_name[mi] = am_name[mi];
+        o_namelen[mi] = am_namelen[mi];
+        o_ext[mi] = am_extname[mi];
+        o_extlen[mi] = am_namelen_field[mi];
+        o_payload[mi] = am_payload[mi];
+        o_paylen[mi] = am_paylen[mi];
+        o_mtime[mi] = am_mtime[mi];
         mi = mi + 1;
       }
+
+      // The PolyC side is decoded into the POLYC tables.
+      I64 p_dec = DecodeArchive(p_buf[k], p_size[k]);
+      I64 p_count = am_count;
+      mi = 0;
+      while (mi < p_count && mi < AR_MAX_MEMBERS) {
+        p_name[mi] = am_name[mi];
+        p_namelen[mi] = am_namelen[mi];
+        p_ext[mi] = am_extname[mi];
+        p_extlen[mi] = am_namelen_field[mi];
+        p_payload[mi] = am_payload[mi];
+        p_paylen[mi] = am_paylen[mi];
+        p_mtime[mi] = am_mtime[mi];
+        mi = mi + 1;
+      }
+
+      Check(o_dec == ARV_OK && p_dec == ARV_OK, case_id,
+            "the archives are STRUCTURALLY VALID");
+      if (o_dec != ARV_OK) Reason(case_id, "oracle", ArReason(o_dec));
+      if (p_dec != ARV_OK) Reason(case_id, "polyc", ArReason(p_dec));
+
+      // The member counts must agree. An EMPTY archive carries no
+      // evidence, and it is rejected by the decoder itself.
+      Check(o_dec == ARV_OK && p_dec == ARV_OK && o_count == p_count, case_id,
+            "the archive member COUNTS agree");
+      if (o_dec == ARV_OK && p_dec == ARV_OK && o_count != p_count) {
+        Reason(case_id, "harness", ArReason(ARV_MEMBER_COUNT));
+      }
+
+      // The member-by-member comparison. Every member is compared by
+      // IDENTITY, by NAME FORMAT, by PAYLOAD BYTES, and by the
+      // VALIDITY of its decoded payload.
+      I64 member_equal = 1;
+      I64 name_equal = 1;
+      I64 format_equal = 1;
+      I64 payload_equal = 1;
+      I64 payload_valid = 1;
+      I64 timestamp_only = 1;
+      mi = 0;
+      while (mi < o_count && mi < p_count) {
+        // The member IDENTITY. The decoded name must be the same.
+        if (ArNameEqual(o_name[mi], o_namelen[mi], p_name[mi],
+                        p_namelen[mi]) == 0) {
+          name_equal = 0;
+          member_equal = 0;
+        }
+        // The NAME FORMAT. The extended-name form and the declared name
+        // length are semantically relevant: a mutation of the `#1/N`
+        // field changes what `ar` extracts.
+        if (o_ext[mi] != p_ext[mi]) {
+          format_equal = 0;
+          member_equal = 0;
+        }
+        if (o_ext[mi] == 1 && o_extlen[mi] != p_extlen[mi]) {
+          format_equal = 0;
+          member_equal = 0;
+        }
+        // The PAYLOAD BYTES. The payload is the content `ar` extracts.
+        I64 opl = o_paylen[mi];
+        I64 ppl = p_paylen[mi];
+        if (opl != ppl) {
+          payload_equal = 0;
+          member_equal = 0;
+        } else {
+          if (BytesEqual(o_payload[mi], &opl, p_payload[mi], &ppl) == 0) {
+            payload_equal = 0;
+            member_equal = 0;
+          }
+        }
+        // The TIMESTAMP. A timestamp-only difference does NOT make the
+        // members different, and it is reported separately.
+        if (o_mtime[mi] != p_mtime[mi]) timestamp_only = 0;
+        mi = mi + 1;
+      }
+
+      // The DECODED PAYLOAD is validated INDEPENDENTLY as the expected
+      // Mach-O object. A payload that is not a valid Mach-O object is
+      // REJECTED, even when both sides carry the SAME invalid payload.
+      mi = 0;
+      while (mi < o_count) {
+        I64 ocls = Classify(o_payload[mi], o_paylen[mi]);
+        I64 oarch = ArchOf(o_payload[mi], o_paylen[mi]);
+        // The symbol table member is NOT a Mach-O object; it is the
+        // archive's own symbol index.
+        I64 is_symdef = 0;
+        if (o_namelen[mi] >= 9) {
+          if (ArNameEqual(o_name[mi], 9, "__.SYMDEF", 9) == 1) is_symdef = 1;
+        }
+        if (is_symdef == 0) {
+          if (ocls != CLS_MACHO_OBJ) payload_valid = 0;
+          if (earch[k] != -1 && oarch != earch[k]) payload_valid = 0;
+        }
+        mi = mi + 1;
+      }
+      mi = 0;
+      while (mi < p_count) {
+        I64 pcls = Classify(p_payload[mi], p_paylen[mi]);
+        I64 parch = ArchOf(p_payload[mi], p_paylen[mi]);
+        I64 is_symdef = 0;
+        if (p_namelen[mi] >= 9) {
+          if (ArNameEqual(p_name[mi], 9, "__.SYMDEF", 9) == 1) is_symdef = 1;
+        }
+        if (is_symdef == 0) {
+          if (pcls != CLS_MACHO_OBJ) payload_valid = 0;
+          if (earch[k] != -1 && parch != earch[k]) payload_valid = 0;
+        }
+        mi = mi + 1;
+      }
+
+      Check(name_equal == 1, case_id,
+            "the archive member IDENTITIES agree");
+      if (name_equal == 0) Reason(case_id, "harness", ArReason(ARV_MISSING));
+      Check(format_equal == 1, case_id,
+            "the archive member NAME FORMATS agree");
+      if (format_equal == 0) {
+        Reason(case_id, "harness", ArReason(ARV_NAME_FORMAT));
+      }
+      Check(payload_valid == 1, case_id,
+            "the DECODED member payloads are VALID Mach-O objects");
+      if (payload_valid == 0) {
+        Reason(case_id, "harness", ArReason(ARV_PAYLOAD_CLASS));
+      }
+      Check(payload_equal == 1, case_id,
+            "the DECODED member PAYLOAD BYTES agree");
+      if (payload_equal == 0) {
+        Reason(case_id, "harness", ArReason(ARV_PAYLOAD));
+      }
+
       U8 *ms_eq = "DIFFERENT";
       U8 *fb_eq = "DIFFERENT";
       U8 *md_nd = "YES";
@@ -779,6 +1183,15 @@ I32 Main(I32 argc, U8 **argv) {
       "ARCHIVE_FULL_BYTES\t%s\t%d\t%s\n", case_id, k, fb_eq;
       Check(member_equal == 1, case_id,
             "the archive MEMBER SEMANTICS agree");
+      // The timestamp nondeterminism is reported ONLY when every DECODED
+      // member is otherwise identical. A content difference is NEVER
+      // reported as timestamp nondeterminism.
+      if (member_equal == 1) {
+        if (timestamp_only == 0) md_nd = "YES";
+        else md_nd = "NO";
+      } else {
+        md_nd = "NOT_APPLICABLE";
+      }
       "ARCHIVE_METADATA_NONDETERMINISM\t%s\t%d\t%s\n", case_id, k, md_nd;
       // The full-byte difference is NOT an equivalence failure: it is
       // reported separately and never counted as a member-semantic

@@ -1507,6 +1507,129 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	@# case, and an OUT-OF-DOMAIN value must be REJECTED by the default
 	@# case rather than falling back to a supported emission.
 	@$(DRIVER_ROUTE03_EMISSION_BIN) domain src/main.c
+	@# ------------------------------------------------------------------
+	@# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+	@# ROUND 2, F3 -- THE ARCHIVE ADVERSE EXPERIMENTS.
+	@#
+	@# Each experiment MUTATES the archive of ONE side and asserts that the
+	@# emission witness REJECTS it WITH THE EXPECTED REASON. A nonzero exit
+	@# is NOT sufficient: the exact reason token is required.
+	@#
+	@# The independent cross-check is the SYSTEM `ar`: the mutated archive
+	@# is extracted with `ar` and the extracted payload is compared with
+	@# the original, so the witness's verdict is checked against a tool
+	@# that does not share its code.
+	@set -e; \
+	AW=$(DRIVER_ROUTE03_WORKDIR)/archive-adverse; \
+	rm -rf $$AW; \
+	mkdir -p $$AW/good/off $$AW/good/on; \
+	cp $(DRIVER_ROUTE03_FIXTURE) $$AW/good/off/source.HC; \
+	cp $(DRIVER_ROUTE03_FIXTURE) $$AW/good/on/source.HC; \
+	( cd $$AW/good/off; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -lib mylib source.HC \
+	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
+	( cd $$AW/good/on; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -lib mylib source.HC \
+	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
+	if [ ! -s $$AW/good/off/libmylib.a ] || [ ! -s $$AW/good/on/libmylib.a ]; then \
+		echo "driver-wp001-correction03: the archive adverse reference archive was not produced" >&2; \
+		exit 1; \
+	fi
+	@set -e; \
+	AW=$(DRIVER_ROUTE03_WORKDIR)/archive-adverse; \
+	: > $$AW/empty.txt; \
+	printf '0\n' > $$AW/exit0.txt; \
+	for spec in \
+	  'NAME_FORMAT_MUTATION:ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH' \
+	  'EMPTY_ARCHIVE:ARCHIVE_NO_MEMBERS' \
+	  'MISSING_MEMBER:ARCHIVE_MEMBER_COUNT_MISMATCH' \
+	  'CORRUPTED_LENGTH:ARCHIVE_MEMBER_SIZE_OUT_OF_BOUNDS' \
+	  'CHANGED_PAYLOAD:ARCHIVE_MEMBER_PAYLOAD_MISMATCH'; do \
+	  mutation=$${spec%%:*}; reason=$${spec#*:}; \
+	  rm -rf $$AW/$$mutation; \
+	  mkdir -p $$AW/$$mutation/off $$AW/$$mutation/on; \
+	  cp $$AW/good/off/libmylib.a $$AW/$$mutation/off/libmylib.a; \
+	  cp $$AW/good/on/libmylib.a $$AW/$$mutation/on/libmylib.a; \
+	  cp $$AW/good/off/exit.txt $$AW/$$mutation/off/exit.txt; \
+	  cp $$AW/good/on/exit.txt $$AW/$$mutation/on/exit.txt; \
+	  case $$mutation in \
+	    NAME_FORMAT_MUTATION) \
+	      printf '\062\060' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=115 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    EMPTY_ARCHIVE) \
+	      printf '!<arch>\n' > $$AW/$$mutation/off/libmylib.a; \
+	      printf '!<arch>\n' > $$AW/$$mutation/on/libmylib.a; \
+	      ;; \
+	    MISSING_MEMBER) \
+	      ( printf '!<arch>\n'; tail -c +113 $$AW/good/on/libmylib.a ) > $$AW/$$mutation/on/libmylib.a; \
+	      ;; \
+	    CORRUPTED_LENGTH) \
+	      printf '\071\071\071\071' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=160 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    CHANGED_PAYLOAD) \
+	      printf '\001' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=256 conv=notrunc 2>/dev/null; \
+	      ;; \
+	  esac; \
+	  set +e; \
+	  $(DRIVER_ROUTE03_EMISSION_BIN) $$mutation archive \
+	    $$AW/$$mutation/off/ $$AW/$$mutation/on/ \
+	    $$AW/empty.txt $$AW/empty.txt $$AW/empty.txt $$AW/empty.txt \
+	    $$AW/exit0.txt $$AW/exit0.txt 0 none 0 \
+	    libmylib.a AR_ARCHIVE none > $$AW/$$mutation/out.txt 2>&1; \
+	  rc=$$?; \
+	  set -e; \
+	  if [ $$rc -eq 0 ]; then \
+	    echo "ARCHIVE_ADVERSE_ACCEPTED $$mutation: the witness ACCEPTED a semantically changed archive" >&2; \
+	    cat $$AW/$$mutation/out.txt >&2; \
+	    exit 1; \
+	  fi; \
+	  if ! grep -qF "$$reason" $$AW/$$mutation/out.txt; then \
+	    echo "ARCHIVE_ADVERSE_REASON_FAILED $$mutation: the expected reason '$$reason' did NOT appear" >&2; \
+	    cat $$AW/$$mutation/out.txt >&2; \
+	    exit 1; \
+	  fi; \
+	  echo "ARCHIVE_ADVERSE_REJECTED $$mutation reason=$$reason"; \
+	done
+	@# The INDEPENDENT CROSS-CHECK: the system `ar` must extract a
+	@# DIFFERENT payload from the name-format-mutated archive.
+	@set -e; \
+	AW=$(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/archive-adverse; \
+	rm -rf $$AW/ar-o $$AW/ar-p; \
+	mkdir -p $$AW/ar-o $$AW/ar-p; \
+	( cd $$AW/ar-o && ar x $$AW/good/on/libmylib.a ) >/dev/null 2>&1; \
+	( cd $$AW/ar-p && ar x $$AW/NAME_FORMAT_MUTATION/on/libmylib.a ) >/dev/null 2>&1; \
+	if [ ! -f $$AW/ar-o/source.o ] || [ ! -f $$AW/ar-p/source.o ]; then \
+		echo "driver-wp001-correction03: the ar cross-check could not extract the members" >&2; \
+		exit 1; \
+	fi; \
+	if cmp -s $$AW/ar-o/source.o $$AW/ar-p/source.o; then \
+		echo "driver-wp001-correction03: the ar cross-check FAILED, the mutation did NOT change the extracted payload" >&2; \
+		exit 1; \
+	fi; \
+	echo "ARCHIVE_AR_CROSSCHECK=DIFFERENT"
+	@# The TIMESTAMP-ONLY VARIATION. Every decoded member is preserved, so
+	@# the witness PASSES and reports the nondeterminism separately.
+	@set -e; \
+	AW=$(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/archive-adverse; \
+	rm -rf $$AW/ts-off $$AW/ts-on; \
+	mkdir -p $$AW/ts-off $$AW/ts-on; \
+	cp $$AW/good/off/libmylib.a $$AW/ts-off/libmylib.a; \
+	cp $$AW/good/on/libmylib.a $$AW/ts-on/libmylib.a; \
+	printf '\060\060\060\060\060\060\060\060\060\060\060\060' | \
+	  dd of=$$AW/ts-on/libmylib.a bs=1 seek=128 conv=notrunc 2>/dev/null; \
+	$(DRIVER_ROUTE03_EMISSION_BIN) TIMESTAMP_ONLY archive \
+	  $$AW/ts-off/ $$AW/ts-on/ \
+	  $$AW/empty.txt $$AW/empty.txt $$AW/empty.txt $$AW/empty.txt \
+	  $$AW/exit0.txt $$AW/exit0.txt 0 none 0 \
+	  libmylib.a AR_ARCHIVE none > $$AW/ts-on/out.txt 2>&1; \
+	if ! grep -q 'ARCHIVE_METADATA_NONDETERMINISM.*YES' $$AW/ts-on/out.txt; then \
+		echo "driver-wp001-correction03: the timestamp-only variation was NOT reported as nondeterminism" >&2; \
+		cat $$AW/ts-on/out.txt >&2; \
+		exit 1; \
+	fi; \
+	echo "ARCHIVE_TIMESTAMP_ONLY=PASS"
 	@echo "DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS"
 
 # ---------------------------------------------------------------------------
