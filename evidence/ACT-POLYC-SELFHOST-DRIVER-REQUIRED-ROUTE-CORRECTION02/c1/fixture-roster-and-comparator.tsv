@@ -1,0 +1,86 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=fixture-roster-and-comparator
+#
+# THE FROZEN FIXTURE ROSTER AND THE FULL COMPARATOR.
+#
+# Every fixture is an argv against the frozen fixture source. Every
+# fixture is run against EVERY generation. The comparator compares the
+# FULL field set, not a subset.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE FROZEN FIXTURE SOURCE
+# ---------------------------------------------------------------------------
+#
+#   tests/driver-wp001/required-route/route-source.HC
+#
+#   I64 Main() {
+#       return 7;
+#   }
+#
+# It is byte-identical to the predecessor's frozen fixture.
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE FIXTURE ROSTER
+# ---------------------------------------------------------------------------
+#
+fixture_id	argv	expected_class	expected_exit	expected_diagnostic	discriminates
+FX_REQUIRED_OBJECT	--install-dir=<prefix> -c route-source.HC -o route.o	OBJECT	0	-	THE REQUIRED ROUTE
+FX_ALIAS_OBJECT	--install-dir=<prefix> route-source.HC -o route.o	OBJECT	0	-	the alias route selects the SAME action
+FX_ALT_EXECUTABLE	--install-dir=<prefix> route-source.HC -o route	EXECUTABLE	0	-	the alternate artifact class
+FX_ALT_ASSEMBLY	--install-dir=<prefix> -S route-source.HC -o route.s	ASSEMBLY_TEXT	0	-	the third artifact class
+FX_NEG_UNKNOWN_OPTION	--install-dir=<prefix> -c route-source.HC -o route.o --bogus-option	NONE	1	Unknown commandline options: --bogus-option	the USAGE status
+FX_NEG_MISSING_O	--install-dir=<prefix> -c route-source.HC -o	NONE	1	Unexpected end of input - expected `-o <option?>`	the ARITY status
+FX_NEG_NO_INPUT	--install-dir=<prefix> -c	NONE	1	hcc: fatal error: no input files	the NO_INPUT status
+FX_NEG_UNREADABLE	--install-dir=<prefix> missing.HC	NONE	1	ERROR: Failed to open file: missing.HC	the engine's fault gate
+FX_PREC_STDOUT_OK	--install-dir=<prefix> -S route-source.HC -o-	ASSEMBLY_TEXT	0	-	-o- WITH -S: the condition is SATISFIED
+FX_PREC_STDOUT_BAD	--install-dir=<prefix> -c route-source.HC -o-	NONE	1	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout	-o- WITHOUT -S: the condition is VIOLATED
+FX_PREC_STDOUT_BAD_AND_UNKNOWN	--install-dir=<prefix> -c route-source.HC -o- --bogus-option	NONE	1	Unknown commandline options: --bogus-option	THE PRECEDENCE DISCRIMINATOR: the PolyC status is USAGE and the C policy must NOT preempt it
+FX_PREC_STDOUT_BAD_AND_ARITY	--install-dir=<prefix> -c route-source.HC -o- -o	NONE	1	Unexpected end of input - expected `-o <option?>`	THE ARITY PRECEDENCE DISCRIMINATOR
+FX_PREC_STDOUT_BAD_AND_NOINPUT	--install-dir=<prefix> -o-	NONE	1	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout	-o- without -S and without an input file: the TO_STDOUT status WINS over NO_INPUT
+FX_PREC_STDOUT_UNKNOWN_ONLY	--install-dir=<prefix> -c route-source.HC -o route.o --bogus-option	NONE	1	Unknown commandline options: --bogus-option	the CONTROL for FX_PREC_STDOUT_BAD_AND_UNKNOWN
+#
+# FIXTURE_COUNT	14
+# FIXTURE_PRECEDENCE_DISCRIMINATORS	6
+#
+# FX_PREC_STDOUT_BAD_AND_UNKNOWN IS THE DECISIVE FIXTURE. Its PolyC
+# status is USAGE. At the entry commit the C policy preempts it and
+# the reported diagnostic is the `-o-` one. After the correction the
+# reported diagnostic MUST be the USAGE one.
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE FULL COMPARATOR
+# ---------------------------------------------------------------------------
+#
+# A comparison between two generations over a fixture is AGREE only if
+# EVERY field matches. There is no partial credit.
+#
+field	how_it_is_measured	frozen_normalization
+artifact_class	the artifact's FILE BYTES, never its file name and never the exit status	NONE (the raw class token)
+exit_status	the process exit status	NONE
+stderr_text	the process stderr, in full	NONE
+stdout_digest	the SHA-256 of the process stdout	NONE
+artifact_present	whether the expected artifact file exists	NONE
+#
+# The comparator has FOUR fields plus the artifact presence. The
+# predecessor's comparator had fewer; this ACT REQUIRES the FULL set,
+# and the C3 phase proves the comparator is SENSITIVE to each field by
+# showing that a variant which ignores one field MASKS a real change.
+#
+COMPARATOR_FIELD_COUNT	5
+COMPARATOR_FIELDS	artifact_class,exit_status,stderr_text,stdout_digest,artifact_present
+COMPARATOR_NORMALIZATION	NONE
+COMPARATOR_FIELD_ARTIFACT_CLASS	artifact_class
+COMPARATOR_FIELD_EXIT_STATUS	exit_status
+COMPARATOR_FIELD_STDERR_TEXT	stderr_text
+COMPARATOR_FIELD_STDOUT_DIGEST	stdout_digest
+COMPARATOR_FIELD_ARTIFACT_PRESENT	artifact_present
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE ORDER OF THE FIXTURES
+#
+# The fixtures are run in the roster order above, so the observation
+# sequence is deterministic and its digest is comparable.
+#
+FIXTURE_ORDER	FX_REQUIRED_OBJECT,FX_ALIAS_OBJECT,FX_ALT_EXECUTABLE,FX_ALT_ASSEMBLY,FX_NEG_UNKNOWN_OPTION,FX_NEG_MISSING_O,FX_NEG_NO_INPUT,FX_NEG_UNREADABLE,FX_PREC_STDOUT_OK,FX_PREC_STDOUT_BAD,FX_PREC_STDOUT_BAD_AND_UNKNOWN,FX_PREC_STDOUT_BAD_AND_ARITY,FX_PREC_STDOUT_BAD_AND_NOINPUT,FX_PREC_STDOUT_UNKNOWN_ONLY
+OBSERVATION_DIGEST_RULE	the sorted, normalised observation sequence of all 14 fixtures, MD5

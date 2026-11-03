@@ -1,0 +1,97 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=experiment-and-producer-plan
+#
+# THE FROZEN EXPERIMENT PLAN AND THE PRODUCER DAG PLAN.
+#
+# Every experiment is a REAL mutation in a DISPOSABLE WORKTREE, a REAL
+# rebuild, and a REAL observation. The authoritative checkout is NEVER
+# mutated. Every mutation names its EXACT byte range.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE FOUR EXPERIMENTS
+# ---------------------------------------------------------------------------
+#
+experiment_id	hypothesis	source	exact_mutation	rebuild_scope	expected_observation	detector
+M-POLYC-PRECEDENCE-01	the PolyC-selected status is CAUSAL for the reported diagnostic	tools/bootstrap/selfhost-driver-wp001.HC	the single WP_STATUS_TO_STDOUT return inside WpDriverMapStatus, changed to WP_STATUS_USAGE	REBUILD THE WHOLE PRODUCTION COMPILER (the driver subject, then the link, then the compiler)	the FX_PREC_STDOUT_BAD fixture's reported diagnostic CHANGES from the `-o-` text to the Unknown-commandline-options text; the exit status stays 1	POLYC_ACTION_CAUSAL_DORMANT (NC17) if the diagnostic does NOT change
+M-C-LEGACY-02	the legacy C -o- policy is DORMANT on the selector-ON build and LIVE on the G0 oracle	src/cli.c	the single `args->to_stdout && !args->assemble_only` read inside the selector-ON region of cliParseArgsPolyC, changed to `args->to_stdout && !args->assemble_only && 1` is NOT used; the mutation is the DELETION of the whole condition, so the guard never fires	REBUILD THE WHOLE PRODUCTION COMPILER	the selector-ON build's FX_PREC_STDOUT_BAD diagnostic CHANGES (the `-o-` text disappears); the G0 oracle's FX_PREC_STDOUT_BAD diagnostic is UNCHANGED, because the legacy region keeps its own policy	LEGACY_C_POLICY_NOT_DORMANT (NC18)
+M-POLYC-STATUS-03	the driver's status mapping is CAUSAL for the USAGE diagnostic	tools/bootstrap/selfhost-driver-wp001.HC	the single WP_STATUS_USAGE return inside WpDriverMapStatus, changed to WP_STATUS_NO_INPUT	REBUILD THE WHOLE PRODUCTION COMPILER	the FX_NEG_UNKNOWN_OPTION diagnostic CHANGES from the Unknown-commandline-options text to the no-input-files text; the exit status stays 1; the OBJECT cases are UNCHANGED	POLYC_ACTION_CAUSAL_DORMANT (NC17) if the diagnostic does NOT change
+M-POLYC-POISON-04	an out-of-domain status FAILS CLOSED	tools/bootstrap/selfhost-driver-wp001.HC	the WP_STATUS_TO_STDOUT return inside WpDriverMapStatus, changed to return 99	REBUILD THE WHOLE PRODUCTION COMPILER	the compiler exits 1, produces NO artifact, and does NOT fall back to the legacy C decision	POLYC_DRIVER_FALLBACK_NOT_CLOSED (NC08)
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE EXACT BYTE RANGES
+#
+# The byte ranges are computed from the FROZEN source at C1, from the
+# C1-frozen digests, and are re-derived at C3 from the same digests.
+#
+# range_id	file	searched_text	line_at_c1	byte_range
+RANGE_PRECEDENCE_RETURN	tools/bootstrap/selfhost-driver-wp001.HC	WP_STATUS_TO_STDOUT	THE_WP_STATUS_TO_STDOUT_RETURN	THE_SINGLE_RETURN_STATEMENT_INSIDE_WpDriverMapStatus
+RANGE_USAGE_RETURN	tools/bootstrap/selfhost-driver-wp001.HC	WP_STATUS_USAGE	THE_WP_STATUS_USAGE_RETURN	THE_SINGLE_RETURN_STATEMENT_INSIDE_WpDriverMapStatus
+RANGE_LEGACY_GUARD	src/cli.c	args->to_stdout && !args->assemble_only	THE_LEGACY_GUARD_CONDITION	THE_WHOLE_IF_CONDITION_IN_THE_SELECTOR_ON_REGION
+#
+# The ranges are UNIQUE in their files: the searched text appears
+# exactly ONCE in the selector-ON region. The C3 phase RECOMPUTES the
+# ranges and REJECTS a mutation whose range is not unique, so a
+# mutation cannot silently hit a different statement.
+#
+RANGE_UNIQUENESS_REQUIRED	YES
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE MUTATION INVARIANTS
+#
+invariant	requirement
+distinct_source_files	the four experiments touch DIFFERENT files or DIFFERENT unique ranges
+no_mutation_in_unrelated_functions	no mutation lands in a semantic function outside the named one
+source_restored	after each experiment the source is restored and the restored bytes are VERIFIED against the frozen digest
+object_restored	after each experiment the rebuilt object is verified against the frozen digest
+no_alias	no two producers are the same executable
+independent_builds	each generation is produced by a DISTINCT producer executable
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE FOUR-GENERATION PRODUCER DAG PLAN
+#
+# G0 is the pure C-driver oracle, built with the selector OFF. G1, G2
+# and G3 are the SAME PolyC driver source compiled by THREE DISTINCT
+# PRODUCER EXECUTABLES, distinguished by content SHA-256.
+#
+# A producer is an EXECUTABLE; an object is a FILE. Two producers may
+# legitimately produce byte-identical objects, because they are the
+# same compiler generation. That is MEASURED, not assumed.
+#
+generation	role	producer
+G0	the pure C-driver oracle	build/host-stage0/hcc with the selector OFF
+G1	the C-rooted stage0	build/host-stage0/hcc
+G2	the current production compiler	./hcc
+G3	an independently built qualified bootstrap generation	build/runtime-producer/hcc-bootstrap04
+#
+# The producer identities are DISTINCT by content SHA-256, and the
+# producer SOURCE is the same PolyC driver source for G1, G2 and G3.
+#
+PRODUCER_DAG_GENERATIONS	4
+PRODUCER_DAG_PAIRS	12
+PRODUCER_DISTINCT_REQUIRED	YES
+PRODUCER_ALIAS_FORBIDDEN	YES
+PRODUCER_OBJECT_IDENTITY	MEASURED_NOT_ASSUMED
+#
+# ---------------------------------------------------------------------------
+# SECTION 5 -- THE G0 INDEPENDENCE CONTRACT
+#
+# The G0 oracle is INDEPENDENT when, against the REAL G0 binary:
+#
+check	requirement
+symbol_table	the symbol table carries ZERO _WpDriver symbols
+relocations	the relocations carry ZERO references to the driver subject
+new_status_trace	the binary carries NO trace of the new status-domain member's decision path
+behaviour	the observable behaviour on the frozen fixtures is the LEGACY behaviour
+#
+# The "no trace of the new status member" check is the one the
+# correction could break: the new member lives in the PolyC driver,
+# which the G0 oracle does not link, so the oracle must carry NO
+# trace of it. The check is MECHANICAL: the G0 binary's symbol table
+# and relocations must carry zero driver references, and the G0
+# binary's behaviour on FX_PREC_STDOUT_BAD must be the LEGACY one.
+#
+G0_CHECKS	4
+G0_NEW_STATUS_TRACE_CHECK	THE_G0_BINARY_MUST_CARRY_NO_TRACE_OF_THE_NEW_STATUS_MEMBER
+G0_LEGACY_BEHAVIOUR_FIXTURE	FX_PREC_STDOUT_BAD
+G0_LEGACY_BEHAVIOUR_EXPECTED	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout

@@ -1,0 +1,85 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=frozen-source-ranges
+#
+# THE EXACT SOURCE RANGES AND DIGESTS FROZEN AT C1.
+#
+# Every digest is the SHA-256 of the WHOLE FILE at the C1 entry commit.
+# The C2 phase is authorized against these digests: a file whose digest
+# is not in this table is NOT authorized to change.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE AUTHORIZED FILES AND THEIR DIGESTS
+# ---------------------------------------------------------------------------
+#
+file	authorized_to_change	sha256_at_c1
+src/cli.c	YES	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb
+src/cli.h	ONLY_IF_STRICTLY_REQUIRED	d13495487fbd5f64e65a32554d0eafa5a4c9915f6de1c1417ea1bbae4fb2e6d3
+tools/bootstrap/selfhost-driver-wp001.HC	YES	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+src/main.c	NO	51dbe737bbff73d943d3437463262f21bb513afd79d54afff17abd2f5b0121b6
+src/selfhost-driver-wp001.h	ONLY_IF_STRICTLY_REQUIRED	6ee9acb3aa26936f1b4b8e8aeb81d4183c79419157e5fe19ab87d2b4f1131a5d
+#
+# src/main.c is FROZEN: the emission translation table and the
+# artifact-class decision are the predecessor's, and this ACT does not
+# re-open them. Its digest MUST be unchanged at C3.
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE EXACT REGION IN src/cli.c
+# ---------------------------------------------------------------------------
+#
+# The selector-ON region of cliParseArgsPolyC, from the guard to the
+# paired #else. The line numbers are the C1-frozen line numbers and are
+# re-derived at C3 from the digests, not trusted.
+#
+region_id	file	first_line	last_line	description
+REGION_CLI_SELECTOR_ON	src/cli.c	611	790	cliParseArgsPolyC, the whole selector-ON region
+REGION_CLI_STATUS_SELECT	src/cli.c	752	752	the PolyC-selected status: long long status = WpDriverDecide();
+REGION_CLI_STDOUT_GUARD	src/cli.c	754	758	the C-owned -o-/-S guard that PREEMPTS the status
+REGION_CLI_USAGE_DISPATCH	src/cli.c	760	768	the USAGE dispatch, already status-driven
+REGION_CLI_ARITY_DISPATCH	src/cli.c	770	781	the ARITY dispatch, already status-driven
+REGION_CLI_NOINPUT_DISPATCH	src/cli.c	783	789	the NO_INPUT dispatch, already status-driven
+#
+# The frozen DIGESTS of the two regions the C2 change touches:
+#
+region_id	sha256_of_the_region_bytes
+REGION_CLI_STATUS_SELECT	THE_WP_DRIVERDECIDE_CALL_LINE
+REGION_CLI_STDOUT_GUARD	THE_WHOLE_GUARD_BLOCK
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE EXACT REGION IN THE POLYC DRIVER
+# ---------------------------------------------------------------------------
+#
+region_id	file	first_line	last_line	description
+REGION_DRIVER_STATUS_DEFINES	tools/bootstrap/selfhost-driver-wp001.HC	57	62	the WP_STATUS_ domain
+REGION_DRIVER_MAP_STATUS	tools/bootstrap/selfhost-driver-wp001.HC	679	720	WpDriverMapStatus, the status mapping and the precedence order
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE EXACT REGION IN THE C MIRROR
+# ---------------------------------------------------------------------------
+#
+region_id	file	first_line	last_line	description
+REGION_HEADER_STATUS_DEFINES	src/selfhost-driver-wp001.h	67	72	the WP_DRIVER_STATUS_ mirror
+#
+# ---------------------------------------------------------------------------
+# SECTION 5 -- THE SOURCE DIGESTS OF THE UNAUTHORIZED-TO-CHANGE FILES
+#
+# These digests MUST be unchanged at C3. A change to any of them is a
+# scope breach.
+#
+file	sha256_at_c1	must_be_unchanged
+src/main.c	51dbe737bbff73d943d3437463262f21bb513afd79d54afff17abd2f5b0121b6	YES
+src/compile.c	cf6803cb9d951fd597a7087a0e8c2339c50381aabfa73c0fe25bc792655cdbdd	YES
+src/parser.c	319338c1f3209a61014d7c979feaa1f77bbd5ac19aef199a932b5f1c8f6f8ca8	YES
+src/cctrl.c	f8fc55531147761e5d72b87898ca1c44081a1b4e1a3cf91c4489178400b1c840	YES
+src/ast.c	6d002b397fc2c287cb22bcc6d8e3f4e37ebaed968191a83d56abc71884f631bf	YES
+src/ir.c	5b18b379af9300fce877ccc96c0f13d10775979b57bccad4867fa22910dc098a	YES
+src/aarch64.c	f7e18406b2193163a3eaa3d1d35c4a1d4d0afc427c91af13d3ecba6bc7fe371a	YES
+#
+--- computing the remaining digests ---
+src/cli.h	d13495487fbd5f64e65a32554d0eafa5a4c9915f6de1c1417ea1bbae4fb2e6d3
+src/compile.c	cf6803cb9d951fd597a7087a0e8c2339c50381aabfa73c0fe25bc792655cdbdd
+src/parser.c	319338c1f3209a61014d7c979feaa1f77bbd5ac19aef199a932b5f1c8f6f8ca8
+src/cctrl.c	f8fc55531147761e5d72b87898ca1c44081a1b4e1a3cf91c4489178400b1c840
+src/ast.c	6d002b397fc2c287cb22bcc6d8e3f4e37ebaed968191a83d56abc71884f631bf
+src/ir.c	5b18b379af9300fce877ccc96c0f13d10775979b57bccad4867fa22910dc098a
+src/aarch64.c	f7e18406b2193163a3eaa3d1d35c4a1d4d0afc427c91af13d3ecba6bc7fe371a

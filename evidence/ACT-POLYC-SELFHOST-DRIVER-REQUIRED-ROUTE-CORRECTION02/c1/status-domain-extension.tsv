@@ -1,0 +1,164 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=status-domain-extension
+#
+# THE FROZEN STATUS-DOMAIN EXTENSION.
+#
+# The PolyC driver's status domain currently has SIX members. The
+# required route needs a SEVENTH, because the `-o-`/`-S` condition has
+# no status member and the C side therefore has to decide it.
+#
+# The new member's value is DISJOINT from every existing status, action
+# and emission code.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE EXISTING DOMAINS
+# ---------------------------------------------------------------------------
+#
+# The PolyC source of truth (tools/bootstrap/selfhost-driver-wp001.HC):
+#
+#   57  #define WP_STATUS_OK        0   // success, or nothing to do
+#   58  #define WP_STATUS_USAGE     1   // unknown option
+#   59  #define WP_STATUS_COMPILE   2   // a compile action was selected
+#   60  #define WP_STATUS_ARITY     3   // an argument arity / domain violation
+#   61  #define WP_STATUS_NO_INPUT  4   // no input file
+#   62  #define WP_STATUS_ENGINE    5   // the compile engine reported failure
+#
+# The C mirror (src/selfhost-driver-wp001.h):
+#
+#   67  #define WP_DRIVER_STATUS_OK       0
+#   68  #define WP_DRIVER_STATUS_USAGE    1
+#   69  #define WP_DRIVER_STATUS_COMPILE  2
+#   70  #define WP_DRIVER_STATUS_ARITY    3
+#   71  #define WP_DRIVER_STATUS_NO_INPUT 4
+#   72  #define WP_DRIVER_STATUS_ENGINE   5
+#
+# The ACTION domain and the EMISSION domain are SEPARATE domains and
+# must not collide with the status domain. The emission domain is
+# 0..4 and the action domain uses values from 1 upward, including
+# WP_ACTION_NONE 20. The status domain's existing values 0..5 are
+# already disjoint from the emission domain's 1..4 by construction
+# because they are separate namespaces; the new member follows the
+# same rule and is compared only against the STATUS domain.
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE NEW MEMBER
+# ---------------------------------------------------------------------------
+#
+member	polyc_source_name	polyc_source_value	c_mirror_name	c_mirror_value
+STATUS_TO_STDOUT	WP_STATUS_TO_STDOUT	6	WP_DRIVER_STATUS_TO_STDOUT	6
+#
+# DISJOINTNESS PROOF (mechanical, against the source):
+#
+#   the status domain's values after the extension are {0,1,2,3,4,5,6}
+#   the largest PRE-EXISTING status value is 5
+#   the new value 6 is therefore DISJOINT from every pre-existing
+#   status value, and it is the LARGEST, so it cannot be confused
+#   with a valid zero-valued status.
+#
+# The new member is a SOURCE VALUE in BOTH the PolyC subject and the
+# C mirror. The C side does NOT invent a parallel value; it reads the
+# same number the driver produced.
+#
+STATUS_DOMAIN_BEFORE	{0,1,2,3,4,5}
+STATUS_DOMAIN_AFTER	{0,1,2,3,4,5,6}
+STATUS_DOMAIN_SIZE_BEFORE	6
+STATUS_DOMAIN_SIZE_AFTER	7
+STATUS_NEW_VALUE	6
+STATUS_NEW_VALUE_DISJOINT	YES
+STATUS_NEW_VALUE_IS_LARGEST	YES
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE CONDITION THE DRIVER MUST DECIDE
+#
+# The C policy being moved is, verbatim from src/cli.c:
+#
+#   if (args->to_stdout && !args->assemble_only) { ... }
+#
+# where args->to_stdout is set by WP_DRIVER_FIELD_TO_STDOUT and
+# args->assemble_only by WP_DRIVER_FIELD_ASSEMBLE_ONLY.
+#
+# The PolyC driver ALREADY classifies both options:
+#
+#   option index  5  "-S"    -> WP_KIND_ASSEMBLY   (9)
+#   option index 16  "-o-"   -> WP_KIND_STDOUT     (17)
+#
+# So the driver can decide the condition from its OWN option
+# classification, with no new option table, no new option name, no
+# new flag test and no new arity rule.
+#
+# The condition, expressed on the driver's own terms:
+#
+#   WP_KIND_STDOUT is present in the argv
+#   AND WP_KIND_ASSEMBLY is NOT present in the argv
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE PRECEDENCE POSITION
+#
+# The status is a SINGLE value, so the mutually-exclusive CLI checks
+# must be ORDERED. The driver already owns the arity-before-usage
+# order inside WpDriverMapStatus. The new member joins that ordering.
+#
+# The frozen precedence order is:
+#
+#   1  WP_STATUS_ARITY       an option's value is missing
+#   2  WP_STATUS_TO_STDOUT   -o- was requested without -S
+#   3  WP_STATUS_USAGE       an unknown argument is present
+#   4  WP_STATUS_NO_INPUT    no input file and no action
+#   5  WP_STATUS_COMPILE     a compile action was selected
+#   6  WP_STATUS_ENGINE      the compile engine reported failure
+#   7  WP_STATUS_OK          success, or nothing to do
+#
+# RATIONALE FOR THE POSITION, FROM THE LEGACY CLI ORDER:
+#
+# The legacy C CLI ran the checks in this order after the option loop:
+#
+#   1  the `-o-` without `-S` compatibility check
+#   2  the unknown-arguments report
+#   3  the absence-of-an-input-file report
+#
+# and the ARITY violation is reported from INSIDE the option loop,
+# i.e. BEFORE any of them. The frozen order above reproduces that
+# legacy order exactly, so the correction CHANGES NO OBSERVABLE
+# BEHAVIOUR for any argv that does not also carry an unknown argument
+# or an arity violation.
+#
+PRECEDENCE_POSITION	2
+PRECEDENCE_ARITY	1
+PRECEDENCE_USAGE	3
+PRECEDENCE_ORDER_SOURCE	the legacy C CLI's own post-option-loop check order
+LEGACY_ORDER_REPRODUCED	YES
+#
+# The ONE case whose observable behaviour changes is the case the
+# defect IS: an argv that carries BOTH the `-o-`-without-`-S`
+# condition AND an unknown argument (or an arity violation). There,
+# the legacy C CLI reported the `-o-` message first; the corrected
+# driver reports the ARITY or USAGE message first, because the driver
+# now owns the order.
+#
+# This is the intended, and ONLY intended, behavioural delta. It is
+# FROZEN here so that the C3 comparator can tell it apart from any
+# unintended change.
+#
+OBSERVED_DELTA_INTENDED	1
+OBSERVED_DELTA_ARGV	an argv carrying the -o-without-S condition AND an unknown argument or an arity violation
+OBSERVED_DELTA_FROM	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout
+OBSERVED_DELTA_TO	the PolyC-selected ARITY or USAGE diagnostic
+OBSERVED_DELTA_EXIT_STATUS	UNCHANGED (1)
+#
+# ---------------------------------------------------------------------------
+# SECTION 5 -- THE DIAGNOSTIC TEXT AND EXIT STATUS, FROZEN
+#
+# The text is FROZEN byte for byte. The exit status is FROZEN.
+#
+diagnostic_id	condition	text	exit_status	owner_at_c1	owner_after_c2
+DIAG_TO_STDOUT	-o- without -S	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout	1	C_SEMANTIC_OWNER	POLYC_SELECTED_STATUS
+DIAG_USAGE	unknown argument	Unknown commandline options: <args>	1	POLYC_SELECTED_STATUS	POLYC_SELECTED_STATUS
+DIAG_ARITY	missing option value	Unexpected end of input - expected `<option?>`	1	POLYC_SELECTED_STATUS	POLYC_SELECTED_STATUS
+DIAG_NO_INPUT	no input file	hcc: fatal error: no input files	1	POLYC_SELECTED_STATUS	POLYC_SELECTED_STATUS
+#
+# The DIAG_TO_STDOUT text is the text the legacy C CLI already
+# produced. The correction does NOT change a single byte of it.
+#
+DIAGNOSTIC_TEXT_CHANGED	NONE
+EXIT_STATUS_CHANGED	NONE
