@@ -1031,7 +1031,20 @@ static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
       // The extended name is the FIRST `extlen` bytes of the payload.
       if (extlen > msize) return AR_BAD_EXTENDED_NAME;
       MemCpy(name, buf + payload_off, extlen);
-      namelen = extlen;
+      // The extended name area is NUL-PADDED to an eight-byte boundary:
+      // the name of a member named "good.o" is stored as "good.o" followed
+      // by a NUL and then by further NUL padding, and the DECLARED length
+      // covers the padding as well.
+      //
+      // The MEMBER IDENTITY is the name itself, WITHOUT the padding. The
+      // padding is an artefact of the extended encoding and is not part of
+      // the name, so it is trimmed here. Without the trim, the decoded
+      // identity of "good.o" would be the twelve bytes "good.o\0\0\0\0\0\0",
+      // and a requirement for the member "good.o" would NOT be satisfied.
+      I64 real = extlen;
+      while (real > 0 && name[real - 1] == 0) real = real - 1;
+      if (real == 0) return AR_BAD_EXTENDED_NAME;
+      namelen = real;
       // The payload is the remainder AFTER the extended name.
       ar->m[ar->count].payload = buf + payload_off + extlen;
       ar->m[ar->count].paylen = msize - extlen;

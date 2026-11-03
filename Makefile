@@ -1051,6 +1051,12 @@ DRIVER_ROUTE03_SHA256_SRC = tools/quality/driver-required-route-correction03-sha
 DRIVER_ROUTE03_HARNESS_SRC = tools/quality/driver-required-route-correction03-harness.HC
 DRIVER_ROUTE03_HARNESS_OBJ = build/driver-required-route-correction03-harness.o
 DRIVER_ROUTE03_HARNESS_BIN = build/driver-required-route-correction03-harness
+DRIVER_ROUTE03_PUBLISH_SRC = tools/quality/driver-required-route-correction03-publish.HC
+DRIVER_ROUTE03_PUBLISH_OBJ = build/driver-required-route-correction03-publish.o
+DRIVER_ROUTE03_PUBLISH_BIN = build/driver-required-route-correction03-publish
+# The archive builder's ABSOLUTE PATH. The runtime spawns with `execv`,
+# which does NOT search the PATH, so the tool receives the path explicitly.
+AR_TOOL ?= /usr/bin/ar
 DRIVER_ROUTE03_WORKDIR = build/driver-wp001-correction03
 DRIVER_ROUTE03_FIXTURE = tests/driver-wp001/required-route/route-source.HC
 
@@ -1531,6 +1537,141 @@ $(DRIVER_ROUTE03_HARNESS_OBJ): $(DRIVER_ROUTE03_HARNESS_SRC) $(DRIVER_ROUTE03_CO
 $(DRIVER_ROUTE03_HARNESS_BIN): $(DRIVER_ROUTE03_HARNESS_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_HARNESS_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# ---------------------------------------------------------------------------
+# THE ATOMIC RUNTIME-ARCHIVE PUBLISHER.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3, F6.
+#
+# The publisher builds the runtime archive at a TEMPORARY path in the final
+# archive's OWN directory -- therefore on the SAME FILESYSTEM -- it
+# VALIDATES the archive there with the SHARED contract, and only a VALID
+# archive is published to the final path by an ATOMIC rename.
+# ---------------------------------------------------------------------------
+$(DRIVER_ROUTE03_PUBLISH_OBJ): $(DRIVER_ROUTE03_PUBLISH_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_PUBLISH_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_PUBLISH_BIN): $(DRIVER_ROUTE03_PUBLISH_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_PUBLISH_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# ---------------------------------------------------------------------------
+# THE F6 ADVERSE EXPERIMENT.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3, F6.
+#
+# THE REQUIRED EXPERIMENT IS:
+#
+#     INVALID_ARCHIVE -> FIRST_BUILD_FAIL -> RETRY_FAIL
+#
+# The experiment is EXECUTED here. A repair that is only described is not a
+# repair.
+#
+# THE EXPERIMENT.
+#
+#   PHASE A -- the VALID publication. The publisher is given object files
+#   that carry the required member. The publication SUCCEEDS, the final
+#   path holds the archive, and the archive DECODES with the shared
+#   decoder.
+#
+#   PHASE B -- the INVALID publication. The publisher is given an object
+#   file that carries NO required member, so the archive that would be
+#   built is INVALID. The publication FAILS, the final path holds NO
+#   archive, and no temporary residue is left behind.
+#
+#   PHASE C -- the RETRY. The SAME invalid publication is attempted again.
+#   It FAILS AGAIN. It does NOT succeed by observing a stale published
+#   file, and it does NOT succeed because the target "exists".
+#
+# The FINAL PATH IS EMPTIED before PHASE B, so the retry cannot succeed by
+# accident.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-publish-test
+driver-wp001-correction03-publish-test: $(DRIVER_ROUTE03_PUBLISH_BIN)
+	@set -e; \
+	W=$(DRIVER_ROUTE03_WORKDIR)/publish; \
+	rm -rf $$W; \
+	mkdir -p $$W/obj; \
+	printf 'I64 F6Marker() {\n    return 1;\n}\n' > $$W/marker.HC; \
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $$W/marker.HC -o $$W/obj/good.o; \
+	if [ ! -s $$W/obj/good.o ]; then \
+	  echo "driver-wp001-correction03: the F6 witness object was not produced" >&2; \
+	  exit 1; \
+	fi; \
+	cp $$W/obj/good.o $$W/obj/other.o; \
+	cp $$W/obj/good.o $$W/obj/third.o; \
+	FINAL=$$W/libf6test.a; \
+	\
+	rm -f $$FINAL; \
+	$(DRIVER_ROUTE03_PUBLISH_BIN) $(AR_TOOL) $$FINAL \
+	  $$W/obj/good.o $$W/obj/other.o $$W/obj/third.o good.o \
+	  > $$W/phase-a.txt 2>&1; \
+	if [ ! -s $$FINAL ]; then \
+	  echo "driver-wp001-correction03: PHASE A FAILED, the valid archive was not published" >&2; \
+	  cat $$W/phase-a.txt >&2; \
+	  exit 1; \
+	fi; \
+	if ! grep -q 'PUBLISH_REASON	OK' $$W/phase-a.txt; then \
+	  echo "driver-wp001-correction03: PHASE A FAILED, the publisher did not report OK" >&2; \
+	  cat $$W/phase-a.txt >&2; \
+	  exit 1; \
+	fi; \
+	echo "F6_PHASE_A=PUBLISHED"; \
+	\
+	rm -f $$FINAL; \
+	set +e; \
+	$(DRIVER_ROUTE03_PUBLISH_BIN) $(AR_TOOL) $$FINAL \
+	  $$W/obj/good.o $$W/obj/other.o $$W/obj/third.o absent-member.o \
+	  > $$W/phase-b.txt 2>&1; \
+	rcb=$$?; \
+	set -e; \
+	if [ $$rcb -eq 0 ]; then \
+	  echo "driver-wp001-correction03: PHASE B FAILED, the publisher ACCEPTED an invalid archive" >&2; \
+	  cat $$W/phase-b.txt >&2; \
+	  exit 1; \
+	fi; \
+	if [ -e $$FINAL ]; then \
+	  echo "driver-wp001-correction03: PHASE B FAILED, an invalid archive was PUBLISHED" >&2; \
+	  exit 1; \
+	fi; \
+	if ! grep -q 'PUBLISH_REASON	PUBLISH_VALIDATION_FAILED' $$W/phase-b.txt; then \
+	  echo "driver-wp001-correction03: PHASE B FAILED, the publisher did not report a validation failure" >&2; \
+	  cat $$W/phase-b.txt >&2; \
+	  exit 1; \
+	fi; \
+	_residue=$$(ls -a $$W | grep -c '^\.libtos\.publish\.' || true); \
+	if [ "$$_residue" != "0" ]; then \
+	  echo "driver-wp001-correction03: PHASE B FAILED, a temporary residue was left behind" >&2; \
+	  exit 1; \
+	fi; \
+	echo "F6_PHASE_B=FAILED_AND_NOT_PUBLISHED"; \
+	\
+	set +e; \
+	$(DRIVER_ROUTE03_PUBLISH_BIN) $(AR_TOOL) $$FINAL \
+	  $$W/obj/good.o $$W/obj/other.o $$W/obj/third.o absent-member.o \
+	  > $$W/phase-c.txt 2>&1; \
+	rcc=$$?; \
+	set -e; \
+	if [ $$rcc -eq 0 ]; then \
+	  echo "driver-wp001-correction03: PHASE C FAILED, the RETRY SUCCEEDED on an invalid archive" >&2; \
+	  cat $$W/phase-c.txt >&2; \
+	  exit 1; \
+	fi; \
+	if [ -e $$FINAL ]; then \
+	  echo "driver-wp001-correction03: PHASE C FAILED, the RETRY published an invalid archive" >&2; \
+	  exit 1; \
+	fi; \
+	echo "F6_PHASE_C=RETRY_FAILED"; \
+	echo "F6_EXPERIMENT=INVALID_ARCHIVE -> FIRST_BUILD_FAIL -> RETRY_FAIL"; \
+	echo "DRIVER_WP001_CORRECTION03_PUBLISH_TEST_STATUS=PASS"
+
 
 # ---------------------------------------------------------------------------
 # THE EMISSION COVERAGE (P1-3).
