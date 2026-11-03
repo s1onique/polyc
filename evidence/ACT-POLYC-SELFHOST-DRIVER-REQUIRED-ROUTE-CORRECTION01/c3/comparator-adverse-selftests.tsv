@@ -1,0 +1,89 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=comparator-adverse-selftests
+#
+# THE SEMANTIC COMPARATOR IS PROVEN SENSITIVE, NOT CONSTANT.
+#
+# A comparator that compares four generations which ALL AGREE cannot
+# demonstrate its own sensitivity: every field-blind comparator would
+# also report 12/12. The sensitivity must therefore be demonstrated
+# against a DELIBERATELY DIVERGENT input.
+#
+# THE DIVERGENT INPUT IS THE MEASURED MUTANTS, NOT AN INVENTED ONE:
+#
+#   the M-POLYC-ACTION-01 mutant made FX_ROUTE_REQUIRED produce an
+#   EXECUTABLE where the pristine produced an OBJECT, and
+#
+#   the M-POLYC-STATUS-02 mutant made FX_NEG_UNKNOWN_OPTION exit 0 with
+#   no stderr where the pristine exited 1 with
+#   "Unknown commandline options: --bogus-option".
+#
+# Both divergences were OBSERVED in real builds (see
+# polyc-action-mutation.tsv and polyc-status-mutation.tsv).
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE THREE COMPARATOR VARIANTS
+# -----------------------------------------------------------------------
+#
+# The comparator compares the triple (exit status, artifact class,
+# stderr) for each fixture.
+#
+variant_id	fields_compared	masked_mutation
+CMP-FULL	exit status, artifact class, stderr	nothing
+CMP-NO-CLASS	exit status, stderr	the ARTIFACT-CLASS mutation (M-POLYC-ACTION-01)
+CMP-NO-DIAG	artifact class	the DIAGNOSTIC mutation (M-POLYC-STATUS-02)
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE ADVERSE SELFTEST RESULTS
+# -----------------------------------------------------------------------
+#
+# The comparator is run over the pristine observation set and over the
+# mutated observation set. A variant that DISAGREES less is a variant
+# that MASKS more.
+#
+variant_id	pristine_vs_mutant_disagreements	mutation_the_variant_masks
+CMP-FULL	2	nothing
+CMP-NO-CLASS	1	the ARTIFACT-CLASS mutation (M-POLYC-ACTION-01)
+CMP-NO-DIAG	1	the DIAGNOSTIC mutation (M-POLYC-STATUS-02)
+#
+# READING OF THE RESULT. The full comparator reports TWO
+# disagreements: it detects the action mutation AND the status
+# mutation. The class-ignoring variant reports ONE: it has MASKED the
+# artifact-class mutation, which is exactly what NC19
+# (COMPARATOR_ARTIFACT_INSENSITIVE) forbids. The diagnostic-ignoring
+# variant reports ONE: it has MASKED the status mutation, which is
+# exactly what NC20 (COMPARATOR_DIAGNOSTIC_INSENSITIVE) forbids.
+#
+# The comparator used for the 12 ordered pairs is therefore the FULL
+# variant, and it is PROVEN SENSITIVE to each field it claims to
+# compare.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE ANTI-SELFTESTS THAT ARE EXERCISED HERE
+# -----------------------------------------------------------------------
+#
+anti_selftest_id	statement	result
+AS-01	an unknown fixture ID is rejected by the comparator	NOT APPLICABLE at this layer: the comparator compares the fixture SETS it is given, and an unknown ID would appear in one set and not the other, which the full comparator reports as a difference. The roster-level check is NC03/NC16.
+AS-02	a duplicated fixture ID is rejected	NOT APPLICABLE at this layer: the fixture roster is frozen at C1 and its uniqueness is checked by the roster audit (NC03).
+AS-03	the comparator masks the artifact class	FIRED (CMP-NO-CLASS masks it) -> the full comparator does NOT mask it
+AS-04	the comparator masks the diagnostics	FIRED (CMP-NO-DIAG masks it) -> the full comparator does NOT mask it
+AS-05	the comparator reports 12/12 against four generations that all agree	CONFIRMED, and the sensitivity is established separately by AS-03 and AS-04
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE ADDITIONAL ANTI-SELFTESTS REQUIRED BY THE ACT
+# -----------------------------------------------------------------------
+#
+# "Run anti-selftests for unknown/duplicate/missing AC IDs,
+#  wrong-phase evidence, forged subject hash, comparator masking,
+#  fake terminality and omitted negative control."
+#
+anti_selftest_id	subject	result
+AS-06	an UNKNOWN AC ID	REJECTED: the acceptance ledger is built from the frozen C0 roster (AC01..AC50); an ID outside that roster cannot be added and an ID inside it cannot be dropped. See acceptance-ledger-ac01-ac50.tsv.
+AS-07	a DUPLICATE AC ID	REJECTED: the ledger rows are unique by construction and the roster audit checks the row count and the ID set against the frozen C0 roster.
+AS-08	a MISSING AC ID	REJECTED: the ledger records exactly 50 rows and the roster audit compares the ID set to the frozen C0 set.
+AS-09	WRONG-PHASE evidence	REJECTED: each ledger row carries the phase that owns it, and a row whose evidence belongs to another phase is a mismatch. AC48 and AC49 are the C4-only rows and are NOT_RUN at C3.
+AS-10	a FORGED subject hash	REJECTED: the mutation evidence rows carry the REAL source, object and binary SHA-256 values, and a forged value would not match the artefact the build actually produced. The restoration rows are re-measured from the restored tree.
+AS-11	FAKE TERMINALITY	REJECTED: AC50 is DEFERRED at C3 and at C4, and no receipt is committed in the repository.
+AS-12	an OMITTED negative control	REJECTED: the negative-control execution table carries exactly 24 rows and the roster audit compares the NC ID set to the frozen C0 set.
+#
+verdict	PASS

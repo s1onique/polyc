@@ -1,0 +1,195 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=conservation-and-gates
+#
+# THE CONSERVED BASELINES AND THE GATE EXECUTION, MEASURED AT C3.
+#
+# Every number below was produced by the named command against the C2
+# tree at commit da49ad1137421786b4686c6d92e7ab4e520ebe21.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE PARSER SUITE
+# -----------------------------------------------------------------------
+#
+#   cd src/tests && ../../hcc --install-dir=<abs>/build/test-prefix ./run.HC -o <runner>
+#   <runner>
+#
+# The compiler used for the run is configured with
+# -DCMAKE_INSTALL_PREFIX=<abs>/build/test-prefix, so the runner's bare
+# "../../hcc" invocation resolves tos.HH from the hermetic prefix. The
+# C0 measurement used exactly this mechanism.
+#
+measurement	value	c0_baseline	conserved
+parser_assertions_passed	376	376	YES
+parser_assertions_total	376	376	YES
+parser_failed_lines	0	0	YES
+parser_assertion_sequence_md5	b6f117eb1386ca80f81bc06226e2a741	b6f117eb1386ca80f81bc06226e2a741	YES (BYTE-IDENTICAL)
+parser_conservation_status	PASS	PASS	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE DIRECT LEXER DIFFERENTIALS
+# -----------------------------------------------------------------------
+#
+measurement	value	c0_baseline	conserved
+lexer07_direct_diff_pass	89	89	YES
+lexer07_direct_diff_fail	0	0	YES
+lexer08_direct_diff_pass	45	45	YES
+lexer08_direct_diff_fail	0	0	YES
+lexer09_direct_diff_pass	23	23	YES
+lexer09_direct_diff_fail	0	0	YES
+lexer_direct_status	PASS	PASS	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE PRODUCTION POLYC AUTHORITIES
+# -----------------------------------------------------------------------
+#
+# Each authority was re-censused over the REAL production objects and
+# the REAL linked binary. defn = the subject object defines the symbol
+# as a global text symbol; linked = the symbol is a global text symbol
+# in the linked ./hcc.
+#
+authority_id	symbol	defn	linked	verdict
+AUTH-01	_BootstrapCalcPadding	1	1	VERIFIED
+AUTH-02	_BootstrapValidPostControlFlowToken	1	1	VERIFIED
+AUTH-03	_BootstrapOperatorPrecedence	1	1	VERIFIED
+AUTH-04	_BootstrapAstBinOpFromToken	1	1	VERIFIED
+AUTH-05	_BootstrapAstUnaryOpFromToken	1	1	VERIFIED
+AUTH-06	_BootstrapSwitchArmTerminates	1	1	VERIFIED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	1	1	VERIFIED
+AUTH-08	_BootstrapDefaultArmTerminates	1	1	VERIFIED
+AUTH-09	_BootstrapStatementDispatch	1	1	VERIFIED
+AUTH-10	_AbiCpaShouldPrintAst	1	1	VERIFIED
+AUTH-11	_AbiCoreClassifyCompoundAssign	1	1	VERIFIED
+AUTH-12	_AbiCoreIsRangeOperator	1	1	VERIFIED
+AUTH-13	_AbiCoreIsValidPointerOperator	1	1	VERIFIED
+AUTH-14	_AbiA64CcForV2	1	1	VERIFIED
+AUTH-15	_AbiA64CcInvForV2	1	1	VERIFIED
+AUTH-16	_WpDriverDecide	1	1	VERIFIED
+#
+subject_objects_on_the_link_line	13	13	YES
+AUTHORITY_BASELINE	16	16	YES
+NEW_AUTHORITY_COUNT_DELTA	0	0	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE CANONICAL GATES
+# -----------------------------------------------------------------------
+#
+#   ./scripts/quality/gate-fast.sh
+#   ./scripts/quality/gate-push.sh HEAD
+#
+gate	checks	result
+gate-fast	diff-check, shell-syntax, doc-invariants, large-file-guard, factory-closure-status	PASS
+gate-push	build, install, gep01, aot, jit, lsp, diff-check	PASS (all seven)
+gate_push_range_mode	tip (subject commit, tip-only)	as configured
+gate_push_exit_code	0
+#
+# The gate-push run was SERIALIZED (one invocation,
+# TMPDIR=/tmp/polyc-rrc01-tmp), because /tmp/holyc-asm.s is a shared
+# scratch path.
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE APPEND-ONLY INVARIANT
+# -----------------------------------------------------------------------
+#
+#   ./scripts/quality/factory-append-only-test.sh
+#
+check	result
+NC1	PASS
+NC2	PASS
+NC3	PASS
+NC4	PASS
+NC5	PASS
+NC6	PASS
+NC7	PASS
+NC8	PASS
+NC9	PASS
+NC10	PASS
+NC11	PASS
+APPEND_ONLY_COUNT	11
+APPEND_ONLY_FAILURES	0
+APPEND_ONLY_STATUS	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 6 -- F14 HISTORICAL EVIDENCE BYTE IDENTITY
+# -----------------------------------------------------------------------
+#
+#   git diff --numstat <C0 entry commit> HEAD -- evidence/ docs/
+#
+measurement	value
+evidence_files_changed	22 (ALL ADDITIONS inside this ACT's own namespace)
+evidence_lines_added	1524
+evidence_lines_deleted	0
+docs_lines_deleted	0
+historical_act_documents_changed	0 (only THIS ACT's own authorization document changed, and it changed by ADDITION only)
+historical_handoff_documents_changed	0
+F14_STATUS	PASS
+#
+# No historical ACT, HANDOFF or evidence file was MUTATED, REWRITTEN or
+# DELETED. Every change is an ADDITION inside this ACT's own namespace.
+#
+# -----------------------------------------------------------------------
+# SECTION 7 -- F-NO-PYTHON: THE 12 EXACT PRE-EXISTING IDS, ZERO NEW
+# -----------------------------------------------------------------------
+#
+#   ./scripts/quality/factory-no-python-check.sh
+#
+measurement	value	c0_baseline	conserved
+F_NO_PYTHON_STATUS	FAIL_KNOWN_BASELINE	FAIL_KNOWN_BASELINE	YES
+F_NO_PYTHON_TOTAL_PATHS	12	12	YES
+F_NO_PYTHON_NEW_PATHS	0	0	YES
+#
+# The 12 exact path IDs are UNCHANGED from the C0 baseline:
+#   scripts/quality/llvm-byte-memory01-test.sh
+#   scripts/quality/llvm-cap-table-verifier.py
+#   scripts/quality/llvm-intops01-test.sh
+#   scripts/quality/llvm-memory01-red-test.sh
+#   scripts/quality/llvm-spike-test.sh
+#   tools/quality/bootstrap02-corpus-runner.py
+#   tools/quality/bootstrap02-error-corpus.py
+#   tools/quality/bootstrap03-corpus-runner.py
+#   tools/quality/bootstrap03-error-corpus.py
+#   tools/quality/bootstrap04-corpus-runner.py
+#   tools/quality/bootstrap04-error-corpus.py
+#   tools/quality/llvm-gep01-test.HC
+#
+# This ACT added NO Python source, NO Python shebang and NO Python
+# invocation. Its two new tools are PolyC source.
+#
+# -----------------------------------------------------------------------
+# SECTION 8 -- F-POLYC-TOOLS
+# -----------------------------------------------------------------------
+#
+measurement	value
+F_POLYC_TOOLS_STATUS	UNAVAILABLE
+F_POLYC_TOOLS_REASON	the canonical checker tools/factory/factory-polyc-tools-check.HC does not exist in this tree
+#
+# The checker is NOT LANDED and is therefore NOT claimed. The two new
+# tools of this ACT are PolyC source and introduce no shell or Python
+# implementation; that is a statement about THIS ACT's files, not a
+# report of the unavailable checker.
+#
+# -----------------------------------------------------------------------
+# SECTION 9 -- THE HISTORICAL NON-GREENS, NOT REPORTED AS PASS
+# -----------------------------------------------------------------------
+#
+measurement	value	status
+LEXER07_BROAD_CORPUS_STATUS	NOT_REMEASURED	NOT CLAIMED
+LEXER07_BROAD_CORPUS_HISTORICAL_IDENTITY	7ee761440de83552e751e3c3976c1683	historical identity only
+LEXER07_BROAD_CORPUS_HISTORICAL_FAILS	15	historical failures, NOT reported as PASS
+CROSS_TARGET_PREFIX_STATUS	NOT_REMEASURED	NOT CLAIMED
+CROSS_TARGET_PREFIX_HISTORICAL_IDENTITY	67	historical identity only
+#
+# Neither the broad LEXER07 corpus nor the cross-target prefix was
+# remeasured at C3, and neither is reported as an all-green run.
+#
+# -----------------------------------------------------------------------
+# SECTION 10 -- THE WORKING-TREE AND WORKTREE HYGIENE
+# -----------------------------------------------------------------------
+#
+measurement	value
+authoritative_worktree_clean_at_c3	YES (only this ACT's own c3 evidence files are uncommitted at the moment of this measurement)
+replace_refs	0
+act_owned_worktrees_at_measurement	1 disposable (the /tmp/polyc-rrc01-mut detached worktree used for the mutations); it is REMOVED before the C4 CLOSE
+push_performed	NONE
+#
+verdict	PASS

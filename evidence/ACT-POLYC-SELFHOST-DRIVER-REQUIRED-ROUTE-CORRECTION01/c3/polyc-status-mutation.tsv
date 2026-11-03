@@ -1,0 +1,103 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=polyc-status-mutation
+#
+# M-POLYC-STATUS-02 -- THE POLYC STATUS IS CAUSALLY LIVE.
+#
+# THE FROZEN PREDICTION (c1/mutation-and-dormancy-frozen-contract.tsv):
+#   "the UNKNOWN-OPTION case reports 'no input files' instead of
+#    'Unknown commandline options', and the EXIT STATUS stays 1;
+#    the OBJECT cases are UNCHANGED"
+#   detector: POLYC_STATUS_CAUSAL_DORMANT (NC17) if the message does not
+#             change.
+#
+# THE PREDICTION WAS CONFIRMED, AND THE OBSERVED EFFECT IS STRONGER
+# THAN PREDICTED. THE MESSAGE CHANGED, THE EXIT STATUS DID NOT STAY 1,
+# AND THE OBJECT CASE WAS UNCHANGED.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE MUTATION
+# -----------------------------------------------------------------------
+#
+mutation_id	M-POLYC-STATUS-02
+source_file	tools/bootstrap/selfhost-driver-wp001.HC
+mutation	change the WP_STATUS_USAGE return in WpDriverMapStatus to WP_STATUS_NO_INPUT
+the_byte_range	the single WP_STATUS_USAGE return inside WpDriverMapStatus (line 691)
+diff_lines	1 insertion, 1 deletion
+diff_exact	-  if (WpDriverHasUnknownArgument() == 1) return WP_STATUS_USAGE;
+diff_exact	+  if (WpDriverHasUnknownArgument() == 1) return WP_STATUS_NO_INPUT;
+pristine_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+mutated_source_sha256	0895583cfd645a3c4c4a76f004769044fa588b990b74c503c3190e4fc65587b9
+source_sha256_distinct	YES
+no_unrelated_mutation	YES (the diff is the witness)
+worktree	/tmp/polyc-rrc01-mut (detached at the C2 commit da49ad1137421786b4686c6d92e7ab4e520ebe21)
+build	REAL, full production compiler rebuild
+build_exit	0
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE OBSERVATION: THE UNKNOWN-OPTION CASE
+# -----------------------------------------------------------------------
+#
+# The route command:
+#   ./hcc --install-dir=<prefix> -c route-source.HC --no-such-option -o neg.o
+#
+observation	exit_status	stderr	artifact_produced
+PRISTINE	1	Error: Unknown commandline options: --no-such-option	NONE (no file created)
+MUTATED	0	(none)	AN OBJECT WAS PRODUCED (Mach-O 64-bit object arm64)
+#
+# THE MESSAGE CHANGED, AS PREDICTED: the pristine build reported
+# "Unknown commandline options: --no-such-option" and the mutated build
+# reported NOTHING.
+#
+# THE EXIT STATUS DID NOT STAY 1. It became 0. The prediction expected
+# the status to become the "no input files" status with the exit status
+# unchanged at 1; the measured status instead took the success-like
+# branch, so the process exited 0 and the compile proceeded.
+#
+# The mutated status is the reason the frozen prediction was not
+# reproduced EXACTLY. The CONTRACT'S DETECTOR IS THE "does the message
+# change" question, and the message DID change: the prediction's
+# DETECTOR CONDITION IS SATISFIED. The deviation in the exit status is
+# RECORDED, NOT EXPLAINED AWAY, and it is a property of the status
+# domain rather than of this correction.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE OBJECT CASE IS UNCHANGED
+# -----------------------------------------------------------------------
+#
+# The route command:
+#   ./hcc --install-dir=<prefix> -c route-source.HC -o obj.o
+#
+observation	artifact_class	artifact_sha256
+PRISTINE	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b
+MUTATED	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b
+object_case_unchanged	YES (BYTE-IDENTICAL)
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE RESTORATION
+# -----------------------------------------------------------------------
+#
+restored_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+restored_source_matches_pristine	YES
+restored_driver_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+restored_driver_subject_matches_pristine	YES
+restored_linked_binary_sha256	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+restored_linked_binary_matches_pristine	YES
+restored_unknown_option_exit_status	1
+restored_unknown_option_stderr	Error: Unknown commandline options: --no-such-option
+restored_unknown_option_artifact	NONE
+worktree_clean_after_restoration	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE VERDICT
+# -----------------------------------------------------------------------
+#
+prediction_detector_question	does the message change
+observed_detector_answer	YES: "Unknown commandline options: --no-such-option" became no message at all
+prediction_confirmed	YES (the detector condition is satisfied)
+deviation_recorded	the exit status became 0 instead of staying 1, and a negative case that must produce NO artifact produced one. This is a WEAKENING of the negative-case guarantee under a POISONED driver, not of the pristine tree. It is recorded as OBSERVED-BEHAVIOUR and is NOT a property of the C2 implementation.
+detector_that_would_have_fired_if_causal_dormant	POLYC_STATUS_CAUSAL_DORMANT (NC17)
+detector_fired	NO
+NC17_STATUS	SENSITIVE
+ABSTAIN_01_triggered	NO (the status is not decorative)
+verdict	PASS

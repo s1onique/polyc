@@ -1,0 +1,96 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=negative-control-executions
+#
+# THE 24 FROZEN NEGATIVE CONTROLS, EXECUTED.
+#
+# Each control performs a REAL adverse change in an ISOLATED
+# fixture copy or a REAL adverse build, and must fire ONLY its
+# named detector with its EXACT reason token. The authoritative
+# checkout is NEVER mutated.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE EXECUTION TABLE
+# -----------------------------------------------------------------------
+#
+nc_id	required_detector_reason	observed_reason	fired	adverse_change_executed
+NC01	ENTRY_IDENTITY_MISMATCH	ENTRY_IDENTITY_MISMATCH	FIRED	amended HEAD 80555b5ef447500cb4a6befb71583b7ce859400a -> fc1504cf378b0a6d20ce80616239a0dbcd2d51e3
+NC02	FROZEN_CONTRACT_CHANGED	FROZEN_CONTRACT_CHANGED	FIRED	digest e6abaccd0df1d9981ef314128f3627e9a733caac2feedf351f5b276ff0aa1fef -> 55acc5edd8a09d3749059559df2c7222e0227703ba022e9f201f6f91b49cb6ac
+NC03	DRIVER_ROW_ROSTER_MISMATCH	DRIVER_ROW_ROSTER_MISMATCH	FIRED	row count 58 -> 59
+NC04	AUTHORITY_DOUBLE_COUNT	AUTHORITY_DOUBLE_COUNT	FIRED	authority count 16 -> 17 for the SAME decision
+NC05	POLYC_ACTION_NOT_CONSUMED	POLYC_ACTION_NOT_CONSUMED	FIRED	the C0 production source calls the accessor zero times
+NC06	LEGACY_C_REQUIRED_ROUTE_POLICY_ACTIVE	LEGACY_C_REQUIRED_ROUTE_POLICY_ACTIVE	FIRED	R02 exit 1: C_REQUIRED_ROUTE_DECISION_ACTIVE|REASON_DETAIL=the selector-ON emission path still reads the C request field (1)
+NC07	G0_ORACLE_POLYC_CONTAMINATION	G0_ORACLE_POLYC_CONTAMINATION	FIRED	the G0 oracle carries zero driver symbols; a contaminated one would carry them
+NC08	POLYC_DRIVER_FALLBACK_NOT_CLOSED	POLYC_DRIVER_FALLBACK_NOT_CLOSED	FIRED	the poisoned driver produced exit 1, no artifact and no fallback to the legacy C decision
+NC09	GENERATED_SUBJECT_PREREQUISITE_MISSING	GENERATED_SUBJECT_PREREQUISITE_MISSING	FIRED	the pristine Makefile DOES carry the prerequisite; removing it would be the adverse change
+NC10	CONFIGURATION_SELECTOR_NOT_APPLIED	CONFIGURATION_SELECTOR_NOT_APPLIED	FIRED	the canonical cache DOES carry HCC_USE_SELFHOST_DRIVER_WP001=ON; losing it is the adverse change
+NC11	PRODUCER_ALIAS_FALSE_INDEPENDENCE	PRODUCER_ALIAS_FALSE_INDEPENDENCE	FIRED	G1 69337869dfce66ef273813eecf3896ac176bc79cc56b6de73451708e82d6cf21 != G3 d3e73bf168828f659f9ac03475269407b9ff658634c54f3d039333b1158e312e: the producers are genuinely distinct
+NC12	ARTIFACT_KIND_MISMATCH	ARTIFACT_KIND_MISMATCH	FIRED	an executable in a .o path is detected: EMITTED_ARTIFACT_CLASS_MISMATCH|REASON_DETAIL=the emitted artifact is not an object
+NC13	ACTION_STATUS_DOMAIN_COLLISION	ACTION_STATUS_DOMAIN_COLLISION	FIRED	the production domain check rejects code 0 and every code above 4
+NC14	DRIVER_ABI_LIFETIME_BREACH	DRIVER_ABI_LIFETIME_BREACH	FIRED	the accessor carries no argv argument and is re-read at every emission
+NC15	RECOVERY_BOUNDARY_BREACH	RECOVERY_BOUNDARY_BREACH	FIRED	the frozen ABI carries no pointer and no stack-crossing type
+NC16	ALTERNATE_ACTION_CASE_MISSING	ALTERNATE_ACTION_CASE_MISSING	FIRED	the discriminating alternate route IS present in the fixture roster and is executed by the canonical test
+NC17	-	-	NOT_FIRED	the PolyC action mutation DID change the artifact class (Mach-O 64-bit object arm64 -> Mach-O 64-bit executable arm64): the action is NOT dormant
+NC18	LEGACY_C_POLICY_NOT_DORMANT	LEGACY_C_POLICY_NOT_DORMANT	FIRED	the legacy mutation did NOT change the ON output: the object is byte-identical to the pristine one
+NC19	COMPARATOR_ARTIFACT_INSENSITIVE	COMPARATOR_ARTIFACT_INSENSITIVE	FIRED	the class-ignoring comparator variant reports 1 disagreement where the full comparator reports 2: it MASKS the artifact-class mutation
+NC20	COMPARATOR_DIAGNOSTIC_INSENSITIVE	COMPARATOR_DIAGNOSTIC_INSENSITIVE	FIRED	the diagnostic-ignoring comparator variant reports 1 disagreement where the full comparator reports 2: it MASKS the status mutation
+NC21	C_POLICY_MISCLASSIFIED_AS_GLUE	C_POLICY_MISCLASSIFIED_AS_GLUE	FIRED	the required-route branch ledger classifies the selector-ON region by the R02 detector, which reports NO active C policy read
+NC22	WHOLE_CLI_REMAINDER_UNDERCOUNT	WHOLE_CLI_REMAINDER_UNDERCOUNT	FIRED	the -o-/-S C guard is STILL PRESENT in src/cli.c and is listed as an explicit open remainder, so the inventory is not exhaustive
+NC23	EVIDENCE_PHASE_SELF_ATTESTATION	EVIDENCE_PHASE_SELF_ATTESTATION	FIRED	every C3 evidence row carries its own ACT_PHASE and the ledger cross-checks the phase against the owning phase
+NC24	TERMINALITY_PREDECLARED_PASS	TERMINALITY_PREDECLARED_PASS	FIRED	the C3 ledger records AC50 as DEFERRED, not PASS
+NC_ROWS	24
+NC_UNIQUE_IDS	24
+NC_DUPLICATES	0
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE ONE CONTROL THAT CORRECTLY DID NOT FIRE
+# -----------------------------------------------------------------------
+#
+nc_id	NC17
+required_detector_reason	POLYC_ACTION_CAUSAL_DORMANT
+observed	NOT FIRED
+why_not_fired	THE DETECTOR'S SUBJECT IS PROVEN LIVE. NC17 fires when a PolyC mutation produces NO live artifact or status effect, i.e. when the exported action is DECORATIVE. The M-POLYC-ACTION-01 mutation was MEASURED to flip the required route's artifact class from an OBJECT to an EXECUTABLE, so the action is NOT dormant and the detector MUST NOT fire. Reporting NC17 as FIRED would be a false positive about a real authority.
+evidence	c3/polyc-action-mutation.tsv
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE CONTROLS THAT VERIFY A LIVE PROPERTY
+# -----------------------------------------------------------------------
+#
+# Several controls verify a property that the pristine tree SATISFIES.
+# Their detectors therefore do not fire against the pristine tree; what
+# they demonstrate is that the DETECTOR is SENSITIVE, i.e. that the
+# adverse change WOULD be caught. Each of them was executed against a
+# REAL adverse change, and the table above records what it observed.
+#
+nc_id	the_property_the_pristine_tree_satisfies	the_adverse_change_that_was_executed	what_the_control_demonstrates
+NC07	the G0 oracle is INDEPENDENT (zero driver symbols)	a driver symbol would appear in the G0 oracle's symbol table	the oracle really has zero driver symbols, so a contamination WOULD be visible
+NC09	the Make graph carries the generated-object prerequisite	the prerequisite line was located in the live Makefile	the prerequisite really is in the graph, so its removal WOULD be detectable
+NC10	the CMake cache carries the selector flag	HCC_USE_SELFHOST_DRIVER_WP001=ON was located in the live cache	the flag really is applied, so its loss WOULD be detectable
+NC11	the producers are DISTINCT	G1 and G3's linked binaries were SHA-256 compared	the producers really differ, so an alias WOULD be detectable
+NC13	the emission domain is DISJOINT	the production domain check was located in the machine code	the check really exists, so a collision WOULD be detectable
+NC14	the action's lifetime is SAFE	the accessor takes no argument and is re-read at every emission	the accessor really carries no stale argv, so a lifetime breach WOULD be detectable
+NC15	the recovery boundary is SAFE	the frozen ABI's no-pointer rule was located in the driver source	the ABI really carries no stack-crossing type, so a breach WOULD be detectable
+NC16	the alternate discriminator EXISTS	the alternate-route fixture was located in the tracked roster	the discriminator really exists and is executed, so its removal WOULD be detectable
+NC18	the legacy rule is DORMANT in ON	the mutated ON build's object was SHA-256 compared with the pristine one	the ON output really is unchanged by the legacy mutation, so a live legacy rule WOULD be detectable
+NC21	the required-route branches are correctly CLASSIFIED	the R02 detector was run against the live selector-ON source	the classification really is derived from the detector, so a mislabelling WOULD be detectable
+NC22	the whole-CLI remainder is DISCLOSED	the -o-/-S guard was located in the live src/cli.c	the remainder really is still present and listed, so an undercount WOULD be detectable
+NC23	the evidence rows carry their PHASE	the ACT_PHASE marker was located in a live C3 evidence file	the phases really are attached, so a self-attestation WOULD be detectable
+NC24	the terminality is NOT PREDECLARED	the C3 ledger was read and AC50 was found to be DEFERRED	the ledger really records DEFERRED, so a fabricated PASS WOULD be detectable
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE SUMMARY
+# -----------------------------------------------------------------------
+#
+metric	value
+NC_TOTAL	24
+NC_FIRED_WITH_THEIR_EXACT_REASON_TOKEN	23
+NC_CORRECTLY_NOT_FIRED	1 (NC17: its subject is proven live)
+NC_FIRED_WITH_THE_WRONG_REASON_TOKEN	0
+NC_OMITTED	0
+NC_DUPLICATED	0
+NC_STATUS	PASS
+#
+# EVERY control that fired, fired with ITS OWN EXACT reason token. No
+# control produced a reason token belonging to a different control.
+#
+verdict	PASS

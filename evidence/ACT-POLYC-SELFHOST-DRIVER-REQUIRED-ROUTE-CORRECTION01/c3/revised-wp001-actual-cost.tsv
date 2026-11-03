@@ -1,0 +1,84 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=revised-wp001-actual-cost
+#
+# THE WP-001 ACT IDENTITY COST, REPRICED HONESTLY.
+#
+# "Cost accounting must include the parent, CORRECTION01-04, the original
+#  boundary qualification, its correction, and this ACT as distinct actual
+#  identities. Distinguish ACT identities consumed from valid Factory
+#  terminal lifecycles and from implementation-only ACT cost. Reprice
+#  WP-001 transparently; do not silently retain 2/3/5 as observed
+#  completion cost."
+#
+# EVERY VERDICT BELOW WAS READ BACK FROM THE COMMIT TRAILERS OR THE
+# HANDOFF DOCUMENT, NOT ASSUMED.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- EVERY WP-001 FAMILY ACT IDENTITY, DISTINGUISHED
+# -----------------------------------------------------------------------
+#
+act_identity	role	handoff_document	terminal_lifecycle	verdict	source_of_the_verdict
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01	the parent	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01.md	YES	ACT-Verdict: PASS	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01	correction 1	evidence/ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION01/HANDOFF.md	PARTIAL (v1 lifecycle: the C1 evidence commit exists and the HANDOFF records PASS, but the commit carries NO ACT-Verdict trailer, so it is not a Factory-v2 terminal CLOSE)	PASS (the HANDOFF's own VERDICT field)	the HANDOFF document
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02	correction 2	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION02.md	YES	ACT-Verdict: PASS	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03	correction 3	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION03.md	YES	ACT-Verdict: PASS	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04	correction 4	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-MIGRATION01-CORRECTION04.md	YES	ACT-Verdict: PASS	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01	the original boundary qualification	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01.md	YES	ACT-Verdict: PASS_FINDINGS_WITH_REMAINDER	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01	its correction	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01.md	YES	ACT-Verdict: PASS_WITH_DISCLOSED_PRE_EXISTING_FAILURE	the CLOSE commit's ACT-Verdict trailer
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01	this ACT	docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01.md	PENDING (this ACT's C4 has not been committed at C3)	NOT YET	no CLOSE commit exists at C3
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE REPRICED COST
+# -----------------------------------------------------------------------
+#
+metric	value
+WP001_ACT_IDENTITIES_CONSUMED	8
+WP001_IDENTITIES_WITH_A_FACTORY_V2_TERMINAL_CLOSE	6
+WP001_IDENTITIES_WITHOUT_A_FACTORY_V2_TERMINAL_CLOSE	1 (MIGRATION01-CORRECTION01: a v1 lifecycle whose HANDOFF records PASS but whose commit carries no ACT-Verdict trailer)
+WP001_IDENTITIES_PENDING_AT_C3	1 (this ACT)
+WP001_OBSERVED_COMPLETION_COST_PREVIOUSLY_REPORTED	2 or 3 or 5 (the ACT's own historical figures, which did not separate the identities)
+WP001_REPRICED_ACT_IDENTITY_COST	8
+#
+# The previously reported figures 2, 3 and 5 were each a DIFFERENT
+# NARROWER COUNT of the same family: they did not include the
+# boundary-qualification pair, or they counted only the MIGRATION
+# family, or they counted only the identities with a valid terminal
+# lifecycle. NONE of them was the ACT IDENTITY COST. The full cost is
+# EIGHT distinct ACT identities, of which SIX have a Factory-v2
+# terminal CLOSE.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- WHAT IS AND IS NOT CLAIMED
+# -----------------------------------------------------------------------
+#
+# The reported WP-001 figures 2/3/5 are NOT silently retained. They are
+# superseded by the repricing above, and the difference between them is
+# EXPLAINED: each was a narrower slice, not a correction of the whole.
+#
+# The boundary-qualification pair is counted as IMPLEMENTATION-ONLY
+# COST against WP-001: it produced evidence and a terminal lifecycle,
+# but it did not itself move the emission-action authority. This ACT is
+# the one that does.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE HISTORICAL EVIDENCE DEBTS, STILL OPEN
+# -----------------------------------------------------------------------
+#
+# These are NOT repaired by this ACT and are NOT claimed to be:
+#
+debt_id	statement	status
+HD-01	32 alternate-witness proofs are not independently established; at least four cited candidates violate the frozen phase rule (AC01, AC03, AC04, AC09)	OPEN
+HD-02	the historical predicate drift count of nine is a lexical screen unless semantically adjudicated; it is NOT nine proven semantic drifts	OPEN
+HD-03	the earlier 50-AC boundary-qualification ledger remains an unresolved historical item and is NOT repaired by reusing this ACT's ledger	OPEN
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE AUTHORITY COST
+# -----------------------------------------------------------------------
+#
+metric	value
+PRODUCTION_POLYC_AUTHORITIES_BASELINE	16
+NEW_AUTHORITY_COUNT_DELTA	0
+AUTHORITY_COST_OF_THIS_ACT	0 new authorities; the existing WP-001 driver authority (AUTH-16) was COMPLETED, not duplicated
+#
+verdict	PASS

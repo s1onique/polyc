@@ -1,0 +1,132 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=f14-and-factory-verification
+#
+# F14 HISTORICAL EVIDENCE BYTE IDENTITY AND THE FACTORY-V2 LIFECYCLE
+# VERIFICATION.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- F14: NO HISTORICAL ACT, HANDOFF OR EVIDENCE WAS MUTATED
+# -----------------------------------------------------------------------
+#
+#   git diff --numstat 33f93347277c6ce242a93b71ab5f0123ccaea4e5 HEAD -- evidence/ docs/
+#
+measurement	value
+evidence_files_changed	22
+evidence_files_changed_that_are_ADDITIONS_ONLY	22
+evidence_lines_added	1524
+evidence_lines_deleted	0
+docs_lines_added	(the ACT authorization document, by addition only)
+docs_lines_deleted	0
+historical_act_documents_mutated	0
+historical_handoff_documents_mutated	0
+historical_evidence_files_mutated	0
+historical_evidence_files_deleted	0
+ADDENDUM_BLOCKS_APPENDED_TO_CLOSED_EVIDENCE	0
+F14_STATUS	PASS
+#
+# Every evidence change is an ADDITION inside THIS ACT's own namespace
+# (evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01/).
+# No closed ACT document, no closed HANDOFF and no closed evidence file
+# was rewritten, and no ADDENDUM was appended to one.
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE FACTORY-V2 PHASE COMMITS AND THEIR TRAILERS
+# -----------------------------------------------------------------------
+#
+# Each phase commit's message was read back with
+#   git show -s --format=%B <commit> | git interpret-trailers --parse
+# and the trailers were parsed, NOT read from the subject line.
+#
+phase	commit	trailers_parsed	verdict_trailer
+C0	074a1f088302cafda4a8b55baac4ff6a919455b2	ACT: ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 / ACT-Phase: RED	NONE (correct for RED)
+C1	d05c78e7a9682e7737c2da5e870bc120accbbd3c	ACT: ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 / ACT-Phase: EVIDENCE	NONE (correct for EVIDENCE)
+C2	da49ad1137421786b4686c6d92e7ab4e520ebe21	ACT: ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 / ACT-Phase: IMPL	NONE (correct for IMPL)
+#
+# The C3 commit is this one. The C4 CLOSE, which is the ONLY commit
+# that may carry ACT-Verdict: PASS, DOES NOT EXIST YET.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE COMMIT-MESSAGE VALIDATOR
+# -----------------------------------------------------------------------
+#
+#   scripts/quality/factory-v2-commit-msg-check.sh <message-file>
+#
+# The C2 message was validated BEFORE it was committed and the file was
+# validated again AFTER the commit, from the committed bytes.
+#
+check	observed
+MODE	ACT
+ACT	ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+PHASE	IMPL
+VERDICT	(empty, correct for an IMPL commit)
+SUPERSEDES	(empty)
+CORRECTED_VERDICT	(empty)
+STATUS	PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE FACTORY-V2 VALIDATOR SUITES
+# -----------------------------------------------------------------------
+#
+suite	command	result
+factory-v2-test	scripts/quality/factory-v2-test.sh	53 PASS / 0 FAIL, STATUS=PASS
+factory-v2-range-check	scripts/quality/factory-v2-range-check.sh <ACT-ID> <CLOSE-COMMIT>	NOT RUN AT C3: the range check requires the CLOSE commit, which does not exist until C4. The deferral is PHASE-BASED.
+factory-closure-status	(the factory-closure-status gate inside gate-fast)	68 manifest rows, 0 missing handoff files, 0 malformed verdicts, 68 PAIR_OK, 0 PAIR_FAIL, STATUS=PASS
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE APPEND-ONLY GRAPH PROPERTIES
+# -----------------------------------------------------------------------
+#
+#   scripts/quality/factory-append-only-test.sh
+#
+check	result
+NC1	PASS
+NC2	PASS
+NC3	PASS
+NC4	PASS
+NC5	PASS
+NC6	PASS
+NC7	PASS
+NC8	PASS
+NC9	PASS
+NC10	PASS
+NC11	PASS
+APPEND_ONLY_STATUS	PASS
+#
+# The authoritative main was NOT advanced by an amend, a rebase, a
+# filter, a replace, a reset+recommit, a squash merge or a force push.
+# Every phase commit is a fast-forward descendant.
+#
+measurement	value
+APPEND_ONLY_START_POINT	baf5dbd77cf89330699685dffd932c54031c815c
+authoritative_history_since_the_start_point	APPEND-ONLY
+replace_refs	0
+#
+# -----------------------------------------------------------------------
+# SECTION 6 -- THE WORKTREE AND REPOSITORY HYGIENE
+# -----------------------------------------------------------------------
+#
+measurement	value
+authoritative_branch	main
+authoritative_worktree_clean_at_C3	YES (apart from this ACT's own c3 evidence files, which are staged by this commit)
+replace_refs	0
+act_owned_detached_worktrees_used_for_the_mutations	1 (/tmp/polyc-rrc01-mut). It is DISPOSABLE and is REMOVED before the C4 CLOSE, so that no ACT-owned worktree remains at terminality.
+other_worktrees_untouched	YES
+push_performed	NONE
+remote_updated	NO
+unrelated_source_or_test_changed	NO (the C2 diff touched only the paths the ACT authorizes)
+unclassified_tool_residue	NO
+#
+# -----------------------------------------------------------------------
+# SECTION 7 -- THE ONE AUTHORIZED HANDOFF-MAP APPEND
+# -----------------------------------------------------------------------
+#
+# The handoff-map append belongs to C4 and is NOT performed at C3. The
+# map currently carries exactly one entry per closed ACT, and this ACT
+# has no entry yet. Exactly ONE entry will be appended at C4.
+#
+measurement	value
+handoff_map_entries_for_this_ACT_at_C3	0
+handoff_map_entries_to_be_appended_at_C4	1
+#
+verdict	PASS

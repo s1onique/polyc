@@ -1,0 +1,71 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=independent-control-witness
+#
+# AN INDEPENDENT WITNESS THAT RECOMPUTES THE CLAIMS.
+#
+# "Independent witness must read source evidence and recompute claims
+#  -- not simply trust binding_carries, binding_phase_valid, PASS, or a
+#  synthetic reason string from the subject verifier."
+#
+# EVERY CLAIM BELOW IS RECOMPUTED FROM A RAW ARTIFACT, USING A TOOL
+# THAT IS NOT THE SUBJECT VERIFIER. The subject verifier's own verdict
+# strings are NOT read and NOT trusted.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE FIVE INDEPENDENTLY RECOMPUTED CLAIMS
+# -----------------------------------------------------------------------
+#
+claim_id	claim	the_raw_artifact_the_witness_reads	the_independent_tool	the_independent_observation	the_subject_verifier_was_not_consulted_for
+CLM-01	the production object CONSUMES the PolyC emission accessor	build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o	nm --format=posix --no-weak	_WpDriverSelectedEmission U 0 0 (an UNDEFINED REFERENCE: the object IMPORTS the accessor)	the symbol-table verdict of the consumption verifier
+CLM-02	the linked production binary CALLS the accessor from inside the emission function	./hcc (the linked binary)	otool -tV, then the _emitFile window	exactly ONE "bl _WpDriverSelectedEmission" inside the _emitFile label window	the R01 detector's call-count verdict
+CLM-03	the C request field is NOT read by the emission function	src/cli.h (the CliArgs declaration) plus the _emitFile disassembly window	a field-offset recomputation from the header, then a search for a load at that displacement	emit_object is the 15th int field of CliArgs, i.e. CliArgs+0x70; the _emitFile window contains NO load at #0x70	the R02 detector's region verdict
+CLM-04	the required route produced an OBJECT and the alternate route produced an EXECUTABLE	build/driver-wp001-required-route/route-object.o and route-executable	file (which reads the Mach-O magic and filetype from the bytes)	route-object.o: Mach-O 64-bit object arm64; route-executable: Mach-O 64-bit executable arm64	the route test's own PASS/FAIL strings
+CLM-05	the G0 C-only oracle is INDEPENDENT of the PolyC driver	build/host-stage0/hcc	nm	the symbol table contains ZERO WpDriver symbols	the R04 detector's leak verdict
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE ADDITIONAL INDEPENDENT RECOMPUTATIONS
+# -----------------------------------------------------------------------
+#
+claim_id	claim	the_raw_artifact	the_independent_tool	the_independent_observation
+CLM-06	the 16 production PolyC authorities are conserved	build/*.o (the 13 subject objects) and ./hcc	nm, per authority	the definition count and the linked count are 1 for every one of AUTH-01..AUTH-16
+CLM-07	the 13 subject objects are on the production link line	build/CMakeFiles/hcc.dir/link.txt	grep on the real link line	13 subject objects are named by the link line
+CLM-08	the emitter's object is produced by a REAL call, not by a textual match	build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o	otool -rV	a BR26 branch-and-link relocation against the external symbol _WpDriverSelectedEmission at 0x00000420
+CLM-09	the driver subject DEFINES the call target	build/wp001-driver-subject.o	nm	_WpDriverSelectedEmission T 0x21e0
+CLM-10	the parser conservation identity holds	src/tests/run.HC and its runner	the runner's own PASSED sequence, then md5	376 assertions, 0 failures, md5 b6f117eb1386ca80f81bc06226e2a741
+CLM-11	the G0 and ON objects are byte-identical	build/g0-route/g0-object.o and build/driver-wp001-required-route/route-object.o	sha256sum	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b for both
+CLM-12	the historical evidence was not mutated	the Git object store	git diff --numstat between the C0 entry commit and HEAD	0 deletions in evidence/ and 0 deletions in docs/
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- WHAT THE WITNESS DELIBERATELY DOES NOT READ
+# -----------------------------------------------------------------------
+#
+# The witness reads NO verdict string, NO status field and NO
+# self-attestation from:
+#
+#   - the subject verifier (src/cmake/VerifyDriverWp001Consumption.cmake)
+#   - the R01..R05 detector (tools/quality/driver-required-route-correction01-red.HC)
+#   - the route classifier (tools/quality/driver-required-route-correction01-test.HC)
+#   - the acceptance ledger (c3/acceptance-ledger-ac01-ac50.tsv)
+#
+# It reads only the RAW ARTIFACTS: object files, the linked binary, the
+# source headers, the link line and the Git object store. Where a
+# subject verifier ALSO produced a verdict, the two are recorded
+# SEPARATELY and are required to AGREE; the agreement is a check on the
+# verifier, not the source of the claim.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE AGREEMENT BETWEEN THE WITNESS AND THE VERIFIERS
+# -----------------------------------------------------------------------
+#
+pair	the_witness_says	the_verifier_says	agree
+CLM-01 / the consumption verifier	an UNDEFINED REFERENCE to the accessor	REJECT_POLYC_ACTION_NOT_CONSUMED if absent	YES
+CLM-02 / R01	exactly one call in the _emitFile window	silent when the call is present	YES
+CLM-03 / R02	no load at CliArgs+0x70 in the window	silent when no active read exists	YES
+CLM-04 / the route classifier	an OBJECT and an EXECUTABLE	7/7 PASS	YES
+CLM-05 / R04	zero driver symbols in the G0 oracle	silent when uncontaminated	YES
+#
+# NO DISAGREEMENT WAS FOUND. Every independent recomputation agrees with
+# the corresponding subject verifier.
+#
+verdict	PASS

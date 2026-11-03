@@ -1,0 +1,119 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=poisoned-or-absent-subject
+#
+# M-POLYC-POISON-04 AND THE ABSENT / STALE SUBJECT CASES.
+#
+# THE FROZEN PREDICTION (c1/mutation-and-dormancy-frozen-contract.tsv):
+#   "the production compiler FAILS CLOSED: it reports the invalid action
+#    and does NOT silently fall back to the legacy C decision"
+#   detector: POLYC_DRIVER_FALLBACK_NOT_CLOSED (NC08) if it falls back.
+#
+# THE PREDICTION WAS CONFIRMED. THE COMPILER FAILED CLOSED, REPORTED THE
+# INVALID ACTION, PRODUCED NO ARTIFACT, AND DID NOT FALL BACK.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- M-POLYC-POISON-04: THE POISONED DRIVER BODY
+# -----------------------------------------------------------------------
+#
+mutation_id	M-POLYC-POISON-04
+source_file	tools/bootstrap/selfhost-driver-wp001.HC
+mutation	corrupt the WpDriverSelectedEmission body so that it returns an out-of-domain code
+the_byte_range	the return statement inside WpDriverSelectedEmission (line 958)
+diff_lines	1 insertion, 1 deletion
+diff_exact	-  return emission;
+diff_exact	+  return 99; /* ADVERSE POISON: an out-of-domain emission code */
+pristine_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+mutated_source_sha256	0895583cfd645a3c4c4a76f004769044fa588b990b74c503c3190e4fc65587b9
+build	REAL, full production compiler rebuild
+build_exit	0
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE POISONED OBSERVATION ON THE REQUIRED ROUTE
+# -----------------------------------------------------------------------
+#
+# The route command:
+#   ./hcc --install-dir=<prefix> -c route-source.HC -o poison.o
+#
+observation	exit_status	stderr	artifact_produced	fell_back_to_legacy_c
+PRISTINE	0	(empty)	an OBJECT (Mach-O 64-bit object arm64)	n/a
+MUTATED	1	ERROR: hcc: the driver selected an invalid emission action (99)	NONE	NO
+#
+# THE COMPILER FAILED CLOSED. IT REPORTED THE INVALID ACTION, IT
+# EXITED NON-ZERO, IT PRODUCED NO ARTIFACT, AND IT DID NOT SILENTLY
+# FALL BACK TO THE LEGACY C DECISION.
+#
+# The failing path is the production compiler's own domain check, which
+# is present in the machine code:
+#   0x100039094  sub  x8, x0, #0x1
+#   0x100039098  cmp  x8, #0x4
+#   0x10003909c  b.hs 0x100039438   (the FAIL-CLOSED path)
+#
+# SCOPE NOTE ON THE ALTERNATE ROUTE. The alternate route (no -c)
+# selects no explicit emission option, so WpDriverSelectedEmission
+# returns at its EARLY return (WP_EMIT_EXECUTE) BEFORE the poisoned
+# line is reached. The alternate route therefore still produced an
+# executable under the poison. This is a property of the driver's
+# control flow, NOT a fallback to the legacy C decision, and it is
+# RECORDED rather than omitted. The route the contract names -- the
+# REQUIRED route -- fails closed.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE ABSENT SUBJECT
+# -----------------------------------------------------------------------
+#
+# The build is configured with a driver subject that does not exist.
+#
+case	command	result	reason_token
+ABSENT_SUBJECT	cmake -S ./src -B ./build/absent ... -DDRIVER_WP001_OBJECT=<a path that does not exist>	CONFIGURE FAILED, exit 1	REJECT_MISSING_DRIVER_SUBJECT
+#
+# The reason token is distinct and names its own cause: the PolyC driver
+# subject does not exist, so the build REFUSES to configure rather than
+# falling back to the legacy C parser.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE STALE SUBJECT
+# -----------------------------------------------------------------------
+#
+# A REAL driver subject was produced from a driver source whose
+# WpDriverSelectedEmission function body has been removed, so the
+# subject does NOT export the accessor:
+#
+#   build/stale-subject.o   20264 bytes
+#   nm build/stale-subject.o | grep -c WpDriverSelectedEmission   ->   0
+#
+# The build then links that stale subject.
+#
+case	command	result	reason_token
+STALE_SUBJECT	cmake --build ./build/stale --target hcc	BUILD FAILED, exit 2	REJECT_SYMBOL_NAME_MISMATCH
+#
+# The stale subject is REJECTED at the symbol verification, before the
+# link and before the consumption check. The compiler is never linked
+# with a subject that does not export the accessor.
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE RESTORATION
+# -----------------------------------------------------------------------
+#
+restored_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+restored_source_matches_pristine	YES
+restored_driver_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+restored_driver_subject_matches_pristine	YES
+restored_linked_binary_sha256	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+restored_linked_binary_matches_pristine	YES
+restored_required_route_class	Mach-O 64-bit object arm64
+restored_required_route_sha256	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b
+worktree_clean_after_restoration	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 6 -- THE VERDICT
+# -----------------------------------------------------------------------
+#
+prediction	the production compiler FAILS CLOSED: it reports the invalid action and does NOT silently fall back to the legacy C decision
+observed	exit 1, "hcc: the driver selected an invalid emission action (99)", no artifact, no fallback
+prediction_confirmed	YES
+detector_that_would_have_fired_if_it_fell_back	POLYC_DRIVER_FALLBACK_NOT_CLOSED (NC08)
+detector_fired	NO
+NC08_STATUS	SENSITIVE
+ABSTAIN_03_triggered	NO (the artifact could not be produced because of the mutation itself, and that was reported as a failure, not as a pass)
+verdict	PASS

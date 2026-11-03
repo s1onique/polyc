@@ -1,0 +1,116 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=generation-matrix-and-12-pairs
+#
+# THE FOUR-GENERATION MATRIX AND THE TWELVE ORDERED PAIRWISE
+# SEMANTIC COMPARISONS.
+#
+# G0 is the pure C-driver oracle (the driver selector OFF).
+# G1, G2 and G3 are the SAME PolyC driver source compiled by THREE
+# DISTINCT PRODUCER EXECUTABLES, distinguished by content SHA-256.
+#
+# PRODUCER IDENTITIES AND OBJECT IDENTITIES ARE KEPT DISTINCT. A
+# producer is an executable; an object is a file. Two producers may
+# legitimately produce byte-identical objects (they are the same
+# compiler generation), and that is MEASURED here, not assumed.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE PRODUCER EXECUTABLES
+# -----------------------------------------------------------------------
+#
+producer_id	role	executable_path	producer_sha256
+G0_PRODUCER	the pure C-driver oracle	/tmp/polyc-rrc01-gens/G0-hcc	84dfca7b0334f096d75eae353534b17e777d5412218e24f5c1e01e22a792c11c
+G1_PRODUCER	the C-rooted stage0	/tmp/polyc-rrc01-mut/build/host-stage0/hcc	466a0fb09e6fd6c9005c95f14d3b0dc5b1c150eea71bd021a35416e064b68cc5
+G2_PRODUCER	the current production compiler	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/hcc	587bc0df7763356c3572741494b6767a81b8360b9a5200a88feac527e0ea7bc7
+G3_PRODUCER	an independently built qualified bootstrap generation	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/runtime-producer/hcc-bootstrap04	3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE COMPILED DRIVER SUBJECT, ONE PER POLYC GENERATION
+# -----------------------------------------------------------------------
+#
+generation	producer_id	polyc_source_sha256	subject_object	subject_object_sha256	exported_symbol_count	object_identity_vs_G1
+G1	G1_PRODUCER	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G1-driver.o	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b	15	IDENTICAL
+G2	G2_PRODUCER	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G2-driver.o	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b	15	IDENTICAL
+G3	G3_PRODUCER	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G3-driver.o	5d744dc7aa623de59bad4928f6d1d3a623b9a786d83df1153d11c2525f83afe5	24	DIFFERENT
+#
+# THIS REPRODUCES THE C1 MEASUREMENT EXACTLY: G1 and G2 are the same
+# compiler generation reached through two distinct producer executables,
+# so their driver objects are byte-identical, and G3 is a genuinely
+# different producer whose driver object differs.
+#
+# The G0 oracle's driver subject does not EXIST: the selector is OFF.
+#
+generation	linked_compiler_sha256	WpDriver_symbols_in_compiler
+G0	84dfca7b0334f096d75eae353534b17e777d5412218e24f5c1e01e22a792c11c	0
+G1	69337869dfce66ef273813eecf3896ac176bc79cc56b6de73451708e82d6cf21	1
+G2	69337869dfce66ef273813eecf3896ac176bc79cc56b6de73451708e82d6cf21	1
+G3	d3e73bf168828f659f9ac03475269407b9ff658634c54f3d039333b1158e312e	1
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE FIXTURE SET, OBSERVED THROUGH EVERY GENERATION
+# -----------------------------------------------------------------------
+#
+# The source-derived CLI fixture set from
+# c1/source-derived-argv-and-artifact-fixtures.tsv, run against each
+# generation. The observed values are (exit status, artifact class,
+# stderr).
+#
+fixture_id	expected_class	expected_exit	G0	G1	G2	G3
+FX_ROUTE_REQUIRED	OBJECT	0	OBJECT/0	OBJECT/0	OBJECT/0	OBJECT/0
+FX_ROUTE_ALIAS	OBJECT	0	OBJECT/0	OBJECT/0	OBJECT/0	OBJECT/0
+FX_ALT_EXECUTABLE	EXECUTABLE	0	EXECUTABLE/0	EXECUTABLE/0	EXECUTABLE/0	EXECUTABLE/0
+FX_ALT_ASSEMBLY	ASSEMBLY_TEXT	0	ASSEMBLY_TEXT/0	ASSEMBLY_TEXT/0	ASSEMBLY_TEXT/0	ASSEMBLY_TEXT/0
+FX_NEG_UNKNOWN_OPTION	NONE	1	NONE/1	NONE/1	NONE/1	NONE/1
+FX_NEG_MISSING_O	NONE	1	NONE/1	NONE/1	NONE/1	NONE/1
+FX_NEG_NO_INPUT	NONE	1	NONE/1	NONE/1	NONE/1	NONE/1
+FX_NEG_UNREADABLE	NONE	1	NONE/1	NONE/1	NONE/1	NONE/1
+#
+# The stderr of each negative case was IDENTICAL in all four
+# generations:
+#   FX_NEG_UNKNOWN_OPTION  Error: Unknown commandline options: --bogus-option
+#   FX_NEG_MISSING_O       Error: Unexpected end of input - expected `-o <option?>`
+#   FX_NEG_NO_INPUT        hcc: fatal error: no input files
+#   FX_NEG_UNREADABLE      ERROR: Failed to open file: missing.HC
+#
+# Every observation matches the C1 FROZEN CONTRACT exactly.
+#
+# The artifact class is read from the FILE BYTES via `file`, never from
+# the file name and never from the exit status.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE TWELVE ORDERED PAIRWISE SEMANTIC COMPARISONS
+# -----------------------------------------------------------------------
+#
+# Four generations give FOUR ORDERED PAIRS = 4 x 3 = 12 comparisons.
+#
+comparison_id	generation_a	generation_b	result	differing_fixtures
+PAIR-01	G0	G1	AGREE	-
+PAIR-02	G0	G2	AGREE	-
+PAIR-03	G0	G3	AGREE	-
+PAIR-04	G1	G0	AGREE	-
+PAIR-05	G1	G2	AGREE	-
+PAIR-06	G1	G3	AGREE	-
+PAIR-07	G2	G0	AGREE	-
+PAIR-08	G2	G1	AGREE	-
+PAIR-09	G2	G3	AGREE	-
+PAIR-10	G3	G0	AGREE	-
+PAIR-11	G3	G1	AGREE	-
+PAIR-12	G3	G2	AGREE	-
+ORDERED_PAIR_COUNT	12
+AGREE_COUNT	12
+DISAGREE_COUNT	0
+#
+# The observation MD5 (the normalised, sorted observation sequence of
+# the eight fixtures) is IDENTICAL for all four generations:
+#
+generation	observation_md5
+G0	6d8e71c732291c28fa42296da5f72ba3
+G1	6d8e71c732291c28fa42296da5f72ba3
+G2	6d8e71c732291c28fa42296da5f72ba3
+G3	6d8e71c732291c28fa42296da5f72ba3
+#
+# The comparison was recomputed by an INDEPENDENT implementation that
+# re-reads the four observation files and compares them field by
+# field, rather than trusting the subject verifier's own verdict.
+#
+verdict	PASS

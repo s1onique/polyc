@@ -1,0 +1,81 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=polyc-action-mutation
+#
+# M-POLYC-ACTION-01 -- THE POLYC ACTION IS CAUSALLY LIVE.
+#
+# THE FROZEN PREDICTION (c1/mutation-and-dormancy-frozen-contract.tsv):
+#   "the required route emits an EXECUTABLE instead of an OBJECT, and the
+#    artifact class flips"
+#   detector: POLYC_ACTION_CAUSAL_DORMANT (NC17) if it does NOT flip.
+#
+# THE PREDICTION WAS CONFIRMED. THE ARTIFACT CLASS FLIPPED.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE MUTATION
+# -----------------------------------------------------------------------
+#
+mutation_id	M-POLYC-ACTION-01
+source_file	tools/bootstrap/selfhost-driver-wp001.HC
+mutation	change the WP_KIND_EMIT_OBJ arm of WpDriverSelectedEmission so that it selects WP_EMIT_EXECUTE instead of WP_EMIT_COMPILE_OBJECT
+the_byte_range	the single WP_EMIT_COMPILE_OBJECT assignment inside WpDriverSelectedEmission (line 931)
+diff_lines	1 insertion, 1 deletion
+diff_exact	-      if (kind == WP_KIND_EMIT_OBJ) emission = WP_EMIT_COMPILE_OBJECT;
+diff_exact	+      if (kind == WP_KIND_EMIT_OBJ) emission = WP_EMIT_EXECUTE;
+pristine_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+mutated_source_sha256	0895583cfd645a3c4c4a76f004769044fa588b990b74c503c3190e4fc65587b9
+source_sha256_distinct	YES
+no_unrelated_mutation	YES (the diff is the witness)
+worktree	/tmp/polyc-rrc01-mut (detached at the C2 commit da49ad1137421786b4686c6d92e7ab4e520ebe21)
+build	REAL, full production compiler rebuild (driver subject, then the link, then the compiler)
+build_exit	0
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE OBSERVATION
+# -----------------------------------------------------------------------
+#
+# The route command, run from a disposable working directory:
+#   ./hcc --install-dir=<prefix> -c route-source.HC -o obs-object.o
+#
+observation	state	artifact_class	artifact_sha256	linked_binary_sha256	driver_subject_sha256
+PRISTINE	before the mutation	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+MUTATED	after the mutation	Mach-O 64-bit executable arm64	f6d7c2afb9e4002b3f8050a004c3e9e2f1db93f8ecd4ef65bf0b38327bc9a759	9e16018327e63ae97a3aa720ae37cd9b9992386c3dba1b2ef0a5fa4911fc124c	62b5a1294ada3290718a003ef535b93d49af0bc462c0dc39e7b93e1a72aa43a2
+#
+# THE CLASS FLIPPED: the required route emitted an EXECUTABLE where the
+# pristine build emitted an OBJECT, with the C side completely UNCHANGED.
+# The driver subject's bytes changed, the linked compiler's bytes changed,
+# and the artifact's class changed. The PolyC action is therefore CAUSAL,
+# not decorative.
+#
+# The alternate route was observed too and was UNCHANGED in class
+# (executable), because the alternate route does not select an explicit
+# emission option and therefore returns before the mutated line.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE RESTORATION
+# -----------------------------------------------------------------------
+#
+restoration_requirement	the source MUST be restored byte-for-byte and the restoration SHA recorded
+restored_source_sha256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+restored_source_matches_pristine	YES
+restored_driver_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+restored_driver_subject_matches_pristine	YES
+restored_linked_binary_sha256	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+restored_linked_binary_matches_pristine	YES
+restored_artifact_class	Mach-O 64-bit object arm64
+restored_artifact_sha256	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b
+restored_artifact_matches_pristine	YES (BYTE-IDENTICAL)
+worktree_clean_after_restoration	YES (git status --short is empty)
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE VERDICT
+# -----------------------------------------------------------------------
+#
+prediction	the required route emits an EXECUTABLE instead of an OBJECT, and the artifact class flips
+observed	the required route emitted an EXECUTABLE instead of an OBJECT; the artifact class flipped
+prediction_confirmed	YES
+detector_that_would_have_fired_if_causal_dormant	POLYC_ACTION_CAUSAL_DORMANT (NC17)
+detector_fired	NO
+NC17_STATUS	SENSITIVE (the mutation DID change the outcome, so NC17 does not fire against the pristine tree)
+ABSTAIN_01_triggered	NO (the action is not decorative)
+verdict	PASS

@@ -1,0 +1,100 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=legacy-c-mutation-off-on
+#
+# M-C-LEGACY-03 -- THE LEGACY C RULE IS LIVE IN THE G0 ORACLE AND
+# DORMANT IN THE SELECTOR-ON PRODUCTION COMPILER.
+#
+# THE FROZEN PREDICTION (c1/mutation-and-dormancy-frozen-contract.tsv):
+#   "G0: the artifact class FLIPS (the legacy rule is LIVE). ON: the
+#    artifact class and the output are UNCHANGED (the legacy rule is
+#    DORMANT)"
+#   detector: LEGACY_C_POLICY_NOT_DORMANT (NC18) if ON still changes.
+#
+# THE PREDICTION WAS CONFIRMED IN BOTH HALVES.
+#
+# -----------------------------------------------------------------------
+# SECTION 1 -- THE MUTATION
+# -----------------------------------------------------------------------
+#
+mutation_id	M-C-LEGACY-03
+source_file	src/main.c
+mutation	invert the emit_object predicate at the emission branch
+the_byte_range	the single emit_object test inside the emission function (line 297, inside the selector-OFF #else region)
+diff_lines	1 insertion, 1 deletion
+diff_exact	-    if (args->emit_object) {
+diff_exact	+    if (!args->emit_object) {
+pristine_source_sha256	51dbe737bbff73d943d3437463262f21bb513afd79d54afff17abd2f5b0121b6
+mutated_source_sha256	dbace2a35bb4c3b14516891d4d2042e5c9b9061bb31a6e07846e801672c23238
+source_sha256_distinct	YES
+no_unrelated_mutation	YES (the diff is the witness)
+worktree	/tmp/polyc-rrc01-mut (detached at the C2 commit da49ad1137421786b4686c6d92e7ab4e520ebe21)
+rebuilds	THE WHOLE COMPILER, TWICE: once with the selector OFF (the G0 oracle) and once with the selector ON
+build_exit_off	0
+build_exit_on	0
+#
+# -----------------------------------------------------------------------
+# SECTION 2 -- THE SELECTOR-ON HALF: THE LEGACY RULE IS DORMANT
+# -----------------------------------------------------------------------
+#
+# The route commands, run from a disposable working directory:
+#   ./hcc --install-dir=<prefix> -c route-source.HC -o obs-object.o
+#   ./hcc --install-dir=<prefix>    route-source.HC -o obs-executable
+#
+observation	state	required_route_class	required_route_sha256	alternate_route_class	linked_binary_sha256
+PRISTINE	before the mutation	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	Mach-O 64-bit executable arm64	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+MUTATED	after the mutation	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	Mach-O 64-bit executable arm64	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+#
+# THE OUTPUT IS UNCHANGED. The required route's object is BYTE-IDENTICAL
+# to the pristine object, and the SELECTOR-ON LINKED BINARY IS
+# BYTE-IDENTICAL to the pristine binary.
+#
+# The linked binary being byte-identical is the strongest form of the
+# dormancy evidence: the mutated source line is in the selector-OFF
+# #else region, which the selector-ON preprocessor EXCLUDES ENTIRELY,
+# so the mutation cannot even reach the ON compiler's bytes.
+#
+# -----------------------------------------------------------------------
+# SECTION 3 -- THE SELECTOR-OFF HALF: THE LEGACY RULE IS LIVE
+# -----------------------------------------------------------------------
+#
+# The SAME mutated source, built with -DHCC_USE_SELFHOST_DRIVER_WP001=OFF.
+#
+observation	required_route_class	required_route_sha256	alternate_route_class
+PRISTINE G0	Mach-O 64-bit object arm64	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b	Mach-O 64-bit executable arm64
+MUTATED G0	Mach-O 64-bit executable arm64	ca2739c14477a62a31ec4d9a87f4cfd602be6d73feb39727c8c337ef461e219b	Mach-O 64-bit object arm64
+#
+# THE ARTIFACT CLASS FLIPPED IN THE G0 ORACLE, ON BOTH ROUTES. The
+# legacy C rule is LIVE there, which is exactly what makes the
+# selector-OFF binary a genuine oracle of the ORIGINAL C-driver
+# behaviour and not a relabelled copy of the ON build.
+#
+# -----------------------------------------------------------------------
+# SECTION 4 -- THE RESTORATION
+# -----------------------------------------------------------------------
+#
+restored_source_sha256	51dbe737bbff73d943d3437463262f21bb513afd79d54afff17abd2f5b0121b6
+restored_source_matches_pristine	YES
+restored_linked_binary_sha256	e6e558dd0e70a428765ae54f84db2ff05b8aa23e52986cdf364df32942011fc0
+restored_linked_binary_matches_pristine	YES
+restored_driver_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+restored_driver_subject_matches_pristine	YES
+restored_required_route_class	Mach-O 64-bit object arm64
+restored_required_route_sha256	4f2bd35d2d04148657a4e673d6eb5438af94853cddfc1c84dc1acf2f3778897b
+worktree_clean_after_restoration	YES
+#
+# -----------------------------------------------------------------------
+# SECTION 5 -- THE VERDICT
+# -----------------------------------------------------------------------
+#
+g0_prediction	the artifact class FLIPS (the legacy rule is LIVE)
+g0_observed	the artifact class FLIPPED on BOTH routes
+on_prediction	the artifact class and the output are UNCHANGED (the legacy rule is DORMANT)
+on_observed	the artifact class was UNCHANGED and the required-route object was BYTE-IDENTICAL; the selector-ON linked binary was BYTE-IDENTICAL
+prediction_confirmed	YES (both halves)
+detector_that_would_have_fired_if_on_still_changed	LEGACY_C_POLICY_NOT_DORMANT (NC18)
+detector_fired	NO
+NC18_STATUS	SENSITIVE (the mutation DID change the G0 outcome, so NC18 does not fire against the pristine tree)
+ABSTAIN_02_triggered	NO (the ON build did NOT change)
+ABSTAIN_04_triggered	NO (the G0 oracle was rebuilt independently of the mutation)
+verdict	PASS
