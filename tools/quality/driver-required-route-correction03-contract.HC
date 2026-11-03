@@ -1318,6 +1318,96 @@ static I64 ContractSelfCheck() {
     failures = failures + 1;
   }
 
+  // --- The ALTERNATE ARCHIVE ENCODING. -----------------------------------
+  //
+  // Two VALID encodings of the SAME decoded member name and the SAME
+  // payload MUST compare EQUAL. The archive's name field is sixteen
+  // bytes, and a short name may be written EITHER as the name followed by
+  // a terminating slash, or as the space-padded name with no terminator.
+  // Both are valid encodings of the same decoded identity.
+  //
+  // The control is a POSITIVE control: it asserts that the two encodings
+  // are ACCEPTED as equivalent. Without it, a decoder that rejected every
+  // short name would pass the negative controls above.
+  {
+    I64 member_len = 4;
+    I64 hdr = AR_MEMBER_HDR_LEN;
+    I64 total = AR_MAGIC_LEN + hdr + member_len;
+    if (total % 2 != 0) total = total + 1;
+    U8 *enc_a = MAlloc(total + 1);
+    U8 *enc_b = MAlloc(total + 1);
+    I64 k = 0;
+    while (k < AR_MAGIC_LEN) {
+      enc_a[k] = "!<arch>\n"[k];
+      enc_b[k] = "!<arch>\n"[k];
+      k = k + 1;
+    }
+    // The NAME field of the member header, in the two encodings.
+    //
+    //   encoding A   "source.o/" followed by spaces
+    //   encoding B   "source.o" followed by spaces
+    //
+    // The remaining header fields are the SAME in both encodings, so the
+    // two archives differ ONLY in the raw representation of the name.
+    I64 n = 0;
+    while (n < 8) {
+      enc_a[AR_MAGIC_LEN + n] = "source.o"[n];
+      enc_b[AR_MAGIC_LEN + n] = "source.o"[n];
+      n = n + 1;
+    }
+    enc_a[AR_MAGIC_LEN + 8] = 47;
+    enc_b[AR_MAGIC_LEN + 8] = 32;
+    I64 f = 9;
+    while (f < 16) {
+      enc_a[AR_MAGIC_LEN + f] = 32;
+      enc_b[AR_MAGIC_LEN + f] = 32;
+      f = f + 1;
+    }
+    // The MTIME, UID, GID, MODE and SIZE fields. The size is "4" followed
+    // by spaces, and the member's terminator is the two-byte magic.
+    I64 base = AR_MAGIC_LEN + 16;
+    I64 g = 0;
+    while (g < 12) { enc_a[base + g] = 32; enc_b[base + g] = 32; g = g + 1; }
+    g = 0;
+    while (g < 6)  { enc_a[base + 12 + g] = 32; enc_b[base + 12 + g] = 32; g = g + 1; }
+    g = 0;
+    while (g < 6)  { enc_a[base + 18 + g] = 32; enc_b[base + 18 + g] = 32; g = g + 1; }
+    g = 0;
+    while (g < 8)  { enc_a[base + 24 + g] = 32; enc_b[base + 24 + g] = 32; g = g + 1; }
+    enc_a[base + 32] = 52; enc_b[base + 32] = 52;
+    g = 33;
+    while (g < 42) { enc_a[base + g] = 32; enc_b[base + g] = 32; g = g + 1; }
+    enc_a[base + 42] = 96; enc_b[base + 42] = 96;
+    enc_a[base + 43] = 10; enc_b[base + 43] = 10;
+    // The payload.
+    I64 poff = AR_MAGIC_LEN + hdr;
+    enc_a[poff] = 65; enc_b[poff] = 65;
+    enc_a[poff + 1] = 66; enc_b[poff + 1] = 66;
+    enc_a[poff + 2] = 67; enc_b[poff + 2] = 67;
+    enc_a[poff + 3] = 68; enc_b[poff + 3] = 68;
+    enc_a[total] = 0;
+    enc_b[total] = 0;
+
+    ArArchive ar_a;
+    ArArchive ar_b;
+    I64 da = ContractDecodeArchive(enc_a, poff + member_len, &ar_a);
+    I64 db = ContractDecodeArchive(enc_b, poff + member_len, &ar_b);
+    checks = checks + 1;
+    if (da != AR_OK || db != AR_OK) {
+      "CONTRACT_SELFTEST\tAR_ALTERNATE_ENCODING_DECODE\tFAIL\n";
+      failures = failures + 1;
+    } else {
+      // The two decoded identities must be EQUAL.
+      checks = checks + 1;
+      if (ContractArEquivalent(&ar_a, &ar_b) != AREQ_OK) {
+        "CONTRACT_SELFTEST\tAR_ALTERNATE_ENCODING_EQUAL\tFAIL\n";
+        failures = failures + 1;
+      }
+    }
+    Free(enc_a);
+    Free(enc_b);
+  }
+
   "CONTRACT_SELFTEST_CHECKS\t%lld\n", checks;
   "CONTRACT_SELFTEST_FAILURES\t%lld\n", failures;
   return failures;

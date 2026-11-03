@@ -1398,9 +1398,14 @@ $(DRIVER_ROUTE03_SUBJECT_STAMP): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(B
 			|| { echo "driver-wp001-correction03: symbol $$_s not found in $(DRIVER_ROUTE03_SUBJECT_OBJ)" >&2; exit 1; }; \
 	done
 	@# The stamp is the CONTENT IDENTITY of the verified subject.
+	@# The architecture is read from the Mach header's DATA row, not from the
+	@# header row: the header row names the FIELD ("cputype") and the data
+	@# row carries the VALUE ("ARM64"). The previous extraction took the
+	@# field name, so the stamp recorded the literal text "cputype" and
+	@# bound to NO architecture at all.
 	@{ \
 	  echo "SUBJECT_SHA256 $$(shasum -a 256 $(DRIVER_ROUTE03_SUBJECT_OBJ) | cut -d' ' -f1)"; \
-	  echo "SUBJECT_ARCH $$(otool -hv $(DRIVER_ROUTE03_SUBJECT_OBJ) 2>/dev/null | awk '/cputype/ {print $$2; exit}')"; \
+	  echo "SUBJECT_ARCH $$(otool -hv $(DRIVER_ROUTE03_SUBJECT_OBJ) 2>/dev/null | awk '$$1 ~ /^MH_MAGIC/ {print $$2; exit}')"; \
 	  echo "SUBJECT_SYMBOLS 13"; \
 	  echo "PRODUCER_SHA256 $$(shasum -a 256 $(BOOTSTRAP_STAGE0_HCC) | cut -d' ' -f1)"; \
 	  echo "STAMPED_AT $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
@@ -1409,6 +1414,14 @@ $(DRIVER_ROUTE03_SUBJECT_STAMP): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(B
 		echo "driver-wp001-correction03: the subject stamp does not carry the content identity" >&2; \
 		exit 1; \
 	fi
+	@# The architecture must be a REAL architecture name, not the name of
+	@# the header field and not an empty value.
+	@_stamp_arch=$$(sed -n 's/^SUBJECT_ARCH //p' $@); \
+	case "$$_stamp_arch" in \
+		ARM64|X86_64|ARM64_32) ;; \
+		*) echo "driver-wp001-correction03: the subject stamp records the architecture '$$_stamp_arch', which is not an architecture name" >&2; \
+		   exit 1 ;; \
+	esac
 
 $(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
 	@if [ ! -f "$@" ]; then \
