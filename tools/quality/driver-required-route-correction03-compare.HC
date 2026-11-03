@@ -170,7 +170,7 @@ static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_MALFORMED) return "CAPTURE_FIELD_MALFORMED";
   if (code == CAPTURE_DIGEST_MISMATCH) return "CAPTURE_DIGEST_MISMATCH";
   if (code == CAPTURE_EXIT_MISMATCH) return "CAPTURE_EXIT_STATUS_MISMATCH";
-  if (code == CAPTURE_NOT_REGISTERED) return "CAPTURE_EVENT_NOT_REGISTERED";
+  if (code == CAPTURE_NOT_REGISTERED) return "CAPTURE_INVOCATION_NOT_REGISTERED";
   if (code == CAPTURE_SELECTOR_BAD) return "CAPTURE_SELECTOR_INVALID";
   if (code == CAPTURE_ARGV_EMPTY) return "CAPTURE_ARGV_EMPTY";
   if (code == CAPTURE_ENV_EMPTY) return "CAPTURE_ENV_EMPTY";
@@ -515,9 +515,19 @@ I32 Main(I32 argc, U8 **argv) {
   I64 o_arch = ContractArchOf(obuf, o_size);
 
   // The exit status is read STRICTLY, with the SHARED codec.
+  //
+  // The PRESENCE and the VALIDITY of the exit record are DISTINCT facts.
+  // A record that is PRESENT but MALFORMED must report the codec's own
+  // reason token, so the presence is determined by the file's existence
+  // and NOT by the codec's success.
   I64 o_exit_present = 0;
   I64 o_exit = 0;
   I64 o_exit_code = EXIT_OK;
+  {
+    I64 o_probe_size = 0;
+    U8 *o_probe = FileRead(o_exitf, &o_probe_size);
+    if (o_probe != NULL) o_exit_present = 1;
+  }
   I64 o_exit_ok = ContractReadExitStatusFile(o_exitf, &o_exit, &o_exit_code);
   if (o_exit_ok == 1) o_exit_present = 1;
 
@@ -530,7 +540,7 @@ I32 Main(I32 argc, U8 **argv) {
         case_id, "the oracle artifact has the EXPECTED architecture");
   Check(o_exit_present == 1 && o_exit_ok == 1, case_id,
         "the oracle exit status is a VALID record");
-  if (o_exit_present == 1 && o_exit_ok == 0) {
+  if (o_exit_ok == 0) {
     Reason(case_id, "oracle", ContractExitReason(o_exit_code));
   }
   Check(o_exit_present == 1 && o_exit_ok == 1 && o_exit == expected_exit,
@@ -570,6 +580,11 @@ I32 Main(I32 argc, U8 **argv) {
   I64 p_exit_present = 0;
   I64 p_exit = 0;
   I64 p_exit_code = EXIT_OK;
+  {
+    I64 p_probe_size = 0;
+    U8 *p_probe = FileRead(p_exitf, &p_probe_size);
+    if (p_probe != NULL) p_exit_present = 1;
+  }
   I64 p_exit_ok = ContractReadExitStatusFile(p_exitf, &p_exit, &p_exit_code);
   if (p_exit_ok == 1) p_exit_present = 1;
 
@@ -582,7 +597,7 @@ I32 Main(I32 argc, U8 **argv) {
         case_id, "the PolyC artifact has the EXPECTED architecture");
   Check(p_exit_present == 1 && p_exit_ok == 1, case_id,
         "the PolyC exit status is a VALID record");
-  if (p_exit_present == 1 && p_exit_ok == 0) {
+  if (p_exit_ok == 0) {
     Reason(case_id, "polyc", ContractExitReason(p_exit_code));
   }
   Check(p_exit_present == 1 && p_exit_ok == 1 && p_exit == expected_exit,

@@ -1950,33 +1950,85 @@ driver-wp001-correction03-causal-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_RO
 # No probe may reuse an artifact from an earlier probe or an earlier case.
 # Each probe has its OWN directory, its OWN output files, and its OWN copy
 # of the capture record.
+#
+# THE PHYSICALLY DISTINCT STALE STDOUT. The compiler's successful
+# compilation produces an EMPTY stdout, so a "stale stdout" that is also
+# empty is not a mutation at all: the probe would assert a rejection that
+# the bytes cannot support. The stale transcript is therefore taken from a
+# REAL earlier invocation whose stdout carried the generated assembly:
+# `-S -o-` writes the assembly to stdout. The bytes therefore DIFFER from
+# the current run's empty stdout, and the transcript DIGEST in the capture
+# record detects the replay. The target FAILS if the stale stdout is empty
+# or is byte-identical to the current stdout.
 # ---------------------------------------------------------------------------
 .PHONY: driver-wp001-correction03-adverse-test
-driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	W=$(DRIVER_ROUTE03_WORKDIR)/adverse; \
-	rm -rf $$W; \
-	mkdir -p $$W/good; \
+	RUN=$(DRIVER_ROUTE03_WORKDIR)/adverse-run; \
+	rm -rf $$W $$RUN; \
+	mkdir -p $$W/good $$RUN; \
 	cp $(DRIVER_ROUTE03_FIXTURE) $$W/good/source.HC; \
-	( cd $$W/good; \
-	  set +e; \
-	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
-	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
-	cp $$W/good/artifact.bin $$W/good/oracle-artifact.bin; \
-	cp $$W/good/stdout.txt $$W/good/oracle-stdout.txt; \
-	cp $$W/good/stderr.txt $$W/good/oracle-stderr.txt; \
-	cp $$W/good/exit.txt $$W/good/oracle-exit.txt; \
+	$(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) init $(CURDIR)/$$RUN > $$RUN/init.txt; \
+	adverse_runid=$$(grep "^HARNESS_RUN_ID" $$RUN/init.txt | cut -f2); \
+	if [ -z "$$adverse_runid" ]; then \
+	  echo "driver-wp001-correction03: the adverse run context was not allocated" >&2; \
+	  exit 1; \
+	fi; \
+	mkdir -p $$W/good/off $$W/good/on; \
+	( cd $$W/good/off && \
+	  cp ../source.HC source.HC; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt OFF ADVERSE_GOOD \
+	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	    artifact.bin $(CURDIR)/$$W/good/off/ \
+	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	    > harness.txt 2>&1 ); \
+	good_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/off/harness.txt | cut -f2); \
+	good_art=$$(grep "^HARNESS_ARTIFACT_PATH" $$W/good/off/harness.txt | cut -f2); \
+	if [ -z "$$good_ev" ] || [ -z "$$good_art" ]; then \
+	  echo "driver-wp001-correction03: the adverse harness run produced no event directory" >&2; \
+	  cat $$W/good/off/harness.txt >&2; \
+	  exit 1; \
+	fi; \
+	( cd $$W/good/on && \
+	  cp ../source.HC source.HC; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt ON ADVERSE_GOOD \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	    artifact.bin $(CURDIR)/$$W/good/on/ \
+	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	    > harness.txt 2>&1 ); \
+	on_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/on/harness.txt | cut -f2); \
+	on_art=$$(grep "^HARNESS_ARTIFACT_PATH" $$W/good/on/harness.txt | cut -f2); \
+	if [ -z "$$on_ev" ] || [ -z "$$on_art" ]; then \
+	  echo "driver-wp001-correction03: the adverse ON harness run produced no event directory" >&2; \
+	  cat $$W/good/on/harness.txt >&2; \
+	  exit 1; \
+	fi; \
+	cp $$good_ev/stdout.txt $$W/good/stdout.txt; \
+	cp $$good_ev/stderr.txt $$W/good/stderr.txt; \
+	cp $$good_ev/exit.txt $$W/good/exit.txt; \
+	cp $$good_ev/capture.txt $$W/good/oracle-capture.txt; \
+	cp $$RUN/ledger.txt $$W/good/ledger.txt; \
+	cp $$good_art $$W/good/oracle-artifact.bin; \
+	cp $$good_ev/stdout.txt $$W/good/oracle-stdout.txt; \
+	cp $$good_ev/stderr.txt $$W/good/oracle-stderr.txt; \
+	cp $$good_ev/exit.txt $$W/good/oracle-exit.txt; \
+	cp $$on_ev/capture.txt $$W/good/capture.txt; \
+	cp $$on_art $$W/good/artifact.bin; \
+	cp $$on_ev/stdout.txt $$W/good/on-stdout.txt; \
+	cp $$on_ev/stderr.txt $$W/good/on-stderr.txt; \
+	cp $$on_ev/exit.txt $$W/good/on-exit.txt; \
+	adverse_producer=$$(sed -n 's/^PRODUCER_SHA256 //p' $$good_ev/capture.txt); \
+	on_producer=$$(sed -n 's/^PRODUCER_SHA256 //p' $$on_ev/capture.txt); \
+	printf '%s' "$$adverse_runid" > $$W/good/run-id.txt; \
+	printf '%s' "$$adverse_producer" > $$W/good/producer-sha.txt; \
+	printf '%s' "$$on_producer" > $$W/good/on-producer-sha.txt; \
 	eclass=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/good/oracle-artifact.bin \
 	          | sed -n 's/^DERIVED_CLASS\t//p'); \
 	earch=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$W/good/oracle-artifact.bin \
 	          | sed -n 's/^DERIVED_ARCH\t//p'); \
-	$(DRIVER_ROUTE03_CAPTURE_BIN) $$W/good/oracle-capture.txt $$W/good/ledger.txt OFF \
-	  $$W/good/source.HC $(DRIVER_ROUTE03_FIXTURE) \
-	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
-	  $$W/good/oracle-artifact.bin $$W/good/oracle-stdout.txt \
-	  $$W/good/oracle-stderr.txt $$W/good/oracle-exit.txt \
-	  --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
-	  > $$W/good/oracle-capture.log 2>&1; \
 	printf 'not a mach-o image at all, just text garbage\n' > $$W/good/garbage.bin; \
 	printf 'I64 OtherFunction() {\n    return 3;\n}\n' > $$W/good/no-symbol.HC; \
 	( cd $$W/good; \
@@ -1984,8 +2036,8 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c no-symbol.HC -o no-symbol.bin \
 	    >no-symbol-stdout.txt 2>no-symbol-stderr.txt ); \
 	if [ ! -s $$W/good/no-symbol.bin ]; then \
-		echo "driver-wp001-correction03: the adverse no-symbol artifact was not produced" >&2; \
-		exit 1; \
+	  echo "driver-wp001-correction03: the adverse no-symbol artifact was not produced" >&2; \
+	  exit 1; \
 	fi; \
 	printf 'I64 OtherFunction() {\n    return 3;\n}\nI64 main(I64 argc, U8 **argv) {\n    return 0;\n}\n' > $$W/good/other.HC; \
 	( cd $$W/good; \
@@ -1994,16 +2046,64 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
 	    >stale-real-stdout.txt 2>stale-stderr.txt; echo $$? > stale-exit.txt ); \
 	if [ ! -s $$W/good/stale-valid.bin ]; then \
-		echo "driver-wp001-correction03: the adverse stale artifact was not produced" >&2; \
-		exit 1; \
+	  echo "driver-wp001-correction03: the adverse stale artifact was not produced" >&2; \
+	  exit 1; \
 	fi; \
-	$(DRIVER_ROUTE03_CAPTURE_BIN) $$W/good/stale-capture.txt $$W/good/stale-ledger.txt OFF \
-	  $$W/good/other.HC $(DRIVER_ROUTE03_FIXTURE) \
-	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) \
-	  $$W/good/stale-valid.bin $$W/good/stale-stdout.txt \
-	  $$W/good/stale-stderr.txt $$W/good/stale-exit.txt \
-	  --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
-	  > $$W/good/stale-capture.log 2>&1; \
+	( cd $$W/good && \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-ledger.txt OFF ADVERSE_GOOD \
+	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	    stale-valid.bin $(CURDIR)/$$W/good/ \
+	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
+	    > stale-harness.txt 2>&1 ); \
+	stale_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-harness.txt | cut -f2); \
+	if [ -z "$$stale_ev" ]; then \
+	  echo "driver-wp001-correction03: the adverse stale harness run produced no event directory" >&2; \
+	  cat $$W/good/stale-harness.txt >&2; \
+	  exit 1; \
+	fi; \
+	cp $$stale_ev/capture.txt $$W/good/stale-capture.txt; \
+	cp $$stale_ev/stdout.txt $$W/good/stale-stdout.txt; \
+	cp $$stale_ev/stderr.txt $$W/good/stale-stderr.txt; \
+	( cd $$W/good && \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-on-ledger.txt ON ADVERSE_GOOD \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	    stale-on.bin $(CURDIR)/$$W/good/ \
+	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-on.bin \
+	    > stale-on-harness.txt 2>&1 ); \
+	stale_on_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-on-harness.txt | cut -f2); \
+	if [ -z "$$stale_on_ev" ]; then \
+	  echo "driver-wp001-correction03: the adverse stale ON harness run produced no event directory" >&2; \
+	  cat $$W/good/stale-on-harness.txt >&2; \
+	  exit 1; \
+	fi; \
+	cp $$stale_on_ev/capture.txt $$W/good/stale-on-capture.txt; \
+	cp $$stale_on_ev/stdout.txt $$W/good/stale-on-stdout.txt; \
+	cp $$stale_on_ev/stderr.txt $$W/good/stale-on-stderr.txt; \
+	cp $$stale_on_ev/exit.txt $$W/good/stale-on-exit.txt; \
+	( cd $$W/good && \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-text-ledger.txt OFF ADVERSE_GOOD \
+	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	    stale-text.bin $(CURDIR)/$$W/good/ \
+	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -S other.HC -o- \
+	    > stale-text-harness.txt 2>&1 ); \
+	stale_text_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-text-harness.txt | cut -f2); \
+	if [ -z "$$stale_text_ev" ]; then \
+	  echo "driver-wp001-correction03: the adverse stale-text harness run produced no event directory" >&2; \
+	  cat $$W/good/stale-text-harness.txt >&2; \
+	  exit 1; \
+	fi; \
+	cp $$stale_text_ev/stdout.txt $$W/good/stale-text-stdout.txt; \
+	if [ ! -s $$W/good/stale-text-stdout.txt ]; then \
+	  echo "driver-wp001-correction03: the stale stdout witness is EMPTY, the mutation would be a no-op" >&2; \
+	  exit 1; \
+	fi; \
+	if cmp -s $$W/good/stale-text-stdout.txt $$W/good/on-stdout.txt; then \
+	  echo "driver-wp001-correction03: the stale stdout is IDENTICAL to the current stdout, the mutation would be a no-op" >&2; \
+	  exit 1; \
+	fi; \
 	for spec in \
 	  'ZERO_BYTE_ARTIFACT:the PolyC artifact is NONEMPTY' \
 	  'MISSING_ARTIFACT:the PolyC artifact is PRESENT' \
@@ -2030,15 +2130,18 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	  mkdir -p $$W/$$mutation; \
 	  cp $$W/good/artifact.bin $$W/$$mutation/artifact.bin; \
 	  cp $$W/good/oracle-artifact.bin $$W/$$mutation/oracle-artifact.bin; \
-	  cp $$W/good/stdout.txt $$W/$$mutation/stdout.txt; \
-	  cp $$W/good/stderr.txt $$W/$$mutation/stderr.txt; \
-	  cp $$W/good/exit.txt $$W/$$mutation/exit.txt; \
+	  cp $$W/good/on-stdout.txt $$W/$$mutation/stdout.txt; \
+	  cp $$W/good/on-stderr.txt $$W/$$mutation/stderr.txt; \
+	  cp $$W/good/on-exit.txt $$W/$$mutation/exit.txt; \
 	  cp $$W/good/oracle-stdout.txt $$W/$$mutation/oracle-stdout.txt; \
 	  cp $$W/good/oracle-stderr.txt $$W/$$mutation/oracle-stderr.txt; \
 	  cp $$W/good/oracle-exit.txt $$W/$$mutation/oracle-exit.txt; \
 	  cp $$W/good/oracle-capture.txt $$W/$$mutation/oracle-capture.txt; \
-	  cp $$W/good/oracle-capture.txt $$W/$$mutation/capture.txt; \
+	  cp $$W/good/capture.txt $$W/$$mutation/capture.txt; \
 	  cp $$W/good/ledger.txt $$W/$$mutation/ledger.txt; \
+	  cp $$W/good/run-id.txt $$W/$$mutation/run-id.txt; \
+	  cp $$W/good/producer-sha.txt $$W/$$mutation/producer-sha.txt; \
+	  cp $$W/good/on-producer-sha.txt $$W/$$mutation/on-producer-sha.txt; \
 	  $(DRIVER_ROUTE03_ADVERSE_BIN) $$mutation $$mutation $$W/$$mutation \
 	    $$W/$$mutation/artifact.bin \
 	    $$W/$$mutation/oracle-artifact.bin \
@@ -2049,14 +2152,18 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	    $$W/$$mutation/stderr.txt \
 	    $$W/$$mutation/exit.txt \
 	    $$W/good/stale-valid.bin \
-	    $$W/good/stale-stdout.txt \
+	    $$W/good/stale-text-stdout.txt \
 	    $$W/good/stale-capture.txt \
 	    $$W/$$mutation/oracle-capture.txt \
 	    $$W/$$mutation/capture.txt \
 	    $$W/$$mutation/oracle-stdout.txt \
 	    $$W/$$mutation/stdout.txt \
 	    $$W/good/stale-stdout.txt \
-	    $$W/good/stale-stderr.txt; \
+	    $$W/good/stale-stderr.txt \
+	    $$W/good/stale-on-capture.txt \
+	    $$W/good/stale-on-stdout.txt \
+	    $$W/good/stale-on-stderr.txt \
+	    $$W/good/stale-on.bin; \
 	  set +e; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$mutation \
 	    $$W/$$mutation/oracle-artifact.bin \
@@ -2069,6 +2176,8 @@ driver-wp001-correction03-adverse-test: $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_R
 	    $$W/$$mutation/exit.txt \
 	    $$eclass $$earch 0 \
 	    $$W/$$mutation/ledger.txt $$W/$$mutation/oracle-capture.txt $$W/$$mutation/capture.txt \
+	    "$$(cat $$W/$$mutation/run-id.txt)" ADVERSE_GOOD \
+	    "$$(cat $$W/good/producer-sha.txt)" "$$(cat $$W/good/on-producer-sha.txt)" \
 	    _main > $$W/$$mutation/out.txt 2>&1; \
 	  rc=$$?; \
 	  set -e; \

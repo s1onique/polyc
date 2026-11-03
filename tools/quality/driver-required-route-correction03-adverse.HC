@@ -250,6 +250,19 @@ I32 Main(I32 argc, U8 **argv) {
   //   argv[16] the PolyC capture record
   //   argv[17] the oracle stdout
   //   argv[18] the PolyC stdout
+  //   argv[19] the stale stderr
+  //   argv[20] the PolyC stderr
+  //   argv[21] the stale ON-side capture record
+  //   argv[22] the stale ON-side stdout
+  //   argv[23] the stale ON-side stderr
+  //   argv[24] the stale ON-side artifact
+  //
+  // The STALE_BOTH_SIDES mutation replays a stale invocation. The stale
+  // invocation on the ORACLE side was produced by the OFF producer, and the
+  // stale invocation on the POLYC side was produced by the ON producer, so
+  // each side's capture record carries its OWN selector and its OWN
+  // producer identity. Both stale invocations are ABSENT from this run's
+  // ledger, which is the property that rejects the replay.
   //
   "ADVERSE_PROBE\t%s\t%s\n", probe_id, mutation;
 
@@ -319,13 +332,19 @@ I32 Main(I32 argc, U8 **argv) {
     // capture record, and the byte comparison SUCCEEDS. Only the
     // INVOCATION PROVENANCE -- the fact that this run's ledger does not
     // contain the stale invocation -- can reject it.
+    //
+    // The ORACLE side replays the stale OFF invocation, and the POLYC side
+    // replays the stale ON invocation, so that each side's capture record
+    // carries the selector its side requires.
     CopyFile(argv[12], argv[4]);
     CopyFile(argv[12], argv[5]);
     CopyFile(argv[14], argv[15]);
     CopyFile(argv[14], argv[16]);
-    CopyFile(argv[19], argv[17]);
-    CopyFile(argv[19], argv[18]);
-    CopyFile(argv[20], argv[10]);
+    CopyFile(argv[19], argv[10]);
+    CopyFile(argv[21], argv[16]);
+    CopyFile(argv[22], argv[18]);
+    CopyFile(argv[23], argv[20]);
+    CopyFile(argv[24], argv[5]);
   }
   if (StrCmp(mutation, "STALE_STDOUT_BOTH_SIDES") == 0) {
     // A VALID but STALE stdout is replayed on BOTH sides. The two sides
@@ -344,31 +363,42 @@ I32 Main(I32 argc, U8 **argv) {
     // The capture record's ARTIFACT digest is altered so that it no longer
     // matches the bytes the comparator was given. A record that is edited
     // to match a stale file must not become trustworthy.
+    //
+    // The field is located BY ITS KEY, not by a fixed line offset: the
+    // capture record's field order is the harness's, and a fixed offset
+    // would silently edit a DIFFERENT field when the record's shape
+    // changes.
     I64 csize = 0;
     U8 *cbuf = FileRead(argv[16], &csize);
     if (cbuf != NULL) {
-      // The ARTIFACT_SHA256 field is the ninth field. Its value starts
-      // after the key and the space.
+      U8 *key = "ARTIFACT_SHA256 ";
+      I64 klen = StrLen(key);
+      I64 at = -1;
       I64 i = 0;
-      I64 found = 0;
-      while (i < csize && found < 8) {
-        if (cbuf[i] == 10) found = found + 1;
+      while (i + klen <= csize) {
+        I64 match = 1;
+        I64 j = 0;
+        while (j < klen) {
+          if (cbuf[i + j] != key[j]) { match = 0; break; }
+          j = j + 1;
+        }
+        // The key must START a line.
+        if (match == 1 && (i == 0 || cbuf[i - 1] == 10)) {
+          at = i + klen;
+          break;
+        }
         i = i + 1;
       }
-      // Skip "ARTIFACT_SHA256 ".
-      I64 k = 0;
-      while (i + k < csize && cbuf[i + k] != 32) k = k + 1;
-      i = i + k + 1;
-      if (i < csize) {
+      if (at >= 0 && at < csize) {
         // The first hexadecimal digit is replaced by a different one.
         U8 *digit = "0123456789abcdef";
         I64 d = 0;
-        while (d < 16 && digit[d] != cbuf[i]) d = d + 1;
+        while (d < 16 && digit[d] != cbuf[at]) d = d + 1;
         if (d < 16) {
           U8 replacement = digit[(d + 1) % 16];
           U8 *joined = MAlloc(csize);
           MemCpy(joined, cbuf, csize);
-          joined[i] = replacement;
+          joined[at] = replacement;
           FileWrite(argv[16], joined, csize);
           Free(joined);
         }
