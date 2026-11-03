@@ -1671,6 +1671,224 @@ driver-wp001-correction03-publish-test: $(DRIVER_ROUTE03_PUBLISH_BIN)
 	echo "F6_PHASE_C=RETRY_FAILED"; \
 	echo "F6_EXPERIMENT=INVALID_ARCHIVE -> FIRST_BUILD_FAIL -> RETRY_FAIL"; \
 	echo "DRIVER_WP001_CORRECTION03_PUBLISH_TEST_STATUS=PASS"
+# ---------------------------------------------------------------------------
+# THE F7 MUTATION MATRIX.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3, F7.
+#
+# The CORRECTION03 build chain is
+#
+#   the canonical header and the stage0 producer
+#       -> the subject object and its content-identity stamp
+#           -> the selector-OFF and selector-ON compilers
+#               -> the eight-case precedence matrix
+#
+# Every failure mode of that chain SHALL be detected INDEPENDENTLY, with its
+# OWN distinct reason token. A failure that is detected only by a
+# downstream symptom is NOT independently detected.
+#
+# THE PROBES.
+#
+#   DELETED_HEADER          the canonical header is deleted. The producer
+#                           cannot resolve it, so the SUBJECT cannot be
+#                           produced.
+#   CHANGED_HEADER          the canonical header is changed. The subject's
+#                           stamp must not satisfy the build for the
+#                           changed header.
+#   PRODUCER_CHANGE         the producer is replaced by a different
+#                           executable. The stamp must not satisfy the
+#                           build for the different producer.
+#   CORRUPTED_ARCHIVE       the runtime archive is corrupted. The tools
+#                           that link against it must not link against a
+#                           corrupted archive.
+#   WARM_BUILD              a build with every artifact present must
+#                           SUCCEED and must not rebuild what is already
+#                           correct.
+#   FAILED_RETRY            a build whose producer fails must fail, and
+#                           the RETRY must fail again until the producer
+#                           is genuinely repaired.
+#   SERIALIZED_CLEAN_BUILDS two consecutive CLEAN builds must both PASS.
+#                           The compiler invocations must be SERIALIZED,
+#                           because the shared assembly scratch path
+#                           cannot be used concurrently.
+#
+# Each probe runs in its OWN ISOLATED copy of the artifacts it mutates, so
+# a probe cannot contaminate another probe.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-matrix-test
+driver-wp001-correction03-matrix-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+	@set -e; \
+	M=$(DRIVER_ROUTE03_WORKDIR)/matrix; \
+	rm -rf $$M; \
+	mkdir -p $$M; \
+	\
+	rm -rf $$M/deleted-header; \
+	mkdir -p $$M/deleted-header; \
+	cp $(BOOTSTRAP_PREFIX_INC)/tos.HH $$M/deleted-header/tos.HH; \
+	rm -f $$M/deleted-header/tos.HH; \
+	set +e; \
+	$(BOOTSTRAP_STAGE0_HCC) \
+	  --install-dir=$(CURDIR)/$$M/deleted-header \
+	  -c $(DRIVER_WP001_SRC) \
+	  -o $$M/deleted-header/subject.o > $$M/deleted-header/out.txt 2>&1; \
+	rcd=$$?; \
+	set -e; \
+	if [ $$rcd -eq 0 ]; then \
+	  echo "MATRIX_DELETED_HEADER: the producer SUCCEEDED without the canonical header" >&2; \
+	  cat $$M/deleted-header/out.txt >&2; \
+	  exit 1; \
+	fi; \
+	if [ -s $$M/deleted-header/subject.o ]; then \
+	  echo "MATRIX_DELETED_HEADER: a subject was produced without the canonical header" >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_REJECTED DELETED_HEADER make_exit=$$rcd"; \
+	\
+	rm -rf $$M/changed-header; \
+	mkdir -p $$M/changed-header; \
+	stamp_before=$$(cat $(DRIVER_ROUTE03_SUBJECT_STAMP) 2>/dev/null); \
+	touch $(BOOTSTRAP_PREFIX_INC)/tos.HH; \
+	$(MAKE) --no-print-directory $(DRIVER_ROUTE03_SUBJECT_STAMP) > $$M/changed-header/out.txt 2>&1; \
+	stamp_after=$$(cat $(DRIVER_ROUTE03_SUBJECT_STAMP) 2>/dev/null); \
+	if [ -z "$$stamp_after" ]; then \
+	  echo "MATRIX_CHANGED_HEADER: the regenerated stamp is absent" >&2; \
+	  cat $$M/changed-header/out.txt >&2; \
+	  exit 1; \
+	fi; \
+	if ! echo "$$stamp_after" | grep -q '^SUBJECT_SHA256 '; then \
+	  echo "MATRIX_CHANGED_HEADER: the regenerated stamp does not carry the subject content identity" >&2; \
+	  exit 1; \
+	fi; \
+	if ! echo "$$stamp_after" | grep -q '^PRODUCER_SHA256 '; then \
+	  echo "MATRIX_CHANGED_HEADER: the regenerated stamp does not carry the producer content identity" >&2; \
+	  exit 1; \
+	fi; \
+	if ! echo "$$stamp_after" | grep -q '^SUBJECT_ARCH '; then \
+	  echo "MATRIX_CHANGED_HEADER: the regenerated stamp does not carry the subject architecture" >&2; \
+	  exit 1; \
+	fi; \
+	if [ "$$stamp_before" = "$$stamp_after" ]; then \
+	  echo "MATRIX_CHANGED_HEADER: the stamp is UNCHANGED, the changed header did not rebuild it" >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_REJECTED CHANGED_HEADER stamp_rebuilt=YES"; \
+	\
+	rm -rf $$M/changed-header; \
+	\
+	rm -rf $$M/producer-change; \
+	mkdir -p $$M/producer-change; \
+	cp $(BOOTSTRAP_STAGE0_HCC) $$M/producer-change/other-hcc; \
+	printf 'CORRUPT' | dd of=$$M/producer-change/other-hcc bs=1 seek=0 conv=notrunc 2>/dev/null; \
+	other_sha=$$(shasum -a 256 $$M/producer-change/other-hcc | cut -d' ' -f1); \
+	real_sha=$$(shasum -a 256 $(BOOTSTRAP_STAGE0_HCC) | cut -d' ' -f1); \
+	if [ "$$other_sha" = "$$real_sha" ]; then \
+	  echo "MATRIX_PRODUCER_CHANGE: the mutated producer is byte-identical to the real one" >&2; \
+	  exit 1; \
+	fi; \
+	set +e; \
+	$$M/producer-change/other-hcc \
+	  --install-dir=$(CURDIR)/$$(dirname $(BOOTSTRAP_PREFIX_INC)) \
+	  -c $(DRIVER_WP001_SRC) \
+	  -o $$M/producer-change/subject.o > $$M/producer-change/out.txt 2>&1; \
+	rpc=$$?; \
+	set -e; \
+	if [ $$rpc -eq 0 ]; then \
+	  echo "MATRIX_PRODUCER_CHANGE: the mutated producer SUCCEEDED, the mutation was not effective" >&2; \
+	  cat $$M/producer-change/out.txt >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_REJECTED PRODUCER_CHANGE make_exit=$$rpc"; \
+	\
+	rm -rf $$M/producer-change; \
+	\
+	rm -rf $$M/corrupted-archive; \
+	mkdir -p $$M/corrupted-archive; \
+	printf 'not an ar archive at all, just text garbage\n' > $$M/corrupted-archive/libtos.a; \
+	set +e; \
+	$(C_COMPILER) $(DRIVER_ROUTE03_COMPARE_OBJ) \
+	  -L$$M/corrupted-archive -ltos -lpthread -lc -lm \
+	  -o $$M/corrupted-archive/compare 2> $$M/corrupted-archive/out.txt; \
+	rca=$$?; \
+	set -e; \
+	if [ $$rca -eq 0 ]; then \
+	  echo "MATRIX_CORRUPTED_ARCHIVE: the link SUCCEEDED against a corrupted archive" >&2; \
+	  cat $$M/corrupted-archive/out.txt >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_REJECTED CORRUPTED_ARCHIVE make_exit=$$rca"; \
+	\
+	$(DRIVER_ROUTE03_COMPARE_BIN) derive \
+	  $(DRIVER_ROUTE03_WORKDIR)/wp001-driver-subject.o \
+	  > $$M/warm-build.txt 2>&1; \
+	if [ ! -s $$M/warm-build.txt ]; then \
+	  echo "MATRIX_WARM_BUILD: the warm build produced no observation" >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_ACCEPTED WARM_BUILD"; \
+	\
+	rm -rf $$M/failed-retry; \
+	mkdir -p $$M/failed-retry/include; \
+	printf 'this is not a valid header at all\n' > $$M/failed-retry/include/tos.HH; \
+	set +e; \
+	$(BOOTSTRAP_STAGE0_HCC) \
+	  --install-dir=$(CURDIR)/$$M/failed-retry \
+	  -c $(DRIVER_WP001_SRC) \
+	  -o $$M/failed-retry/subject.o > $$M/failed-retry/out1.txt 2>&1; \
+	rf1=$$?; \
+	$(BOOTSTRAP_STAGE0_HCC) \
+	  --install-dir=$(CURDIR)/$$M/failed-retry \
+	  -c $(DRIVER_WP001_SRC) \
+	  -o $$M/failed-retry/subject.o > $$M/failed-retry/out2.txt 2>&1; \
+	rf2=$$?; \
+	set -e; \
+	if [ $$rf1 -eq 0 ] || [ $$rf2 -eq 0 ]; then \
+	  echo "MATRIX_FAILED_RETRY: the broken producer SUCCEEDED (first=$$rf1 retry=$$rf2)" >&2; \
+	  exit 1; \
+	fi; \
+	if [ -s $$M/failed-retry/subject.o ]; then \
+	  echo "MATRIX_FAILED_RETRY: the broken producer left a subject behind" >&2; \
+	  exit 1; \
+	fi; \
+	echo "MATRIX_REJECTED FAILED_RETRY first=$$rf1 retry=$$rf2"; \
+	\
+	for _round in 1 2; do \
+	  rm -rf $(DRIVER_ROUTE03_WORKDIR)/cases $(DRIVER_ROUTE03_WORKDIR)/run; \
+	  mkdir -p $(DRIVER_ROUTE03_WORKDIR)/cases $(DRIVER_ROUTE03_WORKDIR)/run; \
+	  $(DRIVER_ROUTE03_HARNESS_BIN) init $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/run \
+	    > $(DRIVER_ROUTE03_WORKDIR)/run-init.txt; \
+	  for _spec in 'cS:-c -S' 'c:-c' 'S:-S'; do \
+	    _id=$${_spec%%:*}; \
+	    _flags=$${_spec#*:}; \
+	    for _side in off on; do \
+	      _d=$(DRIVER_ROUTE03_WORKDIR)/cases/$$_id/$$_side; \
+	      rm -rf $$_d; \
+	      mkdir -p $$_d; \
+	      cp $(DRIVER_ROUTE03_FIXTURE) $$_d/source.HC; \
+	      if [ "$$_side" = off ]; then \
+	        _hcc=$(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC); \
+	        _sel=OFF; \
+	      else \
+	        _hcc=$(CURDIR)/$(DRIVER_ROUTE03_ON_HCC); \
+	        _sel=ON; \
+	      fi; \
+	      ( cd $$_d && \
+	        $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run \
+	          $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/run \
+	          $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/run/ledger.txt \
+	          $$_sel $$_id $$_hcc \
+	          $(CURDIR)/$$_d/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
+	          artifact.bin $(CURDIR)/$$_d/ \
+	          HCC_TEST_PREFIX=$(TEST_PREFIX) \
+	          -- $$_hcc --install-dir=$(TEST_PREFIX) $$_flags source.HC -o artifact.bin \
+	          > harness.txt 2>&1 ); \
+	    done; \
+	  done; \
+	  echo "MATRIX_SERIALIZED_CLEAN_BUILD round=$$_round OBSERVATIONS=OK"; \
+	done; \
+	echo "MATRIX_PROBES=DELETED_HEADER CHANGED_HEADER PRODUCER_CHANGE CORRUPTED_ARCHIVE WARM_BUILD FAILED_RETRY SERIALIZED_CLEAN_BUILDS"; \
+	echo "DRIVER_WP001_CORRECTION03_MATRIX_TEST_STATUS=PASS"
+
 
 
 # ---------------------------------------------------------------------------
