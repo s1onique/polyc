@@ -57,6 +57,34 @@ measured.
 | D4 the position-only member comparison | the witness compared the members BY POSITION, so it could not distinguish a RENAME from a DUPLICATE or an UNEXPECTED member | the member NAME MULTISET is now compared per side; `c4r2/f3-archive-rejection-ledger.tsv` |
 | D5 the unchecked extended-name encoding | the decoder accepted ANY NUL inside the declared length, so an archive with a corrupted length was accepted and a PREFIX OF THE PAYLOAD was reported as the member's name | the decoder rejects a length whose terminator lies at or beyond the Mach-O magic; `c4r2/f3-archive-rejection-ledger.tsv` |
 
+## THE MEASUREMENTS AT THE CORRECTED HEAD
+
+```text
+parser_assertions_passed            376 / 376
+parser_assertion_sequence_md5       b6f117eb1386ca80f81bc06226e2a741
+                                    BYTE-IDENTICAL to the baseline
+parser_failed_lines                 0
+lexer07_direct_diff                 89 pass / 0 fail
+lexer08_direct_diff                 45 pass / 0 fail
+lexer09_direct_diff                 23 pass / 0 fail
+production authorities              16 VERIFIED / 0 FAILED
+emission domains                    4 observed from the artifacts
+precedence cases                    8
+adverse probes                      19 rejected, each with its own token
+archive controls                    9 rejected, each with its own token
+```
+
+## THE GATES AT THE CORRECTED HEAD
+
+```text
+make gate-fast   PASS
+make gate-push   PASS
+```
+
+The pristine isolated checkout suite passes every target with no build
+directory, no object seeding, no manual `make test-prefix-install` and
+no hidden setup.
+
 ## THE REMAINING GATE
 
 C4 CLOSE is permitted ONLY after a NEW independent, READ-ONLY review of
