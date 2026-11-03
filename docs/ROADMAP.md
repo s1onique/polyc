@@ -9777,3 +9777,87 @@ is never backdated.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01/`.
+
+---
+
+### ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02 — CLOSE
+
+The **required compiler-producing route** now takes its `-o-`/`-S`
+**precedence decision** from the **compiled PolyC driver**. The
+transfer is proven causally: mutating the driver's precedence decision
+changes the reported diagnostic, and mutating the legacy C policy
+leaves the selector-ON output byte-identical while flipping the G0
+oracle's.
+
+```text
+VERDICT                              PASS_PRECEDENCE_RESTORED_WITH_ROUTE_REMAINDER
+WP001_REQUIRED_ROUTE_PRECEDENCE_POLYC_OWNED   YES
+WP001_REQUIRED_ROUTE_SEMANTIC_REMAINDER        1 (C_SEMANTIC_ENGINE_RETAINED)
+WP001_WHOLE_CLI_POLYC_OWNED                   NOT CLAIMED (12 MEASURED rows, DISCLOSED)
+PRODUCTION_POLYC_AUTHORITIES                  16 (NEW_AUTHORITY_COUNT_DELTA=0)
+INVALID_STATUS_FAILS_CLOSED                   YES
+```
+
+**What was proved, not declared.** The PolyC driver selects
+`WP_STATUS_TO_STDOUT` for the `-o-`-without-`-S` condition, and the C
+side **dispatches on the selected status** instead of deciding the
+condition itself. The observable behaviour is **UNCHANGED**: the
+measured delta against the pre-fix build is **ZERO** over 14 fixtures
+and the full five-field comparator. What changed is **who decided**,
+not what was said.
+
+**A second defect was found by the C3 measurement and fixed.** The
+C-side status dispatch was a set of positive equality tests with no
+domain bound and no default branch, so an **out-of-domain** status
+matched none of them and the compiler proceeded as if the driver had
+selected OK: exit 0, an artifact produced, no diagnostic. That was a
+**fail-open**, and it violated AC36. The C3 phase added the **R06**
+fail-closed detector (which fired against the C2 source), the status
+domain bound `WP_DRIVER_STATUS_COUNT`, and the guard that rejects an
+out-of-domain status **before** any diagnostic dispatch. The measured
+result is now exit 1, no artifact, no fallback.
+
+**The measurements.** The G0 C-only oracle is **proven independent**
+against the final binaries: 0 driver symbols, 0 driver relocations
+across 30275 relocation lines, 0 traces of the new status members. The
+four-generation producer DAG has 4 **distinct** producer identities and
+no alias; 9 of the 12 ordered pairs agree on all 14 fixtures, and the 3
+that differ involve the pinned-tree producer and differ on **one**
+fixture in the stdout digest only — **all five precedence fixtures
+agree in every one of the 12 pairs**. The 24 negative controls are all
+silent on the fixed tree, 23 fire their **own** exact reason token on
+their adverse material, and NC17 correctly does **not** fire on the
+live tree.
+
+**The conservation.** The parser suite is 376/376 with the
+**byte-identical** assertion MD5 `b6f117eb1386ca80f81bc06226e2a741`;
+the lexer differentials are 89/89, 45/45 and 23/23; the 16 production
+authorities are all defined and linked with delta 0; `F-NO-PYTHON`
+remains non-green with the **same** 12 pre-existing paths and zero new.
+`gate-fast` passes, the serialized `gate-push` passes 7 of 7, the
+append-only suite passes 11/11, the Factory v2 suite passes 53/53, and
+F14 holds.
+
+**The remainder is explicitly open.** The required-route C semantic
+remainder is **1** (`BR_MAIN_COMPILE_TO_AST`, the retained C parser
+fault gate). The whole-CLI remainder is **12 measured rows**, each
+disclosed with a re-derived line number and a classification that says
+why it is retained. The artifact-class decision and `src/main.c`'s
+emission translation table remain **C-owned and frozen**. **M2 is not
+achieved.**
+
+**The historical debt is conserved, not repaired.** The predecessor's
+three ledgers of 50 rows carry the recomputed partitions **10/39/1**,
+**47/2/1** and **49/0/1**. The requested partition **29/10/10/1 does
+not exist**: the whole Git history was searched over 1833 commits with
+no match. The requested figure is recorded as a **refuted hypothesis**.
+The predecessor's 23/24 negative-control result and NC17's non-firing
+are conserved unchanged.
+
+**Terminality.** The external read-only probe **has not run yet**. This
+close commits the **PLAN** for it; the plan carries no PASS for an
+event that has not happened. The receipt lives **outside** the
+repository and is never backdated. **AC50 is not claimed.**
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02/`.

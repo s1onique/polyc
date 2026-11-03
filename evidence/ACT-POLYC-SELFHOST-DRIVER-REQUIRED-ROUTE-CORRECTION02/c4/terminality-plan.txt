@@ -1,0 +1,83 @@
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02 -- TERMINALITY PLAN
+=========================================================================
+
+THIS IS A PLAN. IT IS NOT A RECEIPT AND IT IS NOT A FORECAST.
+
+It describes what WILL be executed AFTER the unique terminal CLOSE
+commit. It asserts NOTHING about the outcome of that execution. The
+receipt that discharges AC50 will live OUTSIDE the repository, bound to
+the CLOSE HEAD and TREE, and its result will be whatever it actually
+is. A failure of the external probe is an ACTUAL FAILURE: it is
+reported with the receipt, and a new, independently authorized
+forward-only correction is requested. It is never recast as green, and
+a second CLOSE is never appended.
+
+THE FIVE PHASE COMMITS, IN ORDER
+-------------------------------------------------------------------------
+
+  C0  RED       edd9488b
+  C1  EVIDENCE  a32517a2
+  C2  IMPL      a0b471ee
+  C3  EVIDENCE  cc31a84f
+  C4  CLOSE     (the terminal CLOSE commit, whose SHA is queried from Git)
+
+There will be EXACTLY ONE CLOSE. The CLOSE commit is the ONLY commit
+of this ACT that carries an ACT-Verdict trailer.
+
+WHAT THE EXTERNAL PROBE WILL VERIFY, READ-ONLY, AFTER THE CLOSE
+-------------------------------------------------------------------------
+
+  1  five phase commits with valid, parseable trailers, and exactly
+     one CLOSE among them;
+
+  2  zero descendants carrying the same ACT id, and zero tracked
+     continuation unless it is distinctly classified;
+
+  3  the PolyC-selected status PREEMPTS every C-owned policy on the
+     required route: the observed diagnostic is the one the selected
+     status names, for every precedence fixture;
+
+  4  the C-only oracle is NOT contaminated: zero driver symbols, zero
+     driver relocations, zero traces of the new status members;
+
+  5  the PolyC precedence mutation DID change the reported diagnostic,
+     and the legacy C policy mutation did NOT change the selector-ON
+     output;
+
+  6  an out-of-domain status FAILS CLOSED: exit 1, no artifact, no
+     fallback;
+
+  7  the observable behaviour against the pre-fix build is UNCHANGED
+     over the frozen fixture set and the full five-field comparator;
+
+  8  the historical debt is CONSERVED UNCHANGED: the predecessor's
+     three partitions 10/39/1, 47/2/1 and 49/0/1, and the
+     predecessor's NC17 non-firing;
+
+  9  zero push refs, zero replace refs, zero ACT-owned worktrees, and
+     a CLEAN tree at the CLOSE.
+
+WHAT THE EXTERNAL PROBE WILL NOT DO
+-------------------------------------------------------------------------
+
+  It will not modify the repository. It will not push. It will not
+  create a branch, a tag or a worktree. It will not re-run the
+  mutation experiments. It will READ the committed tree and the Git
+  history, and it will bind its receipt to the CLOSE HEAD and TREE.
+
+THE RECEIPT
+-------------------------------------------------------------------------
+
+The receipt is EXTERNAL and READ-ONLY. It binds:
+
+  the CLOSE commit's SHA
+  the CLOSE commit's TREE SHA
+  the five phase commit SHAs
+  the ACT id
+  the CLOSE verdict (PASS_PRECEDENCE_RESTORED_WITH_ROUTE_REMAINDER)
+  zero push refs, zero replace refs, zero ACT-owned worktrees
+  a clean tree
+
+No SHA OF SELF is claimed by any artifact committed in the CLOSE
+commit. The CLOSE commit's own SHA is queried from Git by the reader
+and by the external probe, never read out of a committed document.
