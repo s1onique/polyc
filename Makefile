@@ -1054,6 +1054,9 @@ DRIVER_ROUTE03_HARNESS_BIN = build/driver-required-route-correction03-harness
 DRIVER_ROUTE03_PUBLISH_SRC = tools/quality/driver-required-route-correction03-publish.HC
 DRIVER_ROUTE03_PUBLISH_OBJ = build/driver-required-route-correction03-publish.o
 DRIVER_ROUTE03_PUBLISH_BIN = build/driver-required-route-correction03-publish
+DRIVER_ROUTE03_PRISTINE_SRC = tools/quality/driver-required-route-correction03-pristine.HC
+DRIVER_ROUTE03_PRISTINE_OBJ = build/driver-required-route-correction03-pristine.o
+DRIVER_ROUTE03_PRISTINE_BIN = build/driver-required-route-correction03-pristine
 # The archive builder's ABSOLUTE PATH. The runtime spawns with `execv`,
 # which does NOT search the PATH, so the tool receives the path explicitly.
 AR_TOOL ?= /usr/bin/ar
@@ -1570,9 +1573,53 @@ $(DRIVER_ROUTE03_PUBLISH_OBJ): $(DRIVER_ROUTE03_PUBLISH_SRC) $(DRIVER_ROUTE03_CO
 		exit 1; \
 	fi
 
+# ---------------------------------------------------------------------------
+# THE PRISTINE ISOLATED SUITE RUNNER.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 3, F9.
+#
+# The runner materializes the repository at the subject commit into an
+# isolated `git worktree` whose build directory starts EMPTY, and runs
+# EVERY CORRECTION03 target there. A build that only passes in the working
+# tree is a WARM-TREE result.
+#
+# F-POLYC-TOOLS: the runner is PolyC. It is NOT shell, because a shell
+# file larger than fifty lines is not permitted as a new tool.
+# ---------------------------------------------------------------------------
+$(DRIVER_ROUTE03_PRISTINE_OBJ): $(DRIVER_ROUTE03_PRISTINE_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_PRISTINE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
 $(DRIVER_ROUTE03_PUBLISH_BIN): $(DRIVER_ROUTE03_PUBLISH_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_PUBLISH_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+
+$(DRIVER_ROUTE03_PRISTINE_BIN): $(DRIVER_ROUTE03_PRISTINE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_PRISTINE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+
+# ---------------------------------------------------------------------------
+# THE PRISTINE ISOLATED SUITE TARGET.
+#
+# The runner materializes the repository at the subject commit into an
+# isolated `git worktree` whose build directory starts EMPTY, and runs
+# EVERY CORRECTION03 target there. The ledger it prints is the C4R3
+# pristine-suite evidence.
+#
+# The runner holds an EXCLUSIVE LOCK on the shared assembly scratch path
+# for the whole run, because the compiler writes its intermediary assembly
+# to the FIXED path /tmp/holyc-asm.s and two overlapping compiler
+# invocations destroy each other's scratch file.
+# ---------------------------------------------------------------------------
+.PHONY: driver-wp001-correction03-pristine-test
+driver-wp001-correction03-pristine-test: $(DRIVER_ROUTE03_PRISTINE_BIN)
+	@$(DRIVER_ROUTE03_PRISTINE_BIN) $(CURDIR) $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/pristine
 
 # ---------------------------------------------------------------------------
 # THE F6 ADVERSE EXPERIMENT.
