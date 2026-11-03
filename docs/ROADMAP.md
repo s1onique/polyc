@@ -9734,3 +9734,46 @@ its outcome is recorded by an ordinary commit with no ACT trailer.
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-BOUNDARY-QUALIFICATION01-CORRECTION01/`.
+
+### ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 — CLOSE
+
+The **required compiler-producing route** now takes its artifact class
+from the **compiled PolyC driver**. The transfer is proven causally:
+mutating the driver's emission decision flips the required route's
+artifact class, and mutating the legacy C decision leaves the
+selector-ON output byte-identical while flipping the G0 oracle's.
+
+```text
+VERDICT                              PASS_REQUIRED_ROUTE_POLYC_ACTION_AUTHORITY
+WP001_REQUIRED_ROUTE_POLYC_OWNED     YES
+WP001_WHOLE_CLI_POLYC_OWNED          NOT CLAIMED
+PRODUCTION_POLYC_AUTHORITIES        16 (NEW_AUTHORITY_COUNT_DELTA=0)
+```
+
+**What was proved, not declared.** The production object *imports*
+`WpDriverSelectedEmission`, the linked binary *calls* it from inside
+`emitFile`, and the emission function no longer reads
+`args->emit_object`. The consumption check is a **build-graph edge**:
+four adverse builds refused to link, each with its own reason token.
+
+**What remains open, and is not concealed.** `print_tokens`,
+`compile_to_ast` and the `-o-`/`-S` guard remain C-owned on the whole
+CLI. `compile_to_ast` is classified `SHARED_OR_UNPROVEN` and reported
+separately, not waived. The 32 alternate-witness proofs, the nine
+predicate drifts and the historical 50-AC ledger remain **open**. The
+broad LEXER07 corpus and the cross-target prefix were **not** remeasured
+and are **not** reported as green. `F-NO-PYTHON` remains **non-green**
+with the same 12 pre-existing paths and zero new.
+
+**The cost, repriced.** The WP-001 family consumed **8** distinct ACT
+identities, of which **6** have a Factory-v2 terminal CLOSE. The
+previously reported 2/3/5 were each a narrower slice of the same
+family.
+
+**Terminality.** The external read-only probe **has not run yet**. This
+close commits the **PLAN** for it; the plan carries no PASS for an event
+that has not happened. The receipt lives **outside** the repository and
+is never backdated.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01.md`
+and `evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01/`.
