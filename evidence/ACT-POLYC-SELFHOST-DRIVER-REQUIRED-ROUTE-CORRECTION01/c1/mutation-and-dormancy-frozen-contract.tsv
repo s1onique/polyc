@@ -1,0 +1,51 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=mutation-and-dormancy-frozen-contract
+#
+# THE FOUR FROZEN CAUSAL / DORMANCY / POISON EXPERIMENTS.
+#
+# Each experiment names the EXACT byte range it will change, the
+# REBUILD it requires, the OBSERVATION it predicts, and the
+# DETECTOR it must trip. The predictions are written HERE, BEFORE
+# the mutation is attempted, and are NEVER revised to match what
+# the mutation actually did.
+#
+# A MUTATION THAT DOES NOT REPRODUCE ITS PREDICTION IS A FAILURE,
+# NOT A SURPRISE TO BE EXPLAINED AWAY.
+
+# -----------------------------------------------------------------------
+# THE EXPERIMENTS
+# -----------------------------------------------------------------------
+experiment_id	source_file	mutation	the_byte_range	rebuild_required	predicted_observation	detector
+M-POLYC-ACTION-01	tools/bootstrap/selfhost-driver-wp001.HC	change the WP_KIND_EMIT_OBJ arm of WpDriverSelectedEmission so that it selects WP_EMIT_EXECUTE instead of WP_EMIT_COMPILE_OBJECT	the single WP_EMIT_COMPILE_OBJECT assignment inside WpDriverSelectedEmission	REBUILD THE WHOLE PRODUCTION COMPILER (the driver subject, then the link, then the compiler)	the required route emits an EXECUTABLE instead of an OBJECT, and the artifact class flips	POLYC_ACTION_CAUSAL_DORMANT (NC17) if it does NOT flip
+M-POLYC-STATUS-02	tools/bootstrap/selfhost-driver-wp001.HC	change the WP_STATUS_USAGE return in WpDriverMapStatus to WP_STATUS_NO_INPUT	the single WP_STATUS_USAGE return inside WpDriverMapStatus	REBUILD THE WHOLE PRODUCTION COMPILER	the UNKNOWN-OPTION case reports 'no input files' instead of 'Unknown commandline options', and the EXIT STATUS stays 1; the OBJECT cases are UNCHANGED	POLYC_STATUS_CAUSAL_DORMANT (NC17) if the message does not change
+M-C-LEGACY-03	src/main.c	invert the emit_object predicate at the emission branch	the single emit_object test inside the emission function	REBUILD THE WHOLE COMPILER, TWICE: once with the selector OFF (the G0 oracle) and once with the selector ON	G0: the artifact class FLIPS (the legacy rule is LIVE). ON: the artifact class and the output are UNCHANGED (the legacy rule is DORMANT)	LEGACY_C_POLICY_NOT_DORMANT (NC18) if ON still changes
+M-POLYC-POISON-04	tools/bootstrap/selfhost-driver-wp001.HC	corrupt the WpDriverSelectedEmission body so that it returns an out-of-domain code	the return statement inside WpDriverSelectedEmission	REBUILD THE WHOLE PRODUCTION COMPILER	the production compiler FAILS CLOSED: it reports the invalid action and does NOT silently fall back to the legacy C decision	POLYC_DRIVER_FALLBACK_NOT_CLOSED (NC08) if it falls back
+
+# -----------------------------------------------------------------------
+# THE MUTATION DISCIPLINE
+# -----------------------------------------------------------------------
+requirement	statement
+real_rebuild	every runtime claim requires a SUCCESSFUL COMPILER REBUILD. A build failure alone is NOT a substitute for a runtime observation.
+distinct_source_hash	the mutated source MUST have a different SHA-256 from the pristine source
+distinct_object_hash	the rebuilt driver subject MUST have a different SHA-256 from the pristine subject, unless the mutation provably cannot change the bytes
+linked_binary_provenance	the mutated compiler MUST be the binary the observation was taken from, identified by its own SHA-256
+exact_byte_range	the mutation MUST be confined to the named range; the diff is recorded and the rest of the file MUST be unchanged
+no_unrelated_mutation	no mutation may be made in an unrelated semantic function; the diff is the witness
+restoration	the source MUST be restored byte-for-byte and the restoration SHA recorded; a dirty worktree after the experiment is a FAILURE
+isolation	each mutation runs in a DISPOSABLE DETACHED WORKTREE with its own build directory; the authoritative checkout is never mutated
+serialized_compiler_invocations	the compiler invocations are SERIALIZED, because /tmp/holyc-asm.s is a shared scratch path
+
+# -----------------------------------------------------------------------
+# THE ABSTENTION RULES
+# -----------------------------------------------------------------------
+rule	statement
+ABSTAIN-01	if the chosen PolyC action mutation is causally DECORATIVE -- the artifact class does not change -- the experiment HALTs with HALT_CAUSAL_OR_DORMANCY_UNPROVEN. A decorative export is not an authority.
+ABSTAIN-02	if the ON build STILL changes when the legacy C decision is mutated, the experiment HALTs with HALT_CAUSAL_OR_DORMANCY_UNPROVEN. The legacy rule is still authoritative.
+ABSTAIN-03	if a required artifact cannot be produced for ANY reason other than the mutation itself, the observation is REPORTED as NOT_REPRODUCED, never as a pass.
+ABSTAIN-04	if the G0 oracle cannot be rebuilt independently of the mutation, the comparison is REPORTED as UNAVAILABLE, never as agreement.
+ABSTAIN-05	if a producer generation is an ALIAS of another rather than an independent producer, the claim that depends on its independence is HALTED with a PRODUCER_ALIAS marking.
+
+key	value
+EXPERIMENT_COUNT	4
+MUTATION_EXPERIMENTS_STATUS	FROZEN

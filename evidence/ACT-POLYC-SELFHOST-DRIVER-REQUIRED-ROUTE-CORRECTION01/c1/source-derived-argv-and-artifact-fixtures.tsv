@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=source-derived-argv-and-artifact-fixtures
+#
+# THE SOURCE-DERIVED CLI FIXTURE SET.
+#
+# EVERY argv shape here is DERIVED FROM THE DRIVER'S OWN OPTION TABLE
+# (tools/bootstrap/selfhost-driver-wp001.HC), not from a hand-picked
+# sample. The expected artifact class is written HERE, BEFORE the C2
+# implementation, and is NEVER revised to match an observed output.
+
+# -----------------------------------------------------------------------
+# THE FIXTURES
+# -----------------------------------------------------------------------
+fixture_id	source_file	source_sha256	argv	expected_artifact_class	expected_exit	expected_stderr
+FX_ROUTE_REQUIRED	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX -c input.HC -o out.o	OBJECT	0	empty
+FX_ROUTE_ALIAS	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX -obj input.HC -o out.o	OBJECT	0	empty
+FX_ALT_EXECUTABLE	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX input.HC -o out	EXECUTABLE	0	empty
+FX_ALT_ASSEMBLY	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX -S input.HC -o out.s	ASSEMBLY_TEXT	0	empty
+FX_NEG_UNKNOWN_OPTION	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX -c input.HC -o out.o --bogus-option	NONE	1	Unknown commandline options: --bogus-option
+FX_NEG_MISSING_O_VALUE	input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	--install-dir=PFX -c input.HC -o	NONE	1	Unexpected end of input - expected `-o <option?>`
+FX_NEG_NO_INPUT	(none)	-	--install-dir=PFX -c	NONE	1	hcc: fatal error: no input files
+FX_NEG_UNREADABLE_INPUT	missing.HC	-	--install-dir=PFX -c missing.HC -o out.o	NONE	1	a file error is reported
+
+# -----------------------------------------------------------------------
+# THE FIXTURE SOURCE
+# -----------------------------------------------------------------------
+# The fixture content is minimal on purpose: it must compile to a
+# real target object, and it must not depend on any library beyond
+# the compiler's own runtime.
+fixture_id	path	sha256	content
+FX_ROUTE_REQUIRED	/tmp/polyc-rrc01-ev/fixtures/input.HC	8b4a93f84d3fe070a38ba82bb8e3134026a0802d83efbeab0b1fbe17c4d916b6	I64 Main() { return 7; }
+
+# -----------------------------------------------------------------------
+# THE OPTION-KIND DERIVATION (why these argv shapes are the ones)
+# -----------------------------------------------------------------------
+option	driver_index	driver_kind	emission
+-c	7	WP_KIND_EMIT_OBJ	COMPILE_OBJECT
+-obj	6	WP_KIND_EMIT_OBJ	COMPILE_OBJECT
+-S	5	WP_KIND_ASSEMBLY	ASSEMBLY
+-lib	8	WP_KIND_SOURCE	DYLIB
+-o	15	WP_KIND_OUTFILE	(no emission of its own)
+--install-dir	19	WP_KIND_INSTALL	(no emission of its own)
+
+# -----------------------------------------------------------------------
+# THE FIXTURE SET IS FROZEN
+# -----------------------------------------------------------------------
+key	value
+FIXTURE_COUNT	8
+POSITIVE_OBJECT_FIXTURES	2 (the required route and its -obj alias)
+DISCRIMINATING_ALTERNATE_FIXTURES	2 (the executable route and the assembly route)
+NEGATIVE_ARGUMENT_FIXTURES	4
+FIXTURE_EXPECTATIONS_WRITTEN_BEFORE_C2	YES
+FIXTURE_SET_STATUS	FROZEN

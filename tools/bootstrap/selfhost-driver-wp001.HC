@@ -880,4 +880,81 @@ I64 WpDriverOptionField(I64 optIdx) {
   return WP_FIELD_NONE;
 }
 
+
+// -----------------------------------------------------------------------------
+// THE EMISSION ACTION -- OWNED BY POLYC
+//
+// WpDriverSelectedEmission: which ARTIFACT CLASS does this argv select?
+//
+// This is a DIFFERENT decision from WpDriverSelectAction. The whole-argv
+// action says WHAT to do; the emission action says WHICH ARTIFACT CLASS
+// to produce. The two coincide on some argv shapes and differ on others:
+//
+//   --install-dir=X -c input.HC -o out.o   -> WP_ACTION_COMPILE_OBJECT (1)
+//   --install-dir=X input.HC -o out        -> WP_ACTION_COMPILE_OBJECT (1)
+//
+// Both select the SAME whole-argv action, but they produce DIFFERENT
+// artifacts. The artifact class is therefore a decision of its own, and
+// it is made HERE, by PolyC, from the option table the driver already
+// owns. The C side consumes the RESULT; it never re-derives it.
+//
+// The emission domain is DISJOINT from the action domain and from the
+// status domain, so an invalid emission can never collide with a valid
+// one, and a valid zero-valued emission can never be mistaken for a
+// failure.
+// -----------------------------------------------------------------------------
+
+#define WP_EMIT_UNKNOWN        0
+#define WP_EMIT_COMPILE_OBJECT 1
+#define WP_EMIT_EXECUTE        2
+#define WP_EMIT_ASSEMBLY       3
+#define WP_EMIT_DYLIB          4
+
+// The emission class the argv selects.
+//
+// The decision order is PolyC-owned and mirrors the emission order of
+// the compiler: an explicit object request wins, then the assembly
+// request, then the shared-object request. With none of them present
+// the argv selects the executable.
+I64 WpDriverSelectedEmission() {
+  I64 argc = WpDriverHostArgc();
+  I64 i = 1;                    // argv[0] is the program name
+  I64 emission = WP_EMIT_UNKNOWN;
+
+  while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      // An option whose value is MISSING is an arity failure. The
+      // emission decision is not made on a malformed argv.
+      if (WpDriverArityOk(i, opt) == 0) return WP_EMIT_UNKNOWN;
+      I64 kind = WpDriverOptKind(opt);
+      if (kind == WP_KIND_EMIT_OBJ) emission = WP_EMIT_COMPILE_OBJECT;
+      if (kind == WP_KIND_ASSEMBLY) emission = WP_EMIT_ASSEMBLY;
+      if (kind == WP_KIND_SOURCE) emission = WP_EMIT_DYLIB;
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      // Only a NEXT value consumes the following argument.
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
+    i = i + 1;
+  }
+
+  // With no emission option present, the argv selects the executable --
+  // but ONLY when it actually asks for something to be compiled. An argv
+  // that carries no source file and no output request selects NO
+  // emission at all, which is the ABSENT case and is distinct from the
+  // EXECUTE case.
+  if (emission == WP_EMIT_UNKNOWN) {
+    I64 j = 1;
+    I64 saw_source = 0;
+    while (j < argc) {
+      if (WpDriverClassifyArgument(j) == WP_ARG_SOURCE) saw_source = 1;
+      j = j + 1;
+    }
+    if (saw_source == 0) return WP_EMIT_UNKNOWN;
+    return WP_EMIT_EXECUTE;
+  }
+  return emission;
+}
 }

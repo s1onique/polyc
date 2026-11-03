@@ -1,0 +1,38 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=c-only-g0-build-and-link-provenance
+#
+# THE GENUINE SELECTOR-OFF C-ONLY DRIVER ORACLE: ITS BUILD AND LINK.
+#
+# C-only here means DRIVER C-only. The other 15 PolyC authorities
+# REMAIN in G0, exactly as the ACT permits.
+
+item	value
+G0_EXECUTABLE	/tmp/polyc-rrc01-g0/build/g0-out/hcc
+G0_EXECUTABLE_SHA256	2ca69db1246df949dcfa4cba46261471cdaf0f44cb21454871166e1d06a1f885
+G0_BUILD_DIR	/tmp/polyc-rrc01-g0/build/g0
+G0_SELECTOR	HCC_USE_SELFHOST_DRIVER_WP001=OFF
+G0_WORKTREE	/tmp/polyc-rrc01-g0 (detached at 33f93347277c6ce242a93b71ab5f0123ccaea4e5)
+G0_SOURCE_TREE_UNMODIFIED	YES (git status --porcelain=v1 is empty in the G0 worktree)
+G0_DRIVER_SUBJECT_IN_LINK	NO
+
+# THE LINK PROOF: THE G0 ORACLE CARRIES NO DRIVER SYMBOL AT ALL
+check	command	result
+G0_defines_any_WpDriver	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c ' T _WpDriver'	0
+G0_imports_any_WpDriver	nm -u /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c WpDriver	0
+G0_relocations_to_WpDriver	otool -rv /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c WpDriver	0
+G0_any_WpDriver_string	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c WpDriver	0
+G0_other_polyc_authorities_retained	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c ' T _Bootstrap'	9
+G0_abi_core_authorities_retained	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c ' T _Abi'	10
+G0_VERDICT	INDEPENDENT
+
+# THE G0 LINK LINE (the driver subject is ABSENT from it)
+# The link line is the SAME configuration as the selector-ON build,
+# except that the driver selector is OFF. The C bridge
+# (src/selfhost-driver-wp001.c) is NOT added to the target either,
+# because src/CMakeLists.txt adds it INSIDE the selector branch.
+
+# THE LINKED G0 ARTIFACT CLASS BEHAVIOUR (the oracle baseline)
+route	argv	artifact_class	note
+G0_OBJECT	--install-dir=PFX -c input.HC -o g0-out.o	Mach-O 64-bit object arm64	THE ORACLE BASELINE for the required route
+G0_EXECUTABLE	--install-dir=PFX input.HC -o g0-alt	Mach-O 64-bit executable arm64	THE ORACLE BASELINE for the alternate route

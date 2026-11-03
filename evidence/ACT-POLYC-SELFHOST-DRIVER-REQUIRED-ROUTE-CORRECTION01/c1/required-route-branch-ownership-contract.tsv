@@ -1,0 +1,88 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=required-route-branch-ownership-contract
+#
+# THE PER-BRANCH OWNERSHIP CONTRACT FOR THE REQUIRED ROUTE.
+#
+# THIS IS THE FROZEN LEDGER THE C2 IMPLEMENTATION IS AUTHORIZED AGAINST.
+# EACH BRANCH IS CLASSIFIED BY WHAT IT DECIDES, NOT BY WHICH FILE
+# IT LIVES IN.
+#
+# -----------------------------------------------------------------------
+# THE CLASSIFICATION VOCABULARY
+# -----------------------------------------------------------------------
+class	meaning
+REQUIRED_ROUTE_SEMANTIC	a decision that can change the required --install-dir ... -c ... -o ... compilation route
+MECHANICAL_EXECUTION	translating an already validated PolyC action into an engine invocation, with no independent policy
+WHOLE_CLI_OFF_ROUTE	a C-owned decision that is NOT TAKEN on the required route (the flag is absent there)
+SHARED_OR_UNPROVEN	a decision whose separation between policy and fault-gate is not established
+DORMANT_OR_EXCLUDED	source present but unreachable from the production path
+
+# -----------------------------------------------------------------------
+# THE REQUIRED-ROUTE BRANCH LEDGER (AT C1, BEFORE THE C2 CHANGE)
+# -----------------------------------------------------------------------
+branch_id	function	source_line	decision	classification_at_c1	classification_after_c2	plan
+BR_EMITFILE_EMIT_OBJECT	emitFile	250	WHICH ARTIFACT CLASS is produced	C_SEMANTIC_OWNER_PROVEN	MECHANICAL_EXECUTION	THE C2 CHANGE: the branch reads the PolyC-selected emission code instead of the C field. The C code becomes a pure translation of a PolyC-produced code to a platform command.
+BR_EMITFILE_ASSEMBLY	emitFile	263	WHICH ARTIFACT CLASS is produced (assembly)	C_SEMANTIC_OWNER_PROVEN	MECHANICAL_EXECUTION	THE C2 CHANGE: the same emission code selects this arm.
+BR_EMITFILE_DYLIB	emitFile	284	WHICH ARTIFACT CLASS is produced (shared object)	C_SEMANTIC_OWNER_PROVEN	MECHANICAL_EXECUTION	THE C2 CHANGE: the same emission code selects this arm.
+BR_EMITFILE_EXECUTABLE	emitFile	296	WHICH ARTIFACT CLASS is produced (executable)	C_SEMANTIC_OWNER_PROVEN	MECHANICAL_EXECUTION	THE C2 CHANGE: the same emission code selects this arm.
+BR_MAIN_PRINT_TOKENS	main	519	WHETHER THE TOKEN STREAM is emitted	C_SEMANTIC_OWNER_PROVEN	WHOLE_CLI_OFF_ROUTE	OUT OF SCOPE. The -tokens flag is ABSENT on the required route, so this branch is NOT TAKEN there. It remains C-owned and is DISCLOSED, not claimed.
+BR_MAIN_COMPILE_TO_AST	main	533	WHETHER THE COMPILE PROCEEDS	SHARED_DECISION_OR_INSUFFICIENT_SEPARATION	SHARED_OR_UNPROVEN	OUT OF SCOPE, REPORTED SEPARATELY. The branch reads a parse result the C parser produced; the policy/fault-gate separation is not established. It is NOT waived.
+BR_CLI_O_DASH_S_GUARD	cliParseArgsPolyC	755	WHETHER -o- MAY BE USED WITHOUT -S	C_SEMANTIC_OWNER_PROVEN_WHOLE_CLI	WHOLE_CLI_OFF_ROUTE	OUT OF SCOPE. Identified independently by Codex and OMITTED from the earlier global inventory. It is RECORDED in the global inventory and NOT modified here.
+BR_POLYC_FIELD_FOR_ACTION	WpDriverFieldForAction	830	WHICH CLIARGS FIELD the action sets	POLYC_SEMANTIC_OWNER_C_EXECUTOR	POLYC_SEMANTIC_OWNER_C_EXECUTOR	UNCHANGED. This is the PolyC side of the field decision.
+BR_POLYC_SELECTED_EMISSION	WpDriverSelectedEmission	919	WHICH ARTIFACT CLASS is produced	NOT_PRESENT_AT_C0	POLYC_SEMANTIC_OWNER	THE C2 CHANGE: the NEW PolyC decision that owns the artifact class.
+
+# -----------------------------------------------------------------------
+# THE REJOINED 32 HISTORICAL WP-001 ROWS (original IDs preserved)
+# -----------------------------------------------------------------------
+# The rows are rejoined by their ORIGINAL ids. The scope split is
+# THIS ACT's own re-derivation, NOT a claim that the whole count
+# migrated, and NOT a claim that the branch records above are the
+# exhaustive whole-CLI C remainder.
+
+historical_id	historical_class	required_route_scope	whole_cli_scope	note
+historical_id	historical_class	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliArgsInit-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliConcatArgv-FC	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliGetFileType-FC	DRIVER_SEMANTIC	MECHANICAL_EXECUTION	WHOLE_CLI_OFF_ROUTE	the PolyC driver already owns the decision; the C side is the mechanical executor
+A-C-DRIVER-cli-cliNoInputFiles-FC	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliPanic-SL	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliPanicGeneric-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseArgs-SW1	DRIVER_SEMANTIC	MECHANICAL_EXECUTION	WHOLE_CLI_OFF_ROUTE	the PolyC driver already owns the decision; the C side is the mechanical executor
+A-C-DRIVER-cli-cliParseAssign-SL	DORMANT	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseBoolean-FC	DORMANT	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseDefine-SL	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseInt-FC	DORMANT	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseNop-SL	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParseString-SL	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliParserFind-FC	DRIVER_SEMANTIC	MECHANICAL_EXECUTION	WHOLE_CLI_OFF_ROUTE	the PolyC driver already owns the decision; the C side is the mechanical executor
+A-C-DRIVER-cli-cliPrintUsage-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliTargetToString-SW1	DRIVER_SEMANTIC	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliTerryInfo-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-cliVersionPrint-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-getASMFileName-SW1	DRIVER_SEMANTIC	MECHANICAL_EXECUTION	WHOLE_CLI_OFF_ROUTE	the PolyC driver already owns the decision; the C side is the mechanical executor
+A-C-DRIVER-cli-getBuildModeStr-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-gitGetHash-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-cli-longestCommand-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-assemble-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-emitFile-FC	DRIVER_SEMANTIC	REQUIRED_ROUTE	REQUIRED_ROUTE	THE BRANCH THIS ACT CORRECTS
+A-C-DRIVER-main-hccLibInit-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-linkLibFlags-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-main-SW1	DRIVER_SEMANTIC	SHARED_OR_UNPROVEN	OFF_ROUTE	main() contains BOTH the off-route print_tokens branch and the shared compile_to_ast branch; the FUNCTION is not the BRANCH
+A-C-DRIVER-main-memoryInit-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-memoryPrintStats-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-memoryRelease-SL	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-safeSystem-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+A-C-DRIVER-main-writeAsmToTmp-FC	C_MECHANICAL	DORMANT_OR_EXCLUDED	DORMANT_OR_EXCLUDED	not reachable from the production path
+JOIN_ROWS	32
+JOIN_MISSING	0
+JOIN_DUPLICATE	0
+
+# -----------------------------------------------------------------------
+# THE GLOBAL INVENTORY (read-only, NOT modified by this ACT)
+# -----------------------------------------------------------------------
+retained_c_decision	scope	note
+BR_EMITFILE_* (four artifact arms)	REQUIRED_ROUTE	becomes MECHANICAL_EXECUTION after C2
+BR_MAIN_PRINT_TOKENS	WHOLE_CLI	disclosed
+BR_MAIN_COMPILE_TO_AST	SHARED	disclosed separately
+BR_CLI_O_DASH_S_GUARD	WHOLE_CLI	disclosed; omitted from the earlier inventory

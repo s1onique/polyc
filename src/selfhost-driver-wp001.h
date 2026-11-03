@@ -21,6 +21,7 @@
  *   WpDriverMapStatus(action)             the status mapping
  *   WpDriverDecide()                      the single entry point
  *   WpDriverSelectedAction()              the selected action code
+ *   WpDriverSelectedEmission()            the selected ARTIFACT CLASS
  *
  * The host side (implemented in src/selfhost-driver-wp001.c) provides
  * three mechanical byte accessors and NOTHING else:
@@ -49,6 +50,7 @@ extern long long WpDriverSelectAction(void);
 extern long long WpDriverMapStatus(long long action);
 extern long long WpDriverDecide(void);
 extern long long WpDriverSelectedAction(void);
+extern long long WpDriverSelectedEmission(void);
 
 /* The argument classification, mirrored from the PolyC subject so the
  * C side can route an argument without re-deciding what it is. The
@@ -70,6 +72,16 @@ extern long long WpDriverSelectedAction(void);
 #define WP_DRIVER_STATUS_ENGINE   5
 
 /* The action domain, mirrored the same way. */
+
+/* The EMISSION domain, mirrored the same way. It is DISJOINT from both
+ * the action domain and the status domain: 0 is the absent/invalid
+ * sentinel and every valid emission is >= 1. */
+#define WP_DRIVER_EMIT_UNKNOWN        0
+#define WP_DRIVER_EMIT_COMPILE_OBJECT 1
+#define WP_DRIVER_EMIT_EXECUTE        2
+#define WP_DRIVER_EMIT_ASSEMBLY       3
+#define WP_DRIVER_EMIT_DYLIB          4
+
 #define WP_DRIVER_ACTION_COMPILE_OBJECT 1
 #define WP_DRIVER_ACTION_NONE           20
 

@@ -1,0 +1,55 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=four-generation-producer-dag
+#
+# THE FOUR-GENERATION PRODUCER DAG, MEASURED AT C1.
+#
+# G0 is the pure C-driver oracle (the driver selector OFF).
+# G1, G2 and G3 are the SAME PolyC driver source compiled by THREE
+# DISTINCT PRODUCER EXECUTABLES, distinguished by content SHA-256.
+#
+# G1 and G2 are the SAME COMPILER GENERATION reached through two
+# distinct producer executables, so their driver objects are expected
+# to be byte-identical. That expectation is MEASURED, not assumed.
+#
+# --------------------------------------------------------------------------
+# THE PRODUCER EXECUTABLES
+# --------------------------------------------------------------------------
+producer_id	role	executable_path	producer_sha256	provenance
+G0_PRODUCER	the pure C-driver oracle	/tmp/polyc-rrc01-g0/build/g0-out/hcc	2ca69db1246df949dcfa4cba46261471cdaf0f44cb21454871166e1d06a1f885	built from the entry commit in a disposable detached worktree, with the driver selector OFF
+G1_PRODUCER	the C-rooted stage0	/tmp/polyc-rrc01-wt/build/host-stage0/hcc	08c666a7596e23b37062245370b42ffc35e2b0ac11f307aefa1af0d33bcbe83f	the C-rooted stage0 compiler of this tree
+G2_PRODUCER	the current production compiler	/tmp/polyc-rrc01-wt/hcc	ec398f18d76edab5d94a0075b3141856048a83d3299b35d61efbaa7fc06f3d5b	the current production ./hcc of this tree
+G3_PRODUCER	an independently built qualified bootstrap generation	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/runtime-producer/hcc-bootstrap04	3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6	the qualified bootstrap04 generation, built by the runtime-producer chain
+
+# --------------------------------------------------------------------------
+# THE COMPILED DRIVER SUBJECT, ONE PER POLYC GENERATION
+# --------------------------------------------------------------------------
+generation	producer_id	polyc_source	polyc_source_sha256	subject_object	subject_object_sha256	exported_symbol_count	undefined_symbol_count	object_identity_vs_g1
+G1	G1_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G1-driver.o	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b	15	3	IDENTICAL
+G2	G2_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G2-driver.o	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b	15	3	IDENTICAL
+G3	G3_PRODUCER	tools/bootstrap/selfhost-driver-wp001.HC	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f	/tmp/polyc-rrc01-gens/G3-driver.o	5d744dc7aa623de59bad4928f6d1d3a623b9a786d83df1153d11c2525f83afe5	24	3	DIFFERENT
+
+# --------------------------------------------------------------------------
+# THE C-ONLY ORACLE (G0) HAS NO DRIVER SUBJECT AT ALL
+# --------------------------------------------------------------------------
+check	command	result
+G0_DRIVER_SYMBOL_COUNT	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep -c WpDriver	0
+G0_DRIVER_SUBJECT_IN_LINK	nm /tmp/polyc-rrc01-g0/build/g0-out/hcc | grep WpDriver	NO_MATCH
+G0_SOURCE_MAIN_SHA256	shasum -a 256 /tmp/polyc-rrc01-g0/src/main.c	10bfd5f433dbd91855375d08f8be30405707944ae8710741ae70b8224c22f7b9
+G0_SOURCE_MAIN_IS_PINNED_UNMODIFIED	cmp the worktree src/main.c against the entry blob	IDENTICAL
+
+# --------------------------------------------------------------------------
+# THE VERDICT
+# --------------------------------------------------------------------------
+key	value
+PRODUCER_COUNT	4
+PRODUCERS_DISTINCT_BY_EXECUTABLE_SHA	YES
+PRODUCER_ALIAS_PRESENT	NO
+G1_G2_SAME_COMPILER_GENERATION	YES
+G1_G2_OBJECT_IDENTITY	BYTE_IDENTICAL
+G1_G2_OBJECT_SHA256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+G3_DISTINCT_COMPILER_GENERATION	YES
+G3_OBJECT_SHA256	5d744dc7aa623de59bad4928f6d1d3a623b9a786d83df1153d11c2525f83afe5
+G0_DRIVER_SYMBOL_COUNT	0
+POLYC_SUBJECT_SOURCE_SHA256	6acb17c87e7cb1d345d04e152b5d7cfd02bf45d60c66bac6ec50bd946d39b88f
+GENERATION_DAG_STATUS	FROZEN

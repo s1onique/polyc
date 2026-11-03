@@ -1,0 +1,91 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=semantic-comparator-and-ordered-pair-roster
+#
+# THE SEMANTIC COMPARATOR AND THE TWELVE ORDERED PAIRS.
+#
+# -----------------------------------------------------------------------
+# THE COMPARATOR DIMENSIONS
+# -----------------------------------------------------------------------
+dimension	what_is_compared	normalization	why_it_is_necessary
+argv	the argument vector	none	THE INPUT. Two programs are only comparable if they were asked the same thing.
+exit	the process exit status	none	THE PRIMARY DIAGNOSTIC. A green run with the wrong artifact is not a pass.
+stdout	the standard output	ANSI colour escapes are stripped; nothing else	the compiler prints diagnostics and progress here.
+stderr	the standard error	the linker's '-lpthread/-lc/-lm unused' warnings are stripped; the rest is compared	those three warnings are produced by the C LINKER, not by the compiler, and are identical in every build.
+artifact_class	the CLASS of the emitted artifact, read with file(1) and the target object tools	none	THE DECISIVE DIMENSION. A .o path holding an executable is a FAILURE even at exit 0.
+target_arch	the architecture of the emitted artifact	none	an object for the wrong architecture is a failure
+artifact_symbols	the key symbols of the emitted object, read with nm	none	proves the artifact really is the compiled program and not a stub
+execution	the behaviour of the produced executable, when one is produced	none	proves the artifact is functional, not merely well-typed
+
+# -----------------------------------------------------------------------
+# THE NORMALIZATION IS DOCUMENTED AND MINIMAL
+# -----------------------------------------------------------------------
+normalization_id	rule	scope
+NORM-01	strip ANSI CSI sequences (ESC [ ... m)	STDOUT and STDERR
+NORM-02	drop the exact linker warning lines '-lpthread: linker input unused', '-lc: linker input unused', '-lm: linker input unused'	STDERR only
+NORM-03	drop the empty lines that the warning removal leaves behind	STDOUT and STDERR
+NOT_NORMALIZED	absolute paths, the program name, the fixture file name, the artifact file name	NONE of these are normalized: a difference in a path is a REAL difference and must be reported
+
+# -----------------------------------------------------------------------
+# THE OBJECT-HASH COMPARISON (SEPARATE FROM THE SEMANTIC COMPARISON)
+# -----------------------------------------------------------------------
+# The semantic comparison does NOT require byte-identical objects.
+# The G0 C compiler object and the PolyC subject need not be
+# byte-identical, and the ACT does not claim they are. Object
+# hashes are compared SEPARATELY, and only where exact bytes
+# should match: the three PolyC generations G1/G2/G3 compiled from the
+# SAME source by the SAME compiler generation must be byte-identical.
+
+# -----------------------------------------------------------------------
+# THE TWELVE ORDERED PAIRS
+# -----------------------------------------------------------------------
+pair_id	generation_a	generation_b	comparison_type	requirement
+P01	G0	G1	semantic	AGREE
+P02	G0	G2	semantic	AGREE
+P03	G0	G3	semantic	AGREE
+P04	G1	G0	semantic	AGREE
+P05	G1	G2	semantic	AGREE
+P06	G1	G3	semantic	AGREE
+P07	G2	G0	semantic	AGREE
+P08	G2	G1	semantic	AGREE
+P09	G2	G3	semantic	AGREE
+P10	G3	G0	semantic	AGREE
+P11	G3	G1	semantic	AGREE
+P12	G3	G2	semantic	AGREE
+PAIR_COUNT	12
+
+# The pairs are ORDERED: each direction is compared separately,
+# because the comparator is not assumed to be symmetric.
+
+# -----------------------------------------------------------------------
+# THE COMPARATOR SENSITIVITY REQUIREMENT (AC21)
+# -----------------------------------------------------------------------
+# The comparator MUST be shown to be SENSITIVE to each dimension
+# individually. Altering ONLY the artifact class, ONLY the exit code,
+# ONLY the stderr and ONLY the artifact content must each produce
+# a COMPARATOR_MISMATCH. A comparator that ignores any dimension
+# is INSENSITIVE and its agreement proves nothing.
+
+sensitivity_id	dimension	adverse_change	expected_detector
+SENS-01	artifact_class	replace the emitted object with an executable	COMPARATOR_ARTIFACT_INSENSITIVE (NC19)
+SENS-02	exit_status	change the exit code	COMPARATOR_DIAGNOSTIC_INSENSITIVE (NC20)
+SENS-03	stderr	change the stderr text	COMPARATOR_DIAGNOSTIC_INSENSITIVE (NC20)
+SENS-04	artifact_content	change a byte inside the emitted object	COMPARATOR_CONTENT_INSENSITIVE
+SENS-05	stdout	change the stdout text	COMPARATOR_STDOUT_INSENSITIVE
+SENS-06	target_arch	emit an object for a different architecture	COMPARATOR_ARCH_INSENSITIVE
+
+# -----------------------------------------------------------------------
+# THE COMPARATOR IS COMPUTED TWICE, BY DIFFERENT IMPLEMENTATIONS
+# -----------------------------------------------------------------------
+# The ACT requires that the twelve ordered comparisons be
+# INDEPENDENTLY RECOMPUTED by a different implementation. The
+# primary comparator is a COMPILED POLYC program; the independent
+# recomputation is a separate POSIX/Git witness that re-derives the
+# observations from the recorded raw streams.
+comparator_id	implementation	role
+CMP-PRIMARY	a compiled PolyC comparator	produces the primary verdict
+CMP-INDEPENDENT	a POSIX/Git witness	recomputes the verdict from the raw streams and must AGREE
+DISAGREEMENT_TOLERANCE	0
+
+key	value
+COMPARATOR_STATUS	FROZEN

@@ -1,0 +1,69 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ACT_PHASE=C1-EVIDENCE
+# EVIDENCE_KIND=output-request-ownership-and-lifetime
+#
+# THE OUTPUT-REQUEST OWNERSHIP AND LIFETIME, WITH THE ADVERSE TESTS.
+#
+# -----------------------------------------------------------------------
+# THE MEASURED ABI PROBE (the compiled PolyC probe against the real subject)
+# -----------------------------------------------------------------------
+# probe_source	tools/quality/driver-required-route-correction01-abi-probe.HC
+# probe_binary	/tmp/polyc-rrc01-wt/build/abi-probe
+# probe_sha256	d22aad8d52b7d2a8691c24f734fd2f2d42ace0a90c3525299e9e93fa99b6ff7b
+# driver_subject	/tmp/polyc-rrc01-wt/build/wp001-driver-c1.o
+# driver_subject_sha256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+# link	cc <probe.o> <driver.o> src/selfhost-driver-wp001.c -L<prefix>/lib -ltos -lpthread -lc -lm
+#
+case_id	argv_shape	observed_emission	expected_emission	verdict
+REQUIRED_ROUTE_OBJECT	hcc --install-dir=/p -c input.HC -o out.o	1	1	PASS
+OBJECT_ALIAS_OBJ	hcc --install-dir=/p -obj input.HC -o out.o	1	1	PASS
+ALTERNATE_ROUTE_EXECUTABLE	hcc --install-dir=/p input.HC -o out	2	2	PASS
+ASSEMBLY_ROUTE	hcc --install-dir=/p -S input.HC -o out.s	3	3	PASS
+DYLIB_ROUTE	hcc --install-dir=/p -lib input.HC -o out.dylib	4	4	PASS
+UNKNOWN_OPTION_DEFAULT	hcc --install-dir=/p -bogus input.HC -o out	2	2	PASS
+ABSENT_REQUEST	hcc	0	0	PASS
+ERROR_ARITY_MISSING_VALUE	hcc --install-dir=/p -c input.HC -o	0	0	PASS
+REQUIRED_ROUTE_OBJECT_REPEAT	hcc --install-dir=/p -c input.HC -o out.o	1	1	PASS
+ABI_PROBE_CASES	9
+ABI_PROBE_FAILURES	0
+
+# -----------------------------------------------------------------------
+# THE DOMAIN MATRIX (each case is a DISTINCT domain value)
+# -----------------------------------------------------------------------
+domain_aspect	representation	measured
+valid object	WP_DRIVER_EMIT_COMPILE_OBJECT = 1	observed 1
+valid executable	WP_DRIVER_EMIT_EXECUTE = 2	observed 2
+valid assembly	WP_DRIVER_EMIT_ASSEMBLY = 3	observed 3
+valid dylib	WP_DRIVER_EMIT_DYLIB = 4	observed 4
+absent request	WP_DRIVER_EMIT_UNKNOWN = 0	observed 0 (the ABSENT_REQUEST case)
+unknown/invalid action	WP_DRIVER_EMIT_UNKNOWN = 0 + an out-of-domain code is rejected by the C executor	observed 0 on the arity-error case
+error	no emission is decided on a malformed argv	observed 0 on the ERROR_ARITY_MISSING_VALUE case
+success	WP_DRIVER_EMIT_COMPILE_OBJECT on the required route	observed 1
+
+# -----------------------------------------------------------------------
+# OWNERSHIP AND LIFETIME
+# -----------------------------------------------------------------------
+item	owner	lifetime	proof
+the argv	WpDriverHostSetArgv installs it once from main(); it is never mutated afterwards	the whole process	src/selfhost-driver-wp001.c holds a single static pointer and count; the driver only READS it	ADVERSE: the probe installs a DIFFERENT argv per case and every case observes its own emission, so a stale argv would produce the wrong emission
+the emission code	a plain I64 returned by value	one call, no storage	the probe obtains it from the return value; no pointer crosses the boundary
+the driver subject	a compiled object linked into the production binary	the whole process	the production link line names it and the verifier checks its exports
+
+# -----------------------------------------------------------------------
+# THE ADVERSE LIFETIME TESTS
+# -----------------------------------------------------------------------
+test	adverse_change	expected_result	observed
+LT-01	install a DIFFERENT argv for a second case	the second case observes the SECOND emission, not the first	PASS (ABSENT_REQUEST after REQUIRED_ROUTE_OBJECT observes 0, not 1)
+LT-02	repeat the SAME argv twice	the two observations are IDENTICAL	PASS (REQUIRED_ROUTE_OBJECT and REQUIRED_ROUTE_OBJECT_REPEAT both observe 1)
+LT-03	an argv whose option value is MISSING	no emission is decided	PASS (the arity case observes 0)
+LT-04	an argv with NO source file and NO options	no emission is decided (ABSENT, not EXECUTE)	PASS (the absent case observes 0)
+
+# -----------------------------------------------------------------------
+# THE FORBIDDEN SHAPES -- EACH IS ABSENT BY INSPECTION
+# -----------------------------------------------------------------------
+forbidden_shape	present
+an unchecked void * in the transport	NO
+a shared mutable request cell the C side writes	NO
+a longjmp across a PolyC frame	NO
+an unobserved fallback when the code is invalid	NO (the C executor rejects an out-of-domain code)
+a second C flag parser	NO
+args->emit_object converted back into a C policy token	NO
