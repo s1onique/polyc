@@ -129,12 +129,20 @@ I32 Main(I32 argc, U8 **argv) {
     return PRI_INPUT_MISSING;
   }
 
+  // The work directory is created before it is used, so the subject
+  // commit's temporary file has somewhere to land.
+  {
+    U8 *cmd = StrPrint(NULL, "rm -rf %s && mkdir -p %s", work, work);
+    PriRun(cmd);
+    Free(cmd);
+  }
+
   // The subject commit.
   //
-  // It is read from the repository's own `HEAD`, resolved through the
-  // reference it names when `HEAD` is a symbolic reference. The value is
-  // then VERIFIED against `git rev-parse`, so a resolution that disagrees
-  // with Git's own is a failure rather than a silent difference.
+  // It is read through `git rev-parse` into a file and then parsed by the
+  // tool. The tool REQUIRES the value to be a forty-character commit
+  // digest: a resolution that is not a commit digest is a failure rather
+  // than a silent difference.
   U8 *subject = NULL;
   {
     U8 *cmd = StrPrint(NULL, "cd %s && git rev-parse HEAD > %s/head.txt",
@@ -178,10 +186,14 @@ I32 Main(I32 argc, U8 **argv) {
   }
 
   // The work directory and the isolated checkout.
+  //
+  // The work directory is NOT recreated here: it already holds the
+  // subject's temporary file, and the subject has already been parsed out
+  // of it.
   U8 *checkout = PriPathJoin(work, "checkout");
   U8 *cmd = StrPrint(NULL,
-    "rm -rf %s && mkdir -p %s && cd %s && git worktree add --detach %s %s",
-    work, work, repo, checkout, subject);
+    "cd %s && git worktree add --detach %s %s",
+    repo, checkout, subject);
   I64 rc = PriRun(cmd);
   if (rc != 0 || FileExists(checkout) == 0) {
     rmdir(lock);
