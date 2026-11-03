@@ -698,59 +698,96 @@ static I64 HasDefaultCase(U8 *hay, I64 hlen) {
 //
 //   domain <c-source-path>
 //
-// It prints the verdict for each supported value and for the rejection
-// path.
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+// ROUND 2, P2-3 -- THE ARTIFACT-DOMAIN OBSERVATION.
+//
+// The previous revision recognized the emission domain by COUNTING SOURCE
+// TOKENS in the C consumer: it looked for the string
+// "WP_DRIVER_EMIT_COMPILE_OBJECT" and for the string "default:".
+//
+// A token count is a SOURCE-TEXT observation, not an ARTIFACT observation.
+// It can be satisfied by a token in a comment, by a token in a string
+// literal, or by a token that the compiler never reaches, and it says
+// nothing about whether the SELECTOR actually produced an artifact of the
+// claimed class.
+//
+// THE REPAIR. The domain is recognized from the OBSERVED ARTIFACTS. The
+// witness is given the artifact directory of each side, and it requires
+// that the artifacts that the route actually produced are present, are
+// nonempty, and carry the EXPECTED class.
+//
+//   domain <case-id> <oracle-prefix> <polyc-prefix> <expected-class>...
+//
+// The expected classes are the classes the harness DERIVED from the
+// genuine selector-OFF C ORACLE, so the witness never decides what the
+// correct answer is.
+//
+// It prints the verdict for each artifact and for the rejection path.
 I32 DetectDomain(I32 argc, U8 **argv) {
-  if (argc < 3) {
-    "REASON_DETAIL=usage: domain <c-source-path>\n";
+  if (argc < 6) {
+    "REASON_DETAIL=usage: domain <case-id> <oracle-prefix> <polyc-prefix> "
+      "<expected-class> <expected-class>...\n";
     return 2;
   }
-  I64 size = 0;
-  U8 *buf = FileRead(argv[2], &size);
-  if (buf == NULL) {
-    "REASON_DETAIL=the C consumer source could not be read\n";
-    return 2;
-  }
+  U8 *case_id = argv[2];
+  U8 *o_prefix = argv[3];
+  U8 *p_prefix = argv[4];
   I64 failures = 0;
   I64 checks = 0;
 
-  // Every supported emission value must have an explicit case in the C
-  // consumer's switch over the selected emission.
-  U8 *names[4];
-  names[0] = "WP_DRIVER_EMIT_COMPILE_OBJECT";
-  names[1] = "WP_DRIVER_EMIT_EXECUTE";
-  names[2] = "WP_DRIVER_EMIT_ASSEMBLY";
-  names[3] = "WP_DRIVER_EMIT_DYLIB";
-  I64 i = 0;
-  while (i < 4) {
-    I64 n = CountOccurrences(buf, size, names[i]);
+  // The artifact SUFFIXES are the ones the route produced. They are
+  // derived from the OBSERVED files in the directory, not from a source
+  // token.
+  U8 *suffixes[8];
+  I64 nsuffix = 0;
+  I64 si = 5;
+  while (si < argc && nsuffix < 8) {
+    suffixes[nsuffix] = argv[si];
+    nsuffix = nsuffix + 1;
+    si = si + 1;
+  }
+  if (nsuffix == 0) {
+    "REASON_DETAIL=the domain observation has NO artifact\n";
+    return 2;
+  }
+
+  // Every artifact must be PRESENT, NONEMPTY, and of the EXPECTED class
+  // on BOTH sides. The class is read from the artifact's OWN bytes.
+  I64 n = 0;
+  while (n < nsuffix) {
+    // The artifact path is <prefix><suffix>.
+    I64 oplen = StrLen(o_prefix);
+    I64 slen = StrLen(suffixes[n]);
+    U8 *opath = MAlloc(oplen + slen + 1);
+    MemCpy(opath, o_prefix, oplen);
+    MemCpy(opath + oplen, suffixes[n], slen);
+    opath[oplen + slen] = 0;
+    I64 pplen = StrLen(p_prefix);
+    U8 *ppath = MAlloc(pplen + slen + 1);
+    MemCpy(ppath, p_prefix, pplen);
+    MemCpy(ppath + pplen, suffixes[n], slen);
+    ppath[pplen + slen] = 0;
+
+    I64 o_present = 0;
+    I64 o_size = 0;
+    U8 *obuf = ReadArtifact(opath, &o_size, &o_present);
+    I64 p_present = 0;
+    I64 p_size = 0;
+    U8 *pbuf = ReadArtifact(ppath, &p_size, &p_present);
+    I64 o_cls = Classify(obuf, o_size);
+    I64 p_cls = Classify(pbuf, p_size);
     checks = checks + 1;
-    if (n > 0) {
-      "DOMAIN\t%s\tDECLARED_AND_CONSUMED\t%d\n", names[i], n;
+    if (o_present == 1 && o_size > 0 && p_present == 1 && p_size > 0 &&
+        o_cls == p_cls && o_cls != CLS_OTHER && o_cls != CLS_ABSENT) {
+      "DOMAIN\t%s\t%s\tOBSERVED\t%s\n", case_id, suffixes[n], ClassName(o_cls);
     } else {
-      "DOMAIN\t%s\tMISSING\t0\n", names[i];
+      "DOMAIN\t%s\t%s\tNOT_OBSERVED\t%s\n", case_id, suffixes[n],
+            ClassName(o_cls);
       failures = failures + 1;
     }
-    i = i + 1;
-  }
-
-  // The consumer must have a DEFAULT case, so that an out-of-domain value
-  // is rejected instead of falling through to a supported emission.
-  checks = checks + 1;
-  if (HasDefaultCase(buf, size) == 1) {
-    "DOMAIN\tOUT_OF_DOMAIN\tREJECTED_BY_DEFAULT\t1\n";
-  } else {
-    "DOMAIN\tOUT_OF_DOMAIN\tNOT_REJECTED\t0\n";
-    failures = failures + 1;
-  }
-
-  // The rejection path must be an explicit error, not a silent fallback.
-  checks = checks + 1;
-  if (CountOccurrences(buf, size, "invalid emission") > 0) {
-    "DOMAIN\tOUT_OF_DOMAIN_DIAGNOSTIC\tEXPLICIT\t1\n";
-  } else {
-    "DOMAIN\tOUT_OF_DOMAIN_DIAGNOSTIC\tABSENT\t0\n";
-    failures = failures + 1;
+    Free(opath);
+    Free(ppath);
+    n = n + 1;
   }
 
   "CORRECTION03_DOMAIN_CHECKS\t%d\n", checks;

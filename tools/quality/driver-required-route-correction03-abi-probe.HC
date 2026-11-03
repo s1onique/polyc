@@ -127,9 +127,22 @@ static U0 InitCases() {
 
   // The OBJECT domain outranks the DYNAMIC LIBRARY domain: a `-c`
   // request together with a `-lib` request selects the object.
-  CASE_ID[13] = "OBJECT_OUTRANKS_DYLIB";
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+  // ROUND 2, P2-4 -- THE SIXTEENTH ROW IS NOW A DISTINCT ARGV SHAPE.
+  //
+  // The previous revision's case 13 was "hcc -lib name -c input.HC", which
+  // is BYTE IDENTICAL to its case 6. The roster therefore carried SIXTEEN
+  // ROWS but only FIFTEEN UNIQUE argv shapes, and the roster's own count
+  // overstated the coverage.
+  //
+  // The case is now a DISTINCT shape that tests the SAME precedence rule
+  // with the `-c` request AFTER the source file, so the rule cannot be
+  // satisfied by a whole-argv scan that happens to stop at the first
+  // source file.
+  CASE_ID[13] = "OBJECT_OUTRANKS_DYLIB_AFTER_SOURCE";
   SetArg(13,0,"hcc"); SetArg(13,1,"-lib"); SetArg(13,2,"name");
-  SetArg(13,3,"-c"); SetArg(13,4,"input.HC");
+  SetArg(13,3,"input.HC"); SetArg(13,4,"-c");
   CASE_NARG[13] = 5; CASE_EXPECT[13] = WP_EMIT_COMPILE_OBJECT;
 
   // -----------------------------------------------------------------------
@@ -155,6 +168,47 @@ static U0 InitCases() {
 I32 Main(I32 argc, U8 **argv) {
   failures = 0;
   InitCases();
+
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+  // ROUND 2, P2-4 -- THE DISTINCT-ARGV-SHAPE SELF-CHECK.
+  //
+  // The roster's row count is NOT evidence of coverage. Two rows with the
+  // SAME argv shape test the SAME decision, so the roster must require
+  // that every pair of rows has a DISTINCT shape.
+  //
+  // The check is MECHANICAL: two rows collide when their argument
+  // sequences are identical, argument for argument.
+  I64 dup = 0;
+  I64 a = 0;
+  while (a < NCASE) {
+    I64 b = a + 1;
+    while (b < NCASE) {
+      I64 same = 1;
+      if (CASE_NARG[a] != CASE_NARG[b]) {
+        same = 0;
+      } else {
+        I64 k = 0;
+        while (k < CASE_NARG[a]) {
+          if (StrCmp(CASE_ARGV[a * NARGS + k],
+                     CASE_ARGV[b * NARGS + k]) != 0) {
+            same = 0;
+            break;
+          }
+          k = k + 1;
+        }
+      }
+      if (same == 1) {
+        "%s\tDUPLICATE_ARGV_SHAPE\t%s\tFAIL\n", CASE_ID[a], CASE_ID[b];
+        dup = dup + 1;
+        failures = failures + 1;
+      }
+      b = b + 1;
+    }
+    a = a + 1;
+  }
+  "CORRECTION03_ABI_PROBE_ROWS\t%d\n", NCASE;
+  "CORRECTION03_ABI_PROBE_DUPLICATE_SHAPES\t%d\n", dup;
+
   I64 i = 0;
   while (i < NCASE) {
     U8 *av[NARGS];

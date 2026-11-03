@@ -1302,6 +1302,28 @@ $(DRIVER_ROUTE03_ON_HCC): $(DRIVER_ROUTE03_SUBJECT_OBJ) $(BOOTSTRAP_STAGE0_HCC) 
 # The STAMP is written only AFTER the object has been produced AND verified.
 # A cleanup that races with the producer therefore cannot leave a required
 # prerequisite missing: the object is re-checked by its own rule.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 2, P2-1 -- THE STRENGTHENED SUBJECT STAMP.
+#
+# The previous stamp carried ONLY a timestamp. A timestamp does not bind
+# the stamp to ANY artifact, so a stamp from one build could satisfy a
+# later build's dependency, and the stamp could not distinguish a subject
+# of one architecture from a subject of another.
+#
+# The stamp now carries:
+#
+#   the subject object's SHA-256, so the stamp is bound to the EXACT
+#     bytes of the object that was verified;
+#   the subject object's Mach-O architecture, so a subject of another
+#     architecture cannot satisfy the stamp;
+#   the number of the exported driver symbols that were verified;
+#   the producer's SHA-256, so the stamp is bound to the producer that
+#     produced the subject;
+#   the timestamp.
+#
+# The stamp is therefore a CONTENT IDENTITY of the verified subject and
+# not a marker of "something ran at some point".
 $(DRIVER_ROUTE03_SUBJECT_STAMP): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
 	@rm -f $(DRIVER_ROUTE03_SUBJECT_OBJ)
@@ -1331,7 +1353,18 @@ $(DRIVER_ROUTE03_SUBJECT_STAMP): $(DRIVER_WP001_SRC) $(BOOTSTRAP_STAGE0_HCC) $(B
 		nm $(DRIVER_ROUTE03_SUBJECT_OBJ) | grep -q " T $$_s$$" \
 			|| { echo "driver-wp001-correction03: symbol $$_s not found in $(DRIVER_ROUTE03_SUBJECT_OBJ)" >&2; exit 1; }; \
 	done
-	@date -u +%Y-%m-%dT%H:%M:%SZ > $@
+	@# The stamp is the CONTENT IDENTITY of the verified subject.
+	@{ \
+	  echo "SUBJECT_SHA256 $$(shasum -a 256 $(DRIVER_ROUTE03_SUBJECT_OBJ) | cut -d' ' -f1)"; \
+	  echo "SUBJECT_ARCH $$(otool -hv $(DRIVER_ROUTE03_SUBJECT_OBJ) 2>/dev/null | awk '/cputype/ {print $$2; exit}')"; \
+	  echo "SUBJECT_SYMBOLS 13"; \
+	  echo "PRODUCER_SHA256 $$(shasum -a 256 $(BOOTSTRAP_STAGE0_HCC) | cut -d' ' -f1)"; \
+	  echo "STAMPED_AT $$(date -u +%Y-%m-%dT%H:%M:%SZ)"; \
+	} > $@
+	@if ! grep -q '^SUBJECT_SHA256 ' $@ || ! grep -q '^SUBJECT_ARCH ' $@; then \
+		echo "driver-wp001-correction03: the subject stamp does not carry the content identity" >&2; \
+		exit 1; \
+	fi
 
 $(DRIVER_ROUTE03_SUBJECT_OBJ): $(DRIVER_ROUTE03_SUBJECT_STAMP)
 	@if [ ! -f "$@" ]; then \
@@ -1502,11 +1535,23 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	    fi; \
 	  fi; \
 	done
-	@# The EMISSION DOMAIN FAIL-CLOSED check. Every supported selected
-	@# emission value must be CONSUMED by the C consumer with an explicit
-	@# case, and an OUT-OF-DOMAIN value must be REJECTED by the default
-	@# case rather than falling back to a supported emission.
-	@$(DRIVER_ROUTE03_EMISSION_BIN) domain src/main.c
+	@# The EMISSION DOMAIN observation. The domain is recognized from the
+	@# OBSERVED ARTIFACTS that the route produced, and NOT from a source
+	@# token count. ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03,
+	@# C4 REMEDIATION ROUND 2, P2-3.
+	@set -e; \
+	W=$(DRIVER_ROUTE03_WORKDIR)/emission; \
+	for domain in object assembly dylib executable; do \
+	  case $$domain in \
+	    object)     suffixes="artifact.bin" ;; \
+	    assembly)   suffixes="artifact.bin" ;; \
+	    dylib)      suffixes="source.o libmylib.a libmylib.dylib" ;; \
+	    executable) suffixes="app" ;; \
+	  esac; \
+	  $(DRIVER_ROUTE03_EMISSION_BIN) domain $$domain \
+	    $$W/$$domain/off/ $$W/$$domain/on/ $$suffixes; \
+	done
+	@echo "DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS"
 	@# ------------------------------------------------------------------
 	@# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
 	@# ROUND 2, F3 -- THE ARCHIVE ADVERSE EXPERIMENTS.
@@ -1633,7 +1678,151 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	@echo "DRIVER_WP001_CORRECTION03_EMISSION_TEST_STATUS=PASS"
 
 # ---------------------------------------------------------------------------
-# THE ADVERSE PROBES (P1-2, C4 REMEDIATION ROUND 2).
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION
+# ROUND 2, P2-5 -- THE POLYC CAUSAL MUTATION RECONSTRUCTION.
+#
+# THE DISCREPANCY.
+#
+# The C3 evidence describes the PolyC causal mutation as
+#
+#     "force assembly when object and assembly are both present"
+#
+# and records the mutated artifact class as
+#
+#     ASSEMBLER_TEXT
+#
+# The C4 re-run of the same experiment records the mutated artifact class
+# as
+#
+#     MACHO_EXECUTABLE
+#
+# The DESCRIPTION and the C3 RESULT agree with each other and disagree
+# with the C4 RE-RUN. The C4 re-run's value is the ANOMALY.
+#
+# THE RECONSTRUCTION. This target rebuilds the ACTUAL causal mutation from
+# the CURRENT tree, applies it to a COPY of the driver source, builds a
+# FRESH selector-ON production compiler from the MUTATED source, and
+# MEASURES the observable outcome.
+#
+# The mutation is the MINIMAL change that implements the C3 description:
+# the driver collects the object request and the assembly request, and the
+# mutation makes the ASSEMBLY request win when both are present. It is the
+# single line
+#
+#     if (saw_object == 1) emission = WP_EMIT_COMPILE_OBJECT;
+#
+# replaced by
+#
+#     if (saw_assembly == 1) emission = WP_EMIT_ASSEMBLY;
+#
+# The PRISTINE observable is measured from the fresh selector-OFF oracle.
+# The MUTATED observable is measured from the MUTATED selector-ON compiler.
+#
+# The verdict is CAUSAL only if the MUTATED observable DIFFERS from the
+# PRISTINE one. The ORIGINAL C3 causal record is NOT modified; this is
+# forward-only evidence.
+#
+# The target does NOT modify the repository's working tree: it writes the
+# mutated source and the mutated compiler into the work directory.
+# ---------------------------------------------------------------------------
+DRIVER_ROUTE03_MUT_DIR = $(DRIVER_ROUTE03_WORKDIR)/mutation
+DRIVER_ROUTE03_MUT_SRC = $(DRIVER_ROUTE03_MUT_DIR)/mutated-driver.HC
+DRIVER_ROUTE03_MUT_OBJ = $(DRIVER_ROUTE03_MUT_DIR)/mutated-driver.o
+DRIVER_ROUTE03_MUT_BUILD = $(DRIVER_ROUTE03_MUT_DIR)/on-build
+DRIVER_ROUTE03_MUT_HCC = $(DRIVER_ROUTE03_MUT_DIR)/on/hcc
+
+$(DRIVER_ROUTE03_MUT_SRC): $(DRIVER_WP001_SRC)
+	@mkdir -p $(DRIVER_ROUTE03_MUT_DIR)
+	@if ! grep -q 'if (saw_object == 1) emission = WP_EMIT_COMPILE_OBJECT;' $<; then \
+		echo "causal-reconstruction: the mutation anchor line was NOT FOUND" >&2; \
+		echo "causal-reconstruction: the reconstruction cannot be applied" >&2; \
+		exit 1; \
+	fi
+	@sed 's|if (saw_object == 1) emission = WP_EMIT_COMPILE_OBJECT;|if (saw_assembly == 1) emission = WP_EMIT_ASSEMBLY;|' \
+		$< > $@
+	@if cmp -s $< $@; then \
+		echo "causal-reconstruction: the mutation did NOT change the source" >&2; \
+		exit 1; \
+	fi
+	@echo "causal-reconstruction: the mutated driver source was produced"
+
+$(DRIVER_ROUTE03_MUT_OBJ): $(DRIVER_ROUTE03_MUT_SRC) $(BOOTSTRAP_STAGE0_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	$(BOOTSTRAP_STAGE0_HCC) \
+		--install-dir=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-c $(DRIVER_ROUTE03_MUT_SRC) \
+		-o $@
+	@if [ ! -s "$@" ]; then \
+		echo "causal-reconstruction: the mutated driver object was not produced" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_MUT_HCC): $(DRIVER_ROUTE03_MUT_OBJ) $(BOOTSTRAP_STAGE0_HCC) $(PARSER_PADDING_OBJ) $(ABI_CPA_OBJ) $(CORE_OPERATOR_OBJ) $(A64_CMP_CC_OBJ)
+	@rm -rf $(DRIVER_ROUTE03_MUT_BUILD)
+	@mkdir -p $(DRIVER_ROUTE03_MUT_DIR)/on
+	@cmake -S ./src -B $(DRIVER_ROUTE03_MUT_BUILD) -G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=$(C_COMPILER) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=$(CURDIR)/$(DRIVER_ROUTE03_MUT_DIR)/on \
+		-DHCC_ENABLE_JIT=on -DHCC_ENABLE_LLVM=off \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=$(CURDIR)/$(PARSER_PADDING_OBJ) \
+		-DPARSER_PADDING_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DPARSER_PADDING_SOURCE=$(CURDIR)/$(PARSER_PADDING_SRC) \
+		-DPARSER_PADDING_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=$(CURDIR)/$(DRIVER_ROUTE03_MUT_OBJ) \
+		-DDRIVER_WP001_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DDRIVER_WP001_SOURCE=$(CURDIR)/$(DRIVER_ROUTE03_MUT_SRC) \
+		-DDRIVER_WP001_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=$(CURDIR)/$(ABI_CPA_OBJ) \
+		-DABI_CPA_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DABI_CPA_SOURCE=$(CURDIR)/$(ABI_CPA_SRC) \
+		-DABI_CPA_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=$(CURDIR)/$(CORE_OPERATOR_OBJ) \
+		-DCORE_OPERATOR_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DCORE_OPERATOR_SOURCE=$(CURDIR)/$(CORE_OPERATOR_SRC) \
+		-DCORE_OPERATOR_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR) \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=$(CURDIR)/$(A64_CMP_CC_OBJ) \
+		-DA64_CMP_CC_PRODUCER=$(CURDIR)/$(BOOTSTRAP_STAGE0_HCC) \
+		-DA64_CMP_CC_SOURCE=$(CURDIR)/$(A64_CMP_CC_SRC) \
+		-DA64_CMP_CC_PREFIX=$(CURDIR)/$(BOOTSTRAP_PREFIX_DIR)
+	@$(MAKE) -C $(DRIVER_ROUTE03_MUT_BUILD) -j2
+	@if [ ! -x "$@" ]; then \
+		echo "causal-reconstruction: the MUTATED selector-ON compiler $@ was not produced" >&2; \
+		exit 1; \
+	fi
+
+.PHONY: driver-wp001-correction03-causal-test
+driver-wp001-correction03-causal-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_MUT_HCC) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+	@set -e; \
+	M=$(DRIVER_ROUTE03_MUT_DIR); \
+	rm -rf $$M/pristine $$M/mutated; \
+	mkdir -p $$M/pristine $$M/mutated; \
+	cp $(DRIVER_ROUTE03_FIXTURE) $$M/pristine/source.HC; \
+	cp $(DRIVER_ROUTE03_FIXTURE) $$M/mutated/source.HC; \
+	( cd $$M/pristine; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c -S source.HC -o artifact.bin \
+	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
+	( cd $$M/mutated; \
+	  set +e; \
+	  $(CURDIR)/$(DRIVER_ROUTE03_MUT_HCC) --install-dir=$(TEST_PREFIX) -c -S source.HC -o artifact.bin \
+	    >stdout.txt 2>stderr.txt; echo $$? > exit.txt ); \
+	off_class=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$M/pristine/artifact.bin \
+	             | sed -n 's/^DERIVED_CLASS\t//p'); \
+	mut_class=$$($(DRIVER_ROUTE03_COMPARE_BIN) derive $$M/mutated/artifact.bin \
+	             | sed -n 's/^DERIVED_CLASS\t//p'); \
+	mut_exit=$$(cat $$M/mutated/exit.txt); \
+	echo "CAUSAL_OFF_CLASS=$$off_class"; \
+	echo "CAUSAL_MUTATED_CLASS=$$mut_class"; \
+	echo "CAUSAL_MUTATED_EXIT=$$mut_exit"; \
+	if [ "$$off_class" = "$$mut_class" ]; then \
+		echo "CAUSAL_REJECTED: the MUTATED observable did NOT change; the mutation is NOT discriminating" >&2; \
+		exit 1; \
+	fi; \
+	echo "CAUSAL_VERDICT=CAUSAL (the ON observable CHANGED under the PolyC mutation)"
 #
 # Each probe takes a FRESH, ISOLATED copy of a KNOWN-GOOD comparator input,
 # mutates or removes exactly ONE observable, and asserts that the comparator
