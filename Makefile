@@ -1564,6 +1564,46 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	@# is extracted with `ar` and the extracted payload is compared with
 	@# the original, so the witness's verdict is checked against a tool
 	@# that does not share its code.
+	@#
+	@# THE THREE NEW MEMBER-IDENTITY CONTROLS.
+	@#
+	@# The archive layout is the DARWIN/BSD one. The FIRST member's header
+	@# is at byte 8 and the SECOND member's header is at byte 112. Each
+	@# header is 60 bytes: a 16-byte NAME field, a 12-byte MTIME, a 6-byte
+	@# UID, a 6-byte GID, an 8-byte MODE, and a 10-byte SIZE. The member's
+	@# CONTENT therefore begins 60 bytes after the header.
+	@#
+	@# The SECOND member's NAME field is `#1/12`, so its length DIGITS are
+	@# at bytes 114 and 115. Its header's terminating "`\n" magic is at
+	@# bytes 169 and 170, and its extended name `source.o\0` is at byte
+	@# 171. The name area is TWELVE bytes long, so it occupies bytes
+	@# 171 through 182, and the member's payload begins at byte 183.
+	@#
+	@#   RENAMED_MEMBER       the SECOND member's extended name is renamed
+	@#                        from 'source.o' to 'sourcX.o'. The member COUNT
+	@#                        and the member ORDER are unchanged, and the
+	@#                        payload is unchanged, so ONLY the member
+	@#                        IDENTITY differs.
+	@#   DUPLICATE_MEMBER     the SECOND member's extended name is replaced
+	@#                        by '__.SYMDEF', so the archive carries the SAME
+	@#                        member name TWICE. The member COUNT is
+	@#                        unchanged, so ONLY the DUPLICATE identity
+	@#                        differs. The nine written bytes are followed
+	@#                        by the three NUL padding bytes, so the name
+	@#                        area is unchanged in LENGTH and the member
+	@#                        stays STRUCTURALLY VALID.
+	@#   BAD_EXTENDED_NAME    the SECOND member's declared extended-name
+	@#                        LENGTH is corrupted from 12 to 99, so the
+	@#                        declared name area is longer than the name it
+	@#                        encodes and the payload's offset shifts. The
+	@#                        archive's NAME FORMAT is therefore wrong, and
+	@#                        the member's PAYLOAD no longer begins at a
+	@#                        Mach-O image.
+	@#   MALFORMED_NAME_ENCODING
+	@#                        the SECOND member's extended-name LENGTH
+	@#                        field is replaced by two NON-DIGIT bytes, so
+	@#                        the `#1/N` form carries no length at all. The
+	@#                        archive is MALFORMED at the name ENCODING.
 	@set -e; \
 	AW=$(DRIVER_ROUTE03_WORKDIR)/archive-adverse; \
 	rm -rf $$AW; \
@@ -1591,7 +1631,11 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	  'EMPTY_ARCHIVE:ARCHIVE_NO_MEMBERS' \
 	  'MISSING_MEMBER:ARCHIVE_MEMBER_COUNT_MISMATCH' \
 	  'CORRUPTED_LENGTH:ARCHIVE_MEMBER_SIZE_OUT_OF_BOUNDS' \
-	  'CHANGED_PAYLOAD:ARCHIVE_MEMBER_PAYLOAD_MISMATCH'; do \
+	  'CHANGED_PAYLOAD:ARCHIVE_MEMBER_PAYLOAD_MISMATCH' \
+	  'RENAMED_MEMBER:ARCHIVE_MEMBER_MISSING' \
+	  'DUPLICATE_MEMBER:ARCHIVE_DUPLICATE_MEMBER' \
+	  'BAD_EXTENDED_NAME:ARCHIVE_MEMBER_NAME_FORMAT_MISMATCH' \
+	  'MALFORMED_NAME_ENCODING:ARCHIVE_BAD_EXTENDED_NAME_ENCODING'; do \
 	  mutation=$${spec%%:*}; reason=$${spec#*:}; \
 	  rm -rf $$AW/$$mutation; \
 	  mkdir -p $$AW/$$mutation/off $$AW/$$mutation/on; \
@@ -1615,6 +1659,18 @@ driver-wp001-correction03-emission-test: $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER
 	      ;; \
 	    CHANGED_PAYLOAD) \
 	      printf '\001' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=256 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    RENAMED_MEMBER) \
+	      printf 'sourcX.o' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=172 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    DUPLICATE_MEMBER) \
+	      printf '__.SYMDEF' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=172 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    BAD_EXTENDED_NAME) \
+	      printf '\071\071' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=115 conv=notrunc 2>/dev/null; \
+	      ;; \
+	    MALFORMED_NAME_ENCODING) \
+	      printf '\130\131' | dd of=$$AW/$$mutation/on/libmylib.a bs=1 seek=115 conv=notrunc 2>/dev/null; \
 	      ;; \
 	  esac; \
 	  set +e; \

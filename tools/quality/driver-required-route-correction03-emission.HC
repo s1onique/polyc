@@ -584,14 +584,39 @@ static I64 DecodeArchive(U8 *buf, I64 size) {
       // The declared name length must fit inside the member's content.
       if (n > m) return ARV_BAD_EXTNAME;
       // The name must be NUL terminated inside the declared length.
+      //
+      // The declared length N is the extent of the NAME AREA. The name
+      // itself is the bytes up to the FIRST NUL, and the bytes between the
+      // NUL and the end of the name area are the producer's padding, so
+      // the NUL need NOT be the LAST byte of the declared length.
+      //
+      // What the decoder MUST reject is a declared length that is SO LARGE
+      // that the NUL it finds lies beyond the name area, in the PAYLOAD.
+      // In that case the "name" the decoder reports is a prefix of the
+      // payload, not the member's name.
+      //
+      // The payload of this member begins with the Mach-O magic
+      // 0xFEEDFACF, little-endian on disk: CF FA ED FE. The name area can
+      // never contain that sequence, because the name is a NUL-terminated
+      // printable string. Therefore the terminator MUST be found before
+      // the first occurrence of the Mach-O magic within the declared
+      // length; a NUL at or after the magic is a MALFORMED encoding.
       I64 k = 0;
       I64 term = 0;
+      I64 magic_at = -1;
       while (k < n) {
         if (content + k >= size) return ARV_BAD_EXTNAME;
+        if (magic_at == -1 && k + 4 <= n &&
+            buf[content + k] == 207 && buf[content + k + 1] == 250 &&
+            buf[content + k + 2] == 237 && buf[content + k + 3] == 254) {
+          magic_at = k;
+        }
         if (buf[content + k] == 0) { term = 1; break; }
         k = k + 1;
       }
       if (term == 0) return ARV_BAD_EXTNAME;
+      // The terminator must NOT lie at or beyond the Mach-O magic.
+      if (magic_at != -1 && k >= magic_at) return ARV_BAD_EXTNAME;
       name = buf + content;
       namelen = k;
       ext = 1;
@@ -1120,6 +1145,70 @@ I32 Main(I32 argc, U8 **argv) {
       I64 payload_equal = 1;
       I64 payload_valid = 1;
       I64 timestamp_only = 1;
+
+      // The SET comparison. The member-by-member comparison below compares
+      // the members BY POSITION, so it detects a member that was RENAMED
+      // but it does not, by itself, distinguish a RENAME from a DUPLICATE
+      // or from an UNEXPECTED member.
+      //
+      // The set comparison therefore checks the member NAME MULTISET of each
+      // side: a name that appears MORE THAN ONCE on a side is a DUPLICATE
+      // member, and a name that appears on one side and NOT on the other is
+      // a MISSING or an UNEXPECTED member.
+      //
+      // The checks are performed on the ORACLE side and on the PolyC side
+      // INDEPENDENTLY, so a malformed archive is rejected even when both
+      // sides carry the SAME malformed archive.
+      I64 o_dup = 0;
+      I64 p_dup = 0;
+      I64 o_unexpected = 0;
+      I64 p_unexpected = 0;
+      I64 o_absent = 0;
+      I64 p_absent = 0;
+      I64 si = 0;
+      I64 sj = 0;
+      while (si < o_count && si < AR_MAX_MEMBERS) {
+        I64 o_hits = 0;
+        I64 p_hits = 0;
+        sj = 0;
+        while (sj < o_count && sj < AR_MAX_MEMBERS) {
+          if (ArNameEqual(o_name[si], o_namelen[si], o_name[sj],
+                          o_namelen[sj]) == 1) o_hits = o_hits + 1;
+          sj = sj + 1;
+        }
+        sj = 0;
+        while (sj < p_count && sj < AR_MAX_MEMBERS) {
+          if (ArNameEqual(o_name[si], o_namelen[si], p_name[sj],
+                          p_namelen[sj]) == 1) p_hits = p_hits + 1;
+          sj = sj + 1;
+        }
+        if (o_hits > 1) o_dup = 1;
+        if (p_hits > 1) p_dup = 1;
+        if (p_hits == 0) o_absent = 1;
+        si = si + 1;
+      }
+      si = 0;
+      while (si < p_count && si < AR_MAX_MEMBERS) {
+        I64 o_hits = 0;
+        sj = 0;
+        while (sj < o_count && sj < AR_MAX_MEMBERS) {
+          if (ArNameEqual(p_name[si], p_namelen[si], o_name[sj],
+                          o_namelen[sj]) == 1) o_hits = o_hits + 1;
+          sj = sj + 1;
+        }
+        if (o_hits == 0) p_unexpected = 1;
+        si = si + 1;
+      }
+
+      Check(o_dup == 0 && p_dup == 0, case_id,
+            "the archive member NAMES are UNIQUE on both sides");
+      if (o_dup == 1) Reason(case_id, "oracle", ArReason(ARV_DUPLICATE));
+      if (p_dup == 1) Reason(case_id, "polyc", ArReason(ARV_DUPLICATE));
+      Check(o_absent == 0 && p_unexpected == 0, case_id,
+            "no archive member is MISSING and no archive member is UNEXPECTED");
+      if (o_absent == 1) Reason(case_id, "oracle", ArReason(ARV_MISSING));
+      if (p_unexpected == 1) Reason(case_id, "polyc", ArReason(ARV_UNEXPECTED));
+
       mi = 0;
       while (mi < o_count && mi < p_count) {
         // The member IDENTITY. The decoded name must be the same.
