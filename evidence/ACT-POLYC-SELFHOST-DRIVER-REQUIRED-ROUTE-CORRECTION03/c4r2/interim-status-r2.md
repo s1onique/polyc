@@ -27,18 +27,18 @@ The field naming convention is documented in
 
 | finding | state | the decisive measurement |
 | --- | --- | --- |
-| P1-1 pristine-build graph | REPAIRED | a pristine isolated checkout builds the comparator, the emission witness, the adverse probe and the capture tool with NO manual `make test-prefix-install`, NO object seeding and NO hidden setup; the header and the runtime archive are auto-generated and are real file targets with content-sensitive prerequisites; `c4r2/f1-failure-mode-matrix.tsv` |
-| P1-2 fail-closed comparator | REPAIRED | the comparator validates the Mach-O structure on EACH SIDE independently, reads the exit status STRICTLY, REJECTS an unsupported expected class, and binds every observation to an invocation through a capture record and a per-case run ledger; sixteen adverse probes are each rejected with their OWN reason token; `c4r2/f2-adverse-rejection-ledger.tsv` |
-| P1-3 archive semantic equivalence | REPAIRED | the archive is DECODED on each side and the DECODED members are compared by identity, name format, payload validity and payload bytes; five archive adverse experiments are each rejected with their OWN reason token; the independent `ar` cross-check measures DIFFERENT; `c4r2/f3-archive-rejection-ledger.tsv` |
+| P1-1 pristine-build graph | REPAIRED | a pristine isolated checkout builds the comparator, the emission witness, the adverse probe and the capture tool with NO manual `make test-prefix-install`, NO object seeding and NO hidden setup; the header and the runtime archive are auto-generated and are real file targets with content-sensitive prerequisites; `c4r2/f1-pristine-build.log` |
+| P1-2 fail-closed comparator | REPAIRED | the comparator validates the Mach-O structure on EACH SIDE independently, reads the exit status STRICTLY, REJECTS an unsupported expected class, and binds every observation to an invocation through a capture record and a per-case run ledger; NINETEEN adverse probes are each rejected with their OWN reason token; `c4r2/f2-adverse-rejection-ledger.tsv` |
+| P1-3 archive semantic equivalence | REPAIRED | the archive is DECODED on each side and the DECODED members are compared by identity, name format, payload validity and payload bytes; NINE archive adverse experiments are each rejected with their OWN reason token; the independent `ar` cross-check measures DIFFERENT; `c4r2/f3-archive-rejection-ledger.tsv` |
 
-## THE FOUR P2 FINDINGS
+## THE SEVEN P2 FINDINGS
 
 | finding | state | the decisive measurement |
 | --- | --- | --- |
-| P2-1 subject stamp | ADDRESSED | the stamp carries the subject's SHA-256, its Mach-O architecture, the verified symbol count, the producer's SHA-256 and the timestamp; `c4r2/p2-subject-stamp.txt` |
+| P2-1 subject stamp | ADDRESSED | the stamp carries the subject's SHA-256, its Mach-O architecture, the verified symbol count, the producer's SHA-256 and the timestamp; the stamp is recorded in the subject-stamp file of the first C4 remediation |
 | P2-2 adverse reason attribution | ADDRESSED | every adverse probe requires its EXACT reason token, not merely a nonzero exit; `c4r2/f2-adverse-rejection-ledger.tsv` |
-| P2-3 emission-domain recognition | ADDRESSED | the domain is recognized from the OBSERVED ARTIFACTS, not from source tokens; `c4r2/p2-emission-domain-observation.tsv` |
-| P2-4 the 16-versus-15 ABI accounting | ADDRESSED | the roster's sixteenth row is now a DISTINCT argv shape, and the probe carries a MECHANICAL self-check that requires every pair of rows to be distinct; the measurement is 16 rows and 0 duplicates; `c4r2/p2-abi-distinct-shapes.tsv` |
+| P2-3 emission-domain recognition | ADDRESSED | the domain is recognized from the OBSERVED ARTIFACTS, not from source tokens; the four domains and their real classes are in `c4r2/interim-status-r2.md` below |
+| P2-4 the 16-versus-15 ABI accounting | ADDRESSED | the roster's sixteenth row is now a DISTINCT argv shape, and the probe carries a MECHANICAL self-check that requires every pair of rows to be distinct; the measurement is 16 rows and 0 duplicates; the probe's own output in the correction03 target |
 | P2-5 the causal mutation reconstruction | ADDRESSED | the mutation is reconstructed FROM THE CURRENT TREE and MEASURED; the mutated class is ASSEMBLER_TEXT, which CONFIRMS the C3 description and the C3 result; `c4r2/causal-and-dormancy-correction.md` |
 | P2-6 the original C4 causal record | PRESERVED | the committed `c4/causal-and-dormancy.tsv` is NOT modified; the correction is a new forward-only document |
 | P2-7 the interim HEAD field | CLARIFIED | the committed field names the last commit of the remediation WORK; it cannot name the commit that contains the document; the committed document is NOT modified; `c4r2/interim-head-clarification.md` |
@@ -56,6 +56,20 @@ measured.
 | D3 the missing Mach-O structural controls | the adverse harness mutated content but never the Mach-O STRUCTURE | three controls, each with its own reason token; `c4r2/f2-adverse-rejection-ledger.tsv` |
 | D4 the position-only member comparison | the witness compared the members BY POSITION, so it could not distinguish a RENAME from a DUPLICATE or an UNEXPECTED member | the member NAME MULTISET is now compared per side; `c4r2/f3-archive-rejection-ledger.tsv` |
 | D5 the unchecked extended-name encoding | the decoder accepted ANY NUL inside the declared length, so an archive with a corrupted length was accepted and a PREFIX OF THE PAYLOAD was reported as the member's name | the decoder rejects a length whose terminator lies at or beyond the Mach-O magic; `c4r2/f3-archive-rejection-ledger.tsv` |
+
+## THE FOUR EMISSION DOMAINS, OBSERVED FROM THE ARTIFACTS
+
+```text
+domain       artifact class                            architecture
+object       MACHO_OBJECT                              arm64
+assembly     ASSEMBLER_TEXT                            none
+dylib        MACHO_OBJECT, AR_ARCHIVE, MACHO_DYLIB     arm64, none, arm64
+executable   MACHO_EXECUTABLE                          arm64
+```
+
+The domain is recognized from the OBSERVED ARTIFACTS, not from a source
+token count. A token count is a SOURCE-TEXT observation, and it can be
+satisfied by a token in a comment.
 
 ## THE MEASUREMENTS AT THE CORRECTED HEAD
 
