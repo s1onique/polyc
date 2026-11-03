@@ -1,0 +1,555 @@
+cmake -S ./src \
+		-B ./build/host-stage0/build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=OFF \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=OFF \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=OFF \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=OFF \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=OFF \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=OFF \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=OFF \
+		-DHCC_USE_SELFHOST_ABI_CPA=OFF \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=OFF \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=OFF \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=OFF \
+		-DHCC_RUNTIME_OUTPUT_DIRECTORY=/private/tmp/polyc-f1-red/./build/host-stage0
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: selector OFF, the legacy C AST-visibility predicate is active and no PolyC subject is linked
+-- ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: selector OFF, the legacy C core-operator predicates are active and no PolyC subject is linked
+-- ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: selector OFF, the legacy C A64 comparison tables are active and no PolyC subject is linked
+-- Configuring done (2.4s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/polyc-f1-red/build/host-stage0/build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build/host-stage0/build hcc -j2
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[  4%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[  6%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+[  8%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 10%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 12%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 14%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 16%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 18%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 20%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 22%] Linking C static library libtasm.a
+[ 22%] Built target tasm
+[ 24%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 26%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 28%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 30%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 32%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 34%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 36%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 38%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 40%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 42%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 44%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+/tmp/polyc-f1-red/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+[ 46%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/polyc-f1-red/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/polyc-f1-red/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+6 warnings generated.
+[ 48%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+1 warning generated.
+[ 51%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 55%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 59%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 61%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+[ 63%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+[ 67%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 71%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 73%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 75%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 79%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 83%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 85%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 87%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 91%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 95%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 97%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[100%] Linking C executable /private/tmp/polyc-f1-red/build/host-stage0/hcc
+[100%] Built target hcc
+BOOTSTRAP_STAGE0_BINARY=./build/host-stage0/hcc
+cp src/holyc-lib/tos.HH ./build/bootstrap-prefix/include/tos.HH
+BOOTSTRAP_PREFIX=./build/bootstrap-prefix
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-padding.HC \
+		-o build/parser-padding-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+PARSER_PADDING_ARCH_CHECK=PASS arch=arm64 target=arm64
+PARSER_PADDING_SUBJECT=build/parser-padding-subject.o
+PARSER_PADDING_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-o build/parser-control-flow-token-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE02_SUBJECT=build/parser-control-flow-token-subject.o
+SLICE02_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-o build/parser-operator-precedence-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE03_SUBJECT=build/parser-operator-precedence-subject.o
+SLICE03_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice04.HC \
+		-o build/parser-ast-binop-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE04_SUBJECT=build/parser-ast-binop-subject.o
+SLICE04_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice05.HC \
+		-o build/parser-ast-unary-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE05_AST_UNARY_OBJECT=build/parser-ast-unary-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice06.HC \
+		-o build/parser-switch-arm-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE06_SWITCH_ARM_OBJECT=build/parser-switch-arm-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice07.HC \
+		-o build/parser-compound-block-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE07_COMPOUND_BLOCK_OBJECT=build/parser-compound-block-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-slice08.HC \
+		-o build/parser-default-arm-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE08_DEFAULT_ARM_OBJECT=build/parser-default-arm-subject.o
+./build/host-stage0/hcc \
+		--install-dir=./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-o build/parser-statement-dispatch-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+SLICE09_STATEMENT_DISPATCH_OBJECT=build/parser-statement-dispatch-subject.o
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-abi-compile-print-ast.HC \
+		-o build/selfhost-abi-cpa-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+abi-cpa-subject: subject imports _AbiCpaAstKind (expected)
+ABI_CPA_SUBJECT=build/selfhost-abi-cpa-subject.o
+ABI_CPA_SUBJECT_ARCH=arm64
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-core-operator.HC \
+		-o build/core-operator-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+CORE_OPERATOR_SUBJECT=build/core-operator-subject.o
+CORE_OPERATOR_SUBJECT_ARCH=arm64
+CORE_OPERATOR_SUBJECT_SHA256=b9a76fe8a23b38468e78b67ed428226592fa270347674299c1be1be57f4de756
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-a64-cmp-cc-v2.HC \
+		-o build/a64-cmp-cc-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+A64_CMP_CC_SUBJECT=build/a64-cmp-cc-subject.o
+A64_CMP_CC_SUBJECT_ARCH=arm64
+A64_CMP_CC_SUBJECT_SHA256=c321be3317adc63502a7ed9fc3327655a4239d53ad56dace536eecd7399c3e22
+./build/host-stage0/hcc \
+		--install-dir=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-c tools/bootstrap/selfhost-driver-wp001.HC \
+		-o build/wp001-driver-subject.o
+clang: warning: -lpthread: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lc: 'linker' input unused [-Wunused-command-line-argument]
+clang: warning: -lm: 'linker' input unused [-Wunused-command-line-argument]
+DRIVER_WP001_SUBJECT=build/wp001-driver-subject.o
+DRIVER_WP001_SUBJECT_ARCH=arm64
+cmake -S ./src \
+		-B ./build \
+		-G 'Unix Makefiles' \
+		-DCMAKE_C_COMPILER=gcc \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr/local \
+		-DCMAKE_C_FLAGS='-Wextra -Wall -Wpedantic' \
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=on \
+		-DHCC_ENABLE_JIT=on \
+		-DHCC_ENABLE_LLVM=OFF \
+		-DHCC_USE_SELFHOST_PARSER_PADDING=ON \
+		-DPARSER_PADDING_OBJECT=/private/tmp/polyc-f1-red/./build/parser-padding-subject.o \
+		-DPARSER_PADDING_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DPARSER_PADDING_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-padding.HC \
+		-DPARSER_PADDING_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_CONTROL_FLOW_TOKEN=ON \
+		-DCONTROL_FLOW_TOKEN_OBJECT=/private/tmp/polyc-f1-red/./build/parser-control-flow-token-subject.o \
+		-DCONTROL_FLOW_TOKEN_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DCONTROL_FLOW_TOKEN_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-control-flow-token.HC \
+		-DCONTROL_FLOW_TOKEN_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_OPERATOR_PRECEDENCE=ON \
+		-DOPERATOR_PRECEDENCE_OBJECT=/private/tmp/polyc-f1-red/./build/parser-operator-precedence-subject.o \
+		-DOPERATOR_PRECEDENCE_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DOPERATOR_PRECEDENCE_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-operator-precedence.HC \
+		-DOPERATOR_PRECEDENCE_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_BINOP=ON \
+		-DAST_TOKEN_MAP_OBJECT=/private/tmp/polyc-f1-red/./build/parser-ast-binop-subject.o \
+		-DAST_TOKEN_MAP_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DAST_TOKEN_MAP_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-slice04.HC \
+		-DAST_TOKEN_MAP_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_AST_UNARY=ON \
+		-DAST_UNARY_TOKEN_MAP_OBJECT=/private/tmp/polyc-f1-red/./build/parser-ast-unary-subject.o \
+		-DAST_UNARY_TOKEN_MAP_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DAST_UNARY_TOKEN_MAP_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-slice05.HC \
+		-DAST_UNARY_TOKEN_MAP_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_SWITCH_ARM=ON \
+		-DSWITCH_ARM_TOKEN_MAP_OBJECT=/private/tmp/polyc-f1-red/./build/parser-switch-arm-subject.o \
+		-DSWITCH_ARM_TOKEN_MAP_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DSWITCH_ARM_TOKEN_MAP_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-slice06.HC \
+		-DSWITCH_ARM_TOKEN_MAP_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_COMPOUND_BLOCK_APPEND=ON \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_OBJECT=/private/tmp/polyc-f1-red/./build/parser-compound-block-subject.o \
+		-DCOMPOUND_BLOCK_TOKEN_MAP_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-slice07.HC \
+		-DHCC_USE_SELFHOST_PARSER_DEFAULT_ARM_TERMINATES=ON \
+		-DDEFAULT_ARM_TERMINATES_OBJECT=/private/tmp/polyc-f1-red/./build/parser-default-arm-subject.o \
+		-DDEFAULT_ARM_TERMINATES_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DDEFAULT_ARM_TERMINATES_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-slice08.HC \
+		-DDEFAULT_ARM_TERMINATES_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_PARSER_STATEMENT_DISPATCH=ON \
+		-DSTATEMENT_DISPATCH_OBJECT=/private/tmp/polyc-f1-red/./build/parser-statement-dispatch-subject.o \
+		-DSTATEMENT_DISPATCH_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DSTATEMENT_DISPATCH_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-parser-statement-dispatch.HC \
+		-DSTATEMENT_DISPATCH_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_DRIVER_WP001=ON \
+		-DDRIVER_WP001_OBJECT=/private/tmp/polyc-f1-red/./build/wp001-driver-subject.o \
+		-DDRIVER_WP001_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DDRIVER_WP001_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-driver-wp001.HC \
+		-DDRIVER_WP001_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_ABI_CPA=ON \
+		-DABI_CPA_OBJECT=/private/tmp/polyc-f1-red/./build/selfhost-abi-cpa-subject.o \
+		-DABI_CPA_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DABI_CPA_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-abi-compile-print-ast.HC \
+		-DABI_CPA_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_CORE_OPERATOR_CLASSIFY=ON \
+		-DCORE_OPERATOR_OBJECT=/private/tmp/polyc-f1-red/./build/core-operator-subject.o \
+		-DCORE_OPERATOR_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DCORE_OPERATOR_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-core-operator.HC \
+		-DCORE_OPERATOR_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_USE_SELFHOST_A64_CMP_CC=ON \
+		-DA64_CMP_CC_OBJECT=/private/tmp/polyc-f1-red/./build/a64-cmp-cc-subject.o \
+		-DA64_CMP_CC_PRODUCER=/private/tmp/polyc-f1-red/./build/host-stage0/hcc \
+		-DA64_CMP_CC_SOURCE=/private/tmp/polyc-f1-red/tools/bootstrap/selfhost-a64-cmp-cc-v2.HC \
+		-DA64_CMP_CC_PREFIX=/private/tmp/polyc-f1-red/./build/bootstrap-prefix \
+		-DHCC_BOOTSTRAP_EXPECTED_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+-- The C compiler identification is AppleClang 15.0.0.15000040
+-- The CXX compiler identification is AppleClang 15.0.0.15000040
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc SCHEDULES the PolyC AST-visibility subject: /private/tmp/polyc-f1-red/./build/selfhost-abi-cpa-subject.o
+-- ACT-POLYC-SELFHOST-ABI-FOUNDATION-PRODUCTION-DELEGATE01: production hcc links the compiled PolyC AST-visibility decision: /private/tmp/polyc-f1-red/./build/selfhost-abi-cpa-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc SCHEDULES the PolyC core-operator subject: /private/tmp/polyc-f1-red/./build/core-operator-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-IMPLEMENT01: production hcc links the compiled PolyC core-operator decisions: /private/tmp/polyc-f1-red/./build/core-operator-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc SCHEDULES the PolyC A64 condition-code subject: /private/tmp/polyc-f1-red/./build/a64-cmp-cc-subject.o
+-- ACT-POLYC-SELFHOST-ABI-CORE-BUNDLE-IMPLEMENT02-CORRECTED01: production hcc links the compiled PolyC A64 condition-code decisions: /private/tmp/polyc-f1-red/./build/a64-cmp-cc-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: production hcc SCHEDULES parser-padding subject production: /private/tmp/polyc-f1-red/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-DELEGATE01: production hcc links parser-padding PolyC component: /private/tmp/polyc-f1-red/./build/parser-padding-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc SCHEDULES control-flow-token subject production: /private/tmp/polyc-f1-red/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02: production hcc links control-flow-token PolyC component: /private/tmp/polyc-f1-red/./build/parser-control-flow-token-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: production hcc VERIFIES the control-flow-token subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc SCHEDULES operator-precedence subject production: /private/tmp/polyc-f1-red/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc links operator-precedence PolyC component: /private/tmp/polyc-f1-red/./build/parser-operator-precedence-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: production hcc VERIFIES the operator-precedence subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc SCHEDULES AST-operator subject production: /private/tmp/polyc-f1-red/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc links AST-operator PolyC component: /private/tmp/polyc-f1-red/./build/parser-ast-binop-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: production hcc VERIFIES the AST-operator subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc SCHEDULES AST-unary subject production: /private/tmp/polyc-f1-red/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc links AST-unary PolyC component: /private/tmp/polyc-f1-red/./build/parser-ast-unary-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE05: production hcc VERIFIES the AST-unary subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc SCHEDULES switch-arm subject production: /private/tmp/polyc-f1-red/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc links switch-arm PolyC component: /private/tmp/polyc-f1-red/./build/parser-switch-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE06: production hcc VERIFIES the switch-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc uses a PREBUILT compound-block subject: /private/tmp/polyc-f1-red/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc links compound-block PolyC component: /private/tmp/polyc-f1-red/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE07: production hcc VERIFIES the compound-block subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc SCHEDULES default-arm subject production: /private/tmp/polyc-f1-red/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc links default-arm PolyC component: /private/tmp/polyc-f1-red/./build/parser-default-arm-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE08: production hcc VERIFIES the default-arm subject (both producer and prebuilt modes); target format=Mach-O; nm=/usr/bin/nm
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc SCHEDULES statement-dispatch subject production: /private/tmp/polyc-f1-red/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE09: production hcc links statement-dispatch PolyC component: /private/tmp/polyc-f1-red/build/parser-statement-dispatch-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc SCHEDULES the PolyC driver subject production: /private/tmp/polyc-f1-red/./build/wp001-driver-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc links the PolyC compiler driver: /private/tmp/polyc-f1-red/./build/wp001-driver-subject.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: production hcc VERIFIES the PolyC driver subject (both producer and prebuilt modes)
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    AST_TOKEN_MAP_PREFIX
+    COMPOUND_BLOCK_TOKEN_MAP_SOURCE
+    DRIVER_WP001_PREFIX
+    DRIVER_WP001_SOURCE
+    OPERATOR_PRECEDENCE_PREFIX
+
+
+-- Build files have been written to: /tmp/polyc-f1-red/build
+/Library/Developer/CommandLineTools/usr/bin/make -C ./build -j2
+[  1%] Built target hcc-a64-cmp-cc-subject
+[  2%] ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: verifying parser-padding subject
+-- ACT-POLYC-SELFHOST-PARSER-PADDING-BOOTSTRAP-BUILD01: parser-padding subject VERIFIED symbol=_BootstrapCalcPadding size=744
+[  4%] ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: verifying control-flow-token subject /private/tmp/polyc-f1-red/./build/parser-control-flow-token-subject.o
+[  5%] Built target hcc-parser-padding-subject
+-- ACT-POLYC-SELFHOST-PARSER-SLICE02-HARDEN01: CONTROL_FLOW_TOKEN_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapValidPostControlFlowToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapValidPostControlFlowToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1744
+[  6%] ACT-POLYC-SELFHOST-PARSER-SLICE03: verifying operator-precedence subject /private/tmp/polyc-f1-red/./build/parser-operator-precedence-subject.o
+[  8%] Built target hcc-control-flow-token-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE03: OPERATOR_PRECEDENCE_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapOperatorPrecedence TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapOperatorPrecedence DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=2608
+[  9%] ACT-POLYC-SELFHOST-PARSER-SLICE04: verifying AST-operator subject /private/tmp/polyc-f1-red/./build/parser-ast-binop-subject.o
+[ 10%] Built target hcc-operator-precedence-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstBinOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstBinOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1584
+[ 12%] ACT-POLYC-SELFHOST-PARSER-SLICE05: verifying AST-unary subject /private/tmp/polyc-f1-red/./build/parser-ast-unary-subject.o
+[ 13%] Built target hcc-ast-token-map-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapAstUnaryOpFromToken TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapAstUnaryOpFromToken DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1128
+[ 14%] ACT-POLYC-SELFHOST-PARSER-SLICE06: verifying switch-arm subject /private/tmp/polyc-f1-red/./build/parser-switch-arm-subject.o
+[ 16%] Built target hcc-ast-unary-token-map-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapSwitchArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapSwitchArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=920
+[ 17%] Built target hcc-switch-arm-token-map-verify
+[ 18%] ACT-POLYC-SELFHOST-PARSER-SLICE07: verifying compound-block subject /private/tmp/polyc-f1-red/build/parser-compound-block-subject.o
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapCompoundBlockAppendsStatement TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapCompoundBlockAppendsStatement DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=688
+[ 20%] ACT-POLYC-SELFHOST-PARSER-SLICE08: verifying default-arm subject /private/tmp/polyc-f1-red/./build/parser-default-arm-subject.o
+[ 20%] Built target hcc-compound-block-token-map-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapDefaultArmTerminates TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapDefaultArmTerminates DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=864
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: STALE_STAMP_DETECTED the previous stamp /private/tmp/polyc-f1-red/build/parser-compound-block-subject.o.verified recorded a DIFFERENT object content; it is rewritten with the SHA of the object that was just verified.
+[ 21%] ACT-POLYC-SELFHOST-PARSER-SLICE09: verifying statement-dispatch subject /private/tmp/polyc-f1-red/build/parser-statement-dispatch-subject.o
+[ 22%] Built target hcc-default-arm-token-map-verify
+-- ACT-POLYC-SELFHOST-PARSER-SLICE04: AST_TOKEN_MAP_OBJECT_STATUS=PASS EXPECTED_SYMBOL=BootstrapStatementDispatch TARGET_OBJECT_FORMAT=Mach-O TARGET_SYMBOL=_BootstrapStatementDispatch DEFINED_GLOBAL_TEXT_SYMBOL_COUNT=1 OBJECT_SIZE=1432
+[ 24%] ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: verifying the PolyC driver subject /private/tmp/polyc-f1-red/./build/wp001-driver-subject.o
+[ 25%] Built target hcc-statement-dispatch-token-map-verify
+[ 26%] Building C object CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o
+-- ACT-POLYC-SELFHOST-DRIVER-MIGRATION01: DRIVER_WP001_OBJECT_STATUS=PASS EXPECTED_SYMBOL=WpDriverDecide TARGET_OBJECT_FORMAT=Mach-O REQUIRED_SYMBOL_COUNT=13 OBJECT_SIZE=22384
+[ 28%] Built target hcc-driver-wp001-verify
+[ 29%] Building C object asm/CMakeFiles/tasm.dir/asm.c.o
+[ 29%] Built target hcc-driver-wp001-consumer
+[ 30%] Built target hcc-abi-cpa-subject
+[ 32%] Built target hcc-core-operator-subject
+[ 33%] Building C object asm/CMakeFiles/tasm.dir/asm_enc.c.o
+[ 34%] ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01: verifying that the production compiler CONSUMES the PolyC emission action
+[ 36%] Building C object asm/CMakeFiles/tasm.dir/asm_jit.c.o
+-- ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01: DRIVER_WP001_CONSUMPTION_STATUS=PASS PRODUCTION_OBJECT=/tmp/polyc-f1-red/build/CMakeFiles/hcc-driver-wp001-consumer.dir/main.c.o CONSUMED_SYMBOL=_WpDriverSelectedEmission PRODUCTION_OBJECT_SIZE=13192
+[ 36%] Built target hcc-driver-wp001-consumption-verify
+[ 37%] Building C object asm/CMakeFiles/tasm.dir/dis_arm64.c.o
+[ 38%] Building C object asm/CMakeFiles/tasm.dir/dis_x86_64.c.o
+[ 40%] Building C object asm/CMakeFiles/tasm.dir/enc_arm64.c.o
+[ 41%] Building C object asm/CMakeFiles/tasm.dir/enc_x86_64.c.o
+[ 42%] Building C object asm/CMakeFiles/tasm.dir/target.c.o
+[ 44%] Building C object asm/CMakeFiles/tasm.dir/tasm_debug.c.o
+[ 45%] Building C object asm/CMakeFiles/tasm.dir/tasm_util.c.o
+[ 46%] Linking C static library libtasm.a
+[ 46%] Built target tasm
+[ 48%] Building C object CMakeFiles/hcc.dir/aostr.c.o
+[ 49%] Building C object CMakeFiles/hcc.dir/asm.c.o
+[ 50%] Building C object CMakeFiles/hcc.dir/arena.c.o
+[ 52%] Building C object CMakeFiles/hcc.dir/ast.c.o
+[ 53%] Building C object CMakeFiles/hcc.dir/cctrl.c.o
+[ 54%] Building C object CMakeFiles/hcc.dir/cfg-print.c.o
+[ 56%] Building C object CMakeFiles/hcc.dir/cfg.c.o
+[ 57%] Building C object CMakeFiles/hcc.dir/cli.c.o
+[ 58%] Building C object CMakeFiles/hcc.dir/containers.c.o
+[ 60%] Building C object CMakeFiles/hcc.dir/compile.c.o
+[ 61%] Building C object CMakeFiles/hcc.dir/aarch64.c.o
+[ 62%] Building C object CMakeFiles/hcc.dir/ir.c.o
+/tmp/polyc-f1-red/src/aarch64.c:307:50: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+    Ast *decl = (Ast *)mapGetLen(cc->global_env, key, key_len);
+                                                 ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:309:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key, key_len);
+                                               ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:312:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key, key_len);
+                                                   ^~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:315:49: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->global_env, key + 1, key_len - 1);
+                                                ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:318:48: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_funcs, key + 1, key_len - 1);
+                                               ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:321:52: warning: passing 'const char *' to parameter of type 'char *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+        decl = (Ast *)mapGetLen(cc->asm_functions, key + 1, key_len - 1);
+                                                   ^~~~~~~
+/tmp/polyc-f1-red/src/containers.h:147:33: note: passing argument to parameter 'key' here
+void *mapGetLen(Map *map, char *key, s64 len);
+                                ^
+/tmp/polyc-f1-red/src/aarch64.c:337:37: warning: comparison of integers of different signs: 'u64' (aka 'unsigned long') and 'int' [-Wsign-compare]
+                cand->asmfname->len == key_len &&
+                ~~~~~~~~~~~~~~~~~~~ ^  ~~~~~~~
+/tmp/polyc-f1-red/src/ir.c:3350:21: warning: incompatible integer to pointer conversion passing 'int' to parameter of type 'VecType *' (aka 'struct VecType *') [-Wint-conversion]
+    Vec *v = vecNew(n);
+                    ^
+/tmp/polyc-f1-red/src/containers.h:44:22: note: passing argument to parameter 'type' here
+Vec *vecNew(VecType *type);
+                     ^
+7 warnings generated.
+1 warning generated.
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-debug.c.o
+[ 65%] Building C object CMakeFiles/hcc.dir/ir-eval.c.o
+[ 66%] Building C object CMakeFiles/hcc.dir/ir-optimise.c.o
+[ 68%] Building C object CMakeFiles/hcc.dir/ir-regalloc.c.o
+[ 69%] Building C object CMakeFiles/hcc.dir/ir-types.c.o
+[ 70%] Building C object CMakeFiles/hcc.dir/json.c.o
+[ 72%] Building C object CMakeFiles/hcc.dir/lexer.c.o
+/tmp/polyc-f1-red/src/lexer.c:1384:38: warning: unused parameter 'start' [-Wunused-parameter]
+                               char *start,
+                                     ^
+[ 73%] Building C object CMakeFiles/hcc.dir/list.c.o
+[ 74%] Building C object CMakeFiles/hcc.dir/lsp.c.o
+1 warning generated.
+[ 76%] Building C object CMakeFiles/hcc.dir/main.c.o
+[ 77%] Building C object CMakeFiles/hcc.dir/memory.c.o
+[ 78%] Building C object CMakeFiles/hcc.dir/mempool.c.o
+[ 80%] Building C object CMakeFiles/hcc.dir/parser.c.o
+[ 81%] Building C object CMakeFiles/hcc.dir/prsasm.c.o
+[ 82%] Building C object CMakeFiles/hcc.dir/prslib.c.o
+[ 84%] Building C object CMakeFiles/hcc.dir/prsutil.c.o
+[ 85%] Building C object CMakeFiles/hcc.dir/transpiler.c.o
+[ 86%] Building C object CMakeFiles/hcc.dir/x86.c.o
+[ 88%] Building C object CMakeFiles/hcc.dir/x86_64.c.o
+[ 89%] Building C object CMakeFiles/hcc.dir/jit-common.c.o
+[ 90%] Building C object CMakeFiles/hcc.dir/x86_64-jit.c.o
+[ 92%] Building C object CMakeFiles/hcc.dir/aarch64-jit.c.o
+[ 93%] Building C object CMakeFiles/hcc.dir/repl.c.o
+[ 94%] Building C object CMakeFiles/hcc.dir/memsafe.c.o
+[ 96%] Building C object CMakeFiles/hcc.dir/linenoise/linenoise.c.o
+[ 97%] Building C object CMakeFiles/hcc.dir/abi-cpa-host.c.o
+[ 98%] Building C object CMakeFiles/hcc.dir/selfhost-driver-wp001.c.o
+[100%] Linking C executable /tmp/polyc-f1-red/hcc
+[100%] Built target hcc
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+error: write on a pipe with no reader
+PRODUCTION_HCC=./hcc
+PRODUCTION_PADDING_AUTHORITY=POLYC
+PRODUCTION_AST_BINOP_AUTHORITY=POLYC
+PRODUCTION_SWITCH_ARM_AUTHORITY=POLYC
+PRODUCTION_STATEMENT_DISPATCH_AUTHORITY=POLYC
+./hcc --install-dir=/private/tmp/polyc-f1-red/build/test-prefix -c tools/quality/driver-required-route-correction03-compare.HC -o build/driver-required-route-correction03-compare.o
+[0;31mERROR: [0mFailed to open file: /private/tmp/polyc-f1-red/build/test-prefix/include/tos.HH
+make: *** [build/driver-required-route-correction03-compare.o] Error 1
