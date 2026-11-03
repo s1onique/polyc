@@ -1,0 +1,73 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=g0-c-only-independence
+#
+# THE G0 C-ONLY ORACLE'S INDEPENDENCE, MEASURED ON THE REAL BINARY.
+#
+# The G0 oracle is the selector-OFF production build. It is the
+# independent reference for what the legacy C driver did. It is
+# INDEPENDENT of the PolyC driver when it carries no trace of the
+# driver at all.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE BUILD
+# ---------------------------------------------------------------------------
+#
+field	value
+G0_BUILD_DIR	/tmp/polyc-rrc02-g0
+G0_CONFIGURE	cmake -S ./src -B /tmp/polyc-rrc02-g0 -G 'Unix Makefiles' -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=OFF
+G0_CONFIGURE_RESULT	exit 0
+G0_BUILD	make -j4 hcc
+G0_BUILD_RESULT	exit 0
+G0_BINARY	/tmp/polyc-rrc02-gens/G0-hcc
+G0_BINARY_SHA256	2b0146025c594520b7deda839e74db317ffc159a884fccf5492998425c100ed3
+G0_BINARY_FILETYPE	Mach-O 64-bit executable arm64
+G0_BINARY_IS_A_DISTINCT_BUILD	YES	it is a SEPARATE out-of-tree build from a SEPARATE configure; it shares NO object file with the selector-ON build
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE INDEPENDENCE MEASUREMENTS
+# ---------------------------------------------------------------------------
+#
+# The symbol table was dumped with nm and the relocations with otool -r
+# over EVERY production object in the G0 build tree.
+#
+measurement	value	how
+G0_SYMBOL_TABLE_LINES	2087	nm /tmp/polyc-rrc02-gens/G0-hcc
+G0_DRIVER_SYMBOLS_IN_SYMBOL_TABLE	0	nm | grep -c '_WpDriver'
+G0_RELOCATION_LINES	30275	otool -r over every production object in the G0 build tree
+G0_DRIVER_RELOCATIONS	0	otool -r over every production object | grep -c 'WpDriver'
+G0_DRIVER_SUBJECT_ON_G0_LINK_LINE	0	the driver subject object is not in the G0 build tree at all
+#
+# The same measurement against the selector-ON binary, as the
+# POSITIVE CONTROL for the detector:
+#
+measurement	value
+ON_DRIVER_SYMBOLS_IN_SYMBOL_TABLE	29
+ON_DRIVER_RELOCATIONS	present
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE DETECTOR
+# ---------------------------------------------------------------------------
+#
+#   $ build/rrc02-red R04 /tmp/rrc02-g0-symbols.txt _WpDriver /tmp/rrc02-g0-relocs.txt
+#   (no output)
+#   exit 0
+#
+# The detector is SENSITIVE: the same detector applied to the
+# deliberately contaminated selector-ON binary FIRES.
+#
+#   $ build/rrc02-red R04 /tmp/rrc02-on-symbols.txt _WpDriver /tmp/rrc02-on-relocs.txt
+#   G0_ORACLE_INDEPENDENCE_UNPROVEN|REASON_DETAIL=the selector-OFF oracle carries driver symbols (29)
+#   exit 1
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE LIMIT OF THIS PROOF
+# ---------------------------------------------------------------------------
+#
+# This file proves INDEPENDENCE AT C0, against the real binary. The
+# ACT's C3 phase re-proves it against the post-correction binaries,
+# because the correction adds a status-domain member and the oracle must
+# STILL carry no trace of it.
+#
+G0_C_ONLY_AT_C0	PROVEN
+G0_C_ONLY_REQUIRES_C3_REPROOF	YES

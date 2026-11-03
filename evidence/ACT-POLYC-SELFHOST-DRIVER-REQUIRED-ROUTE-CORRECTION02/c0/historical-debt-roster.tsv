@@ -1,0 +1,137 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=historical-debt-roster
+#
+# THE PREDECESSOR'S HISTORICAL DEBT, FROZEN FOR CONSERVATION.
+#
+# The predecessor is ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01
+# ("RRC01"). This ACT does NOT repair it, does NOT endorse it and does
+# NOT re-adjudicate it. It MEASURES it, and it CONSERVES the measured
+# values.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE MEASURED AC PARTITION
+# ---------------------------------------------------------------------------
+#
+# The predecessor's evidence tree contains EXACTLY THREE acceptance
+# ledgers. All three carry EXACTLY 50 AC rows. Each was recomputed here
+# with awk over the committed bytes; the partition is the count of the
+# status column over the AC01..AC50 identifier set only.
+#
+#   $ find evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION01 \
+#       -name '*.tsv' | while read f; do
+#       if grep -q '^AC[0-9]' "$f"; then
+#         awk -F'\t' '$1 ~ /^AC[0-9]+$/' "$f" | wc -l; echo "$f"; fi; done
+#
+#   50  .../c0/frozen-ac01-ac50.tsv
+#   50  .../c3/acceptance-ledger-ac01-ac50.tsv
+#   50  .../c4/acceptance-ledger-ac01-ac50-final.tsv
+#
+# ledger	phase	PASS	NOT_RUN	DEFERRED	other	TOTAL
+RRC01_C0_FROZEN_ROSTER	C0	10	39	1	0	50
+RRC01_C3_LEDGER	C3	47	2	1	0	50
+RRC01_C4_FINAL_LEDGER	C4	49	0	1	0	50
+#
+# The ledger's OWN summary rows agree with the recomputation:
+#
+#   AC_PASS_AT_CLOSE	49
+#   AC_NOT_RUN_AT_CLOSE	0
+#   AC_DEFERRED_AT_CLOSE	1 (AC50, POST-CLOSE)
+#   AC_UNSUPPORTED_PASS	0
+#
+# The C0 frozen roster's phase distribution, which is stable across all
+# three ledgers because the roster was frozen at C0 and never rewritten:
+#
+# phase	C0	C1	C2	C3	C4	POST-CLOSE	TOTAL
+rows	10	14	9	14	2	1	50
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE REQUESTED PARTITION 29/10/10/1 IS NOT FOUND
+# ---------------------------------------------------------------------------
+#
+# A four-way partition "29 / 10 / 10 / 1" was requested for the
+# predecessor's acceptance criteria. NO SUCH PARTITION EXISTS.
+#
+# The whole Git history was searched for it:
+#
+#   $ git log --all --format='%H' | while read c; do
+#       git grep -h -E '29/10/10/1|29 / 10 / 10 / 1' "$c" 2>/dev/null; done
+#
+# over 1833 commits: NO MATCH. The only occurrence of the string
+# anywhere in the repository is in this ACT's own document, which is the
+# place where the request is recorded.
+#
+# The three recomputed partitions above are the ONLY acceptance-criterion
+# partitions the predecessor's evidence carries, and none of them is
+# 29/10/10/1. The requested figure is therefore recorded as a REFUTED
+# HYPOTHESIS, not as a conserved fact.
+#
+# Per the source-of-truth hierarchy (executable source and fresh
+# observations outrank prompt prose), the CONSERVED value is the
+# MEASURED one.
+#
+requested_partition	29/10/10/1
+requested_partition_found_in_history	NO
+requested_partition_commits_searched	1833
+requested_partition_verdict	REFUTED_BY_MEASUREMENT
+conserved_partition_source	the predecessor's three committed acceptance ledgers, recomputed here
+conserved_partition_RRC01_C0	10/39/1
+conserved_partition_RRC01_C3	47/2/1
+conserved_partition_RRC01_C4	49/0/1
+conserved_partition_unchanged	YES
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE MEASURED NC17 NON-FIRING
+# ---------------------------------------------------------------------------
+#
+# The predecessor's negative-control roster has 24 controls. NC17 is the
+# one that correctly did NOT fire, because its subject is PROVEN LIVE.
+#
+#   $ awk -F'\t' '$1=="NC17"' .../c3/negative-control-executions.tsv
+#   NC17	-	-	NOT_FIRED	the PolyC action mutation DID change the artifact
+#   class (Mach-O 64-bit object arm64 -> Mach-O 64-bit executable arm64):
+#   the action is NOT dormant
+#
+# The predecessor's own summary agrees:
+#
+#   NC_CORRECTLY_NOT_FIRED	1 (NC17: its subject is proven live)
+#
+# NC17's subject, from the predecessor's frozen contract
+# (c1/mutation-and-dormancy-frozen-contract.tsv):
+#
+#   M-POLYC-ACTION-01   change the WP_KIND_EMIT_OBJ arm of
+#                       WpDriverSelectedEmission so that it selects
+#                       WP_EMIT_EXECUTE instead of WP_EMIT_COMPILE_OBJECT
+#   the detector: POLYC_ACTION_CAUSAL_DORMANT (NC17) if the artifact
+#                 class does NOT flip
+#
+# NC17 is an UNMET negative control in the predecessor's own tree. It is
+# UNMET for the RIGHT REASON: the detector's subject is proven live, so
+# the detector must not fire. Reporting it as FIRED would be a false
+# positive about a real authority.
+#
+RRC01_NC_TOTAL	24
+RRC01_NC_FIRED	23
+RRC01_NC_CORRECTLY_NOT_FIRED	1
+RRC01_NC17_STATUS	UNMET
+RRC01_NC17_REASON	THE_DETECTOR_SUBJECT_IS_PROVEN_LIVE
+RRC01_NC17_VERDICT	UNCHANGED
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- WHAT THIS ACT CONSERVES
+# ---------------------------------------------------------------------------
+#
+#   the predecessor's three acceptance ledgers, byte for byte
+#   the predecessor's 24-control negative-control roster and its
+#     NC17 non-firing
+#   the predecessor's 32-row historical driver inventory
+#   the predecessor's 9-predicate lexical drift screen
+#   the predecessor's 16-authority baseline
+#
+# This ACT's OWN ledger is separate and does NOT repair the
+# predecessor's. The two ledgers are not merged.
+#
+HISTORICAL_DEBT_CONSERVATION_SCOPE	READ_ONLY
+HISTORICAL_DEBT_REPAIRED_BY_THIS_ACT	NONE
+HISTORICAL_DEBT_ENDORSED_BY_THIS_ACT	NONE
+HISTORICAL_DEBT_ENDORSEMENT	THE_MEASURED_VALUES_ARE_RECORDED_AS_HISTORICAL_FACTS_NOT_AS_ENDORSEMENTS_OF_THE_PREDECESSORS_JUDGEMENTS

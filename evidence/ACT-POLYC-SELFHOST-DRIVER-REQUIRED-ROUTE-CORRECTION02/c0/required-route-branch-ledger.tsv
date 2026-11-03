@@ -1,0 +1,143 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=required-route-branch-ledger
+#
+# THE REQUIRED-ROUTE BRANCH LEDGER, AS IT STANDS AT THE ENTRY COMMIT.
+#
+# The required route is:
+#   hcc --install-dir=<prefix> -c input.HC -o out.o
+#
+# Each branch the route REACHES is classified by WHAT IT DECIDES, not
+# by which file it lives in. This is the BASELINE the C1 phase freezes
+# and the C2 phase corrects against.
+#
+# ---------------------------------------------------------------------------
+# THE CLASSIFICATION VOCABULARY
+# ---------------------------------------------------------------------------
+#
+# POLYC_SEMANTIC_OWNER       the compiled PolyC driver decides it; the C
+#                            side only executes it
+# MECHANICAL_EXECUTION       the C side translates an already validated
+#                            PolyC decision into an engine invocation,
+#                            with no independent policy
+# C_SEMANTIC_ENGINE_RETAINED the retained C compiler engine performs its
+#                            own internal fault handling; it does not
+#                            choose the route
+# C_SEMANTIC_OWNER            a C policy decides something the route
+#                            depends on
+# WHOLE_CLI_OFF_ROUTE         C-owned, but the flag is absent on the
+#                            required route, so the branch is not taken
+# DORMANT_OR_EXCLUDED         source present but unreachable from the
+#                            production path, or excluded at compile time
+#
+# ---------------------------------------------------------------------------
+# THE BRANCH LEDGER
+# ---------------------------------------------------------------------------
+#
+branch_id	function	source_line_at_entry	decision	classification_at_entry	note
+BR_CLI_SELECTOR_ASSIGN	cliParseArgsPolyC	670	WHICH CLIARGS FIELD each option sets	POLYC_SEMANTIC_OWNER	the field code comes from WpDriverOptionField
+BR_CLI_VALUE_INDEX	cliParseArgsPolyC	657	WHERE an option's value starts	POLYC_SEMANTIC_OWNER	the value index comes from WpDriverValueArgIndex
+BR_CLI_VALUE_COPY	cliParseArgsPolyC	663	the option's value bytes	POLYC_SEMANTIC_OWNER	the bytes are copied through the PolyC-selected offset
+BR_CLI_SELECTED_STATUS	cliParseArgsPolyC	752	WHICH DIAGNOSTIC the argv selects	POLYC_SEMANTIC_OWNER	the status comes from WpDriverDecide
+BR_CLI_O_DASH_S_GUARD	cliParseArgsPolyC	755	WHETHER -o- MAY BE USED WITHOUT -S	C_SEMANTIC_OWNER	THE DEFECT: the branch reads args->to_stdout and args->assemble_only and does NOT consult the PolyC-selected status. The PolyC status domain has no member for this condition.
+BR_CLI_UNKNOWN_ARGS_REPORT	cliParseArgsPolyC	763	WHETHER the unknown arguments are reported	POLYC_SEMANTIC_OWNER	dispatched on status == WP_DRIVER_STATUS_USAGE
+BR_CLI_ARITY_REPORT	cliParseArgsPolyC	772	WHETHER an option's value is missing	POLYC_SEMANTIC_OWNER	dispatched on status == WP_DRIVER_STATUS_ARITY
+BR_CLI_NO_INPUT_REPORT	cliParseArgsPolyC	784	WHETHER an input file is absent	POLYC_SEMANTIC_OWNER	dispatched on status == WP_DRIVER_STATUS_NO_INPUT
+BR_MAIN_CAP_TABLE	main	502	WHETHER the capability table is printed	WHOLE_CLI_OFF_ROUTE	--print-cap-table is absent on the required route
+BR_MAIN_LSP	main	513	WHETHER the LSP owns the lifecycle	WHOLE_CLI_OFF_ROUTE	--lsp is absent on the required route
+BR_MAIN_CROSS_COMPILE	main	529	WHETHER a cross toolchain is used	WHOLE_CLI_OFF_ROUTE	the required route does not pass --target
+BR_MAIN_LEGACY_X86	main	543	WHETHER the legacy x86 path is used	WHOLE_CLI_OFF_ROUTE	--use-legacy-x86 is absent
+BR_MAIN_WERROR	main	544	WHETHER warnings are errors	WHOLE_CLI_OFF_ROUTE	-werror is absent
+BR_MAIN_MEMSAFE	main	545	WHETHER the memory checker is enabled	WHOLE_CLI_OFF_ROUTE	-memsafe is absent
+BR_MAIN_JIT_OR_REPL	main	549	WHETHER the JIT define is added	WHOLE_CLI_OFF_ROUTE	neither -jit nor -repl is present
+BR_MAIN_ASSEMBLE	main	555	WHETHER the assembler runs	WHOLE_CLI_OFF_ROUTE	-S is absent on the required route
+BR_MAIN_REPL	main	564	WHETHER the REPL runs	WHOLE_CLI_OFF_ROUTE	-repl is absent
+BR_MAIN_PRINT_TOKENS	main	577	WHETHER the token stream is emitted	WHOLE_CLI_OFF_ROUTE	-tokens is absent on the required route
+BR_MAIN_TRANSPILE	main	582	WHETHER a C transpile is emitted	WHOLE_CLI_OFF_ROUTE	-transpile is absent on the required route
+BR_MAIN_COMPILE_TO_AST	main	591	WHETHER THE COMPILE PROCEEDS	C_SEMANTIC_ENGINE_RETAINED	THE C PARSER'S FAULT GATE: compileToAst returns 0 when the retained C parser accumulated errors. The decision is a FAULT count from the retained engine, NOT a route choice. The predecessor classified it SHARED_OR_UNPROVEN; THIS ACT MEASURES it and finds it is a fault gate, not a policy.
+BR_MAIN_PRINT_AST	main	598	WHETHER the AST is printed	WHOLE_CLI_OFF_ROUTE	--print-ast is absent
+BR_MAIN_DUMP_IR	main	603	WHETHER the IR is dumped	WHOLE_CLI_OFF_ROUTE	--dump-ir is absent
+BR_MAIN_DUMP_IR_POOLED	main	608	WHETHER the pooled IR is dumped	WHOLE_CLI_OFF_ROUTE	--dump-ir-pooled is absent
+BR_MAIN_EMIT_LLVM	main	614	WHETHER LLVM IR is emitted	DORMANT_OR_EXCLUDED	HCC_ENABLE_LLVM is OFF in the production build; the whole block is excluded at compile time
+BR_EMITFILE_SELECTED_EMISSION	emitFile	282	WHICH ARTIFACT CLASS is produced	POLYC_SEMANTIC_OWNER	the emission code comes from WpDriverSelectedEmission
+BR_EMITFILE_DOMAIN_CHECK	emitFile	289	WHETHER the emission code is in domain	MECHANICAL_EXECUTION	the translation table validates a PolyC-produced code; an out-of-domain code FAILS CLOSED
+BR_EMITFILE_OBJECT_ARM	emitFile	308	HOW the object artifact is produced	MECHANICAL_EXECUTION	the arm is selected by the PolyC-produced code; the arm contains no argv inspection
+BR_EMITFILE_ASSEMBLY_ARM	emitFile	321	HOW the assembly artifact is produced	MECHANICAL_EXECUTION	the arm is selected by the PolyC-produced code
+BR_EMITFILE_DYLIB_ARM	emitFile	342	HOW the shared object is produced	MECHANICAL_EXECUTION	the arm is selected by the PolyC-produced code
+BR_EMITFILE_EXECUTE_ARM	emitFile	354	HOW the executable is produced	MECHANICAL_EXECUTION	the arm is selected by the PolyC-produced code
+#
+# ---------------------------------------------------------------------------
+# THE MEASURED REMAINDER
+# ---------------------------------------------------------------------------
+#
+# REQUIRED_ROUTE_C_SEMANTIC_REMAINDER is the count of the rows whose
+# classification is C_SEMANTIC_OWNER plus the rows whose classification
+# is SHARED_OR_UNPROVEN.
+#
+# AT THE ENTRY COMMIT:
+#
+#   C_SEMANTIC_OWNER      1   (BR_CLI_O_DASH_S_GUARD)
+#   SHARED_OR_UNPROVEN    0   (the predecessor's one SHARED_OR_UNPROVEN
+#                              row, BR_MAIN_COMPILE_TO_AST, is MEASURED
+#                              here to be C_SEMANTIC_ENGINE_RETAINED)
+#
+REQUIRED_ROUTE_C_SEMANTIC_REMAINDER	1
+REQUIRED_ROUTE_C_SEMANTIC_OWNER_ROWS	1
+REQUIRED_ROUTE_SHARED_OR_UNPROVEN_ROWS	0
+REQUIRED_ROUTE_C_SEMANTIC_ENGINE_RETAINED_ROWS	1
+REQUIRED_ROUTE_POLYC_SEMANTIC_OWNER_ROWS	13
+REQUIRED_ROUTE_MECHANICAL_EXECUTION_ROWS	6
+REQUIRED_ROUTE_WHOLE_CLI_OFF_ROUTE_ROWS	15
+REQUIRED_ROUTE_DORMANT_OR_EXCLUDED_ROWS	1
+REQUIRED_ROUTE_LEDGER_ROWS	36
+#
+# The single remainder row is BR_CLI_O_DASH_S_GUARD, which is the
+# principal RED of this ACT. The C2 phase is authorized to remove it.
+#
+# ---------------------------------------------------------------------------
+# THE MEASUREMENT RULE, AS IT WILL BE APPLIED TO THE C2 LEDGER
+# ---------------------------------------------------------------------------
+#
+# The C2 ledger MUST carry a summary row whose key contains the token
+# REMAINDER, and EVERY data row MUST carry a non-empty classification.
+# The R03 detector enforces exactly this, so a ledger that merely
+# ASSERTS a remainder cannot pass.
+#
+# ---------------------------------------------------------------------------
+# THE WHOLE-CLI REMAINDER
+# ---------------------------------------------------------------------------
+#
+# The C-owned decisions that are NOT taken on the required route but
+# remain C-owned on the whole CLI. These are DISCLOSED, not modified.
+#
+retained_c_decision	scope	source
+BR_CLI_O_DASH_S_GUARD	REQUIRED_ROUTE_THEN_WHOLE_CLI	src/cli.c:755
+BR_MAIN_PRINT_TOKENS	WHOLE_CLI	src/main.c:577
+BR_MAIN_TRANSPILE	WHOLE_CLI	src/main.c:582
+BR_MAIN_COMPILE_TO_AST	REQUIRED_ROUTE_AS_FAULT_GATE	src/main.c:591
+BR_MAIN_PRINT_AST	WHOLE_CLI	src/main.c:598
+BR_MAIN_DUMP_IR	WHOLE_CLI	src/main.c:603
+BR_MAIN_DUMP_IR_POOLED	WHOLE_CLI	src/main.c:608
+BR_MAIN_EMIT_LLVM	WHOLE_CLI_COMPILE_TIME_EXCLUDED	src/main.c:614
+BR_MAIN_JIT_OR_REPL	WHOLE_CLI	src/main.c:549
+BR_MAIN_REPL	WHOLE_CLI	src/main.c:564
+BR_MAIN_ASSEMBLE	WHOLE_CLI	src/main.c:555
+BR_MAIN_LSP	WHOLE_CLI	src/main.c:513
+BR_MAIN_CAP_TABLE	WHOLE_CLI	src/main.c:502
+BR_MAIN_CROSS_COMPILE	WHOLE_CLI	src/main.c:529
+BR_MAIN_LEGACY_X86	WHOLE_CLI	src/main.c:543
+BR_MAIN_WERROR	WHOLE_CLI	src/main.c:544
+BR_MAIN_MEMSAFE	WHOLE_CLI	src/main.c:545
+WHOLE_CLI_REMAINDER_ROWS	17
+#
+# The predecessor's SEPARATE residue items are carried forward unchanged:
+#
+#   REM-COMPILE-TO-AST   the policy/fault-gate separation was not
+#                        established by the predecessor. THIS ACT
+#                        MEASURES it as a fault gate (a C engine fault
+#                        count) and names it C_SEMANTIC_ENGINE_RETAINED.
+#                        The separation IS now established by measurement.
+#   REM-O-DASH-S-GUARD   the whole-CLI C policy the earlier global
+#                        inventory omitted. THIS ACT is the ACT that
+#                        corrects it on the required route.
+#   REM-PRINT-TOKENS    unchanged; remains C-owned on the whole CLI

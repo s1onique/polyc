@@ -1,0 +1,113 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=five-red-executions
+#
+# THE FIVE REDS, EXECUTED AS REAL PRISTINE -> ADVERSE CYCLES.
+#
+# Each detector is a COMPILED POLYC tool:
+#   tools/quality/driver-required-route-correction02-red.HC
+# built by the REAL production compiler and linked against the hermetic
+# test prefix's libtos.
+#
+#   the verifier object  build/rrc02-red.o
+#   the verifier binary  build/rrc02-red
+#   the selftest          build/rrc02-red SELFTEST  -> exit 0, SILENT
+#
+# The tool is DISCRIMINATING: each detector is shown to be SILENT on the
+# correct material and to FIRE on the adverse material, so a FIRE is a
+# statement about the material and not about the detector.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE EXECUTION TABLE
+# ---------------------------------------------------------------------------
+#
+# red_id	detector	adverse_premise	pristine_material	pristine_result	adverse_material	adverse_result	reason_token
+R01_PRECEDENCE_PREEMPTED	C_POLICY_PREEMPTS_POLYC_STATUS	a C policy in the selector-ON CLI region fires without consulting the PolyC-selected status	src/cli.c at the entry commit	FIRED (exit 1)	a corrected source whose policy is dispatched on the PolyC-selected status	SILENT (exit 0)	C_POLICY_PREEMPTS_POLYC_STATUS
+R02_POLYC_STATUS_DOMAIN_INCOMPLETE	POLYC_STATUS_DOMAIN_INCOMPLETE	the PolyC status domain cannot express the condition the C side must decide	tools/bootstrap/selfhost-driver-wp001.HC at the entry commit	FIRED (exit 1)	a driver source whose status domain carries a member for the condition	SILENT (exit 0)	POLYC_STATUS_DOMAIN_INCOMPLETE
+R03_ROUTE_REMAINDER_UNMEASURED	REQUIRED_ROUTE_REMAINDER_UNMEASURED	the required-route branch ledger does not MEASURE the residual C semantic remainder	the predecessor's branch ledger (no measured remainder row)	FIRED (exit 1)	a ledger carrying a measured remainder row with every row classified	SILENT (exit 0)	REQUIRED_ROUTE_REMAINDER_UNMEASURED
+R04_G0_ORACLE_INDEPENDENCE_UNPROVEN	G0_ORACLE_INDEPENDENCE_UNPROVEN	the selector-OFF oracle is not independent of the PolyC driver	the REAL G0 oracle binary (0 driver symbols, 0 driver relocations)	SILENT (exit 0)	the REAL selector-ON binary used as a contaminated oracle (29 driver symbols)	FIRED (exit 1)	G0_ORACLE_INDEPENDENCE_UNPROVEN
+R05_HISTORICAL_DEBT_UNCONSERVE	HISTORICAL_DEBT_NOT_CONSERVED	the predecessor's historical debt was repaired, re-adjudicated or dropped	the absence of any conservation record for this ACT	FIRED (exit 1)	a conservation record stating the AC partition and NC17 as UNCHANGED	SILENT (exit 0)	HISTORICAL_DEBT_NOT_CONSERVED
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE VERBATIM DETECTOR OUTPUT
+# ---------------------------------------------------------------------------
+#
+#   $ build/rrc02-red R01 src/cli.c 'args->to_stdout' 'status' 'WpDriverDecide'
+#   C_POLICY_PREEMPTS_POLYC_STATUS|REASON_DETAIL=a C policy reads the field without consulting the PolyC-selected status (1)
+#   exit 1
+#
+#   $ build/rrc02-red R02 tools/bootstrap/selfhost-driver-wp001.HC 'WP_STATUS_' 'TO_STDOUT'
+#   POLYC_STATUS_DOMAIN_INCOMPLETE|REASON_DETAIL=the status domain cannot express the condition the C side must decide (6)
+#   exit 1
+#
+#   $ build/rrc02-red R03 <predecessor-branch-ledger> C_SEMANTIC_OWNER SHARED_OR_UNPROVEN
+#   REQUIRED_ROUTE_REMAINDER_UNMEASURED|REASON_DETAIL=the branch ledger carries no measured remainder row
+#   exit 1
+#
+#   $ build/rrc02-red R04 <g0-symbols> _WpDriver <g0-relocations>
+#   (no output)
+#   exit 0
+#
+#   $ build/rrc02-red R05 <predecessor-final-ledger> <conservation-record> NC17
+#   HISTORICAL_DEBT_NOT_CONSERVED|REASON_DETAIL=the conservation record is unreadable
+#   exit 1
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE R01 DISCRIMINATION MATRIX
+# ---------------------------------------------------------------------------
+#
+# R01 is the PRINCIPAL RED, so it is shown to separate the correct
+# material from the adverse material on FOUR inputs. The adverse input
+# is a REAL source file, not a mock.
+#
+#   input                     content                                             result
+#   src/cli.c (entry commit)  the real production CLI parser                      FIRED   exit 1
+#   fixed.c                   the policy dispatched on the PolyC-selected status  SILENT  exit 0
+#   commentmention.c          the field named only in a COMMENT                   SILENT  exit 0
+#   legacyonly.c              the field read in the selector-OFF legacy region   FIRED   exit 1
+#
+# The `legacyonly.c` row is a DIFFERENT failure with a DIFFERENT reason:
+# the selector-ON region does not select and read the PolyC status at
+# all. The detector distinguishes the two, so a failure names itself.
+#
+#   legacyonly.c ->
+#   C_POLICY_PREEMPTS_POLYC_STATUS|REASON_DETAIL=the selector-ON region does not select and read the PolyC status
+#   exit 1
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- THE R04 DISCRIMINATION MATRIX
+# ---------------------------------------------------------------------------
+#
+# R04 is shown against the REAL G0 oracle and against the REAL
+# selector-ON binary used as a deliberately contaminated oracle.
+#
+#   input                    driver symbols in the symbol table   driver relocations   result
+#   the REAL G0 oracle       0                                   0                    SILENT  exit 0
+#   the REAL selector-ON     29                                  present              FIRED   exit 1
+#
+# The G0 relocation figure is a dump of EVERY production object in the
+# G0 build tree: 30275 relocation lines, of which 0 name a driver
+# symbol.
+#
+#   G0_ORACLE_INDEPENDENCE_UNPROVEN|REASON_DETAIL=the selector-OFF oracle carries driver symbols (29)
+#   exit 1
+#
+# ---------------------------------------------------------------------------
+# SECTION 5 -- THE SELECTIVE-BEHAVIOUR EVIDENCE
+# ---------------------------------------------------------------------------
+#
+# R01 on the REAL production source locates exactly ONE offending
+# policy read, in the selector-ON region, on the line that reads the
+# C-owned field without the PolyC-selected status. The legacy region
+# (src/cli.c:582) is NOT counted, because the ACT explicitly permits the
+# selector-OFF oracle to keep its own policy.
+#
+R01_OFFENDING_READ_COUNT	1
+R01_LEGACY_REGION_READS_COUNTED	0
+R01_COMMENT_MENTIONS_COUNTED	0
+#
+RED_COUNT	5
+RED_PRINCIPAL	precedence-defect-reproduced.tsv
+RED_PRINCIPAL_TOKEN	C_POLICY_PREEMPTS_POLYC_STATUS
+RED_ALL_REPRODUCED	YES
+RED_NOT_REPRODUCED	NONE

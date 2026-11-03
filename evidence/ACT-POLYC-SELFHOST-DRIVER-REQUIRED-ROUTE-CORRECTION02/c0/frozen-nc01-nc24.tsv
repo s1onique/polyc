@@ -1,0 +1,54 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=frozen-nc01-nc24
+#
+# THE 24 NEGATIVE CONTROLS, FROZEN AT C0, WITH THEIR EXACT REASON
+# TOKENS.
+#
+# Each control performs a REAL adverse change in an ISOLATED fixture
+# copy or a REAL adverse build, and must fire ONLY its named detector
+# with its EXACT reason token. The authoritative checkout is NEVER
+# mutated.
+#
+# A control that MUST NOT fire is marked with the token "-". Such a
+# control is an UNMET control in this ACT's own tree, and it is
+# UNMET FOR A NAMED REASON. Reporting it as FIRED would be a false
+# positive about a real authority.
+#
+# nc_id	adverse_change	required_detector_reason	must_fire
+NC01	amend the recorded entry HEAD so the entry identity no longer matches	ENTRY_IDENTITY_MISMATCH	YES
+NC02	change a byte of the frozen status-domain contract so the digest no longer matches	FROZEN_CONTRACT_CHANGED	YES
+NC03	add a row to the frozen AC roster so its row count no longer matches	AC_ROSTER_ROW_COUNT_MISMATCH	YES
+NC04	claim the same decision as two distinct authorities	AUTHORITY_DOUBLE_COUNT	YES
+NC05	revert the C side to fire the -o- guard without consulting the PolyC-selected status	C_POLICY_PREEMPTS_POLYC_STATUS	YES
+NC06	remove the new status member from the PolyC driver so the domain cannot express the condition	POLYC_STATUS_DOMAIN_INCOMPLETE	YES
+NC07	link the PolyC driver subject into the G0 oracle	G0_ORACLE_INDEPENDENCE_UNPROVEN	YES
+NC08	poison the driver's status so the selected status is out of domain	POLYC_DRIVER_FALLBACK_NOT_CLOSED	YES
+NC09	remove the generated driver subject prerequisite from the Makefile	GENERATED_SUBJECT_PREREQUISITE_MISSING	YES
+NC10	drop the driver selector from the CMake cache so the selector is not applied	CONFIGURATION_SELECTOR_NOT_APPLIED	YES
+NC11	present two aliased producer binaries as distinct generations	PRODUCER_ALIAS_FALSE_INDEPENDENCE	YES
+NC12	emit an executable where the route requires an object	EMITTED_ARTIFACT_CLASS_MISMATCH	YES
+NC13	let the new status value collide with an existing status value	ACTION_STATUS_DOMAIN_COLLISION	YES
+NC14	let the status accessor take a pointer or a stack-crossing type	DRIVER_ABI_LIFETIME_BREACH	YES
+NC15	let the C side read a C-owned field in addition to the status	LEGACY_C_POLICY_NOT_DORMANT	YES
+NC16	remove the discriminating precedence fixture from the roster	ALTERNATE_ACTION_CASE_MISSING	YES
+NC17	mutate the driver's precedence decision so it produces NO live diagnostic effect	POLYC_ACTION_CAUSAL_DORMANT	NO
+NC18	mutate the legacy C -o- policy so the selector-ON output CHANGES	LEGACY_C_POLICY_NOT_DORMANT	YES
+NC19	use a comparator variant that ignores the artifact class	COMPARATOR_ARTIFACT_INSENSITIVE	YES
+NC20	use a comparator variant that ignores the diagnostic text	COMPARATOR_DIAGNOSTIC_INSENSITIVE	YES
+NC21	classify the -o- guard as mechanical glue in the C2 branch ledger	C_POLICY_MISCLASSIFIED_AS_GLUE	YES
+NC22	omit a whole-CLI remainder row from the inventory	WHOLE_CLI_REMAINDER_UNDERCOUNT	YES
+NC23	let an evidence row carry a phase it does not own	EVIDENCE_PHASE_SELF_ATTESTATION	YES
+NC24	pre-declare the external terminality receipt as a PASS	TERMINALITY_PREDECLARED_PASS	YES
+#
+NC_ROWS	24
+NC_UNIQUE_IDS	24
+NC_MUST_FIRE	23
+NC_MUST_NOT_FIRE	1 (NC17, whose subject is PROVEN LIVE)
+NC_REASON_TOKENS_UNIQUE	24
+#
+# NC17 IS THE UNMET CONTROL. It fires when a PolyC mutation produces NO
+# live artifact or diagnostic effect, i.e. when the PolyC decision is
+# DECORATIVE. The C3 phase MEASURES the precedence mutation: if the
+# mutation changes the reported diagnostic, NC17 does NOT fire and its
+# subject is LIVE.

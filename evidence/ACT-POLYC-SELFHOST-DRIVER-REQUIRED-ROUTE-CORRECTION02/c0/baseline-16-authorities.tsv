@@ -1,0 +1,64 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=baseline-16-authorities
+#
+# THE 16 PRODUCTION POLYC AUTHORITIES, RE-CENSUSED FRESH AT C0 over the
+# REAL production link line and the REAL production C objects.
+#
+#   linkin  = the subject object is named by the production link line
+#   defn    = the subject object defines the symbol as a global text symbol
+#   linked  = the symbol is a global text symbol in the linked ./hcc
+#
+# A DISTINCT AUTHORITY is an independently attributable DECISION, not an
+# object. The 13 PolyC subject OBJECTS on the link line carry 16
+# decisions.
+#
+# THE BUILD UNDER TEST IS FRESH: ./hcc was deleted, build/CMakeCache.txt
+# and build/CMakeFiles were removed, and the production compiler was
+# rebuilt from the committed sources. Its SHA-256 is recorded below.
+#
+#   the production compiler  ./hcc
+#   its SHA-256              12cbfe2a31f349512a7a1929502ba8b46148bbf8269add36af0de76261d57fd2
+#   the driver subject       build/wp001-driver-subject.o
+#   its SHA-256              db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+#   the producer             build/host-stage0/hcc
+#   its SHA-256              466a0fb09e6fd6c9005c95f14d3b0dc5b1c150eea71bd021a35416e064b68cc5
+#
+authority_id	symbol	production_subject_object	classification	linkin	defn	linked	verdict
+AUTH-01	_BootstrapCalcPadding	build/parser-padding-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-02	_BootstrapValidPostControlFlowToken	build/parser-control-flow-token-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-03	_BootstrapOperatorPrecedence	build/parser-operator-precedence-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-04	_BootstrapAstBinOpFromToken	build/parser-ast-binop-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-05	_BootstrapAstUnaryOpFromToken	build/parser-ast-unary-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-06	_BootstrapSwitchArmTerminates	build/parser-switch-arm-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-07	_BootstrapCompoundBlockAppendsStatement	build/parser-compound-block-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-08	_BootstrapDefaultArmTerminates	build/parser-default-arm-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-09	_BootstrapStatementDispatch	build/parser-statement-dispatch-subject.o	PARSER_DECISION	1	1	1	VERIFIED
+AUTH-10	_AbiCpaShouldPrintAst	build/selfhost-abi-cpa-subject.o	ABI_DECISION	1	1	1	VERIFIED
+AUTH-11	_AbiCoreClassifyCompoundAssign	build/core-operator-subject.o	CORE_DECISION	1	1	1	VERIFIED
+AUTH-12	_AbiCoreIsRangeOperator	build/core-operator-subject.o	CORE_DECISION	1	1	1	VERIFIED
+AUTH-13	_AbiCoreIsValidPointerOperator	build/core-operator-subject.o	CORE_DECISION	1	1	1	VERIFIED
+AUTH-14	_AbiA64CcForV2	build/a64-cmp-cc-subject.o	A64_DECISION	1	1	1	VERIFIED
+AUTH-15	_AbiA64CcInvForV2	build/a64-cmp-cc-subject.o	A64_DECISION	1	1	1	VERIFIED
+AUTH-16	_WpDriverDecide	build/wp001-driver-subject.o	DRIVER_DECISION	1	1	1	VERIFIED
+#
+# The count of distinct authorities DEFINED and LINKED in the fresh
+# production binary:
+#
+#   $ nm hcc | grep -E ' (AUTH-01..AUTH-16 symbols)$' | wc -l
+#   16
+#
+AUTHORITY_COUNT	16
+AUTHORITY_UNSUPPORTED	0
+#
+# The DRIVER authority in detail, as it stands at this entry commit.
+#
+# This ACT adds a STATUS decision to the EXISTING driver authority. It
+# does not add a new SUBJECT, and it does not add a new independently
+# attributable DECISION: the `-o-`/`-S` condition is a status the
+# existing status-mapping already had to place somewhere. The reported
+# baseline therefore stays 16, with a delta of 0.
+#
+claim	value	justification
+NEW_AUTHORITY_COUNT_DELTA	0	this ACT extends the EXISTING driver authority's status domain; it introduces no new subject object and no new independently attributable decision
+AUTHORITY_BASELINE_AFTER	16	the baseline is conserved, not inflated

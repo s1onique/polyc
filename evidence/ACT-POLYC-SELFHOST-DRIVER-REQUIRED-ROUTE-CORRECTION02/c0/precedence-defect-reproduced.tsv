@@ -1,0 +1,106 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=precedence-defect-reproduced
+#
+# THE PRINCIPAL RED: A C-OWNED POLICY PREEMPTS THE POLYC-SELECTED
+# STATUS ON THE REQUIRED ROUTE.
+#
+# EVERY ROW BELOW IS AN OBSERVATION OF A REAL, FRESHLY BUILT,
+# SELECTOR-ON PRODUCTION COMPILER. No row is derived from a source
+# reading, a review, or a claim.
+#
+# THE BUILD UNDER TEST
+#
+#   the selector-ON compiler was configured and built FRESH, out of tree,
+#   from the committed sources with
+#     -DHCC_USE_SELFHOST_DRIVER_WP001=ON
+#   Its SHA-256 is recorded below. The G0 oracle was configured and
+#   built FRESH, out of tree, with the selector OFF.
+#
+# ---------------------------------------------------------------------------
+# SECTION 1 -- THE BUILD PROVENANCE
+# ---------------------------------------------------------------------------
+#
+field	value
+ON_BUILD_DIR	/tmp/polyc-rrc02-on
+ON_BUILD_CONFIGURE	cmake -S ./src -B /tmp/polyc-rrc02-on -G 'Unix Makefiles' -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=ON
+ON_BUILD_RESULT	BUILT, exit 0
+ON_BINARY	/tmp/polyc-rrc02-gens/ON-hcc
+ON_BINARY_SHA256	4c5ec7288595e5c1ddb1a95eb5739488bf48d63e754f247885f76eca86e152e3
+ON_BINARY_FILETYPE	Mach-O 64-bit executable arm64
+G0_BUILD_DIR	/tmp/polyc-rrc02-g0
+G0_BUILD_CONFIGURE	cmake -S ./src -B /tmp/polyc-rrc02-g0 -G 'Unix Makefiles' -DHCC_ENABLE_JIT=on -DHCC_USE_SELFHOST_DRIVER_WP001=OFF
+G0_BUILD_RESULT	BUILT, exit 0
+G0_BINARY	/tmp/polyc-rrc02-gens/G0-hcc
+G0_BINARY_SHA256	2b0146025c594520b7deda839e74db317ffc159a884fccf5492998425c100ed3
+G0_BINARY_FILETYPE	Mach-O 64-bit executable arm64
+DRIVER_SUBJECT	build/wp001-driver-subject.o
+DRIVER_SUBJECT_SHA256	db439ccbe6eaf53953a596914a5e9319ba1b64ed6a5903c316643becbbf5fa4b
+PRODUCER	build/host-stage0/hcc
+PRODUCER_SHA256	466a0fb09e6fd6c9005c95f14d3b0dc5b1c150eea71bd021a35416e064b68cc5
+FIXTURE	source.HC containing "I64 Main() { return 7; }"
+#
+# ---------------------------------------------------------------------------
+# SECTION 2 -- THE THREE OBSERVATIONS
+# ---------------------------------------------------------------------------
+#
+# In all three rows the PolyC driver selects WP_STATUS_USAGE, because
+# the argv carries an unknown argument (--bogus-option) and no -jit or
+# -run exemption applies. The status is the SAME in all three rows.
+#
+# WHAT VARIES IS ONLY WHETHER THE C-OWNED `-o-` GUARD IS SATISFIED.
+#
+# observation_id	argv	polyc_selected_status	reported_diagnostic	exit	decided_by
+OBS-01	-c source.HC -o out.o --bogus-option	WP_STATUS_USAGE	Unknown commandline options: --bogus-option	1	POLYC
+OBS-02	-S source.HC -o- --bogus-option	WP_STATUS_USAGE	Unknown commandline options: --bogus-option	1	POLYC
+OBS-03	-c source.HC -o- --bogus-option	WP_STATUS_USAGE	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout	1	C_POLICY_PREEMPTS
+#
+# THE SAME THREE OBSERVATIONS AGAINST THE G0 ORACLE (selector OFF):
+#
+observation_id	argv	reported_diagnostic	exit
+OBS-01	-c source.HC -o out.o --bogus-option	Unknown commandline options: --bogus-option	1
+OBS-02	-S source.HC -o- --bogus-option	Unknown commandline options: --bogus-option	1
+OBS-03	-c source.HC -o- --bogus-option	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout	1
+#
+# The G0 oracle behaves IDENTICALLY to the selector-ON compiler on these
+# three rows. That is EXPECTED and it is exactly why the defect is not
+# visible in a G0-vs-ON differential: the C policy is present on BOTH
+# sides. The defect is only visible against the POLYC-SELECTED STATUS,
+# not against the G0 oracle.
+#
+# ---------------------------------------------------------------------------
+# SECTION 3 -- THE DECISION
+# ---------------------------------------------------------------------------
+#
+# OBS-03 IS THE RED. The PolyC driver selected USAGE. The process
+# reported a DIFFERENT diagnostic, the one owned by the C policy at
+# src/cli.c:755. The C policy fired WITHOUT consulting the
+# PolyC-selected status.
+#
+# The C source comment immediately above the block CLAIMS the opposite:
+# it says the remaining checks are "the PolyC driver's decision, read
+# back through the PolyC-selected status" and that "the order among them
+# is the driver's decision too". The code does not do that.
+#
+PRECEDENCE_DEFECT_REPRODUCED	YES
+PRECEDENCE_DEFECT_ARGV	-c source.HC -o- --bogus-option
+PRECEDENCE_DEFECT_POLYC_STATUS	WP_STATUS_USAGE
+PRECEDENCE_DEFECT_REPORTED	`-o-` can only be used in conjunction with `-S` for printing assembly to stdout
+PRECEDENCE_DEFECT_C_SOURCE_SITE	src/cli.c:755
+PRECEDENCE_DEFECT_C_SOURCE_SITE_SHA256	df37fb5b020773d6b3ae450a09e00f24092ccde413c6e5073f39b1a6207ae4fb
+PRECEDENCE_DEFECT_STATUS_SELECTED_AT	src/cli.c:752
+PRECEDENCE_DEFECT_RED_TOKEN	C_POLICY_PREEMPTS_POLYC_STATUS
+#
+# ---------------------------------------------------------------------------
+# SECTION 4 -- WHY A G0 DIFFERENTIAL CANNOT SEE THIS
+# ---------------------------------------------------------------------------
+#
+# The G0 oracle and the selector-ON compiler agree on all three rows.
+# A G0-vs-ON behavioural differential therefore reports NO difference
+# here. The precedence defect is INVISIBLE to that comparison.
+#
+# The comparison that DOES see it is the one this ACT freezes: the
+# OBSERVED DIAGNOSTIC against the POLYC-SELECTED STATUS.
+#
+G0_VS_ON_DIFFERENTIALS_ON_THIS_DEFECT	0
+POLYC_STATUS_VS_OBSERVED_DIFFERENTIALS_ON_THIS_DEFECT	1

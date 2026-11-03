@@ -1,0 +1,132 @@
+# ACT_ID=ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=conservation-baseline
+#
+# MEASURED FRESH AT C0 AGAINST A REAL PRODUCTION BUILD.
+# The test-prefix was verified POPULATED before the run, so a
+# fail-open exit=0 is not mistaken for success.
+#
+# ---------------------------------------------------------------------------
+# THE BUILD UNDER TEST
+# ---------------------------------------------------------------------------
+#
+key	value
+PRODUCTION_COMPILER	./hcc
+PRODUCTION_COMPILER_SHA256	12cbfe2a31f349512a7a1929502ba8b46148bbf8269add36af0de76261d57fd2
+PRODUCTION_BUILD	FRESH (./hcc deleted; build/CMakeCache.txt and build/CMakeFiles removed; rebuilt from the committed sources)
+HERMETIC_PREFIX	/Volumes/UserData/Users/chistyakov/Projects/SPbNIX/polyc/build/test-prefix
+HERMETIC_PREFIX_TOS_HH_EXISTS	YES
+HERMETIC_PREFIX_LIBTOS_A_EXISTS	YES
+HERMETIC_COMPILER	build/hcc (configured with -DCMAKE_INSTALL_PREFIX=<hermetic prefix>, so the runner's bare "../../hcc" resolves tos.HH from the hermetic prefix)
+#
+# ---------------------------------------------------------------------------
+# THE PARSER SUITE
+# ---------------------------------------------------------------------------
+#
+#   cd <scratch>/src/tests && <hermetic> --install-dir=<hermetic prefix> ./run.HC -o <runner>
+#   <runner>
+#
+#   the scratch tree holds a COPY of the hermetic compiler two levels
+#   above src/tests, so the runner's hardcoded "../../hcc" resolves to a
+#   compiler whose compiled-in INSTALL_PREFIX is the hermetic prefix.
+#   The authoritative checkout is NEVER mutated.
+#
+measurement	value	historical_baseline	conserved
+parser_assertions_passed	376	376	YES
+parser_assertions_total	376	376	YES
+parser_failed_lines	0	0	YES
+parser_assertion_sequence_md5	b6f117eb1386ca80f81bc06226e2a741	b6f117eb1386ca80f81bc06226e2a741	YES (BYTE-IDENTICAL)
+parser_conservation_status	PASS	PASS	YES
+#
+# ---------------------------------------------------------------------------
+# THE DIRECT LEXER DIFFERENTIALS
+# ---------------------------------------------------------------------------
+#
+measurement	value	historical_baseline	conserved
+lexer07_direct_diff_pass	89	89	YES
+lexer07_direct_diff_fail	0	0	YES
+lexer08_direct_diff_pass	45	45	YES
+lexer08_direct_diff_fail	0	0	YES
+lexer09_direct_diff_pass	23	23	YES
+lexer09_direct_diff_fail	0	0	YES
+lexer_direct_status	PASS	PASS	YES
+#
+# ---------------------------------------------------------------------------
+# THE KNOWN-NON-GREEN BASELINES, DISCLOSED NOT RE-MEASURED
+# ---------------------------------------------------------------------------
+#
+measurement	value	historical_baseline	conserved
+lexer07_broad_corpus_status	NOT_REMEASURED	NOT_REMEASURED	YES (the same disclosure)
+lexer07_broad_corpus_historical_identity	7ee761440de83552e751e3c3976c1683	7ee761440de83552e751e3c3976c1683	YES
+lexer07_broad_corpus_historical_fails	15	15	YES
+cross_target_prefix_status	NOT_REMEASURED	NOT_REMEASURED	YES (the same disclosure)
+cross_target_prefix_historical_identity	67	67	YES
+#
+# ---------------------------------------------------------------------------
+# F-NO-PYTHON: THE SAME 12 PRE-EXISTING PATH IDS, ZERO NEW
+# ---------------------------------------------------------------------------
+#
+#   ./scripts/quality/factory-no-python-check.sh
+#
+# The 12 failing path IDs were compared against the predecessor's
+# recorded set with diff. The sets are IDENTICAL.
+#
+measurement	value	historical_baseline	conserved
+f_no_python_status	FAIL_KNOWN_BASELINE	FAIL_KNOWN_BASELINE	YES
+f_no_python_total_paths	12	12	YES
+f_no_python_new_paths	0	0	YES
+f_no_python_path_set_identical	YES	YES	YES
+#
+# The 12 exact F-NO-PYTHON path IDs:
+#
+path
+scripts/quality/llvm-byte-memory01-test.sh
+scripts/quality/llvm-cap-table-verifier.py
+scripts/quality/llvm-intops01-test.sh
+scripts/quality/llvm-memory01-red-test.sh
+scripts/quality/llvm-spike-test.sh
+tools/quality/bootstrap02-corpus-runner.py
+tools/quality/bootstrap02-error-corpus.py
+tools/quality/bootstrap03-corpus-runner.py
+tools/quality/bootstrap03-error-corpus.py
+tools/quality/bootstrap04-corpus-runner.py
+tools/quality/bootstrap04-error-corpus.py
+tools/quality/llvm-gep01-test.HC
+#
+# ---------------------------------------------------------------------------
+# F-POLYC-TOOLS
+# ---------------------------------------------------------------------------
+#
+measurement	value
+f_polyc_tools_status	UNAVAILABLE
+f_polyc_tools_reason	the canonical checker tools/factory/factory-polyc-tools-check.HC does not exist in this tree
+f_polyc_tools_note	this ACT's new tool is PolyC source and introduces no shell or Python
+#
+# ---------------------------------------------------------------------------
+# THE GATES
+# ---------------------------------------------------------------------------
+#
+measurement	value
+gate_fast_status	PASS
+gate_fast_checks	diff-check,shell-syntax,doc-invariants,large-file-guard,factory-closure-status
+gate_fast_manifest_rows	69
+gate_fast_missing_handoff_files	0
+gate_fast_malformed_handoff_verdict	0
+#
+# ---------------------------------------------------------------------------
+# THE OTHER CONSERVED COUNTS
+# ---------------------------------------------------------------------------
+#
+measurement	value
+production_poly_authorities_at_entry	16
+wp001_historical_driver_rows	32
+#
+# The commands that produced the values above:
+#
+#   cd <scratch>/src/tests && <hermetic> --install-dir=<hermetic prefix> ./run.HC -o <runner> && <runner>
+#   sed -e 's/\x1b\[[0-9;]*m//g' <log> | grep -o 'PASSED: [0-9]*/[0-9]*' | md5
+#   make lexer07-direct-differential -> 89 / 0 / PASS
+#   make lexer08-direct-differential -> 45 / 0 / PASS
+#   make lexer09-direct-differential -> 23 / 0 / PASS
+#   ./scripts/quality/factory-no-python-check.sh -> 12 paths, the SAME set
+#   ./scripts/quality/gate-fast.sh -> PASS
