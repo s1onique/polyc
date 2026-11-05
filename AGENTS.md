@@ -749,3 +749,32 @@ only when invoked explicitly. Wiring is C2.9 residue.
 
 Neither checker may be removed, weakened, or bypassed
 except by an explicit bounded correction ACT.
+
+---
+
+## Historical append-only violation and forward-only reconciliation
+
+The append-only invariant from `baf5dbd77cf89330699685dffd932c54031c815c`
+forward was historically breached. Thirteen local `main` reset
+transitions removed twenty affected commit identities from `main`
+ancestry. The original objects remain immutable evidence, but later
+reintroduction of equivalent content did not restore the original
+commit identities or parentage.
+
+`ACT-POLYC-FACTORY-APPEND-ONLY-LINEAGE-RECONCILE01` reconciled those
+identities into a forward-only descendant of the pre-reconciliation
+`main` using true merges whose resulting tree preserved the already
+verified production subject. The recovery refs under
+`refs/archive/lineage-reconcile01/` remain permanent historical
+anchors. The complete reset and identity inventories are under
+`evidence/factory-append-only-lineage-reconcile01/`.
+
+This reconciliation does not erase the breach and MUST NOT be described
+as proof that append-only history was never violated. The permanent
+disclosure remains
+`PASS_LINEAGE_RECONCILED_WITH_HISTORICAL_VIOLATION`.
+
+Factory-v2 ACT phase ranges are enumerated along the first-parent
+lineage. A merge's second-parent ancestry is historical evidence, not
+an ACT phase sequence. A same-ACT second parent with an invalid phase
+is still rejected by `scripts/quality/factory-v2-range-check.sh`.

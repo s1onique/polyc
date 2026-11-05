@@ -1280,3 +1280,43 @@ and recorded in the legacy baseline.
 
 This section is the durable, normative binding for
 `ACT-POLYC-SELFHOST-SURFACE01-CORRECTION01` §0 / §2.
+
+---
+
+## 28. F-GIT-HISTORICAL-APPEND-ONLY-VIOLATION — DISCLOSURE AND FORWARD-ONLY RECONCILIATION
+
+The append-only invariant established in §23 was historically breached
+after `APPEND_ONLY_START_POINT`. Thirteen local `main` reset transitions
+removed twenty affected commit identities from `main` ancestry. The
+commit objects remained present, but equivalent later content did not
+restore the original identities or parentage.
+
+`ACT-POLYC-FACTORY-APPEND-ONLY-LINEAGE-RECONCILE01` performed the
+bounded forward-only reconciliation:
+
+```text
+affected identities: 20
+reset transitions:   13
+minimum cover tips:  11
+reconciliation:      true merges with the current tree preserved
+recovery anchors:    refs/archive/lineage-reconcile01/
+```
+
+The reconciliation restores reachability without rewriting any existing
+commit. It does not erase the historical violation. The permanent
+disposition is:
+
+```text
+PASS_LINEAGE_RECONCILED_WITH_HISTORICAL_VIOLATION
+```
+
+No closure report may claim that append-only history was never
+breached. The complete inventories and external-preservation receipt
+are under `evidence/factory-append-only-lineage-reconcile01/`.
+
+For Factory-v2 ACT range validation, the phase sequence is the
+first-parent lineage of the ACT range. A merge's second-parent ancestry
+is historical evidence rather than an ACT phase sequence. A second
+parent carrying the same ACT id with an invalid phase remains a
+validation failure. This rule does not weaken trailer, phase,
+closure-count, supersession, or post-close continuation checks.
