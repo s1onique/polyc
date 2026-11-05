@@ -1,0 +1,25 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=factory-validator-entry
+#
+# THE PREDECESSOR-OPEN QUESTION, MEASURED.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 has a reported
+# independent C4_READY=YES but NO terminal CLOSE. This ACT must not
+# manufacture that closure and must not inherit a verdict CORRECTION03
+# never recorded.
+#
+# The question the ACT brief asks is whether the Factory validator
+# REJECTS a new implementation ACT while the predecessor remains open.
+#
+# MEASURED, NOT ASSUMED.
+#
+measurement	command	result	reading
+CORRECTION03_LAST_COMMIT	git log -1 --format=%H HEAD	c92be04965f3ac805577c514a003ed81153bfd9d	the predecessor's last commit
+CORRECTION03_LAST_PHASE	git log -1 --format=%(trailers:key=ACT-Phase,valueonly) HEAD	EVIDENCE	the predecessor has NO CLOSE commit
+CORRECTION03_RANGE_CHECK	sh scripts/quality/factory-v2-range-check.sh ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 c92be04965f3ac805577c514a003ed81153bfd9d	STATUS=FAIL REASON=CLOSE ... does not carry exactly one ACT-Phase: CLOSE (count=0)	the predecessor's own range is INCOMPLETE, exactly as the brief reports
+CORRECTION03_IN_CLOSURE_MANIFEST	grep DRIVER docs/factory/act-handoff-map.tsv	only CORRECTION01 and CORRECTION02 are listed	the open predecessor is NOT a managed pair, so the closure-status oracle does not police it
+CLOSURE_STATUS_AT_ENTRY	sh scripts/quality/factory-closure-status-check.sh	STATUS=PASS PAIR_OK=70 PAIR_FAIL=0	the closure-status gate is GREEN at entry
+RANGE_CHECK_SCOPE	grep -n 'ACT:\${ACT_ID}' scripts/quality/factory-v2-range-check.sh	the range validator matches on the ACT ID ARGUMENT	the validator evaluates EACH ACT's OWN contiguous range, independently
+RANGE_CHECK_PRECONDESSOR_RULE	grep -n 'predecessor\|PREDECESSOR' scripts/quality/factory-v2-range-check.sh	NO MATCH	there is NO rule requiring a predecessor ACT to have a CLOSE before a new ACT id may open
+CONCLUSION			NO_EXECUTABLE_REJECTION	the Factory-v2 validators do NOT mechanically reject a new implementation ACT id while CORRECTION03 is open

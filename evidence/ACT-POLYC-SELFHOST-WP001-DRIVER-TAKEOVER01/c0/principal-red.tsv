@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=principal-red
+#
+# THE PRINCIPAL RED, AT THE REAL PRODUCTION SEAM.
+#
+# The witness is a COMPILED POLYC DETECTOR
+# (tools/quality/wp001-driver-takeover01-red.HC), built by the real
+# production compiler. It parses the REAL Mach-O symbol table of the
+# REAL production route-selection object and classifies each driver
+# accessor as IMPORTED (consumed), DEFINED (a duplicated action
+# source) or absent (not consumed).
+#
+# A SYMBOL DEFINITION IS NOT CONSUMPTION. The detector reads the
+# artifact, never a verdict string.
+#
+# THE OBJECT: build/CMakeFiles/hcc.dir/main.c.o
+#   This is the object that holds main() -- the function that selects
+#   the compiler's whole-CLI route.
+#
+# THE EXPECTED PRE-IMPL RESULT:
+#   _WpDriverSelectedEmission   IMPORTED   (the artifact class; already migrated)
+#   WpDriverSelectedAction      NOT_CONSUMED  (the whole-argv route action)
+#
+# The second line is the DEFECT. The PolyC driver computes the
+# whole-argv action and the production route selection never calls it,
+# so the C branches in main() remain the real authority over the
+# assemble, repl, print-tokens, transpile, print-AST, dump-IR,
+# dump-IR-pooled, CFG, JIT and emit-LLVM routes.
+#
+measurement	command	result
+RED_DETECTOR_BUILD	./hcc --install-dir=./build/test-prefix -c tools/quality/wp001-driver-takeover01-red.HC -o build/wp001-takeover-red.o	EXIT 0, object produced
+RED_DETECTOR_LINK	cc -o build/wp001-takeover-red build/wp001-takeover-red.o -L build/test-prefix/lib -ltos -lm	EXIT 0, binary produced
+ENTRY_CENSUS	./build/wp001-takeover-red build/CMakeFiles/hcc.dir/main.c.o	SYMBOL_COUNT=130; DRIVER_SYMBOL kind=2 name=_WpDriverSelectedEmission
+PRINCIPAL_RED	./build/wp001-takeover-red build/CMakeFiles/hcc.dir/main.c.o WpDriverSelectedAction	ACCESSOR name=WpDriverSelectedAction classification=NOT_CONSUMED ; WP001_DRIVER_TAKEOVER_RED=FIRED ; EXIT 1
+RED_EXIT_STATUS	1	NON-ZERO: the witness FAILS on the current tree, as required

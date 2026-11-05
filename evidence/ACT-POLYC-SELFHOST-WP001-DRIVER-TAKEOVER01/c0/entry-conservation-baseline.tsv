@@ -1,0 +1,36 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=entry-conservation-baseline
+#
+# THE FRESH ENTRY BASELINE, MEASURED WITH THE REAL COMPILER.
+#
+# The parser measurement uses the historical hermetic method: a scratch
+# tree holds a COPY of the compiler two levels above src/tests, so the
+# runner's hardcoded "../../hcc" resolves to a compiler whose
+# compiled-in INSTALL_PREFIX is the hermetic prefix. The authoritative
+# checkout is NEVER mutated.
+#
+#   cd <scratch>/src/tests && ../../hcc --install-dir=<abs>/build/test-prefix ./run.HC -o <runner>
+#   <runner>
+#   grep -o "PASSED: [0-9]*/[0-9]*" | md5
+#
+measurement	value	historical_baseline	conserved
+PARSER_ASSERTIONS_PASSED	376	376	YES
+PARSER_ASSERTIONS_TOTAL	376	376	YES
+PARSER_FAILED_LINES	0	0	YES
+PARSER_PASSED_BLOCKS	90	90	YES
+PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741	b6f117eb1386ca80f81bc06226e2a741	YES (BYTE-IDENTICAL)
+PARSER_CONSERVATION_STATUS	PASS	PASS	YES
+LEXER07_DIRECT_DIFF_PASS	89	89	YES
+LEXER07_DIRECT_DIFF_FAIL	0	0	YES
+LEXER08_DIRECT_DIFF_PASS	45	45	YES
+LEXER08_DIRECT_DIFF_FAIL	0	0	YES
+LEXER09_DIRECT_DIFF_PASS	23	23	YES
+LEXER09_DIRECT_DIFF_FAIL	0	0	YES
+LEXER_DIRECT_STATUS	PASS	PASS	YES
+GATE_FAST	VERDICT=PASS (CHECK=diff-check,shell-syntax,doc-invariants,large-file-guard,factory-closure-status; PAIR_OK=70 PAIR_FAIL=0)	PBD	the entry gate is GREEN
+GATE_PUSH	NOT YET RUN AT ENTRY (the push gate runs on the SUBJECT commit; see c3)	N/A	N/A
+PRODUCTION_POLYC_AUTHORITIES	16	16	YES
+PRODUCTION_DRIVER_SYMBOLS_IN_HCC	30 (13 PolyC driver exports + 5 host adapters + 12 PolyC-internal statics)	N/A	N/A
+G0_DRIVER_SYMBOL_COUNT	0 (the selector-OFF oracle contains ZERO driver PolyC symbols)	0	YES
+G1_DRIVER_SYMBOL_COUNT	30	30	YES

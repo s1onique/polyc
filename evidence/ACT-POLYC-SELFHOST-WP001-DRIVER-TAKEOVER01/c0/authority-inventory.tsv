@@ -1,0 +1,72 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C0-RED
+# EVIDENCE_KIND=authority-inventory
+#
+# THE FRESH BOUNDED INVENTORY of the live semantic driver decisions in
+# src/main.c and src/cli.c, plus the directly supporting driver-specific
+# functions.
+#
+# It is generated from the CURRENT source at the ENTRY head, not from
+# the historical 32-row roster. The historical roster
+# (FILES=src/main.c;src/cli.c, HISTORICAL_LOC=1257,
+# HISTORICAL_AUTHORITY_ROWS=32) is a historical observation and is NOT
+# assumed to be the current measurement.
+#
+# OWNERSHIP CLASSES
+#   POLYC_OWNED        compiled PolyC determines the behaviour
+#   C_SEMANTIC         C selects a behavioral outcome
+#   C_MECHANICAL       C executes a decision already made elsewhere
+#   SHARED_OR_UNPROVEN ownership has not been separated sufficiently
+#   UNREACHABLE        proven unreachable in the production link
+#
+# ROUTE FAMILIES
+#   CLI          option recognition, mode selection, precedence,
+#                argument validity, required values, default behavior,
+#                unsupported combinations
+#   PLAN         tokenize/parse/compile routing, compile-to-AST
+#                selection, assembly/object/executable/dylib selection,
+#                linking requirements, stopping conditions
+#   ARTIFACT     output naming and destination policy, -o- versus -o -,
+#                competing emission options, default artifact class
+#   EXEC         driver-level diagnostic/status selection, exit policy,
+#                phase ordering, continue-or-terminate
+#   AUX          help, version, token printing, AST-related modes and
+#                the other live supported driver modes
+#
+SITE_ID	SOURCE_FUNCTION	SOURCE_LOCATION	ROUTE_FAMILY	REACHABLE_FROM_COMPILER_PRODUCING_ROUTE	REACHABLE_FROM_OTHER_SUPPORTED_CLI_ROUTE	CURRENT_SEMANTIC_OWNER	REQUIRED_INPUTS	OBSERVABLE_OUTCOME	MIGRATION_GROUP
+S01	cliParserFind	src/cli.c:333	CLI	YES	YES	POLYC_OWNED	argv bytes	the option is recognised	ALREADY_MIGRATED
+S02	cliGetFileType	src/cli.c:369	CLI	YES	YES	POLYC_OWNED	filename bytes	the argument is a source/header/asm/object/dylib	ALREADY_MIGRATED
+S03	cliParseArgsLegacy	src/cli.c:458	CLI	NO	YES	C_SEMANTIC	the whole argv	the legacy C option table and arity rules	ORACLE_ONLY
+S04	cliParseArgsPolyC	src/cli.c:629	CLI	YES	YES	C_MECHANICAL	PolyC field codes	the CliArgs fields are filled	ALREADY_MIGRATED
+S05	cliParseArgs (dispatch)	src/cli.c:604	CLI	YES	YES	C_MECHANICAL	selector	the legacy or the PolyC parser is chosen	ALREADY_MIGRATED
+S06	option arity / value location	src/cli.c:661-675	CLI	YES	YES	POLYC_OWNED	argv bytes	where the option's value lives	ALREADY_MIGRATED
+S07	CliArgs field assignment	switch at src/cli.c:677	CLI	YES	YES	C_MECHANICAL	PolyC field code	the field is set	ALREADY_MIGRATED
+S08	driver status selection	src/cli.c:768	EXEC	YES	YES	POLYC_OWNED	the whole argv	which diagnostic the driver reports	ALREADY_MIGRATED
+S09	driver status domain bound	src/cli.c:791	EXEC	YES	YES	C_MECHANICAL	WP_DRIVER_STATUS_COUNT	an invalid status fails closed	ALREADY_MIGRATED
+S10	-o- requires -S	src/cli.c:800	EXEC	YES	YES	POLYC_OWNED	the whole argv	the -o- pairing diagnostic	ALREADY_MIGRATED
+S11	unknown argument report	src/cli.c:808	EXEC	YES	YES	POLYC_OWNED	the whole argv	the unknown-option diagnostic	ALREADY_MIGRATED
+S12	arity violation report	src/cli.c:817	EXEC	YES	YES	POLYC_OWNED	the whole argv	the missing-value diagnostic	ALREADY_MIGRATED
+S13	absence of input report	src/cli.c:829	EXEC	YES	YES	POLYC_OWNED	the whole argv	the no-input diagnostic	ALREADY_MIGRATED
+S14	artifact class selection	src/main.c:282	ARTIFACT	YES	YES	POLYC_OWNED	the whole argv	which artifact class is produced	ALREADY_MIGRATED
+S15	artifact class translation	src/main.c:308-415	ARTIFACT	YES	YES	C_MECHANICAL	the PolyC artifact class	the platform command that produces it	ALREADY_MIGRATED
+S16	assemble route selection	src/main.c:555	PLAN	NO	YES	C_SEMANTIC	args.assemble	the .s input is assembled and the process ends	GROUP_B
+S17	repl route selection	src/main.c:564	PLAN	NO	YES	C_SEMANTIC	args.repl	the REPL runs and the process ends	GROUP_B
+S18	print-tokens route selection	src/main.c:577	AUX	NO	YES	C_SEMANTIC	args.print_tokens	the token stream is emitted	GROUP_B
+S19	transpile route selection	src/main.c:582	AUX	NO	YES	C_SEMANTIC	args.transpile	the transpiled C is emitted	GROUP_B
+S20	compile-to-AST gate	src/main.c:591	PLAN	YES	YES	SHARED_OR_UNPROVEN	args + the parse result	whether the compile proceeds past AST production	GROUP_B
+S21	print-AST route selection	src/main.c:598	AUX	NO	YES	C_SEMANTIC	args.print_ast	the AST is printed	GROUP_B
+S22	dump-IR route selection	src/main.c:603	AUX	NO	YES	C_SEMANTIC	args.dump_ir	the IR is dumped	GROUP_B
+S23	dump-IR-pooled route selection	src/main.c:608	AUX	NO	YES	C_SEMANTIC	args.dump_ir_pooled	the pooled IR is dumped	GROUP_B
+S24	emit-LLVM exclusivity check	src/main.c:619	CLI	NO	YES	C_SEMANTIC	the selected options	the mutual-exclusion diagnostic	GROUP_A
+S25	emit-LLVM route selection	src/main.c:614 / 665	AUX	NO	YES	C_SEMANTIC	args.emit_llvm	the LLVM IR is emitted	GROUP_B
+S26	jit route selection	src/main.c:675	AUX	NO	YES	C_SEMANTIC	args.jit	the program is JIT-compiled and run	GROUP_B
+S27	cfg route selection	src/main.c:713	AUX	NO	YES	C_SEMANTIC	args.cfg_create*	the CFG is constructed and written	GROUP_B
+S28	whole-argv action selection	tools/bootstrap/selfhost-driver-wp001.HC:616	PLAN	YES	YES	POLYC_OWNED	the whole argv	the selected action code	ALREADY_MIGRATED_BUT_UNCONSUMED
+S29	driver status mapping	tools/bootstrap/selfhost-driver-wp001.HC:736	EXEC	YES	YES	POLYC_OWNED	the action	the status	ALREADY_MIGRATED
+S30	driver artifact class	tools/bootstrap/selfhost-driver-wp001.HC:990	ARTIFACT	YES	YES	POLYC_OWNED	the whole argv	the artifact class	ALREADY_MIGRATED
+S31	driver option table	tools/bootstrap/selfhost-driver-wp001.HC:152	CLI	YES	YES	POLYC_OWNED	the table	the 32 option names, arities and kinds	ALREADY_MIGRATED
+S32	driver option classification	tools/bootstrap/selfhost-driver-wp001.HC:386	CLI	YES	YES	POLYC_OWNED	argv bytes	the option index	ALREADY_MIGRATED
+S33	driver field selection	tools/bootstrap/selfhost-driver-wp001.HC:901	CLI	YES	YES	POLYC_OWNED	the option index	the CliArgs field code	ALREADY_MIGRATED
+S34	target value resolution	src/cli.c:719 (cliApplyTarget)	CLI	YES	YES	POLYC_OWNED	the option value	the target triple	ALREADY_MIGRATED
+S35	host byte accessors	src/selfhost-driver-wp001.c:43-54	CLI	YES	YES	C_MECHANICAL	argv	the raw bytes	ALREADY_MIGRATED
+S36	host value copier	src/selfhost-driver-wp001.c:67	CLI	YES	YES	C_MECHANICAL	the indices	the value bytes	ALREADY_MIGRATED
