@@ -1,0 +1,49 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7.
+#
+# THE GATE LEDGER. Every command that was run against the C4 ROUND 7
+# subject, and its result.
+#
+# The entry identity is 61bd8d9016c1c991f0936a33f2ee47e53654ccea. The
+# subject is the WORKING TREE that carries the C4 ROUND 6 and the C4
+# ROUND 7 changes. No commit was created for this round before the
+# ledger was written, so the subject is described by the ledger itself
+# and by the diff that the reviewer is bound to.
+#
+# COLUMNS: GATE\tCOMMAND\tRESULT\tNOTE
+#
+# --- THE FIVE REPRODUCED FINDINGS. ---------------------------------------
+r6-01-argv-source-absent	harness run with `-c -o artifact.bin` and NO source	PASS	HARNESS_EXIT_STATUS_0_ARTIFACT_PRESENT_1_MACHO_OBJECT
+r6-01-argv-output-absent	harness run with `-c <source>` and NO output option	PASS	HARNESS_EXIT_STATUS_0_ARTIFACT_PRESENT_1_MACHO_OBJECT
+r6-02-stdout	harness run with `-S -o- <source>`	PASS	ARGV_RETENS_-o-_STDOUT_284_BYTES_NO_FILESYSTEM_ARTIFACT
+r6-03-snapshot	harness run with the source REPLACED mid-run	PASS	COMPILED_SOURCE_SHA256_EQUALS_THE_ACTUAL_STAGED_DIGEST
+r6-03-identity	make driver-wp001-correction03-compare recompute <capture>	PASS	RECOMPUTED_EQUALS_RECORDED
+r6-04-positive-controls	make driver-wp001-correction03-c4r6-probe-test (exec mode)	PASS	33_CONTROLS_0_FAILURES
+r6-04-anti-controls	make driver-wp001-correction03-c4r6-probe-test (anticontrol mode)	PASS	6_CONTROLS_0_FAILURES
+r6-05-adverse	make driver-wp001-correction03-adverse-test	PASS	SETUP_PASS_28_EXPECTED_28_EXECUTED_28_PASS_0_FAIL
+#
+# --- THE CORRECTION-OWNED GATES. -----------------------------------------
+c4r6-probe	make driver-wp001-correction03-c4r6-probe-test	PASS	EXEC_33_ANTICONTROL_6_MACHO_5_ENVBIND_6_BLOCKSTATUS_5_ALL_0_FAILURES
+c4r5-probe	make driver-wp001-correction03-c4r5-probe-test	PASS	6_CONTROLS_0_FAILURES
+c4r4-probe	make driver-wp001-correction03-c4r4-probe-test	PASS	THE_ROUND_4_PROBE
+correction03	make driver-wp001-correction03-test	PASS	THE_WHOLE_CORRECTION03_SUITE
+adverse	make driver-wp001-correction03-adverse-test	PASS	28_OF_28_CONTROLS_PHYSICALLY_EXECUTED
+required-route	make driver-wp001-required-route-test	PASS	DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS_PASS
+precedence	make driver-wp001-precedence-test	PASS	DRIVER_WP001_PRECEDENCE_TEST_STATUS_PASS
+envbind	make driver-wp001-correction03-envbind-test	PASS	DRIVER_WP001_CORRECTION03_ENVBIND_STATUS_PASS
+envbind-anticontrol	make driver-wp001-correction03-envbind-anticontrol-test	PASS	THE_MUTANT_IS_DETECTED
+gate-fast	make gate-fast	PASS	VERDICT_PASS
+gate-push	make gate-push	PASS	VERDICT_PASS
+#
+# --- THE CONSERVATION MEASUREMENTS. ---------------------------------------
+parser-conservation	make INSTALL_PREFIX=/tmp/polyc_r6/prefix TEST_PREFIX=/tmp/polyc_r6/prefix unit-test	PASS	376/376_ASSERTIONS_90_BLOCKS_0_FAILURES
+parser-md5	grep -o "PASSED: [0-9]*/[0-9]*" <unit-test log> | md5 -q	PASS	b6f117eb1386ca80f81bc06226e2a741_MATCHES_THE_FROZEN_VALUE
+lexer07	make lexer07-direct-differential	PASS	89/89
+lexer08	make lexer08-direct-differential	PASS	45/45
+lexer09	make lexer09-direct-differential	PASS	23/23
+production-delta	git diff 61bd8d90 -- src/ tools/bootstrap/	EMPTY	ZERO_PRODUCTION_SEMANTIC_DELTA
+emission-domains	make driver-wp001-correction03-test	PASS	4_OF_4_DOMAINS
+abi-cases	make driver-wp001-correction03-test	PASS	16_CASES_0_FAILURES
+original-precedence	make driver-wp001-precedence-test	PASS	8_OF_8_CASES
+#
+# --- THE P2 DEFECT, REPRODUCED AND CLASSIFIED. ----------------------------
+p2-run-hc-reproduction	see p2-run-hc-disposition.txt	PASS	67_COMPILE_FAILURES_PROCESS_EXIT_0_REPRODUCED

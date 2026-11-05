@@ -1,0 +1,169 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7.
+#
+# THE RED/GREEN MATRIX FOR THE FIVE REPRODUCED FINDINGS.
+#
+# The entry identity is 61bd8d9016c1c991f0936a33f2ee47e53654ccea. The
+# RED observations were made against the WORKING TREE that carried the
+# C4 ROUND 6 changes; the GREEN observations were made against the
+# C4 ROUND 7 subject.
+#
+# Every RED below was REPRODUCED by the executor before the repair, and
+# every GREEN below was OBSERVED after the repair. No RED is inherited
+# from a historical label.
+#
+# COLUMNS: FINDING | RED OBSERVATION | REPAIR | GREEN OBSERVATION
+
+R6_01_ARGV_CONSTRUCTION
+  RED_SOURCE_ABSENT
+    RED:    the harness was invoked with `-c -o artifact.bin` and NO
+            source argument. The child terminated on a signal.
+            HARNESS_EXIT_STATUS 139
+            HARNESS_ARTIFACT_PRESENT 0
+            The executed ARGV was:
+              <staged-producer> -c -o artifact.bin
+            -- the staged source was ABSENT.
+    REPAIR: the index contract is zero-based over the supplied vector,
+            and `-1` means absent. `HarnessArgvIndex` performs the
+            conversion ONCE and PRESERVES the sentinel. The capacity is
+            computed from the planned insertions BEFORE the allocation,
+            and every append checks the capacity.
+    GREEN: HARNESS_EXIT_STATUS 0
+            HARNESS_ARTIFACT_PRESENT 1
+            The executed ARGV was:
+              <staged-producer> -c -o artifact.bin <staged-source>
+            The artifact is a Mach-O 64-bit object arm64.
+
+R6_01_OUTPUT_OPTION_ABSENT
+    RED:    the harness was invoked with `-c <source>` and NO output
+            option. The child succeeded, but wrote NO artifact.
+            HARNESS_EXIT_STATUS 0
+            HARNESS_ARTIFACT_PRESENT 0
+            The executed ARGV was:
+              <staged-producer> -c <staged-source>
+            -- no output option at all.
+    REPAIR: the same index contract. An absent output option is now
+            injected as `-o <runner-owned-basename>`.
+    GREEN: HARNESS_EXIT_STATUS 0
+            HARNESS_ARTIFACT_PRESENT 1
+            The executed ARGV was:
+              <staged-producer> -c <staged-source> -o artifact.bin
+            The artifact is a Mach-O 64-bit object arm64.
+
+R6_02_STDOUT_EMISSION
+    RED:    the harness was invoked with `-S -o- <source>`. The
+            executed ARGV was:
+              <staged-producer> -S -o artifact.bin <staged-source>
+            The captured stdout was 0 bytes.
+            An unintended 284-byte assembly file was produced.
+            The capture record nevertheless claimed
+            OUTPUT_MODE STDOUT.
+    REPAIR: the stdout emission is a first-class output mode. The
+            compiler's own `-o-` spelling is RETAINED VERBATIM, and the
+            runner writes no output option of its own. In the STDOUT mode
+            the produced artifact IS the captured stdout stream, and its
+            presence and digest are derived from the ACTUAL captured
+            bytes.
+    GREEN: the executed ARGV was:
+              <staged-producer> -S -o- <staged-source>
+            The captured stdout is 284 bytes.
+            No filesystem artifact was produced: the runner's output
+            directory held only the staged source.
+            ARTIFACT_SHA256 == STDOUT_SHA256
+            ARTIFACT_PATH names the stdout capture file.
+            OUTPUT_MODE STDOUT
+
+R6_03_COMPILED_SNAPSHOT_BINDING
+    RED:    the event identity bound the ORIGINAL source's digest, and
+            the comparator read `SOURCE_SHA256`. The staged snapshot --
+            the file the compiler actually consumed -- was never
+            validated by the comparator, and no `STAGED_SOURCE` or
+            `COMPILED_SOURCE_SHA256` field was read at all.
+            The reviewer's counterexample:
+              ORIGINAL_SOURCE_BEHAVIOR=return 0
+              COMPILED_SNAPSHOT_BEHAVIOR=return 42
+              COMPARATOR=PASS 29/29
+    REPAIR: the staged snapshot is the authoritative compilation input.
+            The digest is computed from the staged file read back from
+            the disk, the staged file is confirmed to carry the bytes
+            intended for execution, the identity binds the staged digest
+            in a SEPARATE tagged field (`COMPILED_SOURCE_ID`), and the
+            comparator RE-READS the staged file and hashes the ACTUAL
+            bytes. The schema version is 3.
+    GREEN: the source was REPLACED between the runner's hash and its
+            snapshot, so the staged file carried the `return 42` variant
+            while the ORIGINAL digest described the `return 0` variant.
+              COMPILED_SOURCE_SHA256  a4f77127...1527d
+              the ACTUAL staged file digest (shasum -a 256)
+                                           a4f77127...1527d
+            The identity-bound digest describes the bytes that were
+            COMPILED. The staged file's contents were:
+              I32 Main(I32 argc, U8 **argv) { return 42; }
+            The comparator independently recomputed the identity from the
+            record's OWN fields and it MATCHED the recorded identity.
+
+R6_04_POSITIVE_PROBES
+    RED:    `R6ExecMode` set `nargs = 2` for the stdout control, which
+            EXCLUDED the `-o-` option from the argument vector. The
+            child exited 1, and the control PASSED, because it asserted
+            only that the harness printed no reason token.
+            The `R5_01_CONTRADICTED_NO_ARTIFACT` control READ THE SOURCE
+            FILE and asserted that it existed, which is not an
+            observation of the artifact.
+            The symlink control put the symlink at the producer's FINAL
+            component, so it did not exercise the SYMLINKED-ANCESTOR case
+            its own comment described.
+            The staged-digest control COMPARED TWO RECORD FIELDS with
+            each other, which a record carrying the same wrong digest
+            twice satisfied.
+    REPAIR: the driver returns the harness's FULL OUTPUT, and every
+            positive control asserts the OBSERVATION it claims: the
+            child's exit status, the artifact's presence, the artifact's
+            CLASS, the staged source's digest RECOMPUTED from the staged
+            file, and -- for the stdout mode -- a nonempty capture and
+            the absence of any filesystem artifact. Six ANTI-CONTROLS
+            reintroduce each previously detected mistake in a disposable
+            copy and require the corresponding control to REJECT it.
+    GREEN: 33 positive controls, 0 failures. The controls include:
+              R5_01_SOURCE_AGREES_EXIT_STATUS
+              R5_01_SOURCE_AGREES_ARTIFACT_PRESENT
+              R5_01_SOURCE_AGREES_ARTIFACT_CLASS
+              R5_01_SOURCE_AGREES_STAGED_DIGEST
+              R5_02_EXIT_STATUS
+              R5_02_ARTIFACT_PRESENT
+              R5_02_ARTIFACT_CLASS
+              R5_02_STDOUT_MODE
+              R5_02_STDOUT_NO_FILE_ARTIFACT
+              R5_04_STAGED_DIGEST_RECOMPUTED
+              R5_04_STAGED_BYTES_ARE_QUALIFIED
+            Six anti-controls, 0 failures:
+              AC_01_EXCLUDE_OUTPUT_OPTION
+              AC_02_COMPILER_FAILED
+              AC_03_UNWANTED_ARTIFACT
+              AC_04_WRONG_SYMLINK_LOCATION
+              AC_05_FALSE_STAGED_DIGEST
+              AC_06_COPIED_CAPTURE_FIELD
+
+R6_05_ADVERSE_SUITE
+    RED:    `make driver-wp001-correction03-adverse-test` exited 2
+            BEFORE executing any of its intended adverse cases. The
+            recipe DECLARED the fixture as `good/source.HC` and
+            CONSTRUCTED an argument vector naming the RELATIVE
+            `source.HC`, which resolves to `good/off/source.HC`. The
+            corrected source-binding validation returned:
+              HARNESS_REASON HARNESS_SOURCE_CONTRADICTED
+            The harness was doing the right thing; the recipe was
+            inconsistent.
+    REPAIR: the declared source, the staged source and the compiler's
+            argument vector now name the SAME ABSOLUTE fixture. The
+            source-binding validation is NOT weakened. The three stale
+            runs receive distinct case identities, because the event
+            counter is allocated BY THE HARNESS PROCESS and therefore
+            restarts at one for every invocation. The suite REPORTS its
+            own accounting, and it does not PASS when it executes fewer
+            controls than it declares.
+    GREEN: SETUP_STATUS=PASS
+            TOTAL_CONTROLS_EXPECTED=28
+            TOTAL_CONTROLS_EXECUTED=28
+            TOTAL_CONTROLS_PASS=28
+            TOTAL_CONTROLS_FAIL=0
+            DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS

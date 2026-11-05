@@ -1,0 +1,99 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7.
+#
+# THE P2 DEFECT -- `src/tests/run.HC` DOES NOT PROPAGATE A TEST FAILURE.
+#
+# THE ACT DOES NOT AUTHORIZE A CHANGE TO `src/tests/run.HC`. It is NOT
+# CHANGED in this round. This record is the EXACT REPRODUCTION and the
+# CLASSIFICATION.
+#
+# THE DEFECT.
+#
+# `src/tests/run.HC`'s `RunTest()` invokes the compiler with `System()`
+# and, when the compilation FAILS, it PRINTS "Failed to compile" and
+# CONTINUES. `Main()` then returns 0 UNCONDITIONALLY:
+#
+#   I32 Main(I32 argc, U8 **argv)
+#   {
+#     ...
+#     for (U8 *entry : vec) {
+#       RunTest(entry);
+#     }
+#     PtrVecRelease(vec, &Free);
+#     return 0;            <-- UNCONDITIONAL
+#   }
+#
+# The recipe `unit-test` is
+#
+#   cd ./src/tests && ../../hcc --install-dir=$(TEST_PREFIX) ./run.HC \
+#     -o test-runner && ./test-runner && cd ../../
+#
+# so the recipe SUCCEEDS whenever the runner's PROCESS STATUS is zero,
+# and the runner's process status is zero however many of its
+# compilations failed.
+#
+# THE PREFIX CONFIGURATION.
+#
+# `RunTest()` builds the compiler command as
+#
+#   "../../hcc %s"                                       (host arch)
+#   "../../hcc --target=%s --install-dir=../../build/%s %s" (cross)
+#
+# The `--install-dir` prefix is added ONLY for the CROSS form. The
+# HOST-ARCH form carries NO prefix, so the compiler resolves `tos.HH`
+# and `libtos` from the compile-time INSTALL_PREFIX, which is
+# `/usr/local` by default. On a host without a writable `/usr/local`,
+# every compilation fails with
+#
+#   Failed to open file: /usr/local/include/tos.HH
+#
+# and the runner still exits 0.
+#
+# THE EXACT REPRODUCTION.
+#
+# The reproduction replaces ONLY the compiler that `run.HC` invokes --
+# the one at `../../hcc`, relative to `src/tests` -- with a program that
+# always fails. The runner itself is compiled with the REAL compiler,
+# so that the runner is sound and only the COMPILATIONS IT DRIVES fail.
+#
+#   RUNNER_COMPILE_EXIT=0
+#   RUNNER_PROCESS_EXIT=0
+#   COMPILE_FAILURES=67
+#   RUN_FAILURES=0
+#
+# THE FOUR DISTINCTIONS THE ACT REQUIRES.
+#
+#   COMPILER FAILURE COUNT   67
+#                            The exact count the C4 ROUND 6 review
+#                            reported. It is reproduced.
+#
+#   PROCESS EXIT STATUS      0
+#                            The runner returns ZERO despite the 67
+#                            compilation failures. This is the defect.
+#
+#   PREFIX CONFIGURATION     The `--install-dir` prefix is propagated
+#                            ONLY on the cross-target path. The
+#                            host-architecture path carries NO prefix.
+#                            That is the root cause of the 67 failures
+#                            on a host without `/usr/local`.
+#
+#   CANONICAL GATE-PUSH      `gate-push` DOES NOT EXERCISE the failing
+#                            path on this host: the host-architecture
+#                            compile of `../../hcc` SUCCEEDS here,
+#                            because the tree's own `hcc` finds its
+#                            headers. The `unit-test` recipe therefore
+#                            PASSES on this host while carrying the
+#                            defect. `gate-push` is NOT evidence that
+#                            the 67 failures are resolved, and it is
+#                            NOT claimed as such.
+#
+# THE DISPOSITION.
+#
+# PRESERVED AS A SEPARATELY ACTIONABLE COMPILER / TEST-INFRASTRUCTURE
+# DEFECT. It is NOT fixed in this round, and the 67 failures are NOT
+# claimed to be resolved.
+#
+# RECOMMENDED NEXT ACTION: a bounded correction ACT that (a) propagates
+# the compilation failure into the runner's process status, and (b)
+# propagates the `--install-dir` prefix onto the host-architecture
+# compile path, so that the suite is hermetic on a host without a
+# writable `/usr/local`.

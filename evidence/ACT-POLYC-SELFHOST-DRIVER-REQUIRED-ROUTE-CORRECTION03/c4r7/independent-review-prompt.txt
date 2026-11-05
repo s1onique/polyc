@@ -1,0 +1,199 @@
+# THE INDEPENDENT C4 ROUND 7 REVIEW -- the review instructions.
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7.
+
+You are an INDEPENDENT reviewer. You did not write this code. Your job is
+to find the defects that remain, NOT to confirm that the work is good.
+
+THE REVIEW IS READ-ONLY. Do NOT modify any file in the repository. Do NOT
+commit. Do NOT push. You may BUILD and RUN the gates and the probes.
+
+THE SUBJECT.
+
+The changes under review are the working tree of the ACT
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 against the ACT's
+entry identity.
+
+THE BASE COMMIT IS 61bd8d9016c1c991f0936a33f2ee47e53654ccea. The review
+range is exactly:
+
+    git diff 61bd8d9016c1c991f0936a33f2ee47e53654ccea
+
+plus the UNTRACKED files, which are:
+
+    tools/quality/driver-required-route-correction03-c4r6-probe.HC
+    tools/quality/fixtures/driver-required-route-correction03-zerofill-fixture.c
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r6/
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r7/
+
+The base commit is named HERE, in the instructions, because the reviewer's
+`--base` option cannot be combined with a prompt. Use the range above.
+
+The changes are confined to:
+
+    tools/quality/driver-required-route-correction03-*.HC
+    tools/quality/fixtures/driver-required-route-correction03-*.c
+    Makefile
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/
+
+The production compiler under src/ and the production bootstrap under
+tools/bootstrap/ are BYTE-IDENTICAL to the ACT's entry identity:
+
+    git diff 61bd8d9016c1c991f0936a33f2ee47e53654ccea -- src/ tools/bootstrap/
+
+must produce NO output. A finding against the production compiler is out
+of scope, EXCEPT that a finding which says "the evidence tooling cannot
+express what it needs because of a compiler defect" IS in scope, and must
+be classified as RESIDUE rather than as a fix.
+
+WHAT IS UNDER REVIEW.
+
+The C4 ROUND 6 review produced FIVE P1 findings (R6-01 .. R6-05) and ONE
+P2 disposition (the `src/tests/run.HC` failure-propagation defect). The
+ROUND 7 subject claims to have repaired the five P1 findings.
+
+    R6-01  THE ARGUMENT VECTOR'S CONSTRUCTION. The caller converted the
+           scan's indices into the built vector's coordinates with
+           `index + 1`, which DESTROYED THE MISSING SENTINEL: an absent
+           source and an absent output option both became the valid
+           index 0. The runner therefore DROPPED the caller's request.
+           The capacity was a fixed `nsupplied + 3`.
+
+    R6-02  THE STDOUT EMISSION. The compiler's own `-o-` spelling was
+           rewritten into `-o <generated-basename>`, so the compiler
+           wrote an assembly FILE where the caller had asked for the
+           standard output. The captured stdout was empty, an unintended
+           artifact appeared, and the capture record nevertheless claimed
+           `OUTPUT_MODE STDOUT`.
+
+    R6-03  THE COMPILED SNAPSHOT'S IDENTITY. The event identity bound the
+           ORIGINAL source's digest, and the comparator read
+           `SOURCE_SHA256`. The staged snapshot -- the file the compiler
+           actually consumed -- was never validated.
+
+    R6-04  THE POSITIVE PROBES. Several positive controls passed without
+           proving successful compiler behaviour. Most importantly,
+           `R6ExecMode()` set `nargs = 2`, which EXCLUDED the `-o-`
+           option from the argument vector; the child exited 1 and the
+           control passed because it asserted only that no expected
+           harness reason token appeared. Other controls read source
+           bytes instead of proving artifact absence, tested the wrong
+           symlink location, or compared recorded digest strings
+           without hashing the staged file.
+
+    R6-05  THE ADVERSE SUITE'S FIXTURE CONSTRUCTION. The recipe declared
+           `good/source.HC` and constructed an argv containing the
+           RELATIVE `good/off/source.HC`. The corrected source-binding
+           validation returned `HARNESS_SOURCE_CONTRADICTED`, and the
+           target exited 2 before executing any of its intended adverse
+           cases.
+
+WHAT YOU MUST REPRODUCE.
+
+The reviewer MUST reproduce the FIVE ORIGINAL PHYSICAL COUNTEREXAMPLES
+against the corrected implementation. A counterexample that you did not
+reproduce yourself is NOT evidence.
+
+    R6-01  Invoke the production harness
+           (build/driver-required-route-correction03-harness) with an
+           argument vector that has NO source argument, and observe the
+           child exit status and the produced artifact. Then invoke it
+           with NO output option, and observe the same. Confirm that
+           the ARGV in the capture record names the runner's staged
+           source and the runner's own output destination.
+
+    R6-02  Invoke the production harness with `-S -o- <source>`. Confirm
+           that the executed ARGV retains `-o-` VERBATIM, that the
+           captured stdout is NONEMPTY, that NO filesystem artifact was
+           produced, that the capture records `OUTPUT_MODE STDOUT`, and
+           that the recorded stdout digest equals the digest of the
+           actual captured bytes (measure it yourself).
+
+    R6-03  Replace the source between the runner's hash and its snapshot
+           -- for example by scheduling a background copy of a different
+           program over the source path while the harness runs. Confirm
+           that the identity-bound compiled-source digest describes the
+           bytes that were COMPILED, and that the comparator's
+           independent recomputation of the identity matches the recorded
+           identity. Confirm that a record naming a FALSE staged-source
+           path or a FALSE staged-source digest is REJECTED.
+
+    R6-04  Run the probe's anti-control mode and confirm that each
+           anti-control FAILS FOR THE RELEVANT REASON:
+               AC_01_EXCLUDE_OUTPUT_OPTION
+               AC_02_COMPILER_FAILED
+               AC_03_UNWANTED_ARTIFACT
+               AC_04_WRONG_SYMLINK_LOCATION
+               AC_05_FALSE_STAGED_DIGEST
+               AC_06_COPIED_CAPTURE_FIELD
+           Confirm that the positive controls assert a REAL observation:
+           the child's exit status, the artifact's presence, the
+           artifact's class, and an INDEPENDENTLY RECOMPUTED digest.
+
+    R6-05  Run `make driver-wp001-correction03-adverse-test`. Confirm that
+           the setup succeeds, that all twenty-eight adverse controls
+           PHYSICALLY execute, and that the target reports:
+               SETUP_STATUS
+               TOTAL_CONTROLS_EXPECTED
+               TOTAL_CONTROLS_EXECUTED
+               TOTAL_CONTROLS_PASS
+               TOTAL_CONTROLS_FAIL
+           Confirm that a suite which fails its setup, or which executes
+           fewer controls than it declares, exits NONZERO.
+
+DO NOT EXPAND THE REVIEW INTO A GENERAL-PURPOSE SECURITY AUDIT. The
+review is bound to the five findings above and to the conservation of the
+production compiler's established behaviour.
+
+THE CONSERVATION YOU MUST CONFIRM.
+
+    ORIGINAL_PRECEDENCE_CASES=8/8
+    EMISSION_DOMAINS=4/4
+    ABI_CASES=16/16
+    POLYC_CAUSAL_MUTATION=PASS
+    LEGACY_C_DORMANCY=PASS
+    PRODUCER_STAGING=PASS
+    ENVIRONMENT_BINDING=PASS
+    TLS_ZEROFILL=PASS
+    PARSER_ASSERTIONS=376/376
+    PARSER_MD5=b6f117eb1386ca80f81bc06226e2a741
+    LEXER_07=89/89
+    LEXER_08=45/45
+    LEXER_09=23/23
+    PRODUCTION_POLYC_AUTHORITIES=16
+    PRODUCTION_SEMANTIC_DELTA=0
+
+Do NOT accept a historical PASS label. Run the gates and measure.
+
+THE GATES YOU MUST RUN.
+
+    make driver-wp001-correction03-test
+    make driver-wp001-correction03-c4r5-probe-test
+    make driver-wp001-correction03-c4r6-probe-test
+    make driver-wp001-correction03-adverse-test
+    make driver-wp001-required-route-test
+    make driver-wp001-precedence-test
+    make gate-fast
+    make gate-push
+
+Run the production compiler tests SERIALLY where the shared
+`/tmp/holyc-asm.s` path creates races.
+
+YOUR REQUIRED OUTPUT.
+
+Report EXACTLY this, and nothing else in place of it:
+
+    R6_01_ARGV=PASS|FAIL
+    R6_02_STDOUT=PASS|FAIL
+    R6_03_SNAPSHOT_IDENTITY=PASS|FAIL
+    R6_04_PROBE_SENSITIVITY=PASS|FAIL
+    R6_05_ADVERSE_SUITE=PASS|FAIL
+    PRODUCTION_CONSERVATION=PASS|FAIL
+    P0_FINDINGS=<count>
+    P1_FINDINGS=<count>
+    C4_READY=YES|NO
+    C4_BLOCKERS=<the specific failed behaviours, or NONE>
+
+`C4_READY=YES` requires EVERY binding P1 to be discharged and NO new
+substantive P0/P1 finding. If the review returns NO, report the SPECIFIC
+FAILED BEHAVIOUR, not another generic evidence deficiency.
