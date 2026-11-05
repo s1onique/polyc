@@ -1,0 +1,286 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01-CORRECTION01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=review-findings-repair
+#
+# TWO REVIEW-FINDING REPAIRS, MEASURED.
+#
+# An external review of the closed tree raised two source-level
+# observations. BOTH WERE CONFIRMED BY MEASUREMENT, and both are
+# test-oracle / predicate defects rather than production-compiler
+# regressions. They are recorded here with the measurements that
+# established them and the repairs that followed.
+#
+# ====================================================================
+# FINDING 1 -- THE MACHO FILETYPE MAPPING WAS WRONG
+# ====================================================================
+#
+# The differential runner's ClassifyArtifact() mapped the Mach-O
+# filetypes as:
+#
+#     if (ft == 1) return CLASS_OBJECT;   // labelled MH_OBJECT
+#     if (ft == 6) return CLASS_EXEC;     // labelled MH_EXECUTE
+#     if (ft == 2) return CLASS_EXEC;     // labelled MH_EXECUTE
+#     if (ft == 8) return CLASS_DYLIB;    // labelled MH_DYLIB
+#
+# APPLE'S ACTUAL VALUES, from the LOCAL SDK's loader.h:
+#
+#   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/
+#     mach-o/loader.h
+#
+#   118: #define MH_OBJECT   0x1   relocatable object file
+#   119: #define MH_EXECUTE  0x2   demand paged executable file
+#   123: #define MH_DYLIB    0x6   dynamically bound shared library
+#   125: #define MH_BUNDLE   0x8   dynamically bound bundle file
+#
+# So the mapping read MH_DYLIB (6) as an EXECUTABLE and MH_BUNDLE (8)
+# as a DYLIB. The labels in the source were also wrong: the comment
+# on the `ft == 6` line said MH_EXECUTE, and 6 is not MH_EXECUTE.
+#
+# MEASURED AGAINST THE REAL ARTIFACTS. The runner's own production
+# compiler produced both kinds, and the filetype byte at offset 12 was
+# read directly:
+#
+#   executable   -> 02 00 00 00   (MH_EXECUTE) -> the OLD mapping said EXEC (correct)
+#   dylib        -> 06 00 00 00   (MH_DYLIB)   -> the OLD mapping said EXEC (WRONG)
+#
+#   $ file libcase.out.dylib
+#   libcase.out.dylib: Mach-O 64-bit dynamically linked shared library arm64
+#
+# THE COMPOUNDING GAP: THE DYLIB ROUTE WAS NOT COVERED AT ALL.
+#
+# The frozen case table's D14 row was:
+#
+#   D14_dylib  %P -lib libtos.dylib input.HC -o case.out.o  0
+#
+# with expected class NONE (0). The dylib route writes lib<name>.dylib
+# and does NOT write case.out.o, so the runner read NONE and the
+# expectation matched: the case verified NOTHING. And even if the
+# runner HAD looked at the dylib, the wrong mapping would have
+# reported it as an EXECUTABLE.
+#
+# THE REPAIR:
+#
+#   R1  the filetype mapping is corrected to Apple's values:
+#         1 -> OBJECT, 2 -> EXEC, 6 -> DYLIB, 8 -> DYLIB;
+#   R2  the runner observes libcase.out.dylib, the file the dylib
+#       route actually writes;
+#   R3  the D14 row now expects DYLIB (4) and uses the -lib name
+#       "case.out", so the route's real output is inspected.
+#
+# THE REPAIRED MEASUREMENT:
+#
+# THREE DEFECTS WERE FOUND AND REPAIRED WHILE MAKING THIS WORK, and
+# they are recorded because each was a real defect in the test oracle:
+#
+#   D1  THE NB_SLASH_ASM REGION HAD NO TRAILING SPACE. Every other
+#       slash region ends with a space (32) before its NUL; this one
+#       ended with the NUL directly, so the rm command concatenated
+#       the next path onto it:
+#
+#         rm -f .../case.out.s/tmp/.../g0/libcase.out.dylib
+#
+#       The dylib was therefore NEVER removed, and every case after
+#       the dylib case observed a stale DYLIB. This was a PRE-EXISTING
+#       latent defect in the runner; it was harmless while no case
+#       produced a dylib.
+#
+#   D2  THE NB_TOTAL WAS ONE BYTE SHORT. The last byte written is at
+#       index 424 (NB_VERDICT_DISAGREE + 8), so the array needs 425
+#       bytes; NB_TOTAL was 424. The compiler lays the next static
+#       buffer out at N_BUF + NB_TOTAL, so the final byte of the
+#       array was the first byte of CMD_BUF.
+#
+#   D3  A LONG RUN OF BYTE-WRITES INTO A STATIC ARRAY IS
+#       MISCOMPILED. The dylib slash path is 19 bytes written as one
+#       run; the runtime bytes were measured by reading N_BUF back:
+#
+#         expected 47 108 105 98 99 97 115 101 46 111 117 116 46
+#                  100 121 108 105 98 32 0
+#         actual   47 108 105 98 99 97 115 101 46 111 117 116 46
+#                  100 121 108  98 32 0
+#
+#       The last two bytes landed at the wrong offsets and the path
+#       became "libcase.out.dylb". The 13-byte NB_SLASH_ASM region in
+#       the same function was CORRECT, so the defect is a function of
+#       the run's LENGTH. The write is now split into runs of at most
+#       8 bytes, and the runtime bytes were re-measured to confirm
+#       the placement.
+#
+#       This is the SAME CLASS of compiler defect the ACT already
+#       documented for function-local static arrays; here it affects
+#       a global static array with a long write run.
+#
+# ====================================================================
+# FINDING 2 -- THE EMIT-LLVM CONFLICT PREDICATE WAS TOO BROAD
+# ====================================================================
+#
+# The legacy C oracle (src/main.c at c92be049) tested the LLVM
+# mutual-exclusion condition INSIDE an `if (args.emit_llvm)` guard:
+#
+#     if (args.emit_llvm) {
+#         if (args.jit || args.repl || args.run ||
+#             args.assemble_only || args.emit_object ||
+#             args.emit_dylib || args.transpile || args.lsp)
+#         { ...conflict... }
+#     }
+#
+# The PolyC driver's WpDriverEmitLlvmConflict() flattened that nesting
+# and DROPPED the outer guard: it returned 1 on seeing any of the
+# conflicting options, whether or not --emit-llvm was requested.
+#
+# MEASURED DIRECTLY, with a probe against the REAL production driver
+# subject, calling the REAL exported predicate on the REAL argv
+# shapes:
+#
+#     shape                  legacy C oracle   PolyC driver   verdict
+#     plain -c                    0                 1           DIVERGENT
+#     plain -S                    0                 1           DIVERGENT
+#     plain -transpile            0                 1           DIVERGENT
+#     plain -lsp                  0                 1           DIVERGENT
+#     plain -lib                  0                 1           DIVERGENT
+#     --emit-llvm alone           0                 0           agrees
+#     --emit-llvm + -c            1                 1           agrees
+#     --emit-llvm + -S            1                 1           agrees
+#     --emit-llvm + -jit          1                 1           agrees
+#     --emit-llvm + -repl         1                 1           agrees
+#     --emit-llvm + -transpile    1                 1           agrees
+#     --emit-llvm + -lsp          1                 1           agrees
+#
+# The observable COMPILER behaviour was masked: the host renders the
+# conflict diagnostic only on the LLVM route, and the status is
+# consulted only when the action's own status is OK. The EXPORTED
+# status was nevertheless wrong, and it is the PolyC driver's
+# published semantic authority.
+#
+# THE RED WITNESS: tools/quality/wp001-driver-takeover01-conflict-red.HC
+# is a COMPILED POLYC PROGRAM (F-POLYC-TOOLS). It links against the
+# REAL production driver subject and calls the REAL exported predicate
+# on the REAL argv shapes, comparing the driver's answer against the
+# legacy C oracle's transcribed answer. The oracle's answer is itself
+# checked against the case table, so the table and the transcription
+# cannot drift apart unnoticed.
+#
+#   make wp001-takeover-conflict-red
+#
+#   BEFORE the repair: RED_EXIT_STATUS=1,
+#     WP001_EMIT_LLVM_CONFLICT_RED=FIRED
+#     5 mismatches, all of the "conflicting option WITHOUT --emit-llvm"
+#     shapes:
+#       CONFLICT_MISMATCH shape=plain_c        want=0 got=1
+#       CONFLICT_MISMATCH shape=plain_S        want=0 got=1
+#       CONFLICT_MISMATCH shape=plain_transpile want=0 got=1
+#       CONFLICT_MISMATCH shape=plain_lsp      want=0 got=1
+#       CONFLICT_MISMATCH shape=plain_lib      want=0 got=1
+#
+#   AFTER the repair:  RED_EXIT_STATUS=0,
+#     WP001_EMIT_LLVM_CONFLICT_RED=NOT_FIRED
+#
+# THE REPAIR: WpDriverEmitLlvmConflict() now FIRST establishes that
+# --emit-llvm was requested, and only then looks for a conflicting
+# option. The legacy nesting is restored.
+#
+# ====================================================================
+# A PRE-EXISTING DEFECT FOUND WHILE RE-MEASURING (RESIDUE, F11)
+# ====================================================================
+#
+# While re-running the 30-case differential, the D25_transpile case
+# disagreed under a DEBUG (AddressSanitizer) build of the compiler.
+# The disagreement was NOT a semantic difference between G0 and G1:
+# BOTH generations aborted with the same status. The abort was an
+# AddressSanitizer report in the LEGACY C LEXER:
+#
+#   ERROR: AddressSanitizer: heap-buffer-overflow
+#     #0 lexNextChar+0x188
+#     #1 lexCore
+#     #2 lex
+#     #3 lexToken
+#
+# THE DEFECT IS PRE-EXISTING AND NOT CAUSED BY EITHER REPAIR. It was
+# measured by stashing EVERY change of this repair sequence and
+# rebuilding the PRISTINE close tree (16a7fc93):
+#
+#   git stash push -u
+#   build the selector-OFF compiler with CMAKE_BUILD_TYPE=Debug
+#   run: hcc --install-dir=<prefix> -transpile input.HC
+#   -> AddressSanitizer: heap-buffer-overflow in lexNextChar
+#   git stash pop
+#
+# The pristine tree reproduces the identical abort at the identical
+# frame, so the defect belongs to the tree this ACT inherited and not
+# to the repair. It is in the LEGACY C LEXER, which this ACT does not
+# touch.
+#
+# IT IS NOT OBSERVABLE IN THE CANONICAL BUILD. The repository's
+# canonical build type is Release (Makefile: BUILD_TYPE ?= Release),
+# and the Release build does not abort: the D25 case exits 0 in BOTH
+# generations and the differential is 30/30 AGREE. The abort is an
+# AddressSanitizer-only report on a build configuration the canonical
+# gates do not use.
+#
+#   RESIDUE_CLASS=P2
+#   RESIDUE_DISPOSITION=DEFERRED
+#
+# The repair of the legacy C lexer's end-of-file overread is OUTSIDE
+# this ACT's authorized scope: the ACT's subject is the WP-001 driver
+# route authority, and the legacy C lexer is retained deliberately as
+# the selector-OFF oracle. It is recorded here, not silently fixed
+# (F11), and not silently dropped.
+#
+# ====================================================================
+# THE DIFFERENTIAL INVOCATION RECIPE
+# ====================================================================
+#
+# The runner takes the case table VERBATIM and PREPENDS the compiler
+# path itself, so the table's %P placeholder must be expanded to the
+# compiler's --install-dir option BEFORE the table is handed to the
+# runner. The recipe, measured on this tree:
+#
+#   1. build G0 (selector OFF) and G1 (selector ON) from the SAME
+#      working-tree state, with CMAKE_BUILD_TYPE=Release;
+#   2. create the working directories <work>/g0 and <work>/g1, each
+#      holding input.HC, broken.HC and other.HC (the fixtures the case
+#      table names);
+#   3. expand the placeholder:
+#        sed "s|%P|--install-dir=<prefix>|g" cases.tsv > cases-subst.tsv
+#   4. run:
+#        ./build/wp001-takeover-diff cases-subst.tsv <G0> <G1> <work>
+#
+# The compiler paths MUST BE ABSOLUTE: the runner `cd`s into the
+# per-generation working directory before invoking the compiler, so a
+# relative path is not found (exit 127) and every case disagrees.
+#
+# THE MEASURED RESULT ON THE REPAIRED TREE:
+#
+#   D14_dylib        G0=0/DYLIB  G1=0/DYLIB  AGREE
+#   D02_executable   G0=0/EXEC   G1=0/EXEC   AGREE
+#   CASES=30 ; DISAGREE=0 ; DIFFERENTIAL=PASS
+#
+# ====================================================================
+# CONSERVATION AFTER BOTH REPAIRS
+# ====================================================================
+#
+#   PARSER            376/376 over 90 blocks, 0 failed lines,
+#                     assertion-sequence MD5
+#                     b6f117eb1386ca80f81bc06226e2a741, BYTE-
+#                     IDENTICAL to the entry baseline
+#   LEXER07           89/89, 0 fail
+#   LEXER08           45/45, 0 fail
+#   LEXER09           23/23, 0 fail
+#   G0/G1 DIFFERENTIAL 30 cases, 0 disagreements, DIFFERENTIAL=PASS
+#   CONFLICT RED      NOT_FIRED, exit 0
+#   GATE_FAST         VERDICT=PASS
+#   BOOTSTRAP         the stage0 compiler compiles the repaired PolyC
+#                     driver subject to a BYTE-IDENTICAL object
+#
+# WHAT DID NOT CHANGE: the production compiler's SEMANTICS. The
+# conflict predicate's OBSERVABLE behaviour was already correct
+# (masked by the host's route-scoped rendering), and the Mach-O
+# mapping lives in the TEST ORACLE, not in the compiler. The WP-001
+# migration itself -- the route decision in the compiled PolyC
+# driver -- is untouched by both repairs.
+
+#
+#   D02_executable   G0=0/EXEC   G1=0/EXEC   AGREE
+#   D13_dash_filename G0=0/NONE  G1=0/NONE  AGREE
+#   D14_dylib        G0=0/DYLIB  G1=0/DYLIB  AGREE
+#   CASES=30 ; DISAGREE=0 ; DIFFERENTIAL=PASS

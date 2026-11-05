@@ -9936,12 +9936,59 @@ consume the driver's route code, the four PolyC-side sites that carry
 the decision, and the C-side domain guard that turns an invalid route
 into a fail-closed stop.
 
-**One P2 residue is open and recorded:** the three ordered-plan exports
+**Two further review findings were confirmed by measurement and
+repaired** under
+`ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01-CORRECTION01`. An external
+review of the closed tree raised two more source-level observations, and
+both were confirmed:
+
+- The differential runner's **Mach-O filetype mapping was wrong**: it
+  read filetype `6` as `MH_EXECUTE` and `8` as `MH_DYLIB`, while
+  Apple's own `loader.h` in the local SDK says `MH_DYLIB 0x6` and
+  `MH_BUNDLE 0x8`. A **real** dynamic library was therefore reported
+  as an executable — measured directly, the production compiler's
+  dylib output carries filetype byte `06 00 00 00`. Compounding it,
+  the frozen **D14** row expected class `NONE` and the dylib route
+  writes `lib<name>.dylib` rather than `case.out.o`, so the case
+  verified **nothing at all**. The mapping is corrected, the runner
+  observes the file the route actually writes, and D14 now expects
+  `DYLIB` and passes.
+- The **emit-LLVM conflict predicate was too broad**: the legacy C
+  oracle tested the condition **inside** an `if (args.emit_llvm)`
+  guard, and the PolyC driver dropped that outer guard, so a plain
+  `-c` or `-S` reported the conflict status with no LLVM request
+  present. Measured against the C oracle on the real exported
+  predicate, plain `-c`, `-S`, `-transpile`, `-lsp` and `-lib` all
+  reported `1` where the oracle says `0`. The observable compiler
+  behaviour was masked by the host's route-scoped rendering, but the
+  **exported** status was wrong. A new RED witness,
+  `tools/quality/wp001-driver-takeover01-conflict-red.HC` -- a compiled
+  PolyC program that links the real driver subject and calls the real
+  exported predicate -- reproduces the divergence before the repair and
+  is `NOT_FIRED` after it.
+
+Neither finding changes the production compiler's semantics, and
+neither touches the migration itself. The full measurements are in
+`evidence/ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01-CORRECTION01/c3/review-findings-repair.tsv`,
+and the handoff is
+`docs/factory/HANDOFF-ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01-CORRECTION01.md`.
+
+**Two P2 residues are open and recorded.** The first is the three
+ordered-plan exports
 (`WpDriverPlanActionCount`, `WpDriverPlanActionAt`,
 `WpDriverPlanArgAt`) are exported but **not consumed**, because the
 plan resolves the legacy precedence to one winning step. This is a
 surface residue, not a correctness defect: the precedence is preserved
 and the differential measures it. Disposition: **DEFERRED**.
+
+The second is a **pre-existing legacy-C lexer end-of-file overread**,
+found while re-measuring under a Debug (AddressSanitizer) build. It is
+**not** caused by the repair: it reproduces identically on the pristine
+close tree with every repair change stashed. It is **not observable in
+the canonical Release build**, where the differential is 30/30 AGREE.
+Its repair is outside the correction's authorized scope — the legacy C
+lexer is retained deliberately as the selector-OFF oracle — so it is
+recorded rather than silently fixed. Disposition: **DEFERRED**.
 
 **The predecessor's status is unchanged.**
 `ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03` has a reported
