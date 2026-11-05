@@ -1,0 +1,125 @@
+# THE INDEPENDENT REVIEW HARNESS -- THE BOUNDED CLOSURE OBSERVATION.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4.
+#
+# The independent Codex review required by AC11 was ATTEMPTED and could
+# not be executed in this environment. This file records the attempt, the
+# exact failure, and the PROOF that the failure is an environment
+# restriction rather than a configuration error.
+#
+# No PASS is claimed for AC11. No CLOSE is authorized by this file.
+#
+# ---------------------------------------------------------------------------
+# THE HARNESS IS PRESENT
+# ---------------------------------------------------------------------------
+#
+#   $ /opt/homebrew/bin/codex --version
+#   codex-cli 0.166.0
+#
+#   $ /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex --version
+#   codex-cli 0.163.0-alpha.10.2
+#
+# Two independent builds of the reviewer are installed. Both were tried.
+#
+# ---------------------------------------------------------------------------
+# THE FAILURES
+# ---------------------------------------------------------------------------
+#
+# With the default CODEX_HOME:
+#
+#   $ codex exec --sandbox read-only "Reply with exactly: CODEX_ALIVE"
+#   Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)
+#
+# With a writable CODEX_HOME, the in-process server starts, but the thread
+# cannot be started:
+#
+#   $ CODEX_HOME=/tmp/codex-home codex exec --sandbox read-only "..."
+#   Error: thread/start: thread/start failed: failed to load configuration:
+#          Failed to synchronize managed preferences (code -32600)
+#
+# The app-server daemon logs the same cause and recovers for itself:
+#
+#   2026-11-05T08:22:21.375379Z ERROR codex_app_server: Invalid configuration;
+#   using defaults. Failed to synchronize managed preferences
+#
+# ---------------------------------------------------------------------------
+# THE ROOT CAUSE, MEASURED
+# ---------------------------------------------------------------------------
+#
+# The Codex macOS configuration loader reads the MANAGED PREFERENCES layer.
+# The loader's source is named in the binary:
+#
+#   event config/src/loader/macos.rs:255  codex_config::loader::macos
+#   message ... managed config root must be a table
+#   event config/src/loader/macos.rs:76   Failed to synchronize managed preferences
+#
+# The loader requires CFPreferencesAppSynchronize to SUCCEED. The sandbox
+# DENIES the write-back. The measurements:
+#
+#   $ defaults write com.openai.codex.testprobe -string value1
+#   Could not write domain com.openai.codex.testprobe; exiting
+#
+#   $ /usr/libexec/PlistBuddy -c "Add :codex_probe_key string probe" \
+#       ~/Library/Preferences/com.openai.codex.plist
+#   Error Opening Destination: .../com.openai.codex.plist [Operation not permitted]
+#
+#   $ /tmp/cfw          # a C probe against CoreFoundation
+#   CFPreferencesAppSynchronize=0
+#   readback=PRESENT
+#
+# The read succeeds and the write-back fails. The domain itself is not
+# malformed: every managed key the loader consults is ABSENT.
+#
+#   com.openai.codex/config_toml            = absent
+#   com.openai.codex/requirements_toml      = absent
+#   com.openai.codex/config_toml_base64     = absent
+#   com.openai.codex/requirements_toml_base64 = absent
+#
+# So the loader has nothing to read, and still fails, because the
+# SYNCHRONIZATION step -- not the read -- is what the sandbox refuses.
+#
+# The preferences plist was NOT modified. The probe could not write it, and
+# the file was verified byte-identical afterwards.
+#
+# ---------------------------------------------------------------------------
+# THE PATHS THAT WERE TRIED
+# ---------------------------------------------------------------------------
+#
+#   * the installed CLI, 0.166.0, with the default CODEX_HOME;
+#   * the installed CLI, 0.166.0, with a writable CODEX_HOME;
+#   * the CLI bundled with the ChatGPT desktop application, 0.163.0;
+#   * `codex exec review --base <branch>`, which rejects a prompt
+#     argument in combination with --base;
+#   * `codex app-server daemon start`, which starts successfully and
+#     recovers from the managed-preferences failure with "using defaults",
+#     but whose thread/start path still fails;
+#   * `codex app-server proxy`, and the CODEX_APP_SERVER_SOCKET,
+#     CODEX_IPC_SOCKET and CODEX_CONTROL_SOCKET environment variables;
+#   * a writable managed_dir, and the managed_dir configuration key.
+#
+# Every path routes through the same macOS loader.
+#
+# ---------------------------------------------------------------------------
+# THE VERDICT ON THIS OBSERVATION
+# ---------------------------------------------------------------------------
+#
+# The reviewer is UNAVAILABLE in this environment. The failure is an
+# environment restriction on the macOS preferences write-back, and it is
+# reproducible with a four-line C program that does not involve Codex at
+# all.
+#
+# Per the ACT's HALT conditions this is HALT_DEPENDENCY_UNAVAILABLE: "a
+# required toolchain or independent review harness is unavailable and no
+# silent fallback is permitted."
+#
+# NO SILENT FALLBACK WAS USED. The review was NOT replaced by a
+# self-review, and no reviewer-shaped artifact was fabricated. The
+# independent review remains OUTSTANDING.
+#
+# AC11 IS NOT SATISFIED. C4 IS NOT AUTHORIZED. NO CLOSE IS CLAIMED.
+#
+# The next action is to run the committed review instructions
+# (independent-review-prompt.txt) in an environment in which the Codex
+# reviewer can start, and to bring its findings back as a new
+# remediation round. The committed prompt is the subject of that review,
+# and the review's scope cannot be adjusted after its findings are known.
