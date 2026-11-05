@@ -256,16 +256,46 @@ I32 Main(I32 argc, U8 **argv) {
   U8 *o_exitf  = argv[9];
   U8 *p_exitf  = argv[10];
 
-  I64 expected_arch = -1;
-  if (StrCmp(argv[12], "arm64") == 0) expected_arch = CPU_TYPE_ARM64;
-  if (StrCmp(argv[12], "x86_64") == 0) expected_arch = CPU_TYPE_X86_64;
-
-  I64 expected_exit = 0;
-  if (StrCmp(argv[13], "0") != 0) expected_exit = 1;
-
-  // The artifact list and the symbol list are separated by the DOMAIN.
-  I64 nartifact = 1;
-  if (StrCmp(domain, "dylib") == 0) nartifact = 3;
+  // -----------------------------------------------------------------------
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-09.
+  //
+  // THE DOMAIN AND THE ARTIFACT CLASSES ARE CHECKED BEFORE ANY OBSERVATION
+  // IS COMPARED.
+  //
+  // THE ORIGINAL DEFECT. The verifier accepted whatever domain the caller
+  // named and whatever expected class the caller named, and it derived the
+  // artifact count from the domain. An UNSUPPORTED domain with an
+  // UNSUPPORTED class therefore bypassed every obligation: the required
+  // symbol check was vacuous because the class carried no symbols, and
+  // both sides' identical garbage bytes satisfied every comparison.
+  //
+  // THE REPAIR. The SUPPORTED-DOMAIN ROSTER in the shared contract decides
+  // the domain's artifact count and each artifact's class. The caller's
+  // expected classes are CHECKED AGAINST the roster, and a mismatch is a
+  // FAILURE. An unsupported domain is REFUSED before any observation is
+  // read.
+  //
+  // The refusal happens FIRST, so a caller cannot reach the comparisons
+  // with an obligation-free obligation list.
+  // -----------------------------------------------------------------------
+  I64 domain_id = ContractDomainId(domain);
+  if (domain_id == DOMAIN_UNKNOWN) {
+    "REASON_DETAIL\tthe domain '%s' is not a supported emission domain\n",
+      domain;
+    "REASON\t%s\tEMISSION_DOMAIN_UNSUPPORTED\n", case_id;
+    "CORRECTION03_EMISSION_CHECKS\t1\n";
+    "CORRECTION03_EMISSION_FAILURES\t1\n";
+    return 1;
+  }
+  // The artifact count is the DOMAIN'S count.
+  I64 nartifact = ContractDomainArtifactCount(domain_id);
+  if (nartifact <= 0) {
+    "REASON_DETAIL\tthe domain '%s' has no artifact roster\n", domain;
+    "REASON\t%s\tEMISSION_DOMAIN_UNSUPPORTED\n", case_id;
+    "CORRECTION03_EMISSION_CHECKS\t1\n";
+    "CORRECTION03_EMISSION_FAILURES\t1\n";
+    return 1;
+  }
   I64 i = 14;
   I64 nartifact_read = 0;
   while (i < argc && nartifact_read < nartifact) {
@@ -273,6 +303,13 @@ I32 Main(I32 argc, U8 **argv) {
     nartifact_read = nartifact_read + 1;
   }
   I64 nsym = argc - i;
+
+  I64 expected_arch = -1;
+  if (StrCmp(argv[12], "arm64") == 0) expected_arch = CPU_TYPE_ARM64;
+  if (StrCmp(argv[12], "x86_64") == 0) expected_arch = CPU_TYPE_X86_64;
+
+  I64 expected_exit = 0;
+  if (StrCmp(argv[13], "0") != 0) expected_exit = 1;
 
   // The PER-ARTIFACT expected class and architecture.
   I64 eclass[4];
@@ -293,6 +330,35 @@ I32 Main(I32 argc, U8 **argv) {
     if (StrCmp(at, "arm64") == 0) earch[k] = CPU_TYPE_ARM64;
     if (StrCmp(at, "x86_64") == 0) earch[k] = CPU_TYPE_X86_64;
     k = k + 1;
+  }
+
+  // THE CALLER'S EXPECTED CLASSES MUST MATCH THE ROSTER. A class the
+  // domain cannot produce is a FAILURE, not a choice.
+  k = 0;
+  while (k < nartifact) {
+    I64 roster_class = ContractDomainArtifactClass(domain_id, k);
+    if (roster_class < 0 || eclass[k] != roster_class) {
+      "REASON_DETAIL\tthe domain '%s' does not produce the expected class "
+        "for artifact %lld\n", domain, k;
+      "REASON\t%s\tEMISSION_ARTIFACT_CLASS_NOT_IN_ROSTER\n", case_id;
+      "CORRECTION03_EMISSION_CHECKS\t%lld\n", k + 1;
+      "CORRECTION03_EMISSION_FAILURES\t%lld\n", k + 1;
+      return 1;
+    }
+    k = k + 1;
+  }
+
+  // THE REQUIRED-SYMBOL OBLIGATION MAY NOT BE BYPASSED. The domain
+  // requires at least a FLOOR of symbols, and the caller must require at
+  // least that many.
+  I64 sym_floor = ContractDomainRequiredSymbolFloor(domain_id);
+  if (nsym < sym_floor) {
+    "REASON_DETAIL\tthe domain '%s' requires at least %lld required symbols, "
+      "and %lld were required\n", domain, sym_floor, nsym;
+    "REASON\t%s\tEMISSION_REQUIRED_SYMBOL_OBLIGATION_BYPASSED\n", case_id;
+    "CORRECTION03_EMISSION_CHECKS\t1\n";
+    "CORRECTION03_EMISSION_FAILURES\t1\n";
+    return 1;
   }
 
   // -----------------------------------------------------------------------

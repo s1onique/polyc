@@ -1189,7 +1189,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-warm-producer-test driver-wp001-correction03-envcheck-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-c4r5-probe-test driver-wp001-correction03-warm-producer-test driver-wp001-correction03-envcheck-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1655,6 +1655,92 @@ $(DRIVER_ROUTE03_C4R4_PROBE_OBJ): $(DRIVER_ROUTE03_C4R4_PROBE_SRC) $(DRIVER_ROUT
 
 $(DRIVER_ROUTE03_C4R4_PROBE_BIN): $(DRIVER_ROUTE03_C4R4_PROBE_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_C4R4_PROBE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
+		exit 1; \
+	fi
+
+# ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5.
+#
+# THE ROUND-5 COUNTEREXAMPLE PROBE.
+#
+# It exercises the PRODUCTION FUNCTIONS -- the shared validation
+# contract, the shared capture and ledger primitives and the shared
+# event-identity encoding -- with hand-built fixtures, so that each of the
+# ten P1 findings has an INDEPENDENT, REPRODUCIBLE counterexample.
+#
+# The probe does NOT carry a duplicate of the function it exercises. It
+# calls the PRODUCTION function and reports the PRODUCTION function's own
+# reason token.
+#
+# The probe's exit status is the number of FAILED controls, so it is usable
+# directly as a gate.
+DRIVER_ROUTE03_C4R5_PROBE_SRC = tools/quality/driver-required-route-correction03-c4r5-probe.HC
+DRIVER_ROUTE03_C4R5_PROBE_OBJ = build/driver-required-route-correction03-c4r5-probe.o
+DRIVER_ROUTE03_C4R5_PROBE_BIN = build/driver-required-route-correction03-c4r5-probe
+DRIVER_ROUTE03_C4R5_PROBE_DIR = $(DRIVER_ROUTE03_WORKDIR)/c4r5-fixtures
+
+# The GENUINE arm64 THREAD-LOCAL FIXTURE.
+#
+# It is compiled by the PLATFORM'S OWN compiler for the arm64 target, and
+# it is the REFERENCE for the R4-10 section classification: it carries a
+# `__thread_data` section (type 0x11) and a `__thread_vars` section (type
+# 0x13), and BOTH types are FILE-BACKED.
+DRIVER_ROUTE03_TLS_FIXTURE = tools/quality/fixtures/driver-required-route-correction03-tls-fixture.o
+DRIVER_ROUTE03_TLS_FIXTURE_SRC = tools/quality/fixtures/driver-required-route-correction03-tls-fixture.c
+
+# The genuine fixture is BUILT, not committed: the object files are
+# excluded from the repository by the `.gitignore` rule for `*.o`.
+#
+# The PLATFORM'S OWN compiler builds it, for the arm64 target, because the
+# production compiler does not spell a thread-local variable and the
+# fixture must be the REFERENCE for the R4-10 classification.
+$(DRIVER_ROUTE03_TLS_FIXTURE): $(DRIVER_ROUTE03_TLS_FIXTURE_SRC)
+	@mkdir -p $(dir $@)
+	clang -target arm64-apple-darwin -c $< -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the platform compiler" >&2; \
+		exit 1; \
+	fi
+
+.PHONY: driver-wp001-correction03-c4r5-probe-test
+driver-wp001-correction03-c4r5-probe-test: $(DRIVER_ROUTE03_C4R5_PROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_TLS_FIXTURE)
+	@rm -rf $(DRIVER_ROUTE03_C4R5_PROBE_DIR)
+	@mkdir -p $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/macho \
+	          $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/archive \
+	          $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/ledger \
+	          $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/capture \
+	          $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/identity \
+	          $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/emission
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) macho $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/macho
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) archive $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/archive
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) ledger $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/ledger
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) capture $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/capture
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) identity $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/identity
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) emission $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/emission
+	@mkdir -p $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/tls
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) tls \
+	    $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/tls \
+	    $(DRIVER_ROUTE03_TLS_FIXTURE)
+	@mkdir -p $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/harness
+	@$(DRIVER_ROUTE03_C4R5_PROBE_BIN) harness \
+	    $(DRIVER_ROUTE03_HARNESS_BIN) $(CURDIR)/hcc \
+	    $(DRIVER_ROUTE03_C4R5_PROBE_DIR)/harness \
+	    $(DRIVER_ROUTE03_EXPECTED_ARCH)
+	@echo "DRIVER_WP001_CORRECTION03_C4R5_PROBE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE03_C4R5_PROBE_OBJ): $(DRIVER_ROUTE03_C4R5_PROBE_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_C4R5_PROBE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_C4R5_PROBE_BIN): $(DRIVER_ROUTE03_C4R5_PROBE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_C4R5_PROBE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 	@if [ ! -x "$@" ]; then \
 		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \

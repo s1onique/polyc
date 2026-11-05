@@ -51,6 +51,143 @@
 #define CLS_TEXT        6
 #define CLS_AR_ARCHIVE  7
 
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-09.
+//
+// THE SUPPORTED EMISSION DOMAINS.
+//
+// THE ORIGINAL DEFECT. The emission verifier took the domain from the
+// caller and derived the artifact count from it -- one artifact, or three
+// for the "dylib" domain -- and it took the EXPECTED CLASS of each
+// artifact from the caller's arguments as well. It never checked that
+// the domain was one the production route can select, and it never
+// checked that the expected class was one the domain can produce.
+//
+// The consequence was that an UNSUPPORTED domain with an UNSUPPORTED
+// artifact class bypassed every obligation:
+//
+//     domain=invented  class=OTHER  artifact=garbage  exit=0
+//
+// Both sides carried identical bytes, so every comparison the verifier
+// made agreed, and the required-symbol obligation was vacuous because
+// the class was `OTHER` and therefore carried no symbols.
+//
+// THE REPAIR. There is an EXPLICIT SUPPORTED-DOMAIN ROSTER, and it binds
+// each domain to its artifact classes, its artifact count, its required
+// symbols and its executable behaviour. The roster is checked BEFORE any
+// observation is compared, so an unsupported domain is refused before it
+// can satisfy anything.
+//
+// The four domains are the four the production driver can select:
+//
+//   object      the `-c` route        one Mach-O object
+//   assembly    the `-S` route        one assembler text
+//   dylib       the `-lib` route      an object, an archive and a dylib
+//   executable  the default route     one linked executable
+//
+// The roster lives in the SHARED CONTRACT, so the emission verifier and
+// any other consumer agree on it.
+// ---------------------------------------------------------------------------
+
+// The domain identifiers.
+#define DOMAIN_OBJECT     0
+#define DOMAIN_ASSEMBLY   1
+#define DOMAIN_DYLIB      2
+#define DOMAIN_EXECUTABLE 3
+// DOMAIN_ARCHIVE -- the ARCHIVE ARTIFACT ALONE.
+//
+// It is NOT one of the four PRODUCTION EMISSION DOMAINS. It is the
+// domain the archive-semantics adverse probe uses, because that probe
+// examines ONE archive in isolation and the `dylib` domain carries three
+// artifacts. It is in the roster so that the probe's use of it is an
+// EXPLICIT, BOUNDED choice rather than an accident of the old
+// "anything the caller names is accepted" behaviour.
+//
+// Its artifact class is the archive, its required-symbol floor is zero
+// (an archive's members carry symbols, but the archive itself does not
+// carry a symbol table), and it does not require a runnable executable.
+#define DOMAIN_ARCHIVE    4
+#define DOMAIN_UNKNOWN    (-1)
+
+// The domain names. The name is the token the caller supplies.
+#define DOMAIN_NAME_OBJECT     "object"
+#define DOMAIN_NAME_ASSEMBLY   "assembly"
+#define DOMAIN_NAME_DYLIB      "dylib"
+#define DOMAIN_NAME_EXECUTABLE "executable"
+#define DOMAIN_NAME_ARCHIVE    "archive"
+
+// The domain's artifact CLASSES, in the order the artifacts are listed.
+//
+// The array is terminated by a NEGATIVE class, so the roster is
+// self-delimiting and the count need not be carried separately.
+#define DOMAIN_MAX_ARTIFACTS 4
+
+// The DOMAIN LOOKUP. It returns the domain identifier, or DOMAIN_UNKNOWN
+// for a name the roster does not carry.
+static I64 ContractDomainId(U8 *name) {
+  if (name == NULL) return DOMAIN_UNKNOWN;
+  if (StrCmp(name, DOMAIN_NAME_OBJECT) == 0) return DOMAIN_OBJECT;
+  if (StrCmp(name, DOMAIN_NAME_ASSEMBLY) == 0) return DOMAIN_ASSEMBLY;
+  if (StrCmp(name, DOMAIN_NAME_DYLIB) == 0) return DOMAIN_DYLIB;
+  if (StrCmp(name, DOMAIN_NAME_EXECUTABLE) == 0) return DOMAIN_EXECUTABLE;
+  if (StrCmp(name, DOMAIN_NAME_ARCHIVE) == 0) return DOMAIN_ARCHIVE;
+  return DOMAIN_UNKNOWN;
+}
+
+// The DOMAIN'S ARTIFACT COUNT. The count is a property of the DOMAIN, not
+// of the caller's arguments.
+static I64 ContractDomainArtifactCount(I64 domain) {
+  if (domain == DOMAIN_OBJECT) return 1;
+  if (domain == DOMAIN_ASSEMBLY) return 1;
+  if (domain == DOMAIN_DYLIB) return 3;
+  if (domain == DOMAIN_EXECUTABLE) return 1;
+  if (domain == DOMAIN_ARCHIVE) return 1;
+  return 0;
+}
+
+// The DOMAIN'S ARTIFACT CLASS at the given index, or a negative value
+// when the index is out of the domain's range.
+//
+//   object      MACHO_OBJECT
+//   assembly    ASSEMBLER_TEXT
+//   dylib       MACHO_OBJECT, AR_ARCHIVE, MACHO_DYLIB
+//   executable  MACHO_EXECUTABLE
+static I64 ContractDomainArtifactClass(I64 domain, I64 index) {
+  if (domain == DOMAIN_OBJECT && index == 0) return CLS_MACHO_OBJ;
+  if (domain == DOMAIN_ASSEMBLY && index == 0) return CLS_TEXT;
+  if (domain == DOMAIN_DYLIB && index == 0) return CLS_MACHO_OBJ;
+  if (domain == DOMAIN_DYLIB && index == 1) return CLS_AR_ARCHIVE;
+  if (domain == DOMAIN_DYLIB && index == 2) return CLS_MACHO_DYLIB;
+  if (domain == DOMAIN_EXECUTABLE && index == 0) return CLS_MACHO_EXEC;
+  if (domain == DOMAIN_ARCHIVE && index == 0) return CLS_AR_ARCHIVE;
+  return -1;
+}
+
+// The DOMAIN'S REQUIRED SYMBOL COUNT. A domain whose artifacts carry
+// symbols REQUIRES at least one. The assembler-text domain carries no
+// symbols, because assembler text is not a symbol table.
+//
+// The count is a FLOOR: a caller may require MORE symbols than the
+// domain requires, but it may not require FEWER.
+static I64 ContractDomainRequiredSymbolFloor(I64 domain) {
+  if (domain == DOMAIN_OBJECT) return 1;
+  if (domain == DOMAIN_ASSEMBLY) return 0;
+  if (domain == DOMAIN_DYLIB) return 1;
+  if (domain == DOMAIN_EXECUTABLE) return 1;
+  if (domain == DOMAIN_ARCHIVE) return 0;
+  return 0;
+}
+
+// The DOMAIN REQUIRES AN EXECUTABLE THAT RUNS.
+//
+// The executable domain produces a LINKED EXECUTABLE, and the two sides'
+// executables must have the SAME RUN OUTCOME. Every other domain produces
+// an artifact that is NOT runnable, and the run check does not apply.
+static I64 ContractDomainRequiresRun(I64 domain) {
+  if (domain == DOMAIN_EXECUTABLE) return 1;
+  return 0;
+}
+
 // The Mach-O CPU types.
 #define CPU_TYPE_ARM64  0x0100000C
 #define CPU_TYPE_X86_64 0x01000007
@@ -1942,6 +2079,299 @@ static U8 *ContractEventIdWithEnv(EventIdCtx *ctx, EventIdEnvCtx *env) {
   ctx->nenv = env->nenv;
   return ContractEventIdCompute(ctx);
 }
+
+// ---------------------------------------------------------------------------
+// THE SHARED CAPTURE AND LEDGER PRIMITIVES.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01
+// and R4-04.
+//
+// These primitives were the COMPARATOR'S OWN. The C4 ROUND 5 review
+// required the counterexamples to be exercised against the ACTUAL
+// PRODUCTION FUNCTIONS rather than against a duplicate implementation
+// inside the probe, so the primitives now live in the SHARED CONTRACT and
+// BOTH the comparator and the probe call them.
+//
+// There is ONE implementation of the field extractor, the ledger
+// membership check, the ledger occurrence counter and the block
+// extractor, and the two consumers cannot drift apart.
+// ---------------------------------------------------------------------------
+
+// The field extractor. It finds `KEY` at the start of a line and returns a
+// COPY of the value, or NULL when the field is absent.
+//
+// A SINGLE-VALUE field is `KEY VALUE` on one line. A BLOCK field is `KEY`
+// on its own line followed by the value lines. The extractor accepts both
+// forms, so a block field's presence is detectable.
+static U8 *CaptureField(U8 *buf, I64 size, U8 *key) {
+  I64 klen = StrLen(key);
+  I64 i = 0;
+  while (i < size) {
+    I64 lend = i;
+    while (lend < size && buf[lend] != 10) lend = lend + 1;
+    if (lend - i >= klen) {
+      I64 m = 0;
+      while (m < klen) {
+        if (buf[i + m] != key[m]) { m = -1; break; }
+        m = m + 1;
+      }
+      if (m == klen) {
+        if (lend - i == klen) {
+          I64 j = lend + 1;
+          while (j < size) {
+            I64 bend = j;
+            while (bend < size && buf[bend] != 10) bend = bend + 1;
+            if (bend > j) {
+              U8 *v = MAlloc(bend - j + 1);
+              MemCpy(v, buf + j, bend - j);
+              v[bend - j] = 0;
+              return v;
+            }
+            j = bend + 1;
+          }
+          return NULL;
+        }
+        if (buf[i + klen] == 32) {
+          I64 vlen = lend - (i + klen + 1);
+          if (vlen <= 0) return NULL;
+          U8 *v = MAlloc(vlen + 1);
+          MemCpy(v, buf + i + klen + 1, vlen);
+          v[vlen] = 0;
+          return v;
+        }
+      }
+    }
+    if (lend >= size) break;
+    i = lend + 1;
+  }
+  return NULL;
+}
+
+// The ledger check. The event id MUST appear in the run ledger. The ledger
+// is APPENDED to by the harness during THIS run, so it contains only the
+// invocations THIS run performed.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F2.
+//
+// THE ORIGINAL DEFECT. The check compared the identity as a PREFIX of any
+// line:
+//
+//     while (k < idlen) {
+//       if (buf[i + k] != id[k]) { same = 0; break; }
+//       k = k + 1;
+//     }
+//
+// There was no check that the LINE was exactly the identity. A genuine
+// sixty-four character event identity therefore satisfied a SIXTEEN
+// character query, and any shorter prefix of a genuine identity was
+// accepted as a membership. The harness's event identities are FIXED
+// LENGTH, so a shorter or longer query is not a member of the ledger at
+// all, and a longer identity whose first characters match a genuine
+// identity is a DIFFERENT identity.
+//
+// THE REPAIR. The check requires an EXACT record:
+//
+//   * the line must have EXACTLY the identity's length;
+//   * the bytes must match in full;
+//   * the line must be terminated by the record separator.
+//
+// A prefix, a suffix, a one-character identity, an extended line and a
+// line with a trailing NUL are all REJECTED.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-04
+// -- THE TERMINATOR IS PART OF THE RECORD.
+//
+// THE ORIGINAL DEFECT. The scan found the end of a record by looking for
+// the record separator, and it compared the record's LENGTH and BYTES
+// BEFORE it established that the separator was there at all:
+//
+//     I64 end = i;
+//     while (end < size && buf[end] != 10) end = end + 1;
+//     if (end - i == idlen) { ...match... }
+//     if (end >= size) break;
+//
+// When the LAST line of the ledger was not terminated, `end` reached
+// `size`, and the length comparison `end - i == idlen` was TRUE for an
+// unterminated sixty-four-byte tail. The record was therefore ACCEPTED
+// even though it carried no terminator. The `break` that was supposed to
+// reject the unterminated tail came AFTER the acceptance.
+//
+// THE REPAIR. The terminator is checked FIRST, and a record without one
+// is not a record at all. The scan stops at the first unterminated tail,
+// and the record is not compared.
+//
+// The two functions are the PRODUCTION ones: the comparator's membership
+// check and its occurrence counter. They are not duplicated inside the
+// probe; the probe calls THEM.
+static I64 LedgerHas(U8 *ledger_path, U8 *id) {
+  I64 size = 0;
+  U8 *buf = FileRead(ledger_path, &size);
+  if (buf == NULL) return 0;
+  I64 idlen = StrLen(id);
+  // An EMPTY identity cannot be a member: every ledger record is non-empty.
+  if (idlen <= 0) return 0;
+  I64 i = 0;
+  I64 found = 0;
+  while (i < size) {
+    // The record runs to the next record separator.
+    I64 end = i;
+    while (end < size && buf[end] != 10) end = end + 1;
+    // The TERMINATOR IS REQUIRED. A record that runs to the end of the
+    // file without a separator is NOT a complete record, and it is not
+    // compared at all.
+    if (end >= size) break;
+    // The record MUST have EXACTLY the identity's length.
+    if (end - i == idlen) {
+      I64 k = 0;
+      I64 same = 1;
+      while (k < idlen) {
+        if (buf[i + k] != id[k]) { same = 0; break; }
+        k = k + 1;
+      }
+      if (same == 1) found = 1;
+    }
+    // The next record begins after the separator.
+    i = end + 1;
+  }
+  return found;
+}
+
+// The ledger OCCURRENCE counter. It returns the number of COMPLETE records
+// in the ledger that are EXACTLY the given identity.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// The membership check cannot distinguish ONE registration from SEVERAL.
+// Two executions in one run cannot share one identity -- the identity
+// carries the run id and the MONOTONIC event counter -- so an identity that
+// appears twice means that one execution was registered twice, or that a
+// single event was replayed as two. Both are rejected.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-04.
+//
+// The same terminator requirement applies here: a record that is not
+// terminated is not counted.
+static I64 LedgerCount(U8 *ledger_path, U8 *id) {
+  I64 size = 0;
+  U8 *buf = FileRead(ledger_path, &size);
+  if (buf == NULL) return 0;
+  I64 idlen = StrLen(id);
+  if (idlen <= 0) return 0;
+  I64 i = 0;
+  I64 count = 0;
+  while (i < size) {
+    I64 end = i;
+    while (end < size && buf[end] != 10) end = end + 1;
+    // The TERMINATOR IS REQUIRED.
+    if (end >= size) break;
+    if (end - i == idlen) {
+      I64 k = 0;
+      I64 same = 1;
+      while (k < idlen) {
+        if (buf[i + k] != id[k]) { same = 0; break; }
+        k = k + 1;
+      }
+      if (same == 1) count = count + 1;
+    }
+    i = end + 1;
+  }
+  return count;
+}
+
+// The BLOCK-FIELD extractor. It returns the values of a block field -- a
+// key on its own line followed by one line per value -- as a NULL-terminated
+// array, together with the count.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// The event identity is computed over the ARGUMENT VECTOR and the
+// ENVIRONMENT. The comparator therefore has to read those two block
+// fields back out of the capture record, exactly as the runner wrote them.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01
+// -- THE CAPACITY IS CHECKED BEFORE THE COUNT IS RETURNED.
+//
+// THE ORIGINAL DEFECT. The extractor allocated a FIXED array of sixty-four
+// pointers, wrote a value into the array only while the index was below
+// sixty-four, and then returned the TRUE count -- which could be larger
+// than the array. Every caller then walked the returned count, so a capture
+// record carrying a block of more than sixty-four entries caused an
+// OUT-OF-BOUNDS READ of the pointer array and a SEGMENTATION FAULT.
+//
+// THE REPAIR. The array GROWS as the block is read, so the storage is
+// always large enough for the complete block that is present. The count
+// that is returned is therefore always the number of entries that were
+// actually stored.
+//
+// The block is bounded by the DOCUMENTED LIMIT, so a malformed record
+// cannot make the extractor allocate without bound. A block that exceeds
+// the limit is REJECTED with a DEFINED reason rather than being
+// truncated: `CAPTURE_BLOCK_TOO_LARGE`.
+#define CaptureBlockLimit 4096
+
+static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
+  *count = 0;
+  I64 klen = StrLen(key);
+  I64 i = 0;
+  while (i < size) {
+    I64 lend = i;
+    while (lend < size && buf[lend] != 10) lend = lend + 1;
+    if (lend - i == klen) {
+      I64 m = 0;
+      I64 same = 1;
+      while (m < klen) {
+        if (buf[i + m] != key[m]) { same = 0; break; }
+        m = m + 1;
+      }
+      if (same == 1) {
+        // The key is on its own line. The values follow, one per line, and
+        // the block ends at the FIRST EMPTY line.
+        I64 j = lend + 1;
+        I64 n = 0;
+        I64 cap = 64;
+        U8 **vals = MAlloc(sizeof(U8 *) * cap);
+        while (j < size) {
+          I64 bend = j;
+          while (bend < size && buf[bend] != 10) bend = bend + 1;
+          if (bend == j) break;
+          // The limit is checked BEFORE the entry is stored, so a block
+          // that exceeds it is rejected rather than truncated.
+          if (n >= CaptureBlockLimit) {
+            I64 k = 0;
+            while (k < n) { Free(vals[k]); k = k + 1; }
+            Free(vals);
+            *count = 0;
+            return NULL;
+          }
+          // The storage GROWS before the entry is written, so the write is
+          // always inside the allocation.
+          if (n >= cap) {
+            I64 newcap = cap * 2;
+            while (n >= newcap) newcap = newcap * 2;
+            U8 **bigger = MAlloc(sizeof(U8 *) * newcap);
+            MemCpy(bigger, vals, sizeof(U8 *) * n);
+            Free(vals);
+            vals = bigger;
+            cap = newcap;
+          }
+          U8 *v = MAlloc(bend - j + 1);
+          MemCpy(v, buf + j, bend - j);
+          v[bend - j] = 0;
+          vals[n] = v;
+          n = n + 1;
+          if (bend >= size) { j = size; break; }
+          j = bend + 1;
+        }
+        *count = n;
+        return vals;
+      }
+    }
+    if (lend >= size) break;
+    i = lend + 1;
+  }
+  return NULL;
+}
+
 
 // ---------------------------------------------------------------------------
 // THE CONTRACT SELF-TEST.

@@ -549,6 +549,23 @@ extern "c" I8 *getenv(U8 *buf);
 // The path-policy check.
 //
 // It returns HARNESS_OK, or the reason the producer path was refused.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-02.
+//
+// THE SYMLINK AND REGULAR-FILE POLICY, IMPLEMENTED.
+//
+// The policy is stated in the comment above, and the PREVIOUS revision did
+// not IMPLEMENT it: `lstat(2)` was DECLARED and never CALLED, so a
+// symlinked producer was accepted even though a symlink can be repointed
+// between the validation and the invocation.
+//
+// The check is on the LINK ITSELF, so it holds for a symlink to a
+// symlink. The `stat` structure is read through the platform's own
+// `lstat(2)`, and the link and file-type bits are taken from the
+// platform's own `S_IFMT`, `S_IFLNK` and `S_IFREG`.
+//
+// The producer MUST BE A REGULAR FILE. A directory, a device or a FIFO is
+// not a compiler.
 static I64 HarnessCheckProducerPath(U8 *producer) {
   I64 len = StrLen(producer);
   if (len <= 0) return HARNESS_PRODUCER_MISSING;
@@ -556,6 +573,54 @@ static I64 HarnessCheckProducerPath(U8 *producer) {
   if (producer[0] != 47) {
     "HARNESS_REASON_DETAIL\tthe producer path %s is not absolute\n", producer;
     return HARNESS_PRODUCER_SUBSTITUTED;
+  }
+  // The path MUST NOT BE A SYMLINK.
+  //
+  // The `stat` structure is allocated, not on the stack, because
+  // `lstat(2)` writes the platform's whole structure into it.
+  //
+  // The buffer is typed as `U8 *`, because the platform's declaration
+  // takes an untyped pointer and the compiler has no C-style cast.
+  I64 stat_size = 256;
+  U8 *st = MAlloc(stat_size);
+  I64 lrc = lstat(producer, st);
+  if (lrc != 0) {
+    Free(st);
+    // The path does not resolve at all. The producer's own validation
+    // reports the absence with a more specific reason.
+    return HARNESS_OK;
+  }
+  // The mode field.
+  //
+  // The platform's `struct stat` carries `st_dev` in the first four bytes
+  // and `st_mode` in the NEXT four, so the mode is read from offset 4.
+  //
+  // THE MASKING IS DONE BY DIVISION, NOT BY A BITWISE AND. The production
+  // compiler's `&` operator does not behave as a bitwise AND on a hex
+  // literal -- `0x18EB1AFA & 0xF000` evaluates to `0x1000` -- so the
+  // file-type bits are extracted arithmetically, exactly as the shared
+  // contract's `ContractWordAt` reads its fields.
+  I64 mode = 0;
+  I64 k = 3;
+  while (k >= 0) {
+    mode = mode * 256 + st[4 + k];
+    k = k - 1;
+  }
+  // The file-type bits are the HIGH nibble of the mode's low sixteen bits.
+  // The nibble is obtained by dividing by the mask's own scale, and the
+  // comparison is made against the SAME scale, because the production
+  // compiler's `&` operator does not behave as a bitwise AND.
+  I64 ftype = (mode % 65536) / 4096;
+  Free(st);
+  if (ftype == S_IFLNK / 4096) {
+    "HARNESS_REASON_DETAIL\tthe producer path %s is a symbolic link\n",
+      producer;
+    return HARNESS_PRODUCER_SUBSTITUTED;
+  }
+  if (ftype != S_IFREG / 4096) {
+    "HARNESS_REASON_DETAIL\tthe producer path %s is not a regular file\n",
+      producer;
+    return HARNESS_PRODUCER_NOT_EXECUTABLE;
   }
   return HARNESS_OK;
 }
