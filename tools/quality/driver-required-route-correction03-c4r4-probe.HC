@@ -572,7 +572,186 @@ static U0 ProbeArchiveControl(U8 *dir, U8 *control, I64 payload_len,
 }
 
 // ---------------------------------------------------------------------------
-// THE F2 FIXTURE.
+// THE F5 FIXTURE.
+//
+// An archive whose REAL MEMBER carries an EMBEDDED Mach-O OBJECT.
+//
+// The archive is built with TWO members: the platform's symbol-index
+// bookkeeping member, whose name is "/", and the real member, whose name
+// is "source.o" and whose payload is the embedded object.
+//
+// The embedded object's magic can be corrupted, which makes the member
+// payload an INVALID Mach-O object while the archive itself remains
+// structurally well formed.
+// ---------------------------------------------------------------------------
+
+// The embedded object. It is a minimal but VALID Mach-O object with no
+// sections and one symbol.
+//
+//   0     the mach_header_64            32 bytes
+//   32    the LC_SEGMENT_64             72 bytes
+//   104   the LC_SYMTAB                 24 bytes
+//   128   the symbol table              16 bytes (one nlist_64 entry)
+//   144   the string table              8 bytes
+//
+// The image is 152 bytes long.
+#define PROBE_OBJ_SIZE 152
+
+static U8 *ProbeBuildEmbeddedObject(I64 corrupt_magic) {
+  U8 *b = MAlloc(PROBE_OBJ_SIZE);
+  MemSet(b, 0, PROBE_OBJ_SIZE);
+  ProbePut32(b, 0, 0xFEEDFACF);
+  if (corrupt_magic == 1) {
+    // The magic is corrupted. The object is no longer a Mach-O object.
+    ProbePut32(b, 0, 0xDEADBEEF);
+  }
+  ProbePut32(b, 4, CPU_TYPE_ARM64);
+  ProbePut32(b, 8, 3);
+  ProbePut32(b, 12, MH_OBJECT);
+  ProbePut32(b, 16, 2);                 // ncmds
+  ProbePut32(b, 20, 96);                // sizeofcmds
+  // The LC_SEGMENT_64 with NO sections.
+  ProbePut32(b, 32, LC_SEGMENT_64);
+  ProbePut32(b, 36, SEGMENT64_SIZE);
+  ProbePut64(b, 56, 0);                 // vmaddr
+  ProbePut64(b, 64, 0);                 // vmsize
+  ProbePut64(b, 72, 0);                 // fileoff
+  ProbePut64(b, 80, 0);                 // filesize
+  ProbePut32(b, 88, 7);                 // maxprot
+  ProbePut32(b, 92, 7);                 // initprot
+  ProbePut32(b, 96, 0);                 // nsects
+  ProbePut32(b, 100, 0);                // flags
+  // The LC_SYMTAB.
+  ProbePut32(b, 104, LC_SYMTAB);
+  ProbePut32(b, 108, SYMTAB_CMDSZ);
+  ProbePut32(b, 112, 128);              // symoff
+  ProbePut32(b, 116, 1);                // nsyms
+  ProbePut32(b, 120, 144);              // stroff
+  ProbePut32(b, 124, 8);                // strsize
+  // The symbol table: ONE entry whose string index is inside the string
+  // table.
+  ProbePut32(b, 128, 1);                // n_strx
+  ProbePut64(b, 136, 0);                // n_value
+  // The string table.
+  b[144] = 95;                          // '_'
+  b[145] = 0;
+  b[146] = 109;                         // 'm'
+  b[147] = 97;                          // 'a'
+  b[148] = 105;                         // 'i'
+  b[149] = 110;                         // 'n'
+  b[150] = 0;
+  b[151] = 0;
+  return b;
+}
+
+// The `ar` member header's SIZE field.
+//
+// It is TEN characters wide, RIGHT-ALIGNED and SPACE-PADDED, and it holds
+// the member's payload length in decimal.
+static U0 ProbeArSizeField(U8 *field, I64 value) {
+  I64 i = 0;
+  while (i < 10) { field[i] = 32; i = i + 1; }
+  U8 digits[24];
+  I64 dn = 0;
+  I64 v = value;
+  if (v == 0) { digits[0] = 48; dn = 1; }
+  while (v > 0) { digits[dn] = 48 + (v % 10); v = v / 10; dn = dn + 1; }
+  I64 r = 0;
+  while (r < dn) { field[10 - dn + r] = digits[dn - 1 - r]; r = r + 1; }
+}
+
+// The archive builder for the F5 fixture.
+//
+// `corrupt_magic` is 1 when the embedded object's magic is corrupted.
+// `index_only` is 1 when the archive carries ONLY the bookkeeping member.
+static U8 *ProbeBuildArchiveWithObject(I64 corrupt_magic, I64 index_only,
+                                       I64 *out_size) {
+  I64 hdr = AR_MEMBER_HDR_LEN;
+  U8 *obj = ProbeBuildEmbeddedObject(corrupt_magic);
+  I64 objlen = PROBE_OBJ_SIZE;
+  // The bookkeeping member: the name is "/", and the payload is the
+  // archive's symbol index. It is NOT an object.
+  I64 idxlen = 16;
+  // The real member.
+  I64 total = AR_MAGIC_LEN + hdr + idxlen + hdr + objlen;
+  if (total % 2 != 0) total = total + 1;
+  U8 *b = MAlloc(total + 1);
+  MemSet(b, 0, total + 1);
+  I64 k = 0;
+  while (k < AR_MAGIC_LEN) { b[k] = "!<arch>\n"[k]; k = k + 1; }
+  I64 off = AR_MAGIC_LEN;
+  // The bookkeeping member's header. Its name is "/".
+  b[off] = 47;
+  I64 s = 1;
+  while (s < 16) { b[off + s] = 32; s = s + 1; }
+  I64 base = off + 16;
+  I64 f = 0;
+  while (f < 12) { b[base + f] = 32; f = f + 1; }
+  f = 0; while (f < 6) { b[base + 12 + f] = 32; f = f + 1; }
+  f = 0; while (f < 6) { b[base + 18 + f] = 32; f = f + 1; }
+  f = 0; while (f < 8) { b[base + 24 + f] = 32; f = f + 1; }
+  f = 0; while (f < 10) { b[base + 32 + f] = 32; f = f + 1; }
+  ProbeArSizeField(b + base + 32, idxlen);
+  I64 q = 42;
+  while (q < 42) { b[base + q] = 32; q = q + 1; }
+  b[base + 42] = 96; b[base + 43] = 10;
+  I64 poff = off + hdr;
+  I64 z = 0;
+  while (z < idxlen) { b[poff + z] = 65 + (z % 26); z = z + 1; }
+  off = poff + idxlen;
+  if (off % 2 != 0) off = off + 1;
+  if (index_only == 0) {
+    // The real member's header. Its name is "source.o/".
+    I64 m = 0;
+    while (m < 8) { b[off + m] = "source.o"[m]; m = m + 1; }
+    b[off + 8] = 47;
+    s = 9;
+    while (s < 16) { b[off + s] = 32; s = s + 1; }
+    base = off + 16;
+    f = 0;
+    while (f < 12) { b[base + f] = 32; f = f + 1; }
+    f = 0; while (f < 6) { b[base + 12 + f] = 32; f = f + 1; }
+    f = 0; while (f < 6) { b[base + 18 + f] = 32; f = f + 1; }
+    f = 0; while (f < 8) { b[base + 24 + f] = 32; f = f + 1; }
+    f = 0; while (f < 10) { b[base + 32 + f] = 32; f = f + 1; }
+    ProbeArSizeField(b + base + 32, objlen);
+    q = 42;
+    while (q < 42) { b[base + q] = 32; q = q + 1; }
+    b[base + 42] = 96; b[base + 43] = 10;
+    poff = off + hdr;
+    MemCpy(b + poff, obj, objlen);
+    off = poff + objlen;
+  }
+  *out_size = off;
+  Free(obj);
+  return b;
+}
+
+// The F5 control runner.
+//
+// It asserts that the CONTRACT refuses an archive whose real member
+// carries an INVALID embedded object, and that it accepts an archive whose
+// real member carries a VALID embedded object.
+static U0 ProbeEmissionControl(U8 *dir, U8 *control, I64 corrupt_magic,
+                                I64 index_only, I64 expect_accept) {
+  I64 size = 0;
+  U8 *b = ProbeBuildArchiveWithObject(corrupt_magic, index_only, &size);
+  ArArchive ar;
+  I64 code = ContractDecodeArchive(b, size, &ar);
+  I64 accepted = 0;
+  U8 *reason = ContractArReason(code);
+  if (code == AR_OK) {
+    I64 vcode = ContractArValidateMembers(&ar);
+    if (vcode == ARV_OK) accepted = 1;
+    reason = ContractArValidReason(vcode);
+  }
+  U8 *path = ProbePath(dir, control);
+  ProbeWrite(path, b, size);
+  ProbeVerdict(control, accepted, expect_accept, reason);
+  Free(b);
+  Free(path);
+}
+
 //
 // The ledger membership check.
 //
@@ -698,6 +877,23 @@ I32 Main(I32 argc, U8 **argv) {
     // declared extended name length: the archive is MALFORMED and the
     // decoder must reject it without overrunning.
     ProbeArchiveControl(dir, "M26B_ARCHIVE_NAME_EXTENDED_TRUNCATED", 3, 1, 0);
+  }
+
+  if (StrCmp(mode, "emission") == 0) {
+    // The F5 controls.
+    //
+    // The archive's real member carries an EMBEDDED Mach-O OBJECT. The
+    // archive itself is structurally well formed in every case, so only
+    // the EMBEDDED OBJECT's validity can reject it.
+    //
+    // N17 -- the embedded object's magic is corrupted. The archive must be
+    // refused, because the member payload is not a valid object.
+    ProbeEmissionControl(dir, "M17_ARCHIVE_MALFORMED_EMBEDDED_OBJECT", 1, 0, 0);
+    // N18 -- the archive carries ONLY the symbol-index bookkeeping member.
+    // It must be refused, because it carries no real member.
+    ProbeEmissionControl(dir, "M18_ARCHIVE_INDEX_ONLY", 0, 1, 0);
+    // The POSITIVE control: the archive carries a VALID embedded object.
+    ProbeEmissionControl(dir, "M17B_ARCHIVE_VALID_EMBEDDED_OBJECT_POSITIVE", 0, 0, 1);
   }
 
   if (StrCmp(mode, "ledger") == 0) {

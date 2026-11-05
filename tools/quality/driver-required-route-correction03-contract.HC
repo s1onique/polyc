@@ -1279,8 +1279,15 @@ static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
         edigits = edigits + 1;
         e = e + 1;
       }
-      if (edigits == 0 || extlen <= 0 || extlen > msize ||
-          extlen > AR_NAME_FIELD_LEN) {
+      // The DECLARED extended name length must be positive and must fit in
+      // the member's payload.
+      //
+      // It is NOT bounded by the name field's width: the name field carries
+      // only the "#1/N" marker and the DECIMAL LENGTH, and the platform's
+      // own `ar` writes a twenty-byte extended name. The copy is bounded by
+      // the SOURCE SLICE and the destination is allocated from the decoded
+      // length, so the bound is enforced where it matters.
+      if (edigits == 0 || extlen <= 0 || extlen > msize) {
         return AR_BAD_EXTENDED_NAME;
       }
     }
@@ -1393,6 +1400,89 @@ static I64 ContractArRequireMember(ArArchive *ar, U8 *name, I64 namelen) {
   if (idx < 0) return AREQ_MISSING_MEMBER;
   if (ar->m[idx].paylen <= 0) return AREQ_EMPTY_PAYLOAD;
   return AREQ_OK;
+}
+
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F5.
+//
+// THE ARCHIVE MEMBER VALIDATION.
+//
+// THE ORIGINAL DEFECT. The archive was DECODED and its members were
+// COMPARED, but each member's EMBEDDED PAYLOAD was never validated. Two
+// archives whose members carried IDENTICAL CORRUPT MACH-O PAYLOADS were
+// therefore reported as equivalent, because the bytes agreed.
+//
+// THE REPAIR. Each member's payload is validated as an EMBEDDED MACH-O
+// OBJECT before the archives are compared. An archive whose member carries
+// a corrupt embedded object is REFUSED, on its own side, with its own
+// reason token.
+//
+// The ARCHIVE BOOKKEEPING member -- the symbol index, which the platform
+// names "__.SYMDEF" or "/" -- is NOT an object. It is identified by its
+// decoded name and it is SKIPPED, because it is bookkeeping and not
+// content. Every OTHER member MUST be a valid Mach-O object.
+//
+// The return value is 0 when every real member is valid, and a reason code
+// otherwise.
+#define ARV_OK                 0
+#define ARV_MEMBER_INVALID     1
+#define ARV_NO_REAL_MEMBER     2
+#define ARV_MEMBER_PAYLOAD_EMPTY 3
+
+static U8 *ContractArValidReason(I64 code) {
+  if (code == ARV_OK) return "OK";
+  if (code == ARV_MEMBER_INVALID) return "ARCHIVE_EMBEDDED_OBJECT_INVALID";
+  if (code == ARV_NO_REAL_MEMBER) return "ARCHIVE_HAS_NO_REAL_MEMBER";
+  if (code == ARV_MEMBER_PAYLOAD_EMPTY) return "ARCHIVE_MEMBER_PAYLOAD_EMPTY";
+  return "ARCHIVE_UNKNOWN";
+}
+
+// The bookkeeping-member test.
+//
+// The platform's symbol-index member is named:
+//
+//   "/                the BSD short name -- the name IS the slash
+//   "__.SYMDEF        the classic name
+//   "__.SYMDEF SORTED the name the platform's own `ar` writes
+//
+// It carries the archive's symbol index and it is NOT an object. A member
+// whose name is one of those is SKIPPED by the member validation.
+//
+// The check is on the DECODED identity, so the different encodings of the
+// same bookkeeping member are all recognised.
+static I64 ContractArIsBookkeeping(U8 *name, I64 namelen) {
+  if (namelen == 1) {
+    if (name[0] == 47) return 1;
+  }
+  if (namelen == 9) {
+    if (ContractArNameEqual(name, 9, "__.SYMDEF", 9) == 1) return 1;
+  }
+  if (namelen == 16) {
+    if (ContractArNameEqual(name, 16, "__.SYMDEF SORTED", 16) == 1) return 1;
+  }
+  return 0;
+}
+
+// The archive member validation.
+//
+// It requires at least one REAL member, and it requires every real
+// member's payload to be a valid Mach-O object.
+static I64 ContractArValidateMembers(ArArchive *ar) {
+  I64 real_members = 0;
+  I64 i = 0;
+  while (i < ar->count) {
+    if (ContractArIsBookkeeping(ar->m[i].name, ar->m[i].namelen) == 0) {
+      real_members = real_members + 1;
+      // The member's payload MUST be non-empty: a member with no content
+      // does not satisfy a requirement for a real member.
+      if (ar->m[i].paylen <= 0) return ARV_MEMBER_PAYLOAD_EMPTY;
+      // The member's payload MUST be a valid Mach-O object.
+      I64 mv = ContractValidateMachO(ar->m[i].payload, ar->m[i].paylen, 1);
+      if (mv != MV_OK) return ARV_MEMBER_INVALID;
+    }
+    i = i + 1;
+  }
+  if (real_members < 1) return ARV_NO_REAL_MEMBER;
+  return ARV_OK;
 }
 
 // The SEMANTIC EQUIVALENCE check.
@@ -1683,14 +1773,30 @@ static I64 ContractSelfCheck() {
 static I64 ContractDecodeMemberName(U8 *source, I64 source_len,
                                      I64 short_form, I64 extlen,
                                      U8 **out_name, I64 *out_len) {
-  U8 *decoded = MAlloc(AR_NAME_FIELD_LEN + 1);
-  MemSet(decoded, 0, AR_NAME_FIELD_LEN + 1);
+  // The decoded name is copied into a temporary whose size is the SOURCE
+  // SLICE's length, so the copy can never exceed the temporary. The
+  // temporary is at least one byte larger than the slice, so the
+  // terminator always has a place.
+  I64 temp_len = source_len + 1;
+  if (temp_len < 1) temp_len = 1;
+  U8 *decoded = MAlloc(temp_len);
+  MemSet(decoded, 0, temp_len);
   I64 decoded_length = 0;
   I64 namelen = 0;
   if (short_form == 0) {
-    // The extended form. The declared length must be positive, must fit
-    // in the source slice, and must fit in the name field's width.
-    if (extlen <= 0 || extlen > source_len || extlen > AR_NAME_FIELD_LEN) {
+    // The extended form. The declared length must be positive and must fit
+    // in the source slice.
+    //
+    // The extended name is NOT bounded by the name field's width: the
+    // platform's own `ar` writes "__.SYMDEF SORTED", which is fifteen
+    // characters plus its NUL padding -- twenty bytes -- and it declares
+    // that length in the "#1/N" field. The name field carries only the
+    // marker and the DECIMAL LENGTH, not the name itself.
+    //
+    // The length is therefore bounded by the SOURCE SLICE, and the copy is
+    // bounded by the source slice. The destination is allocated from the
+    // decoded length, so the copy can never overrun it.
+    if (extlen <= 0 || extlen > source_len) {
       Free(decoded);
       return AR_BAD_EXTENDED_NAME;
     }
@@ -1703,24 +1809,41 @@ static I64 ContractDecodeMemberName(U8 *source, I64 source_len,
   } else {
     // The short form. The scan is bounded by the name field's width AND
     // by the source slice's length.
+    //
+    // The BSD SHORT NAMES have three forms:
+    //
+    //   "name/"      the name, terminated by a slash
+    //   "name"       the name, space-padded with no terminator
+    //   "/"          the SYMBOL TABLE itself -- the name IS the slash
+    //
+    // The third form is the archive's bookkeeping member, and the previous
+    // revision decoded it as a sixteen-byte name that began with a slash,
+    // so the member was not recognised as bookkeeping.
     I64 limit = AR_NAME_FIELD_LEN;
     if (source_len < limit) limit = source_len;
-    I64 n = 0;
-    while (n < limit) {
-      if (source[n] == 47) break;
-      if (source[n] == 32) break;
-      n = n + 1;
-    }
-    if (n > 0 && n < limit && source[n] == 47) {
-      namelen = n;
-    } else if (n > 0 && n < limit && source[n] == 32) {
-      namelen = n;
+    // The name is the slash ITSELF when the field begins with one.
+    if (limit > 0 && source[0] == 47) {
+      namelen = 1;
+      decoded[0] = 47;
+      decoded_length = 1;
     } else {
-      namelen = limit;
+      I64 n = 0;
+      while (n < limit) {
+        if (source[n] == 47) break;
+        if (source[n] == 32) break;
+        n = n + 1;
+      }
+      if (n > 0 && n < limit && source[n] == 47) {
+        namelen = n;
+      } else if (n > 0 && n < limit && source[n] == 32) {
+        namelen = n;
+      } else {
+        namelen = limit;
+      }
+      if (namelen > limit) namelen = limit;
+      MemCpy(decoded, source, namelen);
+      decoded_length = namelen;
     }
-    if (namelen > limit) namelen = limit;
-    MemCpy(decoded, source, namelen);
-    decoded_length = namelen;
   }
   // The destination is allocated from the DECODED LENGTH.
   I64 alloc_size = decoded_length + 1;

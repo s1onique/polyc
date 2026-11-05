@@ -548,6 +548,30 @@ I32 Main(I32 argc, U8 **argv) {
           Reason(case_id, "polyc", "ARCHIVE_HAS_NO_REAL_MEMBER");
         }
       }
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4,
+      // F5 -- THE EMBEDDED MEMBER VALIDATION.
+      //
+      // Each real member's payload MUST be a valid Mach-O object. Without
+      // this check, two archives whose members carried IDENTICAL CORRUPT
+      // MACH-O PAYLOADS were reported as equivalent, because their bytes
+      // agreed. The check is applied to EACH SIDE INDEPENDENTLY, so an
+      // invalid archive is refused on its own side, before any comparison.
+      if (odec == AR_OK) {
+        I64 ovalid = ContractArValidateMembers(&oar);
+        Check(ovalid == ARV_OK, case_id,
+              "the oracle archive's EMBEDDED objects are VALID");
+        if (ovalid != ARV_OK) {
+          Reason(case_id, "oracle", ContractArValidReason(ovalid));
+        }
+      }
+      if (pdec == AR_OK) {
+        I64 pvalid = ContractArValidateMembers(&par);
+        Check(pvalid == ARV_OK, case_id,
+              "the PolyC archive's EMBEDDED objects are VALID");
+        if (pvalid != ARV_OK) {
+          Reason(case_id, "polyc", ContractArValidReason(pvalid));
+        }
+      }
       // The SEMANTIC EQUIVALENCE of the DECODED members. The comparison
       // uses the DECODED MEMBER IDENTITY and the PAYLOAD, never the raw
       // header bytes, so two VALID archive encodings of the same member
