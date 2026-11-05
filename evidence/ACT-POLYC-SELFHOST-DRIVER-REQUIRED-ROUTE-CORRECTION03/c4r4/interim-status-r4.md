@@ -145,8 +145,26 @@ The review instructions are COMMITTED, in
 `c4r4/independent-review-prompt.txt`, so that the scope and the questions
 the reviewer was asked cannot be adjusted after its findings are known.
 
+The reviewer itself is PRESENT and RUNNING: the app-server daemon is up
+under the writable `CODEX_HOME`, it RECOVERS from the preferences failure
+with "Invalid configuration; using defaults", and it exposes a
+`review/start` entry point whose `ReviewTarget` accepts custom
+instructions. What it cannot do is be DRIVEN from here: every CLI entry
+point performs its own configuration load and aborts on the preferences
+failure, and the daemon's control socket is not the published app-server
+JSON-RPC protocol, so it does not answer either framing. The measurement
+is in `c4r4/independent-review-harness-unavailable.txt`.
+
 ## THE NEXT ACTION
 
 Run the committed review instructions in an environment in which the Codex
 reviewer can start, and bring its findings back as a new remediation
-round. Nothing is pushed.
+round. The invocation is pinned down exactly:
+
+    export CODEX_HOME=/tmp/codex-home
+    codex exec --sandbox read-only review - \
+        < evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r4/independent-review-prompt.txt
+
+`--base` is neither needed nor permitted, because a prompt and `--base`
+are mutually exclusive; the committed prompt names the base commit
+itself. Nothing is pushed.
