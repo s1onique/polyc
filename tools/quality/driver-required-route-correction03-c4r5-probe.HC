@@ -1498,8 +1498,10 @@ I32 Main(I32 argc, U8 **argv) {
   r5_failures = 0;
 
   if (argc < 3) {
-    "PROBE_USAGE\tprobe macho|archive|ledger|capture|identity|emission "
-      "<fixture-dir>\n";
+    "PROBE_USAGE\tprobe macho|archive|ledger|capture|identity|emission|tls "
+      "<fixture-dir>\n"
+      "PROBE_USAGE\tprobe harness <harness-binary> <producer> <work-dir> "
+      "<arch>\n";
     return 2;
   }
   U8 *mode = argv[1];
