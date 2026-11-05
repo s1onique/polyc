@@ -108,6 +108,12 @@
 #define HARNESS_PRODUCER_NOT_EXECUTABLE 9
 #define HARNESS_PRODUCER_ARCH_MISMATCH  10
 #define HARNESS_EVENT_DIR_EXISTS        11
+// HARNESS_ENV_NOT_IN_FORCE -- the environment the capture record names was
+// NOT in force in the spawned child. The harness applied a binding, the
+// setenv call SUCCEEDED, and the child nevertheless did not observe the
+// variable. This is the reason that distinguishes "the binding was
+// applied" from "the binding was applied CORRECTLY".
+#define HARNESS_ENV_NOT_IN_FORCE        12
 
 static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_OK) return "OK";
@@ -122,6 +128,7 @@ static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_PRODUCER_NOT_EXECUTABLE) return "HARNESS_PRODUCER_NOT_EXECUTABLE";
   if (code == HARNESS_PRODUCER_ARCH_MISMATCH) return "HARNESS_PRODUCER_ARCH_MISMATCH";
   if (code == HARNESS_EVENT_DIR_EXISTS) return "HARNESS_EVENT_DIR_EXISTS";
+  if (code == HARNESS_ENV_NOT_IN_FORCE) return "HARNESS_ENV_NOT_IN_FORCE";
   return "HARNESS_UNKNOWN";
 }
 
@@ -464,25 +471,18 @@ static I64 HarnessApplyEnv(U8 **envv, I64 nenv) {
   I64 i = 0;
   while (i < nenv) {
     U8 *binding = envv[i];
-    I64 len = StrLen(binding);
-    I64 eq = 0;
-    I64 j = 0;
-    while (j < len) {
-      if (binding[j] == 61) { eq = 1; break; }
-      j = j + 1;
-    }
-    if (eq == 0 || eq == 0 || eq >= len) {
+    // The SPLIT is the shared contract's, and it is exercised by the
+    // contract's own self-check. The earlier revision computed the split
+    // HERE, with ONE variable used as both a flag and a position, so the
+    // variable that was set bore the wrong name and the wrong value while
+    // the setenv call still SUCCEEDED.
+    U8 *name = NULL;
+    U8 *value = NULL;
+    if (ContractSplitBinding(binding, &name, &value) == 0) {
       "HARNESS_REASON_DETAIL\tthe environment binding %s is not a NAME=VALUE pair\n",
         binding;
       return HARNESS_USAGE;
     }
-    I64 namelen = eq;
-    U8 *name = MAlloc(namelen + 1);
-    MemCpy(name, binding, namelen);
-    name[namelen] = 0;
-    U8 *value = MAlloc(len - eq);
-    MemCpy(value, binding + eq + 1, len - eq - 1);
-    value[len - eq - 1] = 0;
     if (setenv(name, value, 1) != 0) {
       "HARNESS_REASON_DETAIL\tthe environment binding %s could not be applied\n",
         binding;
@@ -921,6 +921,111 @@ static I64 HarnessReadContext(U8 *run_dir, U8 *ledger_path) {
 }
 
 // ---------------------------------------------------------------------------
+// THE ENVIRONMENT-APPLICATION SELF-TEST.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+//   harness envcheck <probe-program> <variable-name> <expected-value>
+//
+// The probe program is a Mach-O executable that prints the value of the
+// named variable on its standard output. The harness APPLIES the binding,
+// SPAWNS the probe, and requires the probe's output to carry the expected
+// value.
+//
+// WHY THIS EXISTS. The harness's own execution could not detect a WRONG
+// environment application: the setenv call SUCCEEDED, and the capture
+// recorded the binding the harness BELIEVED it had applied. The defect
+// was found by an EXTERNAL probe that read the variable from the child.
+// This mode makes that probe part of the harness's own evidence, so the
+// property is checked on EVERY run rather than once by hand.
+//
+// The probe program must be a Mach-O image for the expected architecture,
+// or it is refused with the SAME reason a producer is refused. The check
+// is the same check, applied to the probe.
+// ---------------------------------------------------------------------------
+static I64 HarnessEnvCheck(I32 argc, U8 **argv) {
+  if (argc < 5) {
+    "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_USAGE);
+    "HARNESS_USAGE\tharness envcheck <probe> <variable> <expected>\n";
+    return HARNESS_USAGE;
+  }
+  U8 *probe = argv[2];
+  U8 *varname = argv[3];
+  U8 *expected = argv[4];
+
+  // The probe is a Mach-O image for the expected architecture.
+  I64 pv = HarnessValidateProducer(probe, CPU_TYPE_ARM64);
+  if (pv != HARNESS_OK) {
+    "HARNESS_REASON\t%s\n", HarnessReason(pv);
+    return pv;
+  }
+
+  // The binding is applied through the SAME path the run mode uses. The
+  // binding is assembled by explicit copies, because the runtime has no
+  // string-concatenation primitive.
+  I64 namelen = StrLen(varname);
+  I64 explen = StrLen(expected);
+  U8 *binding = MAlloc(namelen + explen + 2);
+  MemCpy(binding, varname, namelen);
+  binding[namelen] = 61;
+  if (explen > 0) MemCpy(binding + namelen + 1, expected, explen);
+  binding[namelen + 1 + explen] = 0;
+  U8 *envv[1];
+  envv[0] = binding;
+  I64 envrc = HarnessApplyEnv(envv, 1);
+  if (envrc != HARNESS_OK) {
+    "HARNESS_REASON\t%s\n", HarnessReason(envrc);
+    return envrc;
+  }
+
+  // The probe is spawned, and its standard output is captured. The probe
+  // is given the VARIABLE NAME as its argument, so it can report what it
+  // observed under that exact name.
+  U8 *args[3];
+  args[0] = probe;
+  args[1] = varname;
+  args[2] = NULL;
+  U8 *out = NULL;
+  U8 *err = NULL;
+  I64 rc = SpawnAndCapture(probe, args, &out, &err);
+  if (rc < 0 || rc > 255) {
+    "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_SPAWN_FAILED);
+    return HARNESS_SPAWN_FAILED;
+  }
+  I64 outlen = 0;
+  U8 *outbuf = out;
+  if (outbuf == NULL) outbuf = "";
+  outlen = StrLen(outbuf);
+
+  // The probe's output must CARRY the expected value. The check is a
+  // CONTAINS, because the probe's format is its own.
+  I64 found = 0;
+  I64 elen = StrLen(expected);
+  if (elen > 0) {
+    I64 i = 0;
+    while (i + elen <= outlen) {
+      I64 k = 0;
+      I64 same = 1;
+      while (k < elen) {
+        if (outbuf[i + k] != expected[k]) { same = 0; break; }
+        k = k + 1;
+      }
+      if (same == 1) { found = 1; break; }
+      i = i + 1;
+    }
+  }
+  if (found == 0) {
+    "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_ENV_NOT_IN_FORCE);
+    "HARNESS_ENV_DIAG\tthe probe did not observe the expected value\n";
+    "HARNESS_ENV_DIAG\tprobe_stdout=[%s]\n", outbuf;
+    return HARNESS_ENV_NOT_IN_FORCE;
+  }
+  "HARNESS_ENVCHECK_STATUS=PASS\n";
+  "HARNESS_ENVCHECK_STDOUT=[%s]\n", outbuf;
+  return HARNESS_OK;
+}
+
+// ---------------------------------------------------------------------------
 // MAIN.
 //
 //   harness init <run-dir>
@@ -946,6 +1051,13 @@ I32 Main(I32 argc, U8 **argv) {
 
   if (StrCmp(argv[1], "init") == 0) {
     return HarnessInit(argv[2]);
+  }
+
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // The environment-application self-test.
+  if (StrCmp(argv[1], "envcheck") == 0) {
+    return HarnessEnvCheck(argc, argv);
   }
 
   if (StrCmp(argv[1], "run") == 0) {

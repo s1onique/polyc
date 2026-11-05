@@ -1538,9 +1538,143 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 //   * the archive member NAME EQUALITY REJECTS a prefix name and ACCEPTS a
 //     different raw encoding of the same decoded name.
 // ---------------------------------------------------------------------------
+// The ENVIRONMENT-BINDING SPLIT.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// It splits a `NAME=VALUE` binding into its name and its value. The name
+// is the part BEFORE the FIRST separator and the value is the part AFTER
+// it, so a value may itself contain separators.
+//
+// It returns 1 on success and 0 on a malformed binding. The malformed
+// cases are:
+//
+//   * there is no separator at all;
+//   * the name is EMPTY -- a binding of the form "=VALUE" names nothing;
+//   * the binding is exactly the separator.
+//
+// The SEPARATOR'S POSITION is the value the split depends on. An earlier
+// revision used ONE variable as both a flag and a position, and the
+// arithmetic then read the flag as a position. The name became the first
+// character of the binding and the value became the binding with its
+// first two characters removed, so the variable that was set bore the
+// wrong name and the wrong value. The harness could not detect this: the
+// setenv call SUCCEEDED, and the capture recorded the binding the
+// harness BELIEVED it had applied.
+//
+// The caller owns both returned buffers and must Free them.
+static I64 ContractSplitBinding(U8 *binding, U8 **out_name, U8 **out_value) {
+  *out_name = NULL;
+  *out_value = NULL;
+  if (binding == NULL) return 0;
+  I64 len = StrLen(binding);
+  // The INDEX of the first separator. It is NEGATIVE when there is none,
+  // which is distinguishable from index ZERO.
+  I64 sep = -1;
+  I64 i = 0;
+  while (i < len) {
+    if (binding[i] == 61) { sep = i; break; }
+    i = i + 1;
+  }
+  // A separator at index ZERO leaves an EMPTY name, which names nothing.
+  // A separator at the LAST index leaves an EMPTY value, which is valid.
+  if (sep < 1) return 0;
+  I64 namelen = sep;
+  I64 valuelen = len - sep - 1;
+  U8 *name = MAlloc(namelen + 1);
+  MemCpy(name, binding, namelen);
+  name[namelen] = 0;
+  U8 *value = MAlloc(valuelen + 1);
+  if (valuelen > 0) MemCpy(value, binding + sep + 1, valuelen);
+  value[valuelen] = 0;
+  *out_name = name;
+  *out_value = value;
+  return 1;
+}
+
 static I64 ContractSelfCheck() {
   I64 failures = 0;
   I64 checks = 0;
+
+  // --- The environment-binding split. -------------------------------------
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // A binding is a NAME=VALUE pair. The split is exercised HERE, because a
+  // split that computes the NAME's length as something other than the
+  // separator's position sets a variable under the WRONG NAME with the
+  // WRONG VALUE, and the harness then records an environment that was
+  // never in force. The harness's own execution could not detect this: it
+  // applied a binding successfully and recorded what it believed it had
+  // applied.
+  //
+  // The cases cover a one-character name, a name with digits, a value with
+  // an equals sign in it, an EMPTY value, and the rejections.
+  I64 bind_checks = 0;
+  I64 bind_failures = 0;
+  // The positive cases: the expected name and the expected value.
+  U8 *bind_names[5];
+  U8 *bind_values[5];
+  U8 *bind_inputs[5];
+  bind_inputs[0] = "A=1";
+  bind_names[0] = "A";
+  bind_values[0] = "1";
+  bind_inputs[1] = "F1_ENVIRONMENT_PROBE=THE_BINDING";
+  bind_names[1] = "F1_ENVIRONMENT_PROBE";
+  bind_values[1] = "THE_BINDING";
+  bind_inputs[2] = "NAME=WITH=EQUALS";
+  bind_names[2] = "NAME";
+  bind_values[2] = "WITH=EQUALS";
+  bind_inputs[3] = "EMPTY=";
+  bind_names[3] = "EMPTY";
+  bind_values[3] = "";
+  bind_inputs[4] = "PATH=/a/b/c";
+  bind_names[4] = "PATH";
+  bind_values[4] = "/a/b/c";
+  I64 bc = 0;
+  while (bc < 5) {
+    U8 *name = NULL;
+    U8 *value = NULL;
+    I64 ok = ContractSplitBinding(bind_inputs[bc], &name, &value);
+    bind_checks = bind_checks + 1;
+    if (ok == 0) {
+      "CONTRACT_SELFTEST\tBINDING_SPLIT_%lld\tFAIL\trejected a valid binding\n", bc;
+      bind_failures = bind_failures + 1;
+    } else {
+      if (StrCmp(name, bind_names[bc]) != 0) {
+        "CONTRACT_SELFTEST\tBINDING_SPLIT_%lld\tFAIL\tname=[%s] expected=[%s]\n",
+          bc, name, bind_names[bc];
+        bind_failures = bind_failures + 1;
+      } else if (StrCmp(value, bind_values[bc]) != 0) {
+        "CONTRACT_SELFTEST\tBINDING_SPLIT_%lld\tFAIL\tvalue=[%s] expected=[%s]\n",
+          bc, value, bind_values[bc];
+        bind_failures = bind_failures + 1;
+      }
+      Free(name);
+      Free(value);
+    }
+    bc = bc + 1;
+  }
+  // The negative cases: a binding with no separator, a binding whose name
+  // is EMPTY, and a binding whose name is only a separator.
+  U8 *bind_bad[3];
+  bind_bad[0] = "NO_SEPARATOR";
+  bind_bad[1] = "=VALUE";
+  bind_bad[2] = "=";
+  bc = 0;
+  while (bc < 3) {
+    U8 *name = NULL;
+    U8 *value = NULL;
+    I64 ok = ContractSplitBinding(bind_bad[bc], &name, &value);
+    bind_checks = bind_checks + 1;
+    if (ok != 0) {
+      "CONTRACT_SELFTEST\tBINDING_REJECT_%lld\tFAIL\taccepted a malformed binding\n", bc;
+      bind_failures = bind_failures + 1;
+    }
+    bc = bc + 1;
+  }
+  checks = checks + bind_checks;
+  failures = failures + bind_failures;
 
   // --- The exit-status round trip. ---------------------------------------
   I64 values[8];

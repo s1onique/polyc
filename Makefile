@@ -1189,7 +1189,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-warm-producer-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-warm-producer-test driver-wp001-correction03-envcheck-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1487,6 +1487,50 @@ $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ) $(TEST_PREFIX_LIBTO
 # regression in the shared contract fails the whole correction03 suite
 # rather than one mode of it.
 # ---------------------------------------------------------------------------
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+#
+# THE ENVIRONMENT-APPLICATION SELF-TEST.
+#
+# The probe is a real production-shaped executable that prints the value of
+# an environment variable. The harness applies a binding, spawns the probe,
+# and requires the probe's output to carry the expected value.
+#
+# Without this check, a WRONG environment application is INVISIBLE to the
+# harness: the setenv call SUCCEEDS, the capture records the binding the
+# harness BELIEVED it applied, and every self-consistent check passes.
+# That is exactly the defect this check was added to prevent.
+DRIVER_ROUTE03_ENVPROBE_SRC = tools/quality/driver-required-route-correction03-envprobe.HC
+DRIVER_ROUTE03_ENVPROBE_OBJ = build/driver-required-route-correction03-envprobe.o
+DRIVER_ROUTE03_ENVPROBE_BIN = build/driver-required-route-correction03-envprobe
+
+$(DRIVER_ROUTE03_ENVPROBE_OBJ): $(DRIVER_ROUTE03_ENVPROBE_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_ENVPROBE_SRC) -o $@
+
+$(DRIVER_ROUTE03_ENVPROBE_BIN): $(DRIVER_ROUTE03_ENVPROBE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_ENVPROBE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
+		exit 1; \
+	fi
+
+.PHONY: driver-wp001-correction03-envcheck-test
+driver-wp001-correction03-envcheck-test: $(DRIVER_ROUTE03_ENVPROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN)
+	@set -e; \
+	$(DRIVER_ROUTE03_HARNESS_BIN) envcheck \
+	  $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN) F1_ENVIRONMENT_PROBE THE_BINDING_WAS_APPLIED \
+	  > $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt 2>&1 || { \
+	  echo "driver-wp001-correction03: the environment-application self-test FAILED" >&2; \
+	  cat $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt >&2; \
+	  exit 1; \
+	}; \
+	if ! grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt; then \
+	  echo "driver-wp001-correction03: the environment-application self-test did not PASS" >&2; \
+	  cat $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt >&2; \
+	  exit 1; \
+	fi; \
+	echo "DRIVER_WP001_CORRECTION03_ENVCHECK_STATUS=PASS"
+
 .PHONY: driver-wp001-correction03-contract-test
 driver-wp001-correction03-contract-test: $(DRIVER_ROUTE03_COMPARE_BIN)
 	@$(DRIVER_ROUTE03_COMPARE_BIN) selfcheck

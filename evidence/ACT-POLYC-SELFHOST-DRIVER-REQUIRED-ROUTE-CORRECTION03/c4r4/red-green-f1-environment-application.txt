@@ -1,0 +1,123 @@
+# THE F1 ENVIRONMENT APPLICATION -- a DEFECT IN THE REPAIR, FOUND AND FIXED.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+#
+# The F1 repair claimed that the harness APPLIES the environment it
+# records. That claim was WRONG, and the harness's own checks could not
+# see it.
+#
+# ---------------------------------------------------------------------------
+# THE DEFECT
+# ---------------------------------------------------------------------------
+#
+# The binding was split with ONE variable used as BOTH a flag and a
+# position:
+#
+#     I64 eq = 0;
+#     while (j < len) {
+#       if (binding[j] == 61) { eq = 1; break; }
+#       j = j + 1;
+#     }
+#     I64 namelen = eq;
+#     MemCpy(name, binding, namelen);
+#     ...
+#     MemCpy(value, binding + eq + 1, len - eq - 1);
+#
+# The scan set `eq` to 1 on a hit, and the arithmetic then read it as a
+# position. The consequence:
+#
+#   * the NAME was the FIRST CHARACTER of the binding;
+#   * the VALUE was the binding with its first TWO characters removed.
+#
+# The setenv call therefore SUCCEEDED, and the variable it set bore the
+# wrong name and the wrong value.
+#
+# ---------------------------------------------------------------------------
+# WHY THE HARNESS'S OWN CHECKS COULD NOT SEE IT
+# ---------------------------------------------------------------------------
+#
+# The capture record names the binding the harness BELIEVED it applied, so
+# every self-consistent check passed. The comparator recomputes the event
+# identity over the record's own ENV block, and that block was internally
+# consistent -- it simply did not describe the environment that was in
+# force.
+#
+# The defect was found by an EXTERNAL probe: a real executable that reads
+# the variable and prints it, spawned by the harness itself.
+#
+#     $ ./build/harness run ... arm64 \
+#         F1_ENVIRONMENT_PROBE=THE_BINDING_WAS_APPLIED -- ./envprobe-bin
+#     CHILD_SEES_F1_ENVIRONMENT_PROBE=ABSENT
+#
+# The capture recorded:
+#
+#     ENV
+#     F1_ENVIRONMENT_PROBE=THE_BINDING_WAS_APPLIED
+#
+# The record and the child DISAGREED, and only the child was right.
+#
+# A diagnostic inside the harness confirmed the mechanism:
+#
+#     HARNESS_ENV_DIAG   setenv_rc=0
+#     HARNESS_ENV_DIAG   parent_readback=_ENVIRONMENT_PROBE=THE_BINDING_WAS_APPLIED
+#
+# The readback is the binding with its FIRST CHARACTER removed, which is
+# exactly the value the broken arithmetic computed.
+#
+# ---------------------------------------------------------------------------
+# THE REPAIR
+# ---------------------------------------------------------------------------
+#
+# The split is now the SHARED CONTRACT's, and it is EXERCISED by the
+# contract's own self-check, which is a prerequisite of all four
+# CORRECTION03 targets.
+#
+# The split computes the separator's POSITION. The name is the part BEFORE
+# the first separator and the value is the part AFTER it, so a value may
+# itself contain separators. A binding with no separator, with an EMPTY
+# name, or that is exactly the separator is REJECTED.
+#
+# The self-check gained EIGHT cases: a one-character name, a name with
+# digits, a value containing an equals sign, an EMPTY value, a path value,
+# and the three rejections. The self-check's count rose from 20 to 28.
+#
+# ---------------------------------------------------------------------------
+# THE MECHANICAL PROOF THAT THE REGRESSION IS NOW PREVENTED
+# ---------------------------------------------------------------------------
+#
+# The original defect was INJECTED into the shared split -- the scan was
+# changed to set the position to 1 -- and both new checks FAILED.
+#
+# THE CONTRACT SELF-CHECK:
+#
+#     CONTRACT_SELFTEST   BINDING_SPLIT_1   FAIL  name=[F] expected=[F1_ENVIRONMENT_PROBE]
+#     CONTRACT_SELFTEST   BINDING_SPLIT_2   FAIL  name=[N] expected=[NAME]
+#     CONTRACT_SELFTEST   BINDING_SPLIT_3   FAIL  name=[E] expected=[EMPTY]
+#     CONTRACT_SELFTEST   BINDING_SPLIT_4   FAIL  name=[P] expected=[PATH]
+#     CONTRACT_SELFTEST   BINDING_REJECT_1  FAIL  accepted a malformed binding
+#     CONTRACT_SELFTEST   BINDING_REJECT_2  FAIL  accepted a malformed binding
+#     CONTRACT_SELFTEST_CHECKS    28
+#     CONTRACT_SELFTEST_FAILURES  6
+#
+# THE END-TO-END ENVIRONMENT SELF-TEST:
+#
+#     driver-wp001-correction03: the environment-application self-test FAILED
+#     HARNESS_REASON    HARNESS_ENV_NOT_IN_FORCE
+#     HARNESS_ENV_DIAG  the probe did not observe the expected value
+#     HARNESS_ENV_DIAG  probe_stdout=[ENVPROBE_VALUE=ABSENT
+#
+# Two INDEPENDENT checks now detect the defect: one on the split itself,
+# and one on the environment as the CHILD observes it.
+#
+# ---------------------------------------------------------------------------
+# THE GREEN
+# ---------------------------------------------------------------------------
+#
+#     DRIVER_WP001_CORRECTION03_ENVCHECK_STATUS=PASS
+#     CONTRACT_SELFTEST_CHECKS    28
+#     CONTRACT_SELFTEST_FAILURES  0
+#
+# The probe is a real production-shaped executable,
+# tools/quality/driver-required-route-correction03-envprobe.HC, and the
+# harness's `envcheck` mode applies a binding, spawns the probe, and
+# requires the probe's output to carry the expected value.
