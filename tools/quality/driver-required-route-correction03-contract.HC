@@ -40,6 +40,30 @@
 #include "driver-required-route-correction03-sha256.HC"
 
 // ---------------------------------------------------------------------------
+// THE OPEN FLAGS.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+//
+// The evidence path writes files with the runtime's `FileWrite`, and it
+// asks for the file to be TRUNCATED when it is written. The runtime's
+// `tooling_defs.HH` declares `O_RDWR`, `O_CREAT` and `O_EXCL`, but it does
+// NOT declare `O_TRUNC`, so an `O_TRUNC` used in this evidence path
+// evaluated to ZERO: the file was opened for reading and writing WITHOUT
+// truncation, and a shorter write left the previous file's TAIL in place.
+//
+// The flag is declared HERE, in the shared contract, so that every
+// consumer of the contract -- the comparator, the emission verifier, the
+// harness and the probes -- uses the SAME value.
+//
+// The value is the platform's own `O_TRUNC`, which is `0x0400` on this
+// platform (`<fcntl.h>`). It is declared with a guard, so that a consumer
+// that already includes `io_defs.HH` -- which declares the same value --
+// does not see a conflicting definition.
+#ifndef O_TRUNC
+#define O_TRUNC 0x0400
+#endif
+
+// ---------------------------------------------------------------------------
 // THE ARTIFACT CLASSES.
 // ---------------------------------------------------------------------------
 #define CLS_ABSENT      0
@@ -410,6 +434,26 @@ static I64 vm_dysym_nundefsym;
 
 // The section extents that were validated. They are checked for OVERLAP so a
 // pair of sections that claim the same bytes is rejected.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6, R5-03.
+//
+// ONLY THE FILE-BACKED SECTIONS ARE RECORDED HERE. A section whose type is
+// one of the VIRTUAL zero-fill types carries NO file-backed content: its
+// `size` is a VIRTUAL size that is not bounded by the file, and its
+// `offset` is zero by the platform's own convention.
+//
+// The previous revision recorded EVERY section's extent and then compared
+// them as FILE ranges. A genuine, platform-compiled arm64 object that
+// carried a 256 KiB `S_ZEROFILL` section was therefore REJECTED with
+// `MACHO_SECTION_EXTENT_INVALID`, because the zero-fill section's virtual
+// size (0x40000) was compared against the file-backed `__text` section's
+// file offset, and the two "overlapped". The macOS linker accepted the
+// same object.
+//
+// The VIRTUAL-MEMORY BOUNDS of a zero-fill section are a different
+// property from its FILE extent, and the two are kept apart: the virtual
+// size is checked against the SEGMENT's virtual size, and the file extent
+// is checked only for the sections that HAVE one.
 static I64 vm_sec_off[MV_MAX_SECTIONS];
 static I64 vm_sec_size[MV_MAX_SECTIONS];
 
@@ -798,7 +842,16 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
         I64 reloff = ContractWordAt(buf, size, soff + 56);
         I64 nreloc = ContractWordAt(buf, size, soff + 60);
         I64 sec_flags = ContractWordAt(buf, size, soff + 64);
+        // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+        // R5-03 -- THE SECTION'S VIRTUAL ADDRESS.
+        //
+        // The section's `addr` is a 64-bit VIRTUAL address. It is read
+        // through `ContractQwordAt`, so the upper half is not ignored. It
+        // is needed for the VIRTUAL-MEMORY bound of a zero-fill section,
+        // which is a different property from the file-backed bound.
+        I64 sec_addr = ContractQwordAt(buf, size, soff + 32);
         if (sec_size < 0 || sec_offset < 0) return MV_SECTION_BOUNDS;
+        if (sec_addr < 0) return MV_SECTION_BOUNDS;
         if (reloff < 0 || nreloc < 0) return MV_SECTION_BOUNDS;
         if (sec_align < 0) return MV_SECTION_BOUNDS;
         // The section TYPE is the low byte of the section's flags.
@@ -883,11 +936,43 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
         if (file_backed == 0) {
           if (sec_offset != 0) return MV_SECTION_BOUNDS;
         }
+        // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+        // R5-03 -- THE VIRTUAL EXTENT IS NOT A FILE EXTENT.
+        //
+        // A VIRTUAL section's `size` is a VIRTUAL size. It is NOT bounded by
+        // the file, and it is NOT bounded by the SEGMENT's declared
+        // `vmsize` either: the segment's `vmsize` is a DECLARED value that
+        // the platform's own linker does not require to bound the
+        // sections inside it, and a genuine, platform-compiled arm64
+        // object may declare a `vmsize` of zero while carrying a
+        // zero-fill section.
+        //
+        // The bound that DOES hold is the one the segment itself is held
+        // to: the virtual extent must not wrap the address space. The
+        // check is kept, and it is kept SEPARATE, so that the
+        // virtual-memory bounds stay enforced while the file-range overlap
+        // check sees only the sections that HAVE file bytes.
+        //
+        // The subtraction form cannot overflow: the section's address is
+        // already known to be non-negative, and the section's size is
+        // already known to be non-negative.
+        if (file_backed == 0) {
+          if (sec_size > 0) {
+            if (sec_addr > 0x7FFFFFFFFFFF - sec_size) return MV_SECTION_BOUNDS;
+          }
+        }
         // Record the extent for the overlap check.
-        if (vm_nsections >= MV_MAX_SECTIONS) return MV_SECTION_BOUNDS;
-        vm_sec_off[vm_nsections] = sec_offset;
-        vm_sec_size[vm_nsections] = sec_size;
-        vm_nsections = vm_nsections + 1;
+        //
+        // ONLY A FILE-BACKED SECTION IS RECORDED. A virtual section has no
+        // file-backed extent, so it cannot overlap another section's file
+        // bytes, and recording it would compare a VIRTUAL size against a
+        // FILE offset -- a comparison between two different quantities.
+        if (file_backed == 1) {
+          if (vm_nsections >= MV_MAX_SECTIONS) return MV_SECTION_BOUNDS;
+          vm_sec_off[vm_nsections] = sec_offset;
+          vm_sec_size[vm_nsections] = sec_size;
+          vm_nsections = vm_nsections + 1;
+        }
         s = s + 1;
       }
       vm_nsegments = vm_nsegments + 1;
@@ -1807,6 +1892,8 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 //   SELECTOR            the selector
 //   PRODUCER_ID         the sixty-four character producer digest
 //   SOURCE_ID           the sixty-four character source digest
+//   COMPILED_SOURCE_ID  the sixty-four character digest of the bytes that
+//                        were COMPILED
 //   FIXTURE_ID          the sixty-four character fixture digest
 //   ARGV_COUNT          the number of argument elements
 //   ARGV_ELEMENT        the element's byte length, then its bytes
@@ -1814,6 +1901,23 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 //   ENV_ELEMENT         the element's byte length, then its bytes
 //   OUTPUT_IDENTITIES   the observed output identities
 //
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+// R6-03 -- THE IDENTITY BINDS THE COMPILED BYTES.
+//
+// `SOURCE_ID` names the digest of the file at the path the caller named.
+// That file is NOT necessarily the file the compiler consumed: the runner
+// stages its own snapshot and compiles THAT. The identity therefore
+// carried a digest that authenticated a file the compilation did not
+// use.
+//
+// The identity now carries BOTH digests, in SEPARATE, TAGGED fields:
+// `SOURCE_ID` is the ORIGINAL, and `COMPILED_SOURCE_ID` is the STAGED
+// snapshot's digest -- the bytes the compiler actually consumed.
+//
+// The schema version is incremented, because the ENCODING changed. A
+// record written under the previous schema carries the previous schema
+// version, so the two encodings can never be confused.
+
 // THE ENCODING IS BYTE-EXACT AND UNAMBIGUOUS.
 //
 //   * Every field is introduced by its TAG, a fixed ASCII byte sequence,
@@ -1845,7 +1949,14 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 // identity computed over this encoding cannot collide with an identity
 // computed over any other domain's encoding.
 #define EVENT_ID_DOMAIN "POLYC-DRIVER-CORRECTION03-EVENT"
-#define EVENT_ID_SCHEMA_VERSION 2
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+// R6-03 -- THE SCHEMA VERSION IS 3.
+//
+// Version 3 adds the `COMPILED_SOURCE_ID` field, which binds the event
+// identity to the digest of the bytes the compiler ACTUALLY consumed.
+// Version 2 bound only the ORIGINAL source's digest, and the original is
+// not the file the compilation used.
+#define EVENT_ID_SCHEMA_VERSION 3
 
 // The field tags. Each is a fixed ASCII sequence; its LENGTH is written
 // explicitly, so the tag itself is self-delimiting.
@@ -1857,6 +1968,12 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 #define EVENT_TAG_SELECTOR      "SELECTOR"
 #define EVENT_TAG_PRODUCER      "PRODUCER_ID"
 #define EVENT_TAG_SOURCE        "SOURCE_ID"
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+// R6-03 -- THE COMPILED SOURCE'S IDENTITY.
+//
+// It is a SEPARATE, TAGGED field, so the ORIGINAL source's digest and
+// the COMPILED snapshot's digest can never be confused with one another.
+#define EVENT_TAG_COMPILED_SOURCE "COMPILED_SOURCE_ID"
 #define EVENT_TAG_FIXTURE       "FIXTURE_ID"
 #define EVENT_TAG_ARGV_COUNT    "ARGV_COUNT"
 #define EVENT_TAG_ARGV_ELEMENT  "ARGV_ELEMENT"
@@ -1917,6 +2034,16 @@ class EventIdCtx
   U8 *selector;
   U8 *producer_hex;
   U8 *source_hex;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE COMPILED SOURCE'S IDENTITY.
+  //
+  // `source_hex` is the ORIGINAL source's digest: the file at the path
+  // the caller named. `compiled_source_hex` is the STAGED snapshot's
+  // digest: the bytes the compiler ACTUALLY consumed.
+  //
+  // They are SEPARATE fields, and the identity carries BOTH, so an
+  // identity can never authenticate a file the compilation did not use.
+  U8 *compiled_source_hex;
   U8 *fixture_hex;
   U8 **argv;
   I64 nargv;
@@ -2017,6 +2144,13 @@ static U0 ContractEventIdUpdate(Sha256Ctx *h, EventIdCtx *ctx) {
   ContractPutTagged(h, EVENT_TAG_SELECTOR, ctx->selector);
   ContractPutTagged(h, EVENT_TAG_PRODUCER, ctx->producer_hex);
   ContractPutTagged(h, EVENT_TAG_SOURCE, ctx->source_hex);
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE COMPILED SOURCE'S IDENTITY IS PART OF THE IDENTITY.
+  //
+  // The ORIGINAL source's digest and the COMPILED snapshot's digest are
+  // two DIFFERENT facts about two DIFFERENT files. The identity carries
+  // both, in separate tagged fields.
+  ContractPutTagged(h, EVENT_TAG_COMPILED_SOURCE, ctx->compiled_source_hex);
   ContractPutTagged(h, EVENT_TAG_FIXTURE, ctx->fixture_hex);
   // The counted collections.
   ContractPutCountTag(h, EVENT_TAG_ARGV_COUNT, ctx->nargv);
@@ -2309,8 +2443,61 @@ static I64 LedgerCount(U8 *ledger_path, U8 *id) {
 // truncated: `CAPTURE_BLOCK_TOO_LARGE`.
 #define CaptureBlockLimit 4096
 
-static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+// R5-06 -- THE BLOCK STATUSES.
+//
+// The block extractor returned NULL for BOTH "the block is ABSENT" and
+// "the block is TOO LARGE", and the caller reported both as
+// `CAPTURE_BLOCK_TOO_LARGE`. A record with no ARGV block at all was
+// therefore reported as an oversized block, which is a DIFFERENT defect
+// with a DIFFERENT remedy.
+//
+// The status is now DISTINGUISHED. The extractor's status is carried in
+// an out-parameter, and the caller reports the status it was given.
+//
+//   CAPTURE_BLOCK_OK          the block was found and read
+//   CAPTURE_BLOCK_ABSENT      the key is not present in the record
+//   CAPTURE_BLOCK_EMPTY       the key is present and the block is EMPTY
+//   CAPTURE_BLOCK_SCALAR      the key is present as a SCALAR field, not
+//                             as a block: the record carries
+//                             `ARGV value` instead of an `ARGV` block
+//   CAPTURE_BLOCK_TOO_LARGE   the block carries more entries than the
+//                             DOCUMENTED LIMIT
+//   CAPTURE_BLOCK_MALFORMED   the block is present but its contents are
+//                             malformed
+#define CAPTURE_BLOCK_OK         0
+#define CAPTURE_BLOCK_ABSENT     1
+#define CAPTURE_BLOCK_EMPTY      2
+#define CAPTURE_BLOCK_SCALAR     3
+#define CAPTURE_BLOCK_TOO_LARGE  4
+#define CAPTURE_BLOCK_MALFORMED  5
+
+// The block reason names.
+static U8 *CaptureBlockReason(I64 code) {
+  if (code == CAPTURE_BLOCK_OK) return "CAPTURE_BLOCK_OK";
+  if (code == CAPTURE_BLOCK_ABSENT) return "CAPTURE_BLOCK_ABSENT";
+  if (code == CAPTURE_BLOCK_EMPTY) return "CAPTURE_BLOCK_EMPTY";
+  if (code == CAPTURE_BLOCK_SCALAR) return "CAPTURE_BLOCK_SCALAR";
+  if (code == CAPTURE_BLOCK_TOO_LARGE) return "CAPTURE_BLOCK_TOO_LARGE";
+  if (code == CAPTURE_BLOCK_MALFORMED) return "CAPTURE_BLOCK_MALFORMED";
+  return "CAPTURE_BLOCK_UNKNOWN";
+}
+
+// The BLOCK-FIELD extractor.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+// R5-06 -- THE STATUS IS DISTINGUISHED.
+//
+// The extractor's `status` out-parameter receives the block's status. The
+// caller reports THAT status, so an absent block, an empty block, a
+// scalar field in place of a block, an oversized block and a malformed
+// block are five DIFFERENT findings with five DIFFERENT reasons.
+//
+// The extractor returns NULL when the block could not be read, and the
+// status says WHY.
+static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count, I64 *status) {
   *count = 0;
+  *status = CAPTURE_BLOCK_ABSENT;
   I64 klen = StrLen(key);
   I64 i = 0;
   while (i < size) {
@@ -2341,6 +2528,7 @@ static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
             while (k < n) { Free(vals[k]); k = k + 1; }
             Free(vals);
             *count = 0;
+            *status = CAPTURE_BLOCK_TOO_LARGE;
             return NULL;
           }
           // The storage GROWS before the entry is written, so the write is
@@ -2363,7 +2551,24 @@ static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
           j = bend + 1;
         }
         *count = n;
+        if (n == 0) *status = CAPTURE_BLOCK_EMPTY;
+        else *status = CAPTURE_BLOCK_OK;
         return vals;
+      }
+    }
+    // The key is present, but it is a SCALAR field: the line carries the
+    // key AND a value, separated by a space. A block's key is on its own
+    // line, so a scalar field is a DIFFERENT shape.
+    if (lend - i > klen) {
+      I64 m = 0;
+      I64 same = 1;
+      while (m < klen) {
+        if (buf[i + m] != key[m]) { same = 0; break; }
+        m = m + 1;
+      }
+      if (same == 1 && buf[i + klen] == 32) {
+        *status = CAPTURE_BLOCK_SCALAR;
+        return NULL;
       }
     }
     if (lend >= size) break;

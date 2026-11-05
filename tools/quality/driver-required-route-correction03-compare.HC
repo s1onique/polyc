@@ -184,6 +184,45 @@ static I64 TextEqual(U8 *a, I64 asize, U8 *b, I64 bsize) {
 // truncated, because a truncated block would silently describe a
 // different execution.
 #define CAPTURE_BLOCK_TOO_LARGE   16
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+// R5-06 -- THE BLOCK-STATUS REASON CODES.
+//
+// The comparator's own reason codes for the five block findings. They are
+// DISTINCT codes, so a reviewer can tell WHICH finding the record
+// carries. The ACCEPTANCE BEHAVIOUR is unchanged: every one of them is a
+// refusal, and only the REASON TOKEN is now precise.
+#define CAPTURE_BLOCK_ABSENT_C   17
+#define CAPTURE_BLOCK_EMPTY_C    18
+#define CAPTURE_BLOCK_SCALAR_C   19
+#define CAPTURE_BLOCK_MALFORMED_C 20
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+// R6-03 -- THE COMPILED-SNAPSHOT IDENTITY REASON CODES.
+//
+// The comparator must validate the COMPILED snapshot's identity
+// INDEPENDENTLY: it re-reads the staged file, hashes the ACTUAL bytes,
+// and compares the result with the digest the record claims. It never
+// accepts a supplied digest string as proof.
+//
+//   CAPTURE_COMPILED_SOURCE_MISSING  the record does not name the staged
+//                                     snapshot at all
+//   CAPTURE_COMPILED_SOURCE_ABSENT   the named staged snapshot does not
+//                                     exist on the disk
+//   CAPTURE_COMPILED_SOURCE_MISMATCH  the staged snapshot's ACTUAL digest
+//                                     differs from the recorded one
+#define CAPTURE_COMPILED_SOURCE_MISSING 21
+#define CAPTURE_COMPILED_SOURCE_ABSENT  22
+#define CAPTURE_COMPILED_SOURCE_MISMATCH 23
+
+// The block-status to reason-code mapping. It is the ONE place where the
+// shared contract's block statuses are turned into the comparator's own
+// reason codes, so the two cannot drift apart.
+static I64 CaptureBlockReasonCode(I64 status) {
+  if (status == CAPTURE_BLOCK_ABSENT) return CAPTURE_BLOCK_ABSENT_C;
+  if (status == CAPTURE_BLOCK_EMPTY) return CAPTURE_BLOCK_EMPTY_C;
+  if (status == CAPTURE_BLOCK_SCALAR) return CAPTURE_BLOCK_SCALAR_C;
+  if (status == CAPTURE_BLOCK_MALFORMED) return CAPTURE_BLOCK_MALFORMED_C;
+  return CAPTURE_BLOCK_TOO_LARGE;
+}
 
 static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_OK) return "OK";
@@ -203,6 +242,13 @@ static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_EVENT_ID_MISMATCH) return "CAPTURE_EVENT_ID_MISMATCH";
   if (code == CAPTURE_DUPLICATE_EVENT) return "CAPTURE_DUPLICATE_EVENT_ID";
   if (code == CAPTURE_BLOCK_TOO_LARGE) return "CAPTURE_BLOCK_TOO_LARGE";
+  if (code == CAPTURE_BLOCK_ABSENT_C) return "CAPTURE_BLOCK_ABSENT";
+  if (code == CAPTURE_BLOCK_EMPTY_C) return "CAPTURE_BLOCK_EMPTY";
+  if (code == CAPTURE_BLOCK_SCALAR_C) return "CAPTURE_BLOCK_SCALAR";
+  if (code == CAPTURE_BLOCK_MALFORMED_C) return "CAPTURE_BLOCK_MALFORMED";
+  if (code == CAPTURE_COMPILED_SOURCE_MISSING) return "CAPTURE_COMPILED_SOURCE_MISSING";
+  if (code == CAPTURE_COMPILED_SOURCE_ABSENT) return "CAPTURE_COMPILED_SOURCE_ABSENT";
+  if (code == CAPTURE_COMPILED_SOURCE_MISMATCH) return "CAPTURE_COMPILED_SOURCE_MISMATCH";
   return "CAPTURE_UNKNOWN";
 }
 
@@ -337,6 +383,14 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   U8 *counter_field = CaptureField(buf, size, "EVENT_COUNTER");
   U8 *env_applied = CaptureField(buf, size, "ENV_APPLIED");
   U8 *producer_arch = CaptureField(buf, size, "PRODUCER_ARCH");
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE COMPILED SNAPSHOT'S IDENTITY.
+  //
+  // The record must name the staged snapshot and its digest. The
+  // comparator then RE-READS that file and hashes the ACTUAL bytes.
+  U8 *compiled_source_sha = CaptureField(buf, size, "COMPILED_SOURCE_SHA256");
+  U8 *compiled_source_path = CaptureField(buf, size, "STAGED_SOURCE");
+  U8 *original_equals = CaptureField(buf, size, "ORIGINAL_EQUALS_COMPILED");
 
   if (run_id == NULL || event_id == NULL || case_field == NULL ||
       selector == NULL || producer_sha == NULL || source_sha == NULL ||
@@ -344,6 +398,46 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
       artifact_sha == NULL || artifact_present == NULL ||
       exit_field == NULL || argv_field == NULL || env_field == NULL) {
     return CAPTURE_FIELD_MISSING;
+  }
+  // The COMPILED snapshot's identity is MANDATORY. A record that does not
+  // name it cannot be checked against the bytes the compilation used.
+  if (compiled_source_sha == NULL || compiled_source_path == NULL) {
+    return CAPTURE_COMPILED_SOURCE_MISSING;
+  }
+  // The INDEPENDENT VALIDATION OF THE COMPILED SNAPSHOT.
+  //
+  // The comparator does NOT accept the recorded digest as proof. It
+  // RE-READS the staged file, hashes the ACTUAL bytes, and compares the
+  // result with the recorded digest. A record that names a staged source
+  // which does not exist, or whose bytes differ from the recorded digest,
+  // is REFUSED.
+  //
+  // This is the check that the reviewer's counterexample defeated: the
+  // record authenticated the ORIGINAL source's digest, and the staged
+  // snapshot -- the file the compiler actually consumed -- was never
+  // validated at all.
+  U8 *actual_compiled_hex = MAlloc(65);
+  I64 compiled_present = 0;
+  if (Sha256File(compiled_source_path, actual_compiled_hex) == 1) {
+    compiled_present = 1;
+  }
+  if (compiled_present == 0) {
+    Free(actual_compiled_hex);
+    return CAPTURE_COMPILED_SOURCE_ABSENT;
+  }
+  I64 compiled_same = 0;
+  if (StrCmp(actual_compiled_hex, compiled_source_sha) == 0) compiled_same = 1;
+  Free(actual_compiled_hex);
+  if (compiled_same == 0) return CAPTURE_COMPILED_SOURCE_MISMATCH;
+  // The ORIGINAL-VERSUS-COMPILED equality, when the record states it, is
+  // checked against the digests the record itself carries. A record that
+  // claims the two are equal while their digests differ is REFUSED.
+  if (original_equals != NULL) {
+    if (StrCmp(original_equals, "1") == 0) {
+      if (StrCmp(source_sha, compiled_source_sha) != 0) {
+        return CAPTURE_COMPILED_SOURCE_MISMATCH;
+      }
+    }
   }
 
   // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
@@ -456,15 +550,28 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   // two to agree.
   I64 nargv = 0;
   I64 nenv = 0;
-  U8 **argv_values = CaptureBlock(buf, size, "ARGV", &nargv);
-  U8 **env_values = CaptureBlock(buf, size, "ENV", &nenv);
-  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01.
+  I64 argv_status = CAPTURE_BLOCK_ABSENT;
+  I64 env_status = CAPTURE_BLOCK_ABSENT;
+  U8 **argv_values = CaptureBlock(buf, size, "ARGV", &nargv, &argv_status);
+  U8 **env_values = CaptureBlock(buf, size, "ENV", &nenv, &env_status);
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+  // R5-06 -- THE BLOCK STATUS IS REPORTED AS ITSELF.
   //
-  // A block that exceeds the DOCUMENTED LIMIT is refused with its OWN
-  // reason. It is NOT reported as a missing field: the field is present,
-  // and the distinction matters to a reviewer reading the ledger.
-  if (argv_values == NULL || env_values == NULL) {
-    return CAPTURE_BLOCK_TOO_LARGE;
+  // The previous revision reported EVERY block failure as
+  // `CAPTURE_BLOCK_TOO_LARGE`, so an ABSENT block, an EMPTY block and a
+  // SCALAR field in place of a block were all reported as an oversized
+  // block. The DISTINCTION matters: the five findings have five
+  // DIFFERENT remedies, and a reviewer reading the reason token was told
+  // the wrong one.
+  //
+  // The ACCEPTANCE BEHAVIOUR IS NOT CHANGED. Every block failure was
+  // already REFUSED, and every block failure is STILL REFUSED; only the
+  // REASON TOKEN is now precise.
+  if (argv_status != CAPTURE_BLOCK_OK) {
+    return CaptureBlockReasonCode(argv_status);
+  }
+  if (env_status != CAPTURE_BLOCK_OK) {
+    return CaptureBlockReasonCode(env_status);
   }
   // The recomputation contexts are filled BY NAME, so that no argument
   // can be shifted by the production compiler's calling convention.
@@ -475,6 +582,13 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   rc_ctx.selector = selector;
   rc_ctx.producer_hex = producer_sha;
   rc_ctx.source_hex = source_sha;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE RECOMPUTATION INCLUDES THE COMPILED SOURCE'S IDENTITY.
+  //
+  // The identity binds BOTH digests, so the recomputation must supply
+  // BOTH. The compiled digest is the one that was VALIDATED against the
+  // actual staged bytes above.
+  rc_ctx.compiled_source_hex = compiled_source_sha;
   rc_ctx.fixture_hex = fixture_sha;
   rc_ctx.argv = argv_values;
   rc_ctx.nargv = nargv;
@@ -533,11 +647,15 @@ static I32 RecomputeDiagnostic(U8 *path) {
   U8 *r_sel = CaptureField(rbuf, rsize, "SELECTOR");
   U8 *r_prod = CaptureField(rbuf, rsize, "PRODUCER_SHA256");
   U8 *r_src = CaptureField(rbuf, rsize, "SOURCE_SHA256");
+  U8 *r_compiled = CaptureField(rbuf, rsize, "COMPILED_SOURCE_SHA256");
+  U8 *r_compiled_path = CaptureField(rbuf, rsize, "STAGED_SOURCE");
   U8 *r_fix = CaptureField(rbuf, rsize, "FIXTURE_SHA256");
   I64 rnargv = 0;
   I64 rnenv = 0;
-  U8 **rargv = CaptureBlock(rbuf, rsize, "ARGV", &rnargv);
-  U8 **renv = CaptureBlock(rbuf, rsize, "ENV", &rnenv);
+  I64 rargv_status = CAPTURE_BLOCK_ABSENT;
+  I64 renv_status = CAPTURE_BLOCK_ABSENT;
+  U8 **rargv = CaptureBlock(rbuf, rsize, "ARGV", &rnargv, &rargv_status);
+  U8 **renv = CaptureBlock(rbuf, rsize, "ENV", &rnenv, &renv_status);
   "RECOMPUTE\tRECORDED\t%s\n", r_event;
   "RECOMPUTE\tRUN_ID\t%s\n", r_run;
   "RECOMPUTE\tCOUNTER\t%s\n", r_counter;
@@ -545,6 +663,8 @@ static I32 RecomputeDiagnostic(U8 *path) {
   "RECOMPUTE\tSELECTOR\t%s\n", r_sel;
   "RECOMPUTE\tPRODUCER\t%s\n", r_prod;
   "RECOMPUTE\tSOURCE\t%s\n", r_src;
+  "RECOMPUTE\tCOMPILED_SOURCE\t%s\n", r_compiled;
+  "RECOMPUTE\tCOMPILED_SOURCE_PATH\t%s\n", r_compiled_path;
   "RECOMPUTE\tFIXTURE\t%s\n", r_fix;
   "RECOMPUTE\tNARGV\t%lld\n", rnargv;
   "RECOMPUTE\tNENV\t%lld\n", rnenv;
@@ -558,6 +678,37 @@ static I32 RecomputeDiagnostic(U8 *path) {
     "RECOMPUTE\tENV_%lld\t%s\n", k, renv[k];
     k = k + 1;
   }
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+  // R5-06 -- THE DIAGNOSTIC DOES NOT CLAIM A RECOMPUTATION IT DID NOT
+  // PERFORM.
+  //
+  // The previous revision ALWAYS printed a `RECOMPUTED` line, even when
+  // the record's ARGV or ENV block was absent, empty or malformed. A
+  // recomputation over an ABSENT block is not a recomputation at all: the
+  // identity cannot be reconstructed, and a digest printed in its place
+  // would be a digest of a record that was never observed.
+  //
+  // The diagnostic therefore REPORTS THE BLOCK STATUS and does NOT print
+  // a `RECOMPUTED` line when a mandatory input is missing. This is a
+  // DIAGNOSTIC-PRECISION change; the comparator's ACCEPTANCE behaviour is
+  // unchanged.
+  I64 argv_ok = 0;
+  if (rargv_status == CAPTURE_BLOCK_OK) argv_ok = 1;
+  I64 env_ok = 0;
+  if (renv_status == CAPTURE_BLOCK_OK) env_ok = 1;
+  I64 fields_ok = 0;
+  if (r_run != NULL && r_counter != NULL && r_case != NULL && r_sel != NULL &&
+      r_prod != NULL && r_src != NULL && r_fix != NULL && r_event != NULL &&
+      r_compiled != NULL) {
+    fields_ok = 1;
+  }
+  "RECOMPUTE\tARGV_STATUS\t%s\n", CaptureBlockReason(rargv_status);
+  "RECOMPUTE\tENV_STATUS\t%s\n", CaptureBlockReason(renv_status);
+  if (argv_ok == 0 || env_ok == 0 || fields_ok == 0) {
+    "RECOMPUTE\tRECOMPUTED\tNOT_COMPUTED\n";
+    "RECOMPUTE\tREASON\tA_MANDATORY_INPUT_IS_ABSENT\n";
+    return 0;
+  }
   EventIdCtx dc_ctx;
   dc_ctx.run_id = r_run;
   dc_ctx.counter = r_counter;
@@ -565,6 +716,9 @@ static I32 RecomputeDiagnostic(U8 *path) {
   dc_ctx.selector = r_sel;
   dc_ctx.producer_hex = r_prod;
   dc_ctx.source_hex = r_src;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE DIAGNOSTIC RECOMPUTES OVER THE COMPILED SOURCE TOO.
+  dc_ctx.compiled_source_hex = r_compiled;
   dc_ctx.fixture_hex = r_fix;
   dc_ctx.argv = rargv;
   dc_ctx.nargv = rnargv;
