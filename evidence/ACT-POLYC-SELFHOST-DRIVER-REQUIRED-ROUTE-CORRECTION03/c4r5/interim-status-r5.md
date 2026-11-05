@@ -21,7 +21,7 @@ GREEN witness at the current tree.
 ## THE ENTRY HEAD
 
     ENTRY_HEAD=c73e92f33fd61e9241c02d3ca4ea2250097e51b8
-    SUBJECT_HEAD=5dbfe12e9599f85bd9772d766e5a7a06f2f08422
+    SUBJECT_HEAD=b35253ed2a7b4fb5fd1cec8aa526acec3580e0f3
 
 The RED witness was produced in a DETACHED WORKTREE at the entry HEAD. The
 probe was compiled with `-DC4R5_RED_COMPAT`, under which
