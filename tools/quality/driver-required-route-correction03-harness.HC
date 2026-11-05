@@ -438,11 +438,20 @@ static I64 HarnessValidateProducer(U8 *producer, I64 expected_arch) {
 // claims was in effect -- the test prefix, for instance -- was not.
 //
 // THE REPAIR. Each binding is applied with setenv(3) BEFORE the spawn, so
-// the child observes exactly the environment the capture record names. The
-// bindings are set AFTER the fork-sensitive setup but BEFORE
-// SpawnAndCapture, and the runner restores the previous value of each
-// binding afterwards so that the runner's own environment is not
-// disturbed for the next case.
+// the child observes exactly the environment the capture record names.
+//
+// The bindings are applied to the RUNNER's own environment, and the runner
+// does not restore them. That is CORRECT here, and the reason is stated
+// rather than assumed: the harness process performs EXACTLY ONE execution
+// and then returns from Main, so the modified environment cannot be
+// observed by a second execution. The runner is invoked once per
+// execution by the Makefile, and the run ledger and the event counter
+// live across processes rather than within one.
+//
+// The alternative -- saving and restoring each binding -- would be
+// MECHANICALLY DEAD CODE under the current process model, and a comment
+// claiming a restore that the code does not perform would be a false
+// description of the mechanism.
 //
 // The binding is a NAME=VALUE pair. A binding that is not a pair is a
 // hard failure: an unparseable binding would be recorded as though it
@@ -940,7 +949,14 @@ I32 Main(I32 argc, U8 **argv) {
   }
 
   if (StrCmp(argv[1], "run") == 0) {
-    if (argc < 13) {
+    // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+    //
+    // The minimum is FOURTEEN: the verb, the TEN fixed arguments, at least
+    // ONE environment binding, the separator, and at least ONE argument of
+    // the argument vector. The previous guard said thirteen, which was the
+    // count before the EXPECTED ARCHITECTURE became a fixed argument, and
+    // it admitted a call that the run mode itself would refuse.
+    if (argc < 14) {
       "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_USAGE);
       return HARNESS_USAGE;
     }
