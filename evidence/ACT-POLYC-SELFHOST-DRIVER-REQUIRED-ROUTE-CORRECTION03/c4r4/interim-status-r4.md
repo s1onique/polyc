@@ -40,6 +40,20 @@ F08 was FIVE defects, each independently reproduced.
    described one that was never in force. Each binding is now applied with
    setenv BEFORE the spawn.
 
+   THE REPAIR ITSELF CONTAINED A DEFECT, which was found and fixed in this
+   same round. The binding was split with ONE variable used as BOTH a flag
+   and a position, so the variable that was set bore the wrong NAME and the
+   wrong VALUE while the setenv call SUCCEEDED. The harness's own checks
+   could not see it: the capture named the binding the harness BELIEVED it
+   applied, and every self-consistent check passed. The defect was found by
+   an EXTERNAL probe -- a real executable that reads the variable and
+   prints it -- and the probe is now part of the harness's own evidence,
+   as the `envcheck` mode. The split is also the shared contract's, and it
+   is exercised by the contract's self-check, which rose from 20 checks to
+   28. The original defect was INJECTED into the split and BOTH new checks
+   failed, so the regression is prevented at two independent levels. The
+   measurement is in `c4r4/red-green-f1-environment-application.txt`.
+
 3. The runner did not check the producer it was about to execute. It now
    establishes, FROM THE BYTES ON DISK, that the producer exists, that it
    is an executable file, and that it is a Mach-O image for the
@@ -76,6 +90,7 @@ The nine F08 probes are N20 through N28.
     DRIVER_WP001_CORRECTION03_TEST_STATUS       PASS
     DRIVER_WP001_CORRECTION03_C4R4_PROBE_TEST_STATUS   PASS
     DRIVER_WP001_CORRECTION03_WARM_PRODUCER_STATUS      PASS
+    DRIVER_WP001_CORRECTION03_ENVCHECK_STATUS           PASS
     DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS       PASS
 
     make driver-wp001-required-route-test        PASS
