@@ -1,0 +1,226 @@
+# THE INDEPENDENT C4 ROUND 6 REVIEW -- the review instructions.
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+
+You are an INDEPENDENT reviewer. You did not write this code. Your job is
+to find the defects that remain, NOT to confirm that the work is good.
+
+THE REVIEW IS READ-ONLY. Do NOT modify any file in the repository. Do NOT
+commit. Do NOT push. You may BUILD and RUN the gates and the probes.
+
+THE SUBJECT.
+
+The changes under review are the working tree of the ACT
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 against the ACT's
+entry identity.
+
+THE BASE COMMIT IS 61bd8d9016c1c991f0936a33f2ee47e53654ccea. The review
+range is exactly:
+
+    git diff 61bd8d9016c1c991f0936a33f2ee47e53654ccea
+
+plus the UNTRACKED files, which are:
+
+    tools/quality/driver-required-route-correction03-c4r6-probe.HC
+    tools/quality/fixtures/driver-required-route-correction03-zerofill-fixture.c
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r6/
+
+The base commit is named HERE, in the instructions, because the reviewer's
+`--base` option cannot be combined with a prompt. Use the range above.
+
+The changes are confined to:
+
+    tools/quality/driver-required-route-correction03-*.HC
+    tools/quality/fixtures/driver-required-route-correction03-*.c
+    Makefile
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/
+
+The production compiler under src/ and the production bootstrap under
+tools/bootstrap/ are BYTE-IDENTICAL to the ACT's entry identity:
+
+    git diff 61bd8d9016c1c991f0936a33f2ee47e53654ccea -- src/ tools/bootstrap/
+
+must produce NO output. A finding against the production compiler is out
+of scope, EXCEPT that a finding which says "the evidence tooling cannot
+express what it needs because of a compiler defect" IS in scope, and must
+be classified as RESIDUE rather than as a fix.
+
+WHAT IS UNDER REVIEW.
+
+The C4 ROUND 5 review produced FIVE P1 findings (R5-01 .. R5-05) and
+THREE P2 dispositions (R5-06 .. R5-08). The ROUND 6 subject claims to
+have repaired the five P1 findings, to have implemented the R5-06
+diagnostic-precision disposition, and to have corrected the R5-07 and
+R5-08 records forward-only.
+
+    R5-01  THE SOURCE'S IDENTITY. The recorded SOURCE_SHA256 was taken
+           from a DIFFERENT read of the source than the one that was
+           compiled.
+    R5-02  THE OUTPUT'S CONTAINMENT. `-o ../../../escaped.o` wrote outside
+           the event directory while ARTIFACT_PATH named a file inside
+           it.
+    R5-03  THE ZERO-FILL CLASSIFICATION. A genuine arm64 object with a
+           256 KiB S_ZEROFILL section was rejected as
+           MACHO_SECTION_EXTENT_INVALID.
+    R5-04  THE PRODUCER'S PATH. A producer path whose ANCESTOR was a
+           symlink was accepted, although execv is pathname-based.
+    R5-05  THE ENVIRONMENT BINDING. A mutated HarnessApplyEnv (wrong
+           variable name) left all four ambient envcheck cases PASSING.
+    R5-06  THE BLOCK DIAGNOSTIC PRECISION. The ARGV/ENV block extractor
+           reported an absent block, an empty block and a scalar field as
+           CAPTURE_BLOCK_TOO_LARGE.
+    R5-07  THE BITWISE-AND CHARACTERISATION. The prior round claimed the
+           production compiler mis-evaluates `0x18EB1AFA & 0xF000`.
+    R5-08  THE RED-TRANSCRIPT ACCOUNTING. The prior round claimed the
+           C4 ROUND 5 RED transcript is "34 OK + 16 FAIL".
+
+THE PROBE.
+
+    tools/quality/driver-required-route-correction03-c4r6-probe.HC
+    make driver-wp001-correction03-c4r6-probe-test
+
+The probe has FOUR modes:
+
+    exec         the R5-01, R5-02 and R5-04 attacks
+    macho        the R5-03 zero-fill and TLS classification
+    envbind      the R5-05 environment binding
+    blockstatus  the R5-06 block-status distinction
+
+The probe exercises the PRODUCTION functions. It does not carry a
+duplicate of the function it exercises; it calls the production function
+and reports the production function's own reason token.
+
+THE PROBE'S INTEGRITY IS THE FIRST THING TO CHECK.
+
+The probe is the instrument that decides whether the repairs hold. If the
+probe is wrong, the repairs are unproven. Look for:
+
+  * a control whose EXPECTATION is inverted, so that it passes when the
+    production function is wrong;
+
+  * a control that does not exercise the function it claims to exercise;
+
+  * a control whose fixture does not actually carry the mutation it
+    claims to carry -- for example an object whose S_ZEROFILL section was
+    meant to be 256 KiB but which the PRE-REPAIR validator refuses for an
+    UNRELATED reason, which would make the control pass on the
+    PRE-REPAIR tree for the wrong reason;
+
+  * a control whose positive control does not distinguish the repaired
+    behaviour from the unrepaired behaviour;
+
+  * a fixture that is read from a path the production code does not
+    actually consult.
+
+THE FIVE ATTACKS MUST BE REPRODUCED AGAINST THE PRE-REPAIR TREE.
+
+The RED witnesses for all five attacks were produced at the entry
+identity. Reproduce them yourself. The most direct route is the probe's
+own `exec`, `macho` and `envbind` modes compiled against the PRE-REPAIR
+contract and harness, extracted verbatim from the entry identity:
+
+    git worktree add --detach /tmp/c4r6-review 61bd8d9016c1c991f0936a33f2ee47e53654ccea
+
+The GREEN transcript is in
+
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r6/green-c4r6-probe.txt
+
+WHAT TO LOOK FOR.
+
+The subject is an EVIDENCE HARNESS. Its whole purpose is to produce
+observations that a reviewer can trust. A defect in it is a defect in the
+EVIDENCE, even when the harness itself works.
+
+Read the harness, the comparator, the contract and the probe, and ask,
+for each one:
+
+  * Does the code do what its comment says?
+
+  * Is there a path on which the code does something ELSE?
+
+  * Is there a bound that is computed in a way that can overflow?
+
+  * Is there a place where a value is read from uninitialised memory?
+
+  * Is there a place where the argument list exceeds the production
+    compiler's calling convention's limit?
+
+  * Is there a place where a REASON TOKEN is reported that does not
+    describe what actually happened?
+
+  * Is there a place where the production function is DUPLICATED, so that
+    the probe exercises the duplicate rather than the production code?
+
+  * Is there a place where the runner still ACCEPTS a caller-supplied
+    provenance fact in place of an execution-owned fact? The round-6
+    architecture claims that the runner owns the executable path, the
+    argument vector, the output path and the environment, and that
+    caller-supplied provenance never substitutes for execution-owned
+    facts.
+
+  * Is there a place where the containment check is done on the
+    LEXICAL path rather than on the RESOLVED path, so that a symlinked
+    ancestor escapes it?
+
+  * Is there a place where a digest is VERIFIED but not re-verified
+    IMMEDIATELY BEFORE the spawn, so that a substitution window remains?
+
+  * Is there a place where a VIRTUAL size is compared against a FILE
+    offset, which is the R5-03 root cause?
+
+THE COMPILER'S KNOWN DEFECTS, AND WHAT THIS ROUND DID WITH THEM.
+
+The compiler's calling convention has a KNOWN defect: a pointer-to-
+pointer argument at parameter position eight or later is placed on the
+stack by the call site and read from a register by the callee, so the
+arguments that follow are shifted. Every function added or changed in
+this round therefore takes at most SEVEN parameters, or carries its
+inputs in a context object that is filled BY NAME. Look for a function
+that VIOLATES that rule.
+
+The C4 ROUND 5 round recorded, as a P1 residue, that the compiler's `&`
+operator "does not behave as a bitwise AND on a hex literal", citing
+`0x18EB1AFA & 0xF000` evaluating to `0x1000`. THAT CHARACTERISATION IS
+DISPOSED AS INCORRECT in this round: `0x1000` is the CORRECT value of
+that expression. See
+`evidence/.../c4r6/r5-07-bitwise-correction.md`. The reviewer SHOULD
+CHECK that disposition arithmetically. If the reviewer believes the
+disposition is wrong, that is a FINDING.
+
+While building the R5-06 witness, a DIFFERENT arithmetic expression was
+observed to produce the wrong BYTES under this compiler:
+
+    48 + (i / div) - (i / div) * 10
+
+produced `118, 39, 151, 18, 10` where a decimal digit and a newline were
+intended. The witness was rewritten to avoid digit encoding entirely.
+The reviewer SHOULD check whether the repaired code relies on any
+expression form with the same hazard, and SHOULD report the hazard as a
+COMPILER RESIDUE rather than as a fix, because fixing the compiler is
+out of scope.
+
+THE GATES.
+
+    make driver-wp001-correction03-test
+    make driver-wp001-required-route-test
+    make driver-wp001-precedence-test
+    make gate-fast
+    make gate-push
+
+THE VERDICT.
+
+Report the findings as:
+
+    FINDING-ID  P0|P1|P2  ONE-LINE-SUMMARY
+
+and the verdict as:
+
+    C4_READY=YES|NO
+    P0=<count>
+    P1=<count>
+    P2=<count>
+
+`C4_READY=YES` requires `P0=0` AND `P1=0`.
+
+Report the exact commands you ran and their results. A claim without a
+command is not a finding.

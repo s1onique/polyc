@@ -1,0 +1,14 @@
+METRIC	VALUE	DERIVATION
+source_transcript	evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r5/red-c4r5-probe.txt	the C4 ROUND 5 RED transcript
+physical_rows	40	grep -c PROBE_CONTROL red-c4r5-probe.txt
+output_rows	40	grep -c ^PROBE_CONTROL red-c4r5-probe.txt
+ok_rows	24	grep -c TABOKTAB red-c4r5-probe.txt
+fail_rows	16	grep -c TABFAILTAB red-c4r5-probe.txt
+unique_control_names	37	grep ^PROBE_CONTROL red-c4r5-probe.txt | cut -f2 | sort -u | wc -l
+asserted_checks	38	sum of the eight PROBE_CHECKS rows
+probe_checks_rows	13 + 2 + 7 + 6 + 2 + 1 + 6 + 1	the eight PROBE_CHECKS rows in the transcript
+repeated_control_names	3	the names that appear on more than one row
+repeated_name_1	R4_01_CAPTURE_BLOCK_128	2 rows
+repeated_name_2	R4_01_CAPTURE_BLOCK_65	2 rows
+repeated_name_3	R4_03_OUTPUT_PREEXISTS	2 rows
+prior_claim	34 OK + 16 FAIL	THE INCORRECT FIGURE, recorded here only so the correction is auditable

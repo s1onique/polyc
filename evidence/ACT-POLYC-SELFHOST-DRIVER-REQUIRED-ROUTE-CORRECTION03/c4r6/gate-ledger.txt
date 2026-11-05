@@ -1,0 +1,34 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+#
+# THE GATE LEDGER. Every command that was run against the SUBJECT tree,
+# and its result.
+#
+# The entry identity is 61bd8d9016c1c991f0936a33f2ee47e53654ccea. The
+# subject is the WORKING TREE (the C4 ROUND 6 changes are not committed
+# at the time of this ledger).
+#
+# COLUMNS: GATE\tCOMMAND\tRESULT\tNOTE
+#
+c4r6-probe	make driver-wp001-correction03-c4r6-probe-test	PASS	32_CONTROLS_0_FAILURES
+c4r6-exec	make driver-wp001-correction03-c4r6-probe-test (exec mode)	PASS	16_CONTROLS_0_FAILURES
+c4r6-macho	make driver-wp001-correction03-c4r6-probe-test (macho mode)	PASS	5_CONTROLS_0_FAILURES
+c4r6-envbind	make driver-wp001-correction03-c4r6-probe-test (envbind mode)	PASS	6_CONTROLS_0_FAILURES
+c4r6-blockstatus	make driver-wp001-correction03-c4r6-probe-test (blockstatus mode)	PASS	5_CONTROLS_0_FAILURES
+envbind	make driver-wp001-correction03-envbind-test	PASS	DRIVER_WP001_CORRECTION03_ENVBIND_STATUS_PASS
+envbind-anticontrol	make driver-wp001-correction03-envbind-anticontrol-test	PASS	THE_MUTANT_IS_DETECTED
+correction03	make driver-wp001-correction03-test	PASS	THE_WHOLE_CORRECTION03_SUITE
+required-route	make driver-wp001-required-route-test	PASS	DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS_PASS
+precedence	make driver-wp001-precedence-test	PASS	DRIVER_WP001_PRECEDENCE_TEST_STATUS_PASS
+parser-conservation	make INSTALL_PREFIX=/tmp/polyc_r6/prefix TEST_PREFIX=/tmp/polyc_r6/prefix unit-test	PASS	376/376_ASSERTIONS_90_BLOCKS_0_FAILURES
+parser-md5	grep -o "PASSED: [0-9]*/[0-9]*" <unit-test log> | md5 -q	PASS	b6f117eb1386ca80f81bc06226e2a741_MATCHES_THE_FROZEN_VALUE
+lexer07	make lexer07-direct-differential	PASS	89/89
+lexer08	make lexer08-direct-differential	PASS	45/45
+lexer09	make lexer09-direct-differential	PASS	23/23
+gate-fast	make gate-fast	PASS	VERDICT_PASS
+gate-push	make gate-push	PASS	VERDICT_PASS
+production-delta	git diff 61bd8d90 -- src/ tools/bootstrap/	EMPTY	ZERO_PRODUCTION_SEMANTIC_DELTA
+authorities	16 production PolyC authorities in hcc	VERIFIED	ALL_SIXTEEN_PRESENT
+pristine-r5-01	git worktree at 61bd8d90, harness run	RED	THE_ATTACK_SUCCEEDS_AT_THE_ENTRY_HEAD
+pristine-r5-02	git worktree at 61bd8d90, harness run	RED	ALL_THREE_OUTPUT_ATTACKS_SUCCEED_AT_THE_ENTRY_HEAD
+pristine-r5-03	pristine validator on the genuine 256 KiB zero-fill object	RED	MACHO_SECTION_EXTENT_INVALID
+pristine-r5-04	git worktree at 61bd8d90, harness run	RED	THE_SYMLINKED_ANCESTOR_PRODUCER_IS_ACCEPTED

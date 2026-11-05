@@ -1,0 +1,204 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+#
+# THE PRISTINE-CHECKOUT REPRODUCTION.
+#
+# Every attack is RE-EXECUTED against a DETACHED WORKTREE at the ACT's
+# entry identity, and then against the SUBJECT tree. The pristine tree's
+# harness is a DIFFERENT BINARY from the subject's:
+#
+#   PRISTINE  /tmp/polyc_r6/pristine/build/driver-required-route-correction03-harness
+#             sha256 fc608e9c3b5d204dc065adc7157eac5879ddb69d4ac8fab5d630086d8fdc79d7
+#   SUBJECT   build/driver-required-route-correction03-harness
+#             sha256 09740eadb694f03dbce679c184d39fd100510af75216896c4e4ade5ff2e2ba24
+#
+#   git worktree add --detach /tmp/polyc_r6/pristine \
+#       61bd8d9016c1c991f0936a33f2ee47e53654ccea
+#
+# The raw attack transcript is in `raw-attack-transcript.txt`.
+#
+# ---------------------------------------------------------------------------
+# R5-01 -- THE SOURCE'S IDENTITY.
+# ---------------------------------------------------------------------------
+#
+# The attack: the runner records the digest of source A, but the supplied
+# compiler argv selects source B. The evidence would describe a
+# compilation of a file the caller did not name.
+#
+# PRISTINE (the attack SUCCEEDS -- the harness reports OK):
+#
+#   FAIL src_contradicted reason=OK want=HARNESS_SOURCE_CONTRADICTED
+#   PASS src_agree        reason=OK
+#
+# SUBJECT (the attack is REFUSED):
+#
+#   PASS src_contradicted reason=HARNESS_SOURCE_CONTRADICTED
+#   PASS src_agree        reason=OK
+#
+# The subject's refusal carries the detail line:
+#
+#   HARNESS_REASON            HARNESS_SOURCE_CONTRADICTED
+#   HARNESS_REASON_DETAIL     the argument vector names the source
+#                             .../nonexistent.HC, but the recorded source
+#                             is .../a.HC
+#
+# ---------------------------------------------------------------------------
+# R5-02 -- THE OUTPUT'S CONTAINMENT.
+# ---------------------------------------------------------------------------
+#
+# The attack: `-o ../../../escaped.o`, `-o /tmp/escaped_abs.o` and
+# `-o a/b/c.o` each write OUTSIDE the event directory while ARTIFACT_PATH
+# names a file inside it.
+#
+# PRISTINE (all three attacks SUCCEED -- the harness reports OK):
+#
+#   FAIL out_escape reason=OK want=HARNESS_OUTPUT_ESCAPED
+#   FAIL out_abs    reason=OK want=HARNESS_OUTPUT_ESCAPED
+#   FAIL out_nested reason=OK want=HARNESS_OUTPUT_ESCAPED
+#   PASS out_valid  reason=OK
+#   PASS out_stdout reason=OK
+#
+# SUBJECT (all three attacks are REFUSED):
+#
+#   PASS out_escape reason=HARNESS_OUTPUT_ESCAPED
+#   PASS out_abs    reason=HARNESS_OUTPUT_ESCAPED
+#   PASS out_nested reason=HARNESS_OUTPUT_ESCAPED
+#   PASS out_valid  reason=OK
+#   PASS out_stdout reason=OK
+#
+# ---------------------------------------------------------------------------
+# R5-03 -- THE ZERO-FILL CLASSIFICATION.
+# ---------------------------------------------------------------------------
+#
+# The attack: a GENUINE, platform-compiled arm64 object carrying a
+# 256 KiB virtual zero-fill section is a legitimate artifact, and the
+# macOS linker accepts it.
+#
+#   FIXTURE tools/quality/fixtures/driver-required-route-correction03-zerofill-fixture.o
+#
+#   sectname __thread_bss
+#        size 0x0000000000040000 (past end of file)
+#      offset 0
+#       flags 0x00000012    S_THREAD_LOCAL_ZEROFILL
+#
+# The witness is a four-line probe that calls the PRODUCTION validator
+# `ContractValidateMachO(buf, size, 1)`. It was compiled TWICE: once
+# against the pristine contract and once against the subject contract.
+#
+# PRISTINE (the genuine artifact is REFUSED):
+#
+#   VALIDATE_RC=23
+#   REASON=MACHO_SECTION_EXTENT_INVALID
+#
+# SUBJECT (the genuine artifact is ACCEPTED):
+#
+#   VALIDATE_RC=0
+#   REASON=OK
+#
+# The probe's own control is GREEN on the subject:
+#
+#   PROBE_CONTROL  R5_03_GENUINE_ZERO_FILL_ACCEPTED  OK  OK
+#   PROBE_CONTROL  R5_03_GENUINE_TLS_ACCEPTED        OK  OK
+#
+# ---------------------------------------------------------------------------
+# R5-04 -- THE PRODUCER'S PATH.
+# ---------------------------------------------------------------------------
+#
+# The attack: the producer path's ANCESTOR is a symlink to a directory
+# that holds a different producer. `lstat` on the FINAL COMPONENT alone
+# sees a regular file, so a final-component-only check passes, and
+# `execv` is pathname-based, so the kernel resolves the ancestor symlink
+# at spawn time.
+#
+#   PRODUCER_IS_REGULAR=YES
+#   PRODUCER_IS_SYMLINK=NO
+#
+# PRISTINE (the attack SUCCEEDS -- no refusal token, and the capture
+# record is written with the CALLER'S path):
+#
+#   HARNESS_REASON   (none)
+#   CAPTURE:         (a capture record was produced)
+#
+# SUBJECT (the attack is NEUTRALISED BY STAGING, not by refusal):
+#
+#   HARNESS_REASON   (none -- the run SUCCEEDS, which is correct: the
+#                    bytes are the bytes the runner validated)
+#   CAPTURE:
+#     EXECUTED_EXECUTABLE  .../run/sym_ancestor/1/stage/producer
+#     STAGED_PRODUCER      .../run/sym_ancestor/1/stage/producer
+#     STAGED_PRODUCER_SHA256 1f9e6e5c29c49537e46c2bad39a6ede1b093b078e6f87508e73c78ae0717bfeb
+#     PRODUCER_SHA256       1f9e6e5c29c49537e46c2bad39a6ede1b093b078e6f87508e73c78ae0717bfeb
+#     ARTIFACT_PATH         .../run/sym_ancestor/1/out/artifact.bin
+#     STAGED_SOURCE         .../run/sym_ancestor/1/out/source.HC
+#
+#   The staged producer is a BYTE COPY, not a hard link, and its digest
+#   equals the recorded digest:
+#
+#   $ shasum -a 256 $W/real/producer \
+#              $W/run/sym_ancestor/1/stage/producer
+#   1f9e6e5c29c49537e46c2bad39a6ede1b093b078e6f87508e73c78ae0717bfeb  $W/real/producer
+#   1f9e6e5c29c49537e46c2bad39a6ede1b093b078e6f87508e73c78ae0717bfeb  $W/run/sym_ancestor/1/stage/producer
+#
+#   The EXECUTED path is the STAGED path, so the kernel resolves no
+#   symlinked ancestor at all.
+#
+# ---------------------------------------------------------------------------
+# R5-05 -- THE ENVIRONMENT BINDING.
+# ---------------------------------------------------------------------------
+#
+# The attack: mutate `HarnessApplyEnv` so it binds under the WRONG
+# variable name. The four ambient `envcheck` cases all PASS, while the
+# real `run` recorded `GOOD=NEEDLE` and the child saw `GOOD` absent.
+#
+# The repair's witness is the NEW `envbind` mode, which calls the
+# PRODUCTION `HarnessApplyEnv()` and observes the binding in a REAL
+# CHILD:
+#
+#   PROBE_CONTROL  R5_05_CORRECT_BINDING    OK  HARNESS_ENVBIND_STATUS=PASS
+#   PROBE_CONTROL  R5_05_WRONG_VARIABLE     OK  HARNESS_ENVBIND_STATUS=FAIL
+#   PROBE_CONTROL  R5_05_WRONG_VALUE        OK  HARNESS_ENVBIND_STATUS=FAIL
+#   PROBE_CONTROL  R5_05_EMPTY_VALUE        OK  HARNESS_ENVBIND_STATUS=PASS
+#   PROBE_CONTROL  R5_05_VALUE_SUFFIX       OK  HARNESS_ENVBIND_STATUS=FAIL
+#   PROBE_CONTROL  R5_05_MISSING_VARIABLE   OK  HARNESS_ENVBIND_STATUS=FAIL
+#
+# And the ANTICONTROL, which mutates the harness and requires the
+# detector to REJECT the mutant:
+#
+#   DRIVER_WP001_CORRECTION03_ENVBIND_ANTICONTROL_STATUS=PASS
+#
+# ---------------------------------------------------------------------------
+# R5-06 -- THE BLOCK DIAGNOSTIC PRECISION.
+# ---------------------------------------------------------------------------
+#
+# The `blockstatus` mode drives the PRODUCTION extractor over five
+# record shapes and requires each to report ITS OWN status:
+#
+#   PROBE_CONTROL  R5_06_BLOCK_ABSENT      OK  CAPTURE_BLOCK_ABSENT
+#   PROBE_CONTROL  R5_06_BLOCK_EMPTY       OK  CAPTURE_BLOCK_EMPTY
+#   PROBE_CONTROL  R5_06_BLOCK_SCALAR      OK  CAPTURE_BLOCK_SCALAR
+#   PROBE_CONTROL  R5_06_BLOCK_TOO_LARGE   OK  CAPTURE_BLOCK_TOO_LARGE
+#   PROBE_CONTROL  R5_06_BLOCK_OK          OK  CAPTURE_BLOCK_OK
+#   PROBE_CHECKS   5
+#   PROBE_FAILURES 0
+#
+# ---------------------------------------------------------------------------
+# THE COMMANDS.
+# ---------------------------------------------------------------------------
+#
+#   git worktree add --detach /tmp/polyc_r6/pristine \
+#       61bd8d9016c1c991f0936a33f2ee47e53654ccea
+#   cd /tmp/polyc_r6/pristine
+#   make build/driver-required-route-correction03-harness
+#   ./build/driver-required-route-correction03-harness init <run-dir>
+#   ./build/driver-required-route-correction03-harness run <run-dir> \
+#       <ledger> OFF <case> <producer> <source> <fixture> <artifact> \
+#       <artifact-dir> arm64 C4R5=1 -- <argv...>
+#
+# The R5-03 witness:
+#
+#   cd /tmp/polyc_r6/pristine
+#   ./hcc --install-dir=$PWD/build/test-prefix -c zerofill_probe.HC \
+#       -o build/zerofill_probe.o
+#   gcc build/zerofill_probe.o -L$PWD/build/test-prefix/lib -ltos \
+#       -lpthread -lc -lm -o build/zerofill_probe
+#   ./build/zerofill_probe \
+#       .../driver-required-route-correction03-zerofill-fixture.o
