@@ -99,6 +99,16 @@ The nine F08 probes are N20 through N28.
     make gate-fast                               VERDICT=PASS
     make gate-push                               VERDICT=PASS
 
+Every measurement above was run SERIALLY against the final tree. The
+gate-push that is recorded in `c4r4/gate-ledger.txt` ran against the
+subject `4e773eaa72de`, and the tree it ran against is the tree this
+status describes: the only commit after it is the evidence commit that
+records the result. The ledger also records a transient suite failure
+and a failed gate attempt, together with their causes; both were
+CONCURRENCY AND LAUNCH artifacts of the way the gates were run, and
+neither was a defect in the subject. They are recorded rather than
+discarded so that the passing runs can be read against them.
+
 The Factory-v2 range checker is qualified against SYNTHETIC GIT FIXTURES,
 which is the only way to exercise a topology that has not happened yet.
 The 55 cases include the interrupted-ACT and the historical-invalid-
