@@ -1023,9 +1023,38 @@ extern "c" I32 unlink(U8 *path);
 // callers do.
 #include "../../src/holyc-lib/tooling_defs.HH"
 
-static U0 R5HarnessControl(U8 *dir, U8 *control, U8 *harness, U8 *producer,
-                            U8 *arch, U8 *named_exec, U8 *marker,
-                            U8 *expected_token, I64 expect_accept) {
+// The HARNESS CONTROL'S INPUTS.
+//
+// The inputs are carried in a CONTEXT OBJECT that is filled BY NAME,
+// because the production compiler's calling convention does not agree
+// with itself about a POINTER-TO-POINTER argument at parameter position
+// EIGHT or later: the call site places it on the STACK while the callee's
+// prologue reads it from a REGISTER, and the arguments that follow are
+// shifted. The context object keeps every function in this probe BELOW
+// that limit.
+class R5HarnessCtx
+{
+  U8 *dir;             // the fixture directory
+  U8 *control;         // the control's identity
+  U8 *harness;         // the production harness binary
+  U8 *producer;        // the producer the runner validates
+  U8 *arch;            // the expected architecture
+  U8 *named_exec;      // the executable the argument vector names
+  U8 *marker;          // the production marker the token follows
+  U8 *expected_token;  // the exact reason token the refusal must carry
+  I64 expect_accept;   // 1 for a positive control, 0 for an adverse one
+};
+
+static U0 R5HarnessControl(R5HarnessCtx *ctx) {
+  U8 *dir = ctx->dir;
+  U8 *control = ctx->control;
+  U8 *harness = ctx->harness;
+  U8 *producer = ctx->producer;
+  U8 *arch = ctx->arch;
+  U8 *named_exec = ctx->named_exec;
+  U8 *marker = ctx->marker;
+  U8 *expected_token = ctx->expected_token;
+  I64 expect_accept = ctx->expect_accept;
   // The run directory and the ledger.
   //
   // The control works in a DIRECTORY OF ITS OWN, so that it cannot be
@@ -1647,9 +1676,17 @@ I32 Main(I32 argc, U8 **argv) {
     // `/bin/cp`, but the producer the runner validated is the repository's
     // own compiler. The runner MUST refuse with
     // `HARNESS_PRODUCER_SUBSTITUTED`.
-    R5HarnessControl(hdir, "R4_02_PRODUCER_SUBSTITUTED", harness_real,
-                     prod_real, arch, "/bin/cp", "HARNESS_REASON",
-                     "HARNESS_PRODUCER_SUBSTITUTED", 0);
+    R5HarnessCtx hctx;
+    hctx.dir = hdir;
+    hctx.control = "R4_02_PRODUCER_SUBSTITUTED";
+    hctx.harness = harness_real;
+    hctx.producer = prod_real;
+    hctx.arch = arch;
+    hctx.named_exec = "/bin/cp";
+    hctx.marker = "HARNESS_REASON";
+    hctx.expected_token = "HARNESS_PRODUCER_SUBSTITUTED";
+    hctx.expect_accept = 0;
+    R5HarnessControl(&hctx);
     // R4-02 -- THE POSITIVE CONTROL. The argument vector names the
     // producer itself, which the runner MUST accept.
     //
@@ -1657,9 +1694,12 @@ I32 Main(I32 argc, U8 **argv) {
     // an `HARNESS_EVENT_ID` line instead. The positive control therefore
     // looks for the `HARNESS_EVENT_ID` marker, which is the production
     // marker of a completed run.
-    R5HarnessControl(hdir, "R4_02_PRODUCER_NAMED_POSITIVE", harness_real,
-                     prod_real, arch, prod_real, "HARNESS_EVENT_ID",
-                     "HARNESS_EVENT_ID", 1);
+    hctx.control = "R4_02_PRODUCER_NAMED_POSITIVE";
+    hctx.named_exec = prod_real;
+    hctx.marker = "HARNESS_EVENT_ID";
+    hctx.expected_token = "HARNESS_EVENT_ID";
+    hctx.expect_accept = 1;
+    R5HarnessControl(&hctx);
     // R4-02 -- THE SYMLINKED PRODUCER.
     //
     // The producer path is a SYMBOLIC LINK to the real producer. The
@@ -1680,9 +1720,13 @@ I32 Main(I32 argc, U8 **argv) {
     // the refusal of a link the control planted itself.
     unlink(link_path);
     if (symlink(prod_real, link_path) == 0) {
-      R5HarnessControl(hdir, "R4_02_PRODUCER_IS_SYMLINK", harness_real,
-                       link_path, arch, link_path, "HARNESS_REASON",
-                       "HARNESS_PRODUCER_SUBSTITUTED", 0);
+      hctx.control = "R4_02_PRODUCER_IS_SYMLINK";
+      hctx.producer = link_path;
+      hctx.named_exec = link_path;
+      hctx.marker = "HARNESS_REASON";
+      hctx.expected_token = "HARNESS_PRODUCER_SUBSTITUTED";
+      hctx.expect_accept = 0;
+      R5HarnessControl(&hctx);
     } else {
       "PROBE_CONTROL\tR4_02_PRODUCER_IS_SYMLINK\tFAIL\tSYMLINK_COULD_NOT_BE_PLANTED\n";
       r5_checks = r5_checks + 1;
