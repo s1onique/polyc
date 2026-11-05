@@ -221,6 +221,7 @@ class Names {
   U8 *artifact_name;
   U8 *aout_name;
   U8 *asm_name;
+  U8 *dylib_name;
   U8 *cd_frag;
   U8 *and_frag;
   U8 *redirect_frag;
@@ -233,6 +234,7 @@ class Names {
   U8 *slash_artifact;
   U8 *slash_aout;
   U8 *slash_asm;
+  U8 *slash_dylib;
   U8 *class_object;
   U8 *class_exec;
   U8 *class_asm;
@@ -262,26 +264,28 @@ class Names {
 #define NB_ARTIFACT 48
 #define NB_AOUT     64
 #define NB_ASM      72
-#define NB_CD       84
-#define NB_AND      92
-#define NB_REDIRECT 100
-#define NB_RMF     196
-#define NB_G0      204
-#define NB_G1      212
-#define NB_SLASH_STDOUT  220
-#define NB_SLASH_STDERR  236
-#define NB_SLASH_STATUS  252
-#define NB_SLASH_ARTIFACT 268
-#define NB_SLASH_AOUT    284
-#define NB_SLASH_ASM     296
-#define NB_CLASS_OBJECT  312
-#define NB_CLASS_EXEC    320
-#define NB_CLASS_ASM     328
-#define NB_CLASS_DYLIB   336
-#define NB_CLASS_NONE    344
-#define NB_VERDICT_AGREE 352
-#define NB_VERDICT_DISAGREE 360
-#define NB_TOTAL        372
+#define NB_DYLIB    88
+#define NB_CD      112
+#define NB_AND     120
+#define NB_REDIRECT 128
+#define NB_RMF     224
+#define NB_G0      232
+#define NB_G1      240
+#define NB_SLASH_STDOUT  248
+#define NB_SLASH_STDERR  264
+#define NB_SLASH_STATUS  280
+#define NB_SLASH_ARTIFACT 296
+#define NB_SLASH_AOUT    312
+#define NB_SLASH_ASM     328
+#define NB_SLASH_DYLIB   344
+#define NB_CLASS_OBJECT  368
+#define NB_CLASS_EXEC    376
+#define NB_CLASS_ASM     384
+#define NB_CLASS_DYLIB   392
+#define NB_CLASS_NONE    400
+#define NB_VERDICT_AGREE 408
+#define NB_VERDICT_DISAGREE 416
+#define NB_TOTAL        425
 
 static U8 N_BUF[NB_TOTAL];
 
@@ -333,6 +337,20 @@ static U0 InitNamesA() {
   N_BUF[NB_ASM + 0] = 99; N_BUF[NB_ASM + 1] = 97; N_BUF[NB_ASM + 2] = 115; N_BUF[NB_ASM + 3] = 101;
   N_BUF[NB_ASM + 4] = 46; N_BUF[NB_ASM + 5] = 111; N_BUF[NB_ASM + 6] = 117; N_BUF[NB_ASM + 7] = 116;
   N_BUF[NB_ASM + 8] = 46; N_BUF[NB_ASM + 9] = 115; N_BUF[NB_ASM + 10] = 0;
+  // "libcase.out.dylib"
+  //
+  // The DYNAMIC LIBRARY the -lib route produces. The dylib route
+  // writes lib<name>.dylib, and the -lib value in the case table is
+  // "case.out", so the file is libcase.out.dylib. Without this
+  // observation the dylib route was NEVER checked: the runner only
+  // looked at case.out.o, which that route does not write, so the
+  // case silently reported NONE.
+  N_BUF[NB_DYLIB + 0] = 108; N_BUF[NB_DYLIB + 1] = 105; N_BUF[NB_DYLIB + 2] = 98;
+  N_BUF[NB_DYLIB + 3] = 99; N_BUF[NB_DYLIB + 4] = 97; N_BUF[NB_DYLIB + 5] = 115;
+  N_BUF[NB_DYLIB + 6] = 101; N_BUF[NB_DYLIB + 7] = 46; N_BUF[NB_DYLIB + 8] = 111;
+  N_BUF[NB_DYLIB + 9] = 117; N_BUF[NB_DYLIB + 10] = 116; N_BUF[NB_DYLIB + 11] = 46;
+  N_BUF[NB_DYLIB + 12] = 100; N_BUF[NB_DYLIB + 13] = 121; N_BUF[NB_DYLIB + 14] = 108;
+  N_BUF[NB_DYLIB + 15] = 105; N_BUF[NB_DYLIB + 16] = 98; N_BUF[NB_DYLIB + 17] = 0;
   // "cd "
   N_BUF[NB_CD + 0] = 99; N_BUF[NB_CD + 1] = 100; N_BUF[NB_CD + 2] = 32; N_BUF[NB_CD + 3] = 0;
   // " && "
@@ -396,7 +414,28 @@ static U0 InitNamesB() {
   N_BUF[NB_SLASH_ASM + 0] = 47; N_BUF[NB_SLASH_ASM + 1] = 99; N_BUF[NB_SLASH_ASM + 2] = 97;
   N_BUF[NB_SLASH_ASM + 3] = 115; N_BUF[NB_SLASH_ASM + 4] = 101; N_BUF[NB_SLASH_ASM + 5] = 46;
   N_BUF[NB_SLASH_ASM + 6] = 111; N_BUF[NB_SLASH_ASM + 7] = 117; N_BUF[NB_SLASH_ASM + 8] = 116;
-  N_BUF[NB_SLASH_ASM + 9] = 46; N_BUF[NB_SLASH_ASM + 10] = 115; N_BUF[NB_SLASH_ASM + 11] = 0;
+  N_BUF[NB_SLASH_ASM + 9] = 46; N_BUF[NB_SLASH_ASM + 10] = 115; N_BUF[NB_SLASH_ASM + 11] = 32;
+  N_BUF[NB_SLASH_ASM + 12] = 0;
+  // "libcase.out.dylib "
+  //
+  // THE WRITE IS DELIBERATELY SPLIT INTO SHORT RUNS. The compiler
+  // miscompiles a LONG run of byte-writes into a static array: a
+  // 19-write run placed the last two bytes at the wrong offsets, and
+  // the resulting path was "libcase.out.dylb". The M-POLYC-MACHO-01
+  // experiment measured that corruption at runtime by reading the
+  // bytes back, so it is a MEASURED defect and not a guess.
+  //
+  // Every run below is at most 8 writes, which the compiler places
+  // correctly. The tool's other name regions are already in that
+  // shape.
+  N_BUF[NB_SLASH_DYLIB + 0] = 47; N_BUF[NB_SLASH_DYLIB + 1] = 108; N_BUF[NB_SLASH_DYLIB + 2] = 105;
+  N_BUF[NB_SLASH_DYLIB + 3] = 98; N_BUF[NB_SLASH_DYLIB + 4] = 99; N_BUF[NB_SLASH_DYLIB + 5] = 97;
+  N_BUF[NB_SLASH_DYLIB + 6] = 115; N_BUF[NB_SLASH_DYLIB + 7] = 101;
+  N_BUF[NB_SLASH_DYLIB + 8] = 46; N_BUF[NB_SLASH_DYLIB + 9] = 111; N_BUF[NB_SLASH_DYLIB + 10] = 117;
+  N_BUF[NB_SLASH_DYLIB + 11] = 116; N_BUF[NB_SLASH_DYLIB + 12] = 46; N_BUF[NB_SLASH_DYLIB + 13] = 100;
+  N_BUF[NB_SLASH_DYLIB + 14] = 121; N_BUF[NB_SLASH_DYLIB + 15] = 108;
+  N_BUF[NB_SLASH_DYLIB + 16] = 105; N_BUF[NB_SLASH_DYLIB + 17] = 98; N_BUF[NB_SLASH_DYLIB + 18] = 32;
+  N_BUF[NB_SLASH_DYLIB + 19] = 0;
   // "OBJECT" "EXEC" "ASM" "DYLIB" "NONE"
   N_BUF[NB_CLASS_OBJECT + 0] = 79; N_BUF[NB_CLASS_OBJECT + 1] = 66; N_BUF[NB_CLASS_OBJECT + 2] = 74;
   N_BUF[NB_CLASS_OBJECT + 3] = 69; N_BUF[NB_CLASS_OBJECT + 4] = 67; N_BUF[NB_CLASS_OBJECT + 5] = 84;
@@ -494,10 +533,23 @@ static I64 ClassifyArtifact(U8 *path) {
   if (m == 0xFEEDFACF) {
     // The filetype is at offset 12.
     I64 ft = buf[12] | (buf[13] << 8) | (buf[14] << 16) | (buf[15] << 24);
+    // THE MACHO FILETYPES, from Apple's loader.h:
+    //
+    //   MH_OBJECT   0x1   relocatable object file
+    //   MH_EXECUTE  0x2   demand paged executable file
+    //   MH_DYLIB    0x6   dynamically bound shared library
+    //   MH_BUNDLE   0x8   dynamically bound bundle file
+    //
+    // This mapping was WRONG: it read 6 as MH_EXECUTE and 8 as
+    // MH_DYLIB, so a real dynamic library was reported as an
+    // executable and a bundle was reported as a dynamic library. The
+    // M-POLYC-MACHO-01 experiment measured the misclassification
+    // against the SDK's own definitions, and the mapping was
+    // corrected.
     if (ft == 1) return CLASS_OBJECT;      // MH_OBJECT
-    if (ft == 6) return CLASS_EXEC;        // MH_EXECUTE
-    if (ft == 2) return CLASS_EXEC;        // MH_EXECUTE (bundle-ish)
-    if (ft == 8) return CLASS_DYLIB;       // MH_DYLIB
+    if (ft == 2) return CLASS_EXEC;        // MH_EXECUTE
+    if (ft == 6) return CLASS_DYLIB;       // MH_DYLIB
+    if (ft == 8) return CLASS_DYLIB;       // MH_BUNDLE (a dynamic bundle)
     return CLASS_ASM;
   }
   if (m == 0xFEEDFACE) return CLASS_OBJECT;
@@ -609,6 +661,12 @@ static U0 FileDigest(Names *nm, U8 *workdir, U8 *name, U8 *out) {
 }
 
 // The class of an artifact in the working directory.
+//
+// The artifact is the DYNAMIC LIBRARY if the run produced one, and the
+// object otherwise. The dylib route (-lib) writes lib<name>.dylib and
+// does NOT write case.out.o, so the dylib is checked FIRST: without
+// that, the dylib route reported NONE and the case silently verified
+// nothing.
 static I64 WorkArtifactClass(Names *nm, U8 *workdir) {
 
   I64 n = 0;
@@ -617,7 +675,19 @@ static I64 WorkArtifactClass(Names *nm, U8 *workdir) {
   while (w[i] != 0 && n < 400) { PATH_BUF[n] = w[i]; n = n + 1; i = i + 1; }
   PATH_BUF[n] = 47; n = n + 1;   // '/'
   i = 0;
-  U8 *s = nm->artifact_name;
+  U8 *s = nm->dylib_name;
+  while (s[i] != 0 && n < 500) { PATH_BUF[n] = s[i]; n = n + 1; i = i + 1; }
+  PATH_BUF[n] = 0;
+  I64 dylib_class = ClassifyArtifact(PATH_BUF);
+  if (dylib_class != CLASS_NONE) return dylib_class;
+
+  n = 0;
+  i = 0;
+  w = workdir;
+  while (w[i] != 0 && n < 400) { PATH_BUF[n] = w[i]; n = n + 1; i = i + 1; }
+  PATH_BUF[n] = 47; n = n + 1;   // '/'
+  i = 0;
+  s = nm->artifact_name;
   while (s[i] != 0 && n < 500) { PATH_BUF[n] = s[i]; n = n + 1; i = i + 1; }
   PATH_BUF[n] = 0;
   return ClassifyArtifact(PATH_BUF);
@@ -651,6 +721,8 @@ static U0 CleanWork(Names *nm, U8 *workdir) {
   App(CMD2_BUF, 2048, &n, nm->slash_aout);
   App(CMD2_BUF, 2048, &n, workdir);
   App(CMD2_BUF, 2048, &n, nm->slash_asm);
+  App(CMD2_BUF, 2048, &n, workdir);
+  App(CMD2_BUF, 2048, &n, nm->slash_dylib);
   System(CMD2_BUF);
 }
 
@@ -662,7 +734,14 @@ static U0 Observe(Names *nm, U8 *compiler, U8 *workdir, U8 *argvline) {
   RUN_CLASS = WorkArtifactClass(nm, workdir);
   FileDigest(nm, workdir, nm->stdout_name, RUN_OUT);
   FileDigest(nm, workdir, nm->stderr_name, RUN_ERR);
-  FileDigest(nm, workdir, nm->artifact_name, RUN_ART);
+  // The CONTENT digest is taken of whichever artifact the class was
+  // read from, so a dylib is compared by its bytes and not by an
+  // empty digest of a file that was never produced.
+  if (RUN_CLASS == CLASS_DYLIB) {
+    FileDigest(nm, workdir, nm->dylib_name, RUN_ART);
+  } else {
+    FileDigest(nm, workdir, nm->artifact_name, RUN_ART);
+  }
 }
 
 // The number of artifacts present in the working directory.
@@ -704,6 +783,7 @@ I32 Main(I32 argc, U8 **argv) {
   nm.artifact_name = N_BUF + NB_ARTIFACT;
   nm.aout_name = N_BUF + NB_AOUT;
   nm.asm_name = N_BUF + NB_ASM;
+  nm.dylib_name = N_BUF + NB_DYLIB;
   nm.cd_frag = N_BUF + NB_CD;
   nm.and_frag = N_BUF + NB_AND;
   nm.redirect_frag = N_BUF + NB_REDIRECT;
@@ -716,6 +796,7 @@ I32 Main(I32 argc, U8 **argv) {
   nm.slash_artifact = N_BUF + NB_SLASH_ARTIFACT;
   nm.slash_aout = N_BUF + NB_SLASH_AOUT;
   nm.slash_asm = N_BUF + NB_SLASH_ASM;
+  nm.slash_dylib = N_BUF + NB_SLASH_DYLIB;
   nm.class_object = N_BUF + NB_CLASS_OBJECT;
   nm.class_exec = N_BUF + NB_CLASS_EXEC;
   nm.class_asm = N_BUF + NB_CLASS_ASM;

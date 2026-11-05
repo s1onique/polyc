@@ -31,7 +31,16 @@ D12_stdout_dash	%P -S input.HC -o-	0
 # --- dash filename: the separate -o - --------------------------------------
 D13_dash_filename	%P -S input.HC -o -	0
 # --- dynamic library --------------------------------------------------------
-D14_dylib	%P -lib libtos.dylib input.HC -o case.out.o	0
+# The dylib route. The compiler writes lib<name>.dylib and an object;
+# the runner observes libcase.out.dylib, and the expected class is
+# DYLIB (4).
+#
+# This case previously expected NONE (0) and therefore verified
+# NOTHING: the route wrote no case.out.o, so the runner read NONE and
+# the expectation matched. The M-POLYC-MACHO-01 experiment found that
+# the classifier also misreported a real MH_DYLIB as an EXECUTABLE, so
+# this case could not have detected it.
+D14_dylib	%P -lib case.out input.HC	4
 # --- invalid options --------------------------------------------------------
 D15_missing_value	%P -o	0
 D16_unknown_option	%P -z input.HC	0

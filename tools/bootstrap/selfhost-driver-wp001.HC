@@ -1234,6 +1234,43 @@ static I64 WpDriverFirstArgForStep(I64 step) {
 I64 WpDriverEmitLlvmConflict() {
   I64 argc = WpDriverHostArgc();
   I64 i = 1;
+  // The legacy C condition was NESTED:
+  //
+  //   if (args.emit_llvm) {
+  //     if (args.jit || args.repl || args.run || args.assemble_only ||
+  //         args.emit_object || args.emit_dylib || args.transpile ||
+  //         args.lsp)
+  //     { ...conflict... }
+  //   }
+  //
+  // The OUTER guard is part of the condition. A conflicting option
+  // WITHOUT an --emit-llvm request is NOT a conflict: there is no LLVM
+  // request to be exclusive with.
+  //
+  // This function previously flattened that nesting and dropped the
+  // outer guard, so a plain `-c` or a plain `-S` reported
+  // WP_STATUS_EMIT_LLVM_CONFLICT. The host only RENDERS that status on
+  // the LLVM route, so the compiler's observable behaviour was masked;
+  // the EXPORTED status was nevertheless wrong.
+  //
+  // The M-POLYC-CONFLICT-01 experiment measured the divergence from
+  // the legacy C oracle directly, and the guard was restored.
+  I64 saw_llvm = 0;
+  while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      I64 kind = WpDriverOptKind(opt);
+      if (kind == WP_KIND_LLVM) saw_llvm = 1;
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
+    i = i + 1;
+  }
+  if (saw_llvm == 0) return 0;
+
+  i = 1;
   while (i < argc) {
     I64 opt = WpDriverClassifyOption(i);
     if (opt >= 0) {
