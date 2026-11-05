@@ -9861,3 +9861,71 @@ repository and is never backdated. **AC50 is not claimed.**
 
 See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02.md`
 and `evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02/`.
+
+## ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01 — the remaining WP-001 driver authority is TRANSFERRED
+
+The **remaining** WP-001 compiler-driver semantic authority moved from C
+to the compiled PolyC driver. The production compiler's behaviour is
+**conserved**: parser **376/376** over **90** blocks with the frozen
+assertion-sequence MD5 `b6f117eb1386ca80f81bc06226e2a741` (**byte-identical**
+to the entry baseline), direct lexers **89/89**, **45/45** and **23/23**,
+the **30**-case G0/G1 differential with **0** disagreements,
+`gate-fast` **PASS** and the serialized `gate-push` **PASS**.
+
+**What moved.** The whole-CLI route decision — the assemble, repl,
+print-tokens, transpile, print-AST, dump-IR, dump-IR-pooled, CFG,
+JIT, emit-LLVM and compile routes — is now the PolyC driver's
+`DriverPlan`. The C host performs **positive equality tests** on the one
+route code the driver selected and no longer tests any `args.<flag>` to
+decide. The driver's priority table encodes the legacy `if`-chain order
+**exactly** (ASSEMBLE 10, REPL 20, PRINT_TOKENS 30, TRANSPILE 40,
+PRINT_AST 50, DUMP_IR 60, DUMP_IR_POOLED 70, EMIT_LLVM 80, JIT 90,
+CFG 100, COMPILE 200).
+
+**The principal RED** was at the real production seam: the compiled
+PolyC detector read the real Mach-O symbol table of the real production
+`main.c.o` and found `WpDriverSelectedAction` **NOT_CONSUMED** — the
+PolyC driver computed the whole-argv action and the production route
+selection never called it. At close the same detector reports
+`WpDriverSelectedRoute`, `WpDriverPlanStatus` and
+`WpDriverSelectedEmission` all **IMPORTED**, and the RED is **NOT_FIRED**.
+
+**A FAIL-OPEN WAS FOUND AND REPAIRED.** The plan-validity experiment
+showed that the C route guard was a pure numeric bound check, so route
+`0` (`WP_DRIVER_STEP_INVALID`, an **empty plan**) was *inside* the
+accepted domain and the compiler compiled anyway. The measured negative
+control: empty plan + original guard → **exit 0, artifact produced**;
+empty plan + repaired guard → **exit 1, no artifact**. The repair has
+**two** halves and both are required — the C guard now rejects
+`WP_DRIVER_STEP_INVALID`, and the PolyC driver selects the COMPILE route
+**explicitly** so a legitimate argv never produces an empty plan.
+
+**Causality and dormancy are measured, not asserted.** A PolyC-side
+mutation changed G1; a C-side mutation changed G0; and the C-side
+mutation left G1's artifact **byte-identical**, so the legacy C chain
+is genuinely dormant under the selector. The stage0 compiler compiles
+the PolyC driver subject to a **byte-identical** object
+(`dd614e567cf3244596452b2693643723398c8623fc35e27f256be469018f3929`),
+and a missing production subject **fails the build** with
+`REJECT_MISSING_DRIVER_SUBJECT` — no silent fallback.
+
+**The driver symbol count is ACCOUNTED FOR, not merely conserved:** the
+entry selector-ON binary carried **30** driver PolyC symbols and the
+close binary carries **42**; the **12** added names are exactly the
+takeover's own machinery, and **no** entry symbol was removed.
+
+**One P2 residue is open and recorded:** the three ordered-plan exports
+(`WpDriverPlanActionCount`, `WpDriverPlanActionAt`,
+`WpDriverPlanArgAt`) are exported but **not consumed**, because the
+plan resolves the legacy precedence to one winning step. This is a
+surface residue, not a correctness defect: the precedence is preserved
+and the differential measures it. Disposition: **DEFERRED**.
+
+**The predecessor's status is unchanged.**
+`ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03` has a reported
+independent `C4_READY=YES` and **no** terminal CLOSE. This ACT does
+not inherit a verdict CORRECTION03 never recorded and does not claim
+CORRECTION03 was closed.
+
+See `docs/factory/HANDOFF-ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01.md`
+and `evidence/ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01/`.

@@ -1,0 +1,161 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=final-ownership-inventory
+#
+# THE FINAL OWNERSHIP INVENTORY, measured on the post-IMPL tree.
+#
+# This is the SAME inventory as c0/authority-inventory.tsv, re-measured
+# after the takeover. It is NOT a claim: every row is backed by a
+# source location and, where the row is about CONSUMPTION, by the
+# compiled PolyC detector (tools/quality/wp001-driver-takeover01-red.HC)
+# reading the REAL Mach-O symbol table of the REAL production object.
+#
+# OWNERSHIP CLASSES (same as c0)
+#   POLYC_OWNED        compiled PolyC determines the behaviour
+#   C_SEMANTIC         C selects a behavioral outcome
+#   C_MECHANICAL       C executes a decision already made elsewhere
+#   SHARED_OR_UNPROVEN ownership has not been separated sufficiently
+#   UNREACHABLE        proven unreachable in the production link
+#
+# THE TRANSFERRED SITES. Each was C_SEMANTIC at entry and is now
+# POLYC_OWNED. The C side now performs a POSITIVE EQUALITY TEST
+# against the route code the PolyC driver selected; it does not test
+# any args.<flag> to decide.
+#
+# TRANSFERRED_SITES	13	S16,S17,S18,S19,S20,S21,S22,S23,S24,S25,S26,S27,S32
+#
+# THE MEASUREMENT THAT PROVES THE TRANSFER, per site: the C host
+# imports the PolyC driver's route accessor, and the host's route
+# dispatch is a set of positive equality tests on that ONE code.
+#
+#   src/main.c:602  long long wp_route = WpDriverSelectedRoute();
+#   src/main.c:603  if (wp_route <= WP_DRIVER_STEP_INVALID ||
+#   src/main.c:604      wp_route >= WP_DRIVER_STEP_COUNT) { ... fail closed ... }
+#   src/main.c:630,639,652,657,678,683,688,694,746,756,794
+#                   if (wp_route == WP_DRIVER_STEP_<X>) { ... }
+#
+# THE ROUTE DOMAIN, and the FAIL-CLOSED GUARD over it:
+#
+#   WP_DRIVER_STEP_INVALID        0   rejected (an absent plan)
+#   WP_DRIVER_STEP_ASSEMBLE       1
+#   WP_DRIVER_STEP_REPL           2
+#   WP_DRIVER_STEP_PRINT_TOKENS   3
+#   WP_DRIVER_STEP_TRANSPILE      4
+#   WP_DRIVER_STEP_PRINT_AST      5
+#   WP_DRIVER_STEP_DUMP_IR        6
+#   WP_DRIVER_STEP_DUMP_IR_POOLED 7
+#   WP_DRIVER_STEP_CFG            8
+#   WP_DRIVER_STEP_EMIT_LLVM      9
+#   WP_DRIVER_STEP_JIT           10
+#   WP_DRIVER_STEP_COMPILE       11
+#   WP_DRIVER_STEP_COUNT         12
+#
+# THE PRECEDENCE IS PRESERVED. The legacy C chain was a SEQUENCE of
+# independent `if (args.<flag>)` statements and the FIRST matching
+# branch won. The PolyC driver's priority table encodes that order
+# EXACTLY, and the driver resolves the winner before the C host sees
+# anything:
+#
+#   ASSEMBLE 10, REPL 20, PRINT_TOKENS 30, TRANSPILE 40,
+#   PRINT_AST 50, DUMP_IR 60, DUMP_IR_POOLED 70, EMIT_LLVM 80,
+#   JIT 90, CFG 100, COMPILE 200 (the default)
+#
+# The C chain's order is ASSEMBLE, REPL, PRINT_TOKENS, TRANSPILE,
+# PRINT_AST, DUMP_IR, DUMP_IR_POOLED, EMIT_LLVM, JIT, CFG, COMPILE.
+# The two orders are IDENTICAL. The G0/G1 differential over 30 argv
+# shapes measures this.
+SITE_ID	SOURCE_FUNCTION	SOURCE_LOCATION	ROUTE_FAMILY	REACHABLE_FROM_COMPILER_PRODUCING_ROUTE	REACHABLE_FROM_OTHER_SUPPORTED_CLI_ROUTE	CURRENT_SEMANTIC_OWNER	REQUIRED_INPUTS	OBSERVABLE_OUTCOME	MIGRATION_GROUP
+S01	cliParserFind	src/cli.c:333	CLI	YES	YES	POLYC_OWNED	argv bytes	the option is recognised	ALREADY_MIGRATED
+S02	cliGetFileType	src/cli.c:369	CLI	YES	YES	POLYC_OWNED	filename bytes	the argument is a source/header/asm/object/dylib	ALREADY_MIGRATED
+S03	cliParseArgsLegacy	src/cli.c:458	CLI	NO	YES	C_SEMANTIC	the whole argv	the legacy C option table and arity rules	ORACLE_ONLY
+S04	cliParseArgsPolyC	src/cli.c:629	CLI	YES	YES	C_MECHANICAL	PolyC field codes	the CliArgs fields are filled	ALREADY_MIGRATED
+S05	cliParseArgs (dispatch)	src/cli.c:604	CLI	YES	YES	C_MECHANICAL	selector	the legacy or the PolyC parser is chosen	ALREADY_MIGRATED
+S06	option arity / value location	src/cli.c:661-675	CLI	YES	YES	POLYC_OWNED	argv bytes	where the option's value lives	ALREADY_MIGRATED
+S07	CliArgs field assignment	switch at src/cli.c:677	CLI	YES	YES	C_MECHANICAL	PolyC field code	the field is set	ALREADY_MIGRATED
+S08	driver status selection	src/cli.c:778	EXEC	YES	YES	POLYC_OWNED	the whole argv	which diagnostic the driver reports	ALREADY_MIGRATED
+S09	driver status domain bound	src/cli.c:801	EXEC	YES	YES	C_MECHANICAL	WP_DRIVER_STATUS_COUNT	an invalid status fails closed	ALREADY_MIGRATED
+S10	-o- requires -S	src/cli.c:808	EXEC	YES	YES	POLYC_OWNED	the whole argv	the -o- pairing diagnostic	ALREADY_MIGRATED
+S11	unknown argument report	src/cli.c:817	EXEC	YES	YES	POLYC_OWNED	the whole argv	the unknown-option diagnostic	ALREADY_MIGRATED
+S12	arity violation report	src/cli.c:829	EXEC	YES	YES	POLYC_OWNED	the whole argv	the missing-value diagnostic	ALREADY_MIGRATED
+S13	absence of input report	src/cli.c:819	EXEC	YES	YES	POLYC_OWNED	the whole argv	the no-input diagnostic	ALREADY_MIGRATED
+S14	artifact class selection	src/main.c:282	ARTIFACT	YES	YES	POLYC_OWNED	the whole argv	which artifact class is produced	ALREADY_MIGRATED
+S15	artifact class translation	src/main.c:308-415	ARTIFACT	YES	YES	C_MECHANICAL	the PolyC artifact class	the platform command that produces it	ALREADY_MIGRATED
+S16	assemble route selection	src/main.c:630	PLAN	NO	YES	POLYC_OWNED	the whole argv	the .s input is assembled and the process ends	TRANSFERRED
+S17	repl route selection	src/main.c:639	PLAN	NO	YES	POLYC_OWNED	the whole argv	the REPL runs and the process ends	TRANSFERRED
+S18	print-tokens route selection	src/main.c:652	AUX	NO	YES	POLYC_OWNED	the whole argv	the token stream is emitted	TRANSFERRED
+S19	transpile route selection	src/main.c:657	AUX	NO	YES	POLYC_OWNED	the whole argv	the transpiled C is emitted	TRANSFERRED
+S20	compile-to-AST gate	src/main.c:602	PLAN	YES	YES	POLYC_OWNED	the whole argv	whether the compile proceeds past AST production	TRANSFERRED
+S21	print-AST route selection	src/main.c:678	AUX	NO	YES	POLYC_OWNED	the whole argv	the AST is printed	TRANSFERRED
+S22	dump-IR route selection	src/main.c:683	AUX	NO	YES	POLYC_OWNED	the whole argv	the IR is dumped	TRANSFERRED
+S23	dump-IR-pooled route selection	src/main.c:688	AUX	NO	YES	POLYC_OWNED	the whole argv	the pooled IR is dumped	TRANSFERRED
+
+S24	emit-LLVM exclusivity check	src/cli.c:778	CLI	NO	YES	POLYC_OWNED	the whole argv	the mutual-exclusion diagnostic	TRANSFERRED
+S25	emit-LLVM route selection	src/main.c:694 / 746	AUX	NO	YES	POLYC_OWNED	the whole argv	the LLVM IR is emitted	TRANSFERRED
+S26	jit route selection	src/main.c:756	AUX	NO	YES	POLYC_OWNED	the whole argv	the program is JIT-compiled and run	TRANSFERRED
+S27	cfg route selection	src/main.c:794	AUX	NO	YES	POLYC_OWNED	the whole argv	the CFG is constructed and written	TRANSFERRED
+S28	whole-argv action selection	tools/bootstrap/selfhost-driver-wp001.HC:616	PLAN	YES	YES	POLYC_OWNED	the whole argv	the selected action code	ALREADY_MIGRATED_BUT_UNCONSUMED
+S29	driver status mapping	tools/bootstrap/selfhost-driver-wp001.HC:736	EXEC	YES	YES	POLYC_OWNED	the action	the status	ALREADY_MIGRATED
+S30	driver artifact class	tools/bootstrap/selfhost-driver-wp001.HC:990	ARTIFACT	YES	YES	POLYC_OWNED	the whole argv	the artifact class	ALREADY_MIGRATED
+S31	driver option table	tools/bootstrap/selfhost-driver-wp001.HC:152	CLI	YES	YES	POLYC_OWNED	the table	the 32 option names, arities and kinds	ALREADY_MIGRATED
+S32	driver option classification	tools/bootstrap/selfhost-driver-wp001.HC:386	CLI	YES	YES	POLYC_OWNED	argv bytes	the option index	ALREADY_MIGRATED
+S33	driver field selection	tools/bootstrap/selfhost-driver-wp001.HC:901	CLI	YES	YES	POLYC_OWNED	the option index	the CliArgs field code	ALREADY_MIGRATED
+S34	target value resolution	src/cli.c:106 (cliApplyTarget)	CLI	YES	YES	POLYC_OWNED	the option value	the target triple	ALREADY_MIGRATED
+S35	host byte accessors	src/selfhost-driver-wp001.c:43	CLI	YES	YES	C_MECHANICAL	argv	the raw bytes	ALREADY_MIGRATED
+S36	host value copier	src/selfhost-driver-wp001.c:67	CLI	YES	YES	C_MECHANICAL	the indices	the value bytes	ALREADY_MIGRATED
+S37	driver route precedence	tools/bootstrap/selfhost-driver-wp001.HC:1171	PLAN	YES	YES	POLYC_OWNED	the candidate steps	which route wins the legacy chain order	TRANSFERRED
+S38	driver plan build	tools/bootstrap/selfhost-driver-wp001.HC:1306	PLAN	YES	YES	POLYC_OWNED	the whole argv	the ordered plan	TRANSFERRED
+S39	driver selected route	tools/bootstrap/selfhost-driver-wp001.HC:1415	PLAN	YES	YES	POLYC_OWNED	the plan	the single selected route code	TRANSFERRED
+S40	route domain guard	src/main.c:603	EXEC	YES	YES	C_MECHANICAL	WP_DRIVER_STEP_COUNT	an invalid route fails closed	TRANSFERRED
+S41	plan action count export	tools/bootstrap/selfhost-driver-wp001.HC:1378	PLAN	YES	YES	POLYC_OWNED	the plan	the number of steps	UNCONSUMED_RESIDUE
+S42	plan action at export	tools/bootstrap/selfhost-driver-wp001.HC:1389	PLAN	YES	YES	POLYC_OWNED	the plan	the step code at an index	UNCONSUMED_RESIDUE
+S43	plan argument at export	tools/bootstrap/selfhost-driver-wp001.HC:1401	PLAN	YES	YES	POLYC_OWNED	the plan	the argument index at an index	UNCONSUMED_RESIDUE
+
+#
+
+#
+# THE RESIDUE, EXPLICIT (F11). S41-S43 are the ORDERED-PLAN surface.
+# The plan is built by resolving the legacy chain's precedence to ONE
+# winning step, so the plan always holds EXACTLY ONE step, and the C
+# host consumes the SINGLE selected route. The three ordered-plan
+# exports are therefore declared and exported but NOT CONSUMED by the
+# production host.
+#
+# This is NOT a correctness defect: the precedence IS preserved, and
+# the 30-case G0/G1 differential measures it. It is a SURFACE
+# RESIDUE, classified P2 (deferred improvement): the exports could be
+# removed, or the plan could be made genuinely multi-step, but NEITHER
+# is required by this ACT and NEITHER is authorized by it.
+#
+#   RESIDUE_CLASS=P2
+#   RESIDUE_COUNT=3
+#   RESIDUE_SITES=S41,S42,S43
+#   RESIDUE_DISPOSITION=DEFERRED (not fixed, not silently dropped)
+#
+# S28 is the same class of residue and was ALREADY recorded at entry:
+# the whole-argv action export is computed and not consumed. The route
+# export supersedes it as the consumed surface.
+#
+# THE CONSUMPTION MEASUREMENT, on the post-IMPL production object
+# build/CMakeFiles/hcc.dir/main.c.o (or the equivalent fresh object):
+#
+#   $ ./build/wp001-takeover-red <production main.c object> \
+#       _WpDriverSelectedRoute _WpDriverPlanStatus _WpDriverSelectedEmission
+#   SYMBOL_COUNT=135
+#   ACCESSOR name=_WpDriverSelectedRoute classification=IMPORTED
+#   ACCESSOR name=_WpDriverPlanStatus classification=IMPORTED
+#   ACCESSOR name=_WpDriverSelectedEmission classification=IMPORTED
+#   WP001_DRIVER_TAKEOVER_RED=NOT_FIRED
+#   EXIT 0
+#
+# THE PRINCIPAL RED AT ENTRY, for comparison:
+#
+#   $ ./build/wp001-takeover-red <entry production main.c object> \
+#       WpDriverSelectedAction
+#   ACCESSOR name=WpDriverSelectedAction classification=NOT_CONSUMED
+#   WP001_DRIVER_TAKEOVER_RED=FIRED
+#   EXIT 1
+#
+# PRODUCTION_POLYC_AUTHORITIES	16 at entry	16 at close	CONSERVED
+# PRODUCTION_DRIVER_SYMBOLS_IN_HCC	30 at entry	30 at close	CONSERVED
+# G0_DRIVER_SYMBOL_COUNT	0 (the selector-OFF oracle contains ZERO driver PolyC symbols)	0	CONSERVED
+# G1_DRIVER_SYMBOL_COUNT	30	30	CONSERVED

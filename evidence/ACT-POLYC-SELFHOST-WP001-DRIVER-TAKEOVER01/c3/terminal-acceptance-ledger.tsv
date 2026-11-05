@@ -1,0 +1,81 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C3-EVIDENCE
+# EVIDENCE_KIND=terminal-acceptance-ledger
+#
+# THE TERMINAL ACCEPTANCE LEDGER.
+#
+# Every row is a MEASUREMENT with the command that produced it. No row
+# passes through a declared status alone (ACT-POLYC-SELFHOST-DRIVER-
+# REQUIRED-ROUTE-CORRECTION03 AC12): each one is a fresh observation
+# on the post-IMPL tree.
+#
+# The G0 and G1 binaries are built from the SAME working-tree state,
+# because --version embeds the build metadata. A G0 built from an
+# earlier tree disagrees on D03, D12 and D20, and the disagreement is
+# the commit hash in the --version output -- a build-metadata
+# difference, not a semantic one. Rebuilt from the same tree, the
+# differential is 30/30 AGREE.
+#
+ledger_id	criterion	command	result	verdict
+E01	PRINCIPAL RED FIRED AT ENTRY (the whole-argv action was computed and never consumed)	./build/wp001-takeover-red <entry production main.c object> WpDriverSelectedAction	ACCESSOR name=WpDriverSelectedAction classification=NOT_CONSUMED ; WP001_DRIVER_TAKEOVER_RED=FIRED ; EXIT 1	RED_REPRODUCED
+E02	PRINCIPAL RED NOT FIRED AT CLOSE (the route accessor IS consumed)	./build/wp001-takeover-red <close production main.c object> _WpDriverSelectedRoute _WpDriverPlanStatus _WpDriverSelectedEmission	ACCESSOR name=_WpDriverSelectedRoute classification=IMPORTED ; ACCESSOR name=_WpDriverPlanStatus classification=IMPORTED ; ACCESSOR name=_WpDriverSelectedEmission classification=IMPORTED ; WP001_DRIVER_TAKEOVER_RED=NOT_FIRED ; EXIT 0	RED_GREEN
+E03	THE C HOST IMPORTS THE ROUTE ACCESSOR (the compiled object, not a source reading)	nm -u <close production main.c object> | grep WpDriver	_WpDriverPlanStatus / _WpDriverSelectedEmission / _WpDriverSelectedRoute	C_IMPORTS_ROUTE
+E04	NO C-OWNED ROUTE CHAIN REMAINS UNDER SELECTOR ON (the dispatch is positive equality tests on the one route code)	grep -n 'wp_route ==' src/main.c	10 sites at src/main.c:630,639,652,657,678,683,688,694,746,756,794 ; NO 'if (args.<flag>)' route test remains under the selector	POLYC_AUTHORITATIVE
+E05	THE LEGACY C CHAIN IS RETAINED AS THE SELECTOR-OFF ORACLE (an independent G0)	grep -n -A11 'long long wp_route = WP_DRIVER_STEP_COMPILE;' src/main.c	the original 10-branch C chain is intact under #else	ORACLE_INTACT
+E06	THE PRIORITY TABLE ENCODES THE LEGACY CHAIN ORDER EXACTLY	compare the C chain order with WpDriverStepPriority	ASSEMBLE,REPL,PRINT_TOKENS,TRANSPILE,PRINT_AST,DUMP_IR,DUMP_IR_POOLED,EMIT_LLVM,JIT,CFG,COMPILE == priorities 10,20,30,40,50,60,70,80,90,100,200	ORDER_PRESERVED
+E07	G0/G1 DIFFERENTIAL OVER THE FROZEN 30-CASE TABLE	./build/wp001-takeover-diff <cases.tsv> <G0> <G1> <workdir>	CASES=30 ; DISAGREE=0 ; DIFFERENTIAL=PASS	DIFFERENTIAL_PASS
+E08	POLYC-SIDE CAUSAL MUTATION CHANGES G1 (the PolyC driver really owns the route)	poison the driver's compile push to PRINT_AST, rebuild G1, run the real compiler	G1 printed the AST and produced NO artifact, where the unmutated G1 produced the object	POLYC_CAUSAL
+E09	C-SIDE MUTATION CHANGES G0 (the C chain really is the oracle)	poison the selector-OFF C chain to PRINT_AST, rebuild G0, run the real compiler	G0 printed the AST and produced NO artifact, where the unmutated G0 produced the object	C_CAUSAL
+E10	C-SIDE MUTATION IS DORMANT UNDER SELECTOR ON (the C chain is no longer authoritative)	cmp the mutated-G1 artifact with the unmutated-G1 artifact	BYTE-IDENTICAL ; the C mutation changed G0 and left G1 unchanged	DORMANCY
+E11	RESTORATION: the UNMUTATED G0 still compiles normally	run the unmutated G0 on the real input	G0 exit 0, object produced	RESTORED
+E13	EMPTY PLAN FAILS CLOSED (the repaired guard)	poison the plan to never push a step, rebuild G1 with the REPAIRED guard, run the real compiler	ERROR: hcc: the driver selected an invalid route (0) ; EXIT 1 ; NO artifact	FAIL_CLOSED
+E14	EMPTY PLAN WAS A FAIL-OPEN UNDER THE ORIGINAL GUARD (the negative control)	same poison, ORIGINAL bound check (wp_route < 0)	EXIT 0 ; the artifact case.out.o WAS PRODUCED	FAIL_OPEN_MEASURED
+E15	NO SILENT FALLBACK ON A MISSING PRODUCTION SUBJECT (F6)	cmake with -DDRIVER_WP001_OBJECT=<a path that does not exist>	CMake Error ... REJECT_MISSING_DRIVER_SUBJECT ... the PolyC driver subject ... does not exist. ; EXIT 1	MISSING_SUBJECT_REJECTED
+E16	BOOTSTRAP SELF-COMPILATION OF THE POLYC DRIVER SUBJECT	./build/host-stage0/hcc --install-dir=build/bootstrap-prefix -c tools/bootstrap/selfhost-driver-wp001.HC -o build/selfhost-subject.o	EXIT 0 ; object produced	BOOTSTRAP_OK
+E17	THE BOOTSTRAP-PRODUCED SUBJECT IS BYTE-IDENTICAL TO THE PRODUCTION SUBJECT	cmp build/selfhost-subject.o build/wp001-driver-subject.o	dd614e567cf3244596452b2693643723398c8623fc35e27f256be469018f3929 == dd614e567cf3244596452b2693643723398c8623fc35e27f256be469018f3929 ; cmp BYTE-IDENTICAL	BOOTSTRAP_BYTE_IDENTICAL
+E18	PARSER CONSERVATION	hermetic parser runner; grep -o 'PASSED: [0-9]*/[0-9]*' | md5	376/376 ; 90 blocks ; 0 failed lines ; MD5 b6f117eb1386ca80f81bc06226e2a741 == the entry baseline	PARSER_CONSERVED
+E19	LEXER07 DIRECT DIFFERENTIAL	make lexer07-direct-differential	ACT_SELFHOST_LEXER02_DIRECT_DIFF_PASS=89 ; FAIL=0 ; STATUS=PASS	LEXER07_CONSERVED
+E20	LEXER08 DIRECT DIFFERENTIAL	make lexer08-direct-differential	DIRECT_DIFFERENTIAL_PASS=45 ; FAIL=0 ; STATUS=PASS	LEXER08_CONSERVED
+E21	LEXER09 DIRECT DIFFERENTIAL	make lexer09-direct-differential	DIRECT_DIFFERENTIAL_PASS=23 ; FAIL=0 ; STATUS=PASS	LEXER09_CONSERVED
+E22	GATE-FAST	make gate-fast	CHECK=large-file-guard STATUS=PASS ; factory-closure-status PAIR_OK=70 PAIR_FAIL=0 ; VERDICT=PASS	GATE_FAST_PASS
+E23	GATE-PUSH (serialized, on the subject tree)	make gate-push	CHECK=build/install/gep01/aot/jit/lsp/diff-check all STATUS=PASS ; VERDICT=PASS ; EXIT 0	GATE_PUSH_PASS
+E24	THE DRIVER SYMBOL COUNT IS ACCOUNTED FOR (12 added, 0 lost)	nm on the entry selector-ON binary and the close selector-ON binary, then comm the two sorted name lists	ENTRY=30 ; CLOSE=42 ; the 12 added names are exactly _WpDriverEmitLlvmConflict, _WpDriverFirstArgForStep, _WpDriverFirstSourceArg, _WpDriverPlanActionAt, _WpDriverPlanActionCount, _WpDriverPlanArgAt, _WpDriverPlanBuild, _WpDriverPlanPush, _WpDriverPlanStatus, _WpDriverSelectedRoute, _WpDriverStepForKind, _WpDriverStepPriority ; NO entry symbol was removed	SYMBOLS_ACCOUNTED
+E25	THE SELECTOR-OFF ORACLE CONTAINS ZERO DRIVER POLYC SYMBOLS	nm on the G0 binary	the G0 binary contains no driver PolyC symbol	G0_ORACLE_INDEPENDENT
+E26	THE WHOLE-COMPILER AUTHORITY CENSUS STILL PASSES (the driver object and its consumption are checked there)	make census01-all	SELFTEST_CASES=19 SELFTEST_FAIL=0 ; CHECK=authorities/semantic-coverage/graph-nodes-edges/link-closure all STATUS=PASS ; DRIVER_WP001_OBJECT_STATUS=PASS REQUIRED_SYMBOL_COUNT=13 ; DRIVER_WP001_CONSUMPTION_STATUS=PASS CONSUMED_SYMBOL=_WpDriverSelectedEmission ; all 19 adverse controls STATUS=PASS	CENSUS_PASS
+#
+# THE ONE FAIL-OPEN THIS ACT FOUND, IN ONE LINE:
+#
+#   The C route guard was a pure numeric BOUND check. Route 0
+#   (WP_DRIVER_STEP_INVALID, an EMPTY plan) was INSIDE the accepted
+#   domain, so an empty plan compiled anyway and produced an artifact.
+#   E14 measures the fail-open; E13 measures the repair; both use the
+#   SAME poison, the SAME real input file, and the SAME real compiler,
+#   with the guard as the only difference.
+#
+# THE TWO HALVES OF THE REPAIR, AND WHY BOTH ARE REQUIRED:
+#
+#   R1  the C guard rejects WP_DRIVER_STEP_INVALID (src/main.c:603);
+#   R2  the PolyC driver selects the COMPILE route EXPLICITLY when no
+#       option route wins (tools/bootstrap/selfhost-driver-wp001.HC:
+#       WpDriverPlanBuild), so a legitimate argv never produces an
+#       empty plan.
+#
+# R1 alone would break every ordinary compile, because the empty plan
+# WAS the ordinary compile. R2 alone would leave the fail-open in
+# place for a genuinely empty plan.
+#
+# THE RESIDUE, EXPLICIT (F11):
+#
+#   RESIDUE_CLASS=P2
+#   RESIDUE_COUNT=3
+#   RESIDUE_SITES=S41,S42,S43 (the ordered-plan exports)
+#   RESIDUE_DISPOSITION=DEFERRED
+#
+# The plan resolves the legacy chain's precedence to ONE winning step,
+# so the plan always holds exactly one step and the C host consumes
+# the single selected route. The three ordered-plan exports are
+# exported but not consumed. This is a SURFACE residue, not a
+# correctness defect: the precedence IS preserved and the 30-case
+# differential measures it.
+
+E12	INVALID ROUTE FAILS CLOSED (out of domain)	poison the route export to return 77, rebuild G1, run the real compiler	ERROR: hcc: the driver selected an invalid route (77) ; EXIT 1 ; NO artifact	FAIL_CLOSED
