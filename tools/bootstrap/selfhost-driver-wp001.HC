@@ -1266,6 +1266,22 @@ I64 WpDriverEmitLlvmConflict() {
 // LARGEST value, so it cannot collide with a valid status.
 #define WP_STATUS_EMIT_LLVM_CONFLICT 7
 
+// The FIRST argument that is a SOURCE file.
+//
+// The compile route acts on a source file, so the plan records which
+// argument it acts on. The scan is in argv order and it does not
+// consume option values: the compile route is selected only when NO
+// option route won, so the argv has no route option at all.
+static I64 WpDriverFirstSourceArg() {
+  I64 argc = WpDriverHostArgc();
+  I64 i = 1;                    // argv[0] is the program name
+  while (i < argc) {
+    if (WpDriverClassifyFile(i) == WP_FILE_SOURCE) return i;
+    i = i + 1;
+  }
+  return -1;
+}
+
 // Build the plan.
 //
 // The plan is rebuilt from scratch on every call, so a stale plan can
@@ -1331,7 +1347,27 @@ static U0 WpDriverPlanBuild() {
     i = i + 1;
   }
 
-  if (best_step == WP_STEP_INVALID) return;
+  // NO OPTION ROUTE WON. The live chain fell through to the COMPILE
+  // branch, so the driver selects the COMPILE route EXPLICITLY.
+  //
+  // This is not a cosmetic change. When the plan stayed EMPTY, the
+  // selected route was WP_STEP_INVALID (0), which was
+  // INDISTINGUISHABLE from "the driver selected nothing". The C
+  // host's dispatch is a set of POSITIVE equality tests with an
+  // implicit fall-through to compile, so an empty plan compiled
+  // anyway: a FAIL-OPEN.
+  //
+  // The M-POLYC-POISON-04 plan-validity experiment measured exactly
+  // that. The C guard now REJECTS WP_STEP_INVALID, and the driver
+  // therefore MUST push a real route for every argv that reaches the
+  // dispatch. The compile route is pushed here, with the SOURCE
+  // argument it acts on.
+  if (best_step == WP_STEP_INVALID) {
+    I64 src = WpDriverFirstSourceArg();
+    if (src < 0) return;          // no source: nothing to compile
+    WpDriverPlanPush(WP_STEP_COMPILE, src);
+    return;
+  }
   WpDriverPlanPush(best_step, best_arg);
 }
 

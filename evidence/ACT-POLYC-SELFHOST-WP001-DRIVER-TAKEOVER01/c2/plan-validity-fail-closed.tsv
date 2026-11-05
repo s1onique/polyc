@@ -1,0 +1,89 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# ACT_PHASE=C2-IMPL
+# EVIDENCE_KIND=plan-validity-fail-closed
+#
+# THE PLAN-VALIDITY EXPERIMENT, AND THE FAIL-OPEN IT FOUND.
+#
+# The M-POLYC-POISON-04 experiment poisons the PolyC driver's route
+# export and measures whether the C host FAILS CLOSED.
+#
+# TWO POISONS WERE MEASURED:
+#
+#   P1  the route export returns 77 (OUT OF THE STEP DOMAIN)
+#   P2  the plan stays EMPTY, so the route export returns
+#       WP_DRIVER_STEP_INVALID (0)
+#
+# P1 FAILED CLOSED under the ORIGINAL guard and under the REPAIRED
+# guard.
+#
+# P2 DID NOT. Under the ORIGINAL guard the C host ACCEPTED route 0,
+# because the guard was a pure numeric BOUND check:
+#
+#     if (wp_route < 0 || wp_route >= WP_DRIVER_STEP_COUNT)
+#
+# and 0 is INSIDE { 0 .. WP_DRIVER_STEP_COUNT-1 }. The host's dispatch
+# is a set of POSITIVE equality tests with an IMPLICIT FALL-THROUGH
+# to compile, so an empty plan compiled anyway and PRODUCED AN
+# ARTIFACT. That is a FAIL-OPEN: the driver selected nothing, and the
+# compiler did the work anyway.
+#
+# THE REPAIR HAS TWO HALVES, and BOTH are required:
+#
+#   R1  the C guard REJECTS WP_DRIVER_STEP_INVALID, so route 0 is no
+#       longer inside the accepted domain; and
+#   R2  the PolyC driver selects the COMPILE route EXPLICITLY when no
+#       option route wins, so a LEGITIMATE argv never produces an
+#       empty plan.
+#
+# R1 alone would break every ordinary compile (the empty plan is the
+# ordinary compile), and R2 alone would leave the fail-open in place
+# for a genuinely empty plan. The pair is the fix.
+#
+# THE MEASUREMENTS BELOW ARE THE CAUSAL EVIDENCE: the SAME poisoned
+# subject, the SAME input file, and the ONLY difference between the
+# two rows of each pair is the guard.
+#
+# All rows below were produced with a REAL input file
+# (/tmp/wp001t/pw/input.HC) and the REAL production compiler. An
+# earlier iteration of this experiment was INVALID because the probe
+# directory had no input file, so the compiler failed with "Failed to
+# open file" instead of exercising the guard. That iteration was
+# discarded and re-measured; the rows below are the re-measurement.
+#
+experiment	poison	guard	compiler_exit	artifact_produced	verdict
+P1-OUT-OF-DOMAIN	route export returns 77	ORIGINAL bound check	1	NO	FAIL_CLOSED
+P1-OUT-OF-DOMAIN	route export returns 77	REPAIRED (<= INVALID)	1	NO	FAIL_CLOSED
+P2-EMPTY-PLAN	plan never pushes a step	ORIGINAL bound check	0	YES	FAIL_OPEN
+P2-EMPTY-PLAN	plan never pushes a step	REPAIRED (<= INVALID)	1	NO	FAIL_CLOSED
+#
+# The P2-EMPTY-PLAN ORIGINAL row is the NEGATIVE CONTROL for the
+# repair: it is the observation that the original guard did NOT fail
+# closed, so the repaired row's FAIL_CLOSED is caused by the guard
+# and not by the poison being inert.
+#
+# The diagnostic text for the repaired rows is the host's own:
+#
+#   ERROR: hcc: the driver selected an invalid route (77)
+#   ERROR: hcc: the driver selected an invalid route (0)
+#
+# CONSERVATION AFTER THE REPAIR, measured on the repaired tree:
+#
+#   PARSER_ASSERTIONS_PASSED	376	376	YES
+#   PARSER_ASSERTIONS_TOTAL	376	376	YES
+#   PARSER_FAILED_LINES	0	0	YES
+#   PARSER_PASSED_BLOCKS	90	90	YES
+#   PARSER_ASSERTION_SEQUENCE_MD5	b6f117eb1386ca80f81bc06226e2a741	b6f117eb1386ca80f81bc06226e2a741	YES (BYTE-IDENTICAL)
+#   LEXER07_DIRECT_DIFF_PASS	89	89	YES
+#   LEXER08_DIRECT_DIFF_PASS	45	45	YES
+#   LEXER09_DIRECT_DIFF_PASS	23	23	YES
+#   G0_G1_DIFFERENTIAL	30 cases, 0 disagreements	30 cases, 0 disagreements	YES
+#   GATE_FAST	VERDICT=PASS	VERDICT=PASS	YES
+#
+# NOTE ON THE G0/G1 DIFFERENTIAL. G0 and G1 MUST be built from the
+# SAME working-tree state, because --version embeds the build
+# metadata. Three cases (D03, D12, D20) disagreed against a G0 that
+# was built from an EARLIER tree; the disagreement was the commit
+# hash in the --version output, not a semantic difference. Rebuilt
+# from the same tree, the differential is 30/30 AGREE.
+#
+# CONSERVATION_RULES	NOT_APPLICABLE	NOT_APPLICABLE	N/A (the repair changes the driver route decision, which is this ACT's authorized subject)

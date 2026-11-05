@@ -589,10 +589,19 @@ int main(int argc, char **argv) {
      * { 0 .. WP_DRIVER_STEP_COUNT-1 }, and a step outside it was not
      * selected by the driver. The compiler reports it and stops; it
      * NEVER falls back to the legacy C policy, because a silent
-     * fallback would hide the loss of the PolyC authority. */
+     * fallback would hide the loss of the PolyC authority.
+     *
+     * WP_DRIVER_STEP_INVALID IS ALSO REJECTED. Zero is inside the
+     * numeric domain, so a bound check alone would ACCEPT it, and an
+     * absent plan would then fall through to the compile route. That
+     * is a FAIL-OPEN: the driver selected nothing, and the compiler
+     * would compile anyway. The plan-validity experiment measured
+     * exactly this, and the guard was repaired.
+     */
 #ifdef HCC_USE_SELFHOST_DRIVER_WP001
     long long wp_route = WpDriverSelectedRoute();
-    if (wp_route < 0 || wp_route >= WP_DRIVER_STEP_COUNT) {
+    if (wp_route <= WP_DRIVER_STEP_INVALID ||
+        wp_route >= WP_DRIVER_STEP_COUNT) {
         loggerPanic("hcc: the driver selected an invalid route (%lld)\n",
                 wp_route);
         memoryRelease();
