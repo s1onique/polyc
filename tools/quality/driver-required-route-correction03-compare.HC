@@ -255,18 +255,16 @@ static U8 *CaptureReason(I64 code) {
 // The digest matcher. The recorded digest is a 64-character lowercase
 // hexadecimal SHA-256, and it MUST match the digest the comparator computes
 // from the bytes it is given.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-02 -- THE MATCHER IS THE SHARED CONTRACT'S MATCHER.
+//
+// The matcher is `ContractStagedDigestMatchesBytes`, the SAME function
+// the probe's anti-controls exercise. There is exactly ONE digest
+// comparison in the CORRECTION03 evidence path, so a mutation of it is
+// observable from the anti-controls.
 static I64 DigestMatches(U8 *recorded, U8 *buf, I64 size) {
-  if (recorded == NULL) return 0;
-  if (StrLen(recorded) != 64) return 0;
-  U8 *digest = MAlloc(32);
-  U8 *hex = MAlloc(65);
-  Sha256Bytes(buf, size, digest);
-  Sha256Hex(hex, digest);
-  I64 same = 0;
-  if (StrCmp(recorded, hex) == 0) same = 1;
-  Free(digest);
-  Free(hex);
-  return same;
+  return ContractStagedDigestMatchesBytes(recorded, buf, size);
 }
 
 // The EVENT IDENTITY RECOMPUTATION.
@@ -426,7 +424,16 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
     return CAPTURE_COMPILED_SOURCE_ABSENT;
   }
   I64 compiled_same = 0;
-  if (StrCmp(actual_compiled_hex, compiled_source_sha) == 0) compiled_same = 1;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-02 -- THE CANONICAL CHECKER IS CALLED.
+  //
+  // The comparison is the SHARED CONTRACT's
+  // `ContractStagedDigestMatches`, which the probe's anti-controls call
+  // too. It is NOT an INLINE comparison, because an inline comparison is
+  // a comparison that the anti-controls cannot reach: the reviewer's
+  // mutation of the inline comparison disabled this validation and every
+  // anti-control still passed.
+  compiled_same = ContractStagedDigestMatches(compiled_source_sha, actual_compiled_hex);
   Free(actual_compiled_hex);
   if (compiled_same == 0) return CAPTURE_COMPILED_SOURCE_MISMATCH;
   // The ORIGINAL-VERSUS-COMPILED equality, when the record states it, is

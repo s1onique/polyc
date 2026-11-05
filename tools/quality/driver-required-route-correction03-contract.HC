@@ -2645,9 +2645,154 @@ static I64 ContractSplitBinding(U8 *binding, U8 **out_name, U8 **out_value) {
   return 1;
 }
 
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-02 -- THE CANONICAL STAGED-SOURCE DIGEST CHECKER.
+//
+// THE ORIGINAL DEFECT.
+//
+// The COMPARATOR validated the staged source's digest with an INLINE
+// comparison, and the PROBE's anti-controls validated the same property
+// with their OWN, DUPLICATE comparisons:
+//
+//   comparator:  if (StrCmp(actual_compiled_hex, compiled_source_sha) == 0)
+//                  compiled_same = 1;
+//
+//   anti-control AC_05:  if (StrCmp(actual, false_hex) != 0) rejected = 1;
+//   anti-control AC_06:  if (StrCmp(actual, claimed) != 0) rejected = 1;
+//
+// The anti-controls therefore tested THEMSELVES, not the comparator. The
+// independent reviewer demonstrated this by replacing the comparator's
+// digest comparison with `same = 1;` -- which DISABLES the comparator's
+// staged-source validation -- and observing that all six advertised
+// anti-controls still PASSED.
+//
+// An anti-control is effective only when it exercises the PRODUCTION
+// check. A control that re-implements the check proves that the
+// control's own copy of the check works, which is a tautology.
+//
+// THE REPAIR.
+//
+// The check is EXTRACTED into ONE function, in the SHARED CONTRACT, and
+// BOTH paths call it:
+//
+//   the COMPARATOR calls it with the record's claim and the file's
+//     ACTUAL bytes -- the POSITIVE path;
+//   the ANTI-CONTROL calls it with a DELIBERATELY WRONG claim and the
+//     SAME ACTUAL bytes -- the NEGATIVE path.
+//
+// The comparator and the anti-control are different programs, and the
+// contract is the file they BOTH include, so the contract is the only
+// place the shared check can live.
+//
+// The expected digest is derived from the ACTUAL staged-source bytes: the
+// function computes the digest itself, and the CALLER supplies the
+// digest it claims. The caller never supplies the bytes' digest as a
+// shortcut.
+// ---------------------------------------------------------------------------
+
+// The canonical staged-source digest checker.
+//
+// The `recorded` digest is the digest the record CLAIMS. The `actual`
+// digest is the digest of the ACTUAL staged-source bytes, computed by
+// the caller from the bytes it read back from the disk.
+//
+// It returns 1 when the two agree, and 0 when they do not, when either
+// is absent, or when the recorded digest is not a 64-character
+// hexadecimal SHA-256.
+//
+// The check is a COMPARISON of two INDEPENDENT digests. It never accepts
+// a digest as proof of itself.
+static I64 ContractStagedDigestMatches(U8 *recorded, U8 *actual) {
+  if (recorded == NULL) return 0;
+  if (actual == NULL) return 0;
+  // The recorded digest must have the shape of a SHA-256 in hexadecimal.
+  if (StrLen(recorded) != 64) return 0;
+  if (StrLen(actual) != 64) return 0;
+  I64 same = 0;
+  if (StrCmp(recorded, actual) == 0) same = 1;
+  return same;
+}
+
+// The canonical staged-source digest checker, over BYTES.
+//
+// It computes the digest of the given bytes and compares it with the
+// recorded digest, using the SAME comparison as
+// `ContractStagedDigestMatches`.
+//
+// It is the byte-oriented form of the check. It returns 1 when the
+// recorded digest matches the digest of the bytes, and 0 otherwise.
+static I64 ContractStagedDigestMatchesBytes(U8 *recorded, U8 *buf, I64 size) {
+  if (recorded == NULL) return 0;
+  if (StrLen(recorded) != 64) return 0;
+  U8 *digest = MAlloc(32);
+  U8 *hex = MAlloc(65);
+  Sha256Bytes(buf, size, digest);
+  Sha256Hex(hex, digest);
+  I64 same = ContractStagedDigestMatches(recorded, hex);
+  Free(digest);
+  Free(hex);
+  return same;
+}
+
 static I64 ContractSelfCheck() {
   I64 failures = 0;
   I64 checks = 0;
+
+  // --- The canonical staged-source digest checker. -----------------------
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-02 -- THE CHECKER IS EXERCISED IN BOTH DIRECTIONS.
+  //
+  // The check must ACCEPT a digest that matches the ACTUAL bytes and
+  // REJECT a digest that does not. The self-check proves BOTH, so a
+  // mutation that disables the comparison is caught here and not only by
+  // the anti-controls.
+  {
+    U8 *bytes = "THE STAGED SOURCE BYTES";
+    I64 size = StrLen(bytes);
+    U8 *digest = MAlloc(32);
+    U8 *hex = MAlloc(65);
+    Sha256Bytes(bytes, size, digest);
+    Sha256Hex(hex, digest);
+    // The digest that differs from the correct one in its LAST character.
+    U8 *wrong = MAlloc(65);
+    MemCpy(wrong, hex, 64);
+    if (wrong[63] == 48) wrong[63] = 49; else wrong[63] = 48;
+    wrong[64] = 0;
+    // The ACCEPT case.
+    checks = checks + 1;
+    if (ContractStagedDigestMatches(hex, hex) != 1) {
+      "CONTRACT_SELFTEST\tSTAGED_DIGEST_ACCEPT\tFAIL\trejected the correct digest\n";
+      failures = failures + 1;
+    }
+    // The REJECT case.
+    checks = checks + 1;
+    if (ContractStagedDigestMatches(wrong, hex) != 0) {
+      "CONTRACT_SELFTEST\tSTAGED_DIGEST_REJECT\tFAIL\taccepted an incorrect digest\n";
+      failures = failures + 1;
+    }
+    // The byte-oriented form agrees with the digest-oriented form.
+    checks = checks + 1;
+    if (ContractStagedDigestMatchesBytes(hex, bytes, size) != 1) {
+      "CONTRACT_SELFTEST\tSTAGED_DIGEST_BYTES_ACCEPT\tFAIL\n";
+      failures = failures + 1;
+    }
+    checks = checks + 1;
+    if (ContractStagedDigestMatchesBytes(wrong, bytes, size) != 0) {
+      "CONTRACT_SELFTEST\tSTAGED_DIGEST_BYTES_REJECT\tFAIL\n";
+      failures = failures + 1;
+    }
+    // An absent digest is REJECTED.
+    checks = checks + 1;
+    if (ContractStagedDigestMatches(NULL, hex) != 0) {
+      "CONTRACT_SELFTEST\tSTAGED_DIGEST_ABSENT\tFAIL\taccepted an absent digest\n";
+      failures = failures + 1;
+    }
+    Free(digest);
+    Free(hex);
+    Free(wrong);
+  }
 
   // --- The environment-binding split. -------------------------------------
   //

@@ -217,6 +217,14 @@
 // nonempty emission was expected. The captured stdout IS the artifact in
 // this mode, so an empty capture is a missing artifact.
 #define HARNESS_STDOUT_EMPTY          28
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-01 -- THE UNPOPULATED-PREFIX REASON.
+//
+// The prefix is CONFIGURED (the variable is set and non-empty) but the
+// header it must supply is ABSENT. The runner refuses, because the
+// alternative -- letting the child fall back to `/usr/local` -- is
+// exactly the defect this repair removes.
+#define HARNESS_PREFIX_UNPOPULATED  29
 
 static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_OK) return "OK";
@@ -248,6 +256,7 @@ static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_OUTPUT_VALUE_MISSING) return "HARNESS_OUTPUT_VALUE_MISSING";
   if (code == HARNESS_SOURCE_NOT_STABLE) return "HARNESS_SOURCE_NOT_STABLE";
   if (code == HARNESS_STDOUT_EMPTY) return "HARNESS_STDOUT_EMPTY";
+  if (code == HARNESS_PREFIX_UNPOPULATED) return "HARNESS_PREFIX_UNPOPULATED";
   return "HARNESS_UNKNOWN";
 }
 
@@ -469,11 +478,147 @@ class HarnessExecCtx
   U8 *output_path;
   U8 *output_basename;
   I64 stdout_mode;
+  U8 *install_dir;
+  I64 install_dir_supplied;
   U8 **argv;
   I64 nargv;
   U8 **envv;
   I64 nenv;
 };
+
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-01 -- THE HERMETIC INSTALL PREFIX.
+//
+// THE ORIGINAL DEFECT.
+//
+// The runner spawned the compiler WITHOUT an `--install-dir` option. The
+// production compiler's install prefix therefore fell back to its
+// compile-time default, `/usr/local`, and the child failed with
+//
+//     ERROR: Failed to open file: /usr/local/include/tos.HH
+//
+// In an isolated checkout with an EMPTY build directory, the local test
+// prefix is not populated, so EVERY child failed and eleven of the
+// thirty-three positive controls failed with it.
+//
+// The suite only ever passed in a working tree that a previous
+// `make test-prefix-install` had left WARM. That is the warm-tree
+// assumption the Factory forbids.
+//
+// THE REPAIR.
+//
+// The runner reads the CONFIGURED test prefix from the environment
+// variable `HCC_TEST_PREFIX`, and it INJECTS `--install-dir=<prefix>`
+// into the child's argument vector when the caller did not already
+// supply one.
+//
+// The channel is the repository's EXISTING convention: `capture.HC`
+// already binds `HCC_TEST_PREFIX`, and the Makefile already exports
+// `HCC_TEST_PREFIX=$(TEST_PREFIX)` for the capture tool. No competing
+// prefix mechanism is introduced.
+//
+// The injected element is part of the EXECUTED argument vector, so it is
+// bound by the event identity and it is recorded verbatim in the capture
+// record's ARGV block. A reviewer can therefore READ the child's real
+// argv and confirm that the child received the configured prefix and no
+// other.
+//
+// A caller that DOES supply its own `--install-dir` keeps it: the runner
+// never overrides an explicit request.
+//
+// A prefix that is CONFIGURED but ABSENT is a REFUSAL, not a fallback to
+// `/usr/local`. Silently degrading to the compile-time default is the
+// defect this repair removes, so the runner fails closed instead.
+// ---------------------------------------------------------------------------
+
+// The environment variable that carries the CONFIGURED test prefix.
+#define HARNESS_PREFIX_ENV "HCC_TEST_PREFIX"
+
+// The platform's own environment reader. It is the FALLBACK channel for
+// the configured prefix: the runner's own BINDING LIST is the explicit
+// channel, and the process environment is consulted only when the
+// binding list carries no prefix.
+extern "c" I8 *getenv(U8 *buf);
+
+// The prefix resolver.
+//
+// It returns the CONFIGURED prefix, or NULL when no prefix is
+// configured.
+//
+// The prefix is read from the RUNNER'S OWN BINDING LIST FIRST, and from
+// the runner's PROCESS ENVIRONMENT second. Both channels are the
+// repository's existing convention: the Makefile already passes
+// `HCC_TEST_PREFIX=$(TEST_PREFIX)` in the binding list of every harness
+// invocation, and it exports `HCC_TEST_PREFIX` for the callers that
+// drive the probe.
+//
+// The binding list is preferred because it is EXPLICIT: it is part of the
+// invocation, so it is visible in the transcript and it cannot be
+// changed by an ambient environment.
+//
+// The variable's VALUE is returned verbatim. It is NOT resolved to an
+// absolute path here: the Makefile already exports an absolute prefix,
+// and a relative prefix would be resolved against the CHILD's working
+// directory, which is the runner's output directory rather than the
+// repository root.
+//
+// The returned buffer is ALWAYS a fresh allocation, so the caller owns
+// it.
+static U8 *HarnessConfiguredPrefix(U8 **envv, I64 nenv) {
+  // The BINDING LIST is the explicit channel.
+  I64 i = 0;
+  while (i < nenv) {
+    U8 *binding = envv[i];
+    if (binding != NULL) {
+      U8 *name = NULL;
+      U8 *value = NULL;
+      if (ContractSplitBinding(binding, &name, &value) != 0) {
+        if (StrCmp(name, HARNESS_PREFIX_ENV) == 0) {
+          U8 *prefix = value;
+          Free(name);
+          return prefix;
+        }
+        Free(name);
+        Free(value);
+      }
+    }
+    i = i + 1;
+  }
+  // The PROCESS ENVIRONMENT is the fallback channel.
+  U8 *ambient = getenv(HARNESS_PREFIX_ENV);
+  if (ambient == NULL) return NULL;
+  I64 len = StrLen(ambient);
+  if (len <= 0) return NULL;
+  U8 *prefix = MAlloc(len + 1);
+  MemCpy(prefix, ambient, len);
+  prefix[len] = 0;
+  return prefix;
+}
+
+// The prefix's POPULATION check.
+//
+// The prefix is populated when the RUNTIME HEADER it must supply is
+// present and non-empty. The header is the artifact the compiler
+// actually reads (`<prefix>/include/tos.HH`), so its absence is the
+// precise condition under which the child would fail.
+//
+// It returns 1 when the prefix is populated, and 0 when it is not.
+static I64 HarnessPrefixIsPopulated(U8 *prefix) {
+  I64 plen = StrLen(prefix);
+  U8 *header = MAlloc(plen + 16);
+  MemCpy(header, prefix, plen);
+  MemCpy(header + plen, "/include/tos.HH", 15);
+  I64 ok = 0;
+  I64 size = 0;
+  U8 *buf = FileRead(header, &size);
+  if (buf != NULL) {
+    if (size > 0) ok = 1;
+    Free(buf);
+  }
+  Free(header);
+  return ok;
+}
 
 // The caller's OPTION SCAN.
 //
@@ -494,10 +639,52 @@ class HarnessExecCtx
 //
 // It returns 0 when the scan is well formed, and a reason code when it
 // is not.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-03 -- THE OUTPUT MODE IS A PROPERTY OF THE OPTION, NOT OF ITS VALUE.
+//
+// THE ORIGINAL DEFECT.
+//
+// The scan reported the output option's VALUE and nothing else, and the
+// caller derived the output MODE from that value:
+//
+//   if (StrCmp(out_value, "-") == 0) stdout_mode = 1;
+//
+// The two CLI forms are DIFFERENT:
+//
+//   -o-     the compiler's OWN zero-argument option. It means "write the
+//           assembly to the standard output". It is NOT a path.
+//
+//   -o -    the ordinary output option with the VALUE "-". The compiler
+//           writes a FILE whose name is "-".
+//
+// The scan set `out_value = "-"` for BOTH, because the `-o-` spelling was
+// modelled as an inline value. The caller therefore classified a
+// genuine `-o -` request as a STDOUT emission, and the runner REWROTE
+// the child's option: the child wrote a file named "-", the runner
+// recorded `OUTPUT_MODE STDOUT`, and the capture claimed that the
+// standard output carried the artifact.
+//
+// The mode is now reported by the SCAN, and it is derived from the
+// option's SPELLING: the zero-argument stdout spellings are the stdout
+// mode, and every other spelling is the file mode.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-01 -- THE CALLER'S OWN INSTALL PREFIX IS DETECTED.
+//
+// The scan also reports whether the caller supplied an `--install-dir`
+// option of its own, in EITHER spelling:
+//
+//   --install-dir <path>       the two-element form
+//   --install-dir=<path>       the inline form
+//
+// The runner uses that report to decide whether it must APPEND the
+// CONFIGURED prefix. A caller that supplied its own prefix keeps it.
 static I64 HarnessScanOptions(U8 **argv, I64 nargv, I64 *n_output,
                                I64 *n_source, U8 **out_value,
                                U8 **src_value, I64 *out_index,
-                               I64 *out_value_index, I64 *src_index) {
+                               I64 *out_value_index, I64 *src_index,
+                               I64 *n_install, I64 *out_stdout_mode) {
   *n_output = 0;
   *n_source = 0;
   *out_value = NULL;
@@ -505,6 +692,8 @@ static I64 HarnessScanOptions(U8 **argv, I64 nargv, I64 *n_output,
   *out_index = -1;
   *out_value_index = -1;
   *src_index = -1;
+  *n_install = 0;
+  *out_stdout_mode = 0;
   I64 i = 0;
   while (i < nargv) {
     U8 *arg = argv[i];
@@ -512,10 +701,22 @@ static I64 HarnessScanOptions(U8 **argv, I64 nargv, I64 *n_output,
     // The output option, in its spellings.
     I64 is_output = 0;
     I64 has_inline_value = 0;
+    // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+    // R8-03 -- THE STDOUT SPELLINGS ARE MARKED AS SUCH.
+    //
+    // The compiler's own zero-argument options are `-o-` and
+    // `--output=-`. They are the ONLY spellings that select the stdout
+    // mode. Every other spelling -- including `-o -`, whose VALUE is "-"
+    // -- selects the file mode.
+    I64 is_stdout_spelling = 0;
     if (StrCmp(arg, "-o") == 0) is_output = 1;
     if (StrCmp(arg, "--output") == 0) is_output = 1;
-    if (StrCmp(arg, "-o-") == 0) { is_output = 1; has_inline_value = 1; }
-    if (StrCmp(arg, "--output=-") == 0) { is_output = 1; has_inline_value = 1; }
+    if (StrCmp(arg, "-o-") == 0) {
+      is_output = 1; has_inline_value = 1; is_stdout_spelling = 1;
+    }
+    if (StrCmp(arg, "--output=-") == 0) {
+      is_output = 1; has_inline_value = 1; is_stdout_spelling = 1;
+    }
     // The `--output=<name>` spelling carries its value INLINE.
     I64 alen = StrLen(arg);
     if (alen > 8) {
@@ -527,9 +728,31 @@ static I64 HarnessScanOptions(U8 **argv, I64 nargv, I64 *n_output,
       }
       if (same == 1) { is_output = 1; has_inline_value = 1; }
     }
+    // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+    // R8-01 -- THE INLINE INSTALL-PREFIX SPELLING IS COUNTED.
+    //
+    // `--install-dir=<path>` is a single element that carries its own
+    // value. The scan does not treat it as an output option and does not
+    // consume the next element, so it only has to be COUNTED here.
+    if (alen > 13) {
+      I64 m = 0;
+      I64 same = 1;
+      while (m < 13) {
+        if (arg[m] != "--install-dir="[m]) { same = 0; break; }
+        m = m + 1;
+      }
+      if (same == 1) *n_install = *n_install + 1;
+    }
     if (is_output == 1) {
       *n_output = *n_output + 1;
       *out_index = i;
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+      // R8-03 -- THE STDOUT MODE IS SET FROM THE SPELLING.
+      //
+      // The mode is recorded HERE, where the spelling is known. It is NOT
+      // derived later from the option's value, because the value "-" does
+      // not distinguish the two CLI forms.
+      if (is_stdout_spelling == 1) *out_stdout_mode = 1;
       if (has_inline_value == 1) {
         *out_value_index = i;
         if (alen > 8 && arg[7] == '=') {
@@ -574,6 +797,13 @@ static I64 HarnessScanOptions(U8 **argv, I64 nargv, I64 *n_output,
       if (StrCmp(arg, "-lib") == 0) takes_value = 1;
       if (StrCmp(arg, "-clibs") == 0) takes_value = 1;
       if (StrCmp(arg, "-D") == 0) takes_value = 1;
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+      // R8-01 -- THE CALLER'S OWN PREFIX IS COUNTED.
+      //
+      // The two-element form, `--install-dir <path>`, is counted here. The
+      // INLINE form, `--install-dir=<path>`, is counted by the block above,
+      // because that block already recognises every `--...=...` spelling.
+      if (StrCmp(arg, "--install-dir") == 0) *n_install = *n_install + 1;
       if (takes_value == 1) {
         if (i + 1 < nargv) i = i + 1;
       }
@@ -947,8 +1177,8 @@ static I64 HarnessApplyEnv(U8 **envv, I64 nenv) {
 // `getcwd(3)` and `chdir(2)`.
 extern "c" U8 *getcwd(U8 *buf, I64 size);
 extern "c" I32 chdir(U8 *path);
-// The environment reader, for the diagnostic below.
-extern "c" I8 *getenv(U8 *buf);
+// The environment reader, `getenv`, is declared with the CONFIGURED
+// PREFIX section above, because that section is where it is used.
 
 // The path-policy check.
 //
@@ -1338,6 +1568,9 @@ static I64 HarnessBuildArgv(HarnessExecCtx *ctx, U8 **supplied, I64 nsupplied,
   //                                    supplied none
   //   an APPENDED source argument   -> 1 element, when the caller
   //                                    supplied none
+  //   an APPENDED install-dir option -> 1 element, when the caller
+  //                                    supplied none and a prefix is
+  //                                    CONFIGURED
   I64 written = 0;
   // The executable name.
   written = written + 1;
@@ -1393,6 +1626,23 @@ static I64 HarnessBuildArgv(HarnessExecCtx *ctx, U8 **supplied, I64 nsupplied,
   I64 inject_source = 0;
   if (src_index < 0) inject_source = 1;
   written = written + inject_source;
+  // The APPENDED install-dir option.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE PREFIX REACHES THE CHILD.
+  //
+  // The option is appended ONLY when the caller supplied no
+  // `--install-dir` of its own. The caller's own request is never
+  // overridden: the runner's job is to make the CONFIGURED prefix reach
+  // a child that was given none, not to second-guess a caller that did.
+  //
+  // It is TWO elements, because the production compiler's option table
+  // declares `--install-dir` with arity ONE and no inline value form.
+  I64 inject_install = 0;
+  if (ctx->install_dir != NULL && ctx->install_dir[0] != 0) {
+    if (ctx->install_dir_supplied == 0) inject_install = 2;
+  }
+  written = written + inject_install;
   //
   // The capacity, and the terminating NULL.
   I64 cap = written + 1;
@@ -1528,6 +1778,41 @@ static I64 HarnessBuildArgv(HarnessExecCtx *ctx, U8 **supplied, I64 nsupplied,
     }
     built[n] = ctx->staged_source;
     n = n + 1;
+  }
+  // The APPENDED install-dir option.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX REACHES THE CHILD.
+  //
+  // The option is emitted in the production compiler's OWN TWO-ELEMENT
+  // form, `--install-dir <path>`. The production option table declares
+  // `--install-dir` with arity ONE and no INLINE value form, so the
+  // single-element spelling `--install-dir=<path>` is REFUSED by the
+  // compiler with "Unknown commandline options". The runner therefore
+  // emits the form the compiler accepts.
+  //
+  // The option is appended only when the caller supplied no
+  // `--install-dir` of its own AND a prefix is CONFIGURED. A caller that
+  // supplied its own keeps it: the runner never overrides an explicit
+  // request.
+  //
+  // This is the whole hermetic repair: the child receives the CONFIGURED
+  // test prefix, so the runtime header and the runtime archive it reads
+  // come from the LOCAL prefix and never from `/usr/local`.
+  if (ctx->install_dir != NULL && ctx->install_dir[0] != 0) {
+    if (ctx->install_dir_supplied == 0) {
+      if (n + 2 > cap - 1) {
+        Free(built);
+        "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_ARGV_CAPACITY);
+        "HARNESS_REASON_DETAIL\tthe argument vector exceeded its computed "
+          "capacity\n";
+        return HARNESS_ARGV_CAPACITY;
+      }
+      built[n] = "--install-dir";
+      n = n + 1;
+      built[n] = ctx->install_dir;
+      n = n + 1;
+    }
   }
   // The terminating NULL. The capacity reserved it.
   built[n] = NULL;
@@ -1713,9 +1998,12 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   I64 out_index = -1;
   I64 out_value_index = -1;
   I64 src_index = -1;
+  I64 n_install = 0;
+  I64 out_stdout_mode = 0;
   I64 sc = HarnessScanOptions(caller_args, ncaller, &n_output, &n_source,
                               &out_value, &src_value, &out_index,
-                              &out_value_index, &src_index);
+                              &out_value_index, &src_index, &n_install,
+                              &out_stdout_mode);
   if (sc != HARNESS_OK) {
     "HARNESS_REASON\t%s\n", HarnessReason(sc);
     return sc;
@@ -1731,6 +2019,34 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
     "HARNESS_REASON_DETAIL\tthe argument vector carries %lld source "
       "arguments\n", n_source;
     return HARNESS_SOURCE_AMBIGUOUS;
+  }
+
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX IS RESOLVED AND CHECKED.
+  //
+  // The prefix is resolved from the CONFIGURED environment variable, and
+  // it is checked for POPULATION before the child is spawned.
+  //
+  // A CONFIGURED but UNPOPULATED prefix is a REFUSAL. The alternative --
+  // spawning the child and letting it fall back to `/usr/local` -- is
+  // the defect this repair removes, and a fallback would also make the
+  // evidence depend on the host's ambient installation.
+  //
+  // The caller's OWN prefix, when it supplied one, is left alone: the
+  // runner does not re-check a prefix it did not configure.
+  U8 *configured_prefix = HarnessConfiguredPrefix(envv, nenv);
+  I64 caller_supplied_install = 0;
+  if (n_install > 0) caller_supplied_install = 1;
+  if (configured_prefix != NULL) {
+    if (caller_supplied_install == 0) {
+      if (HarnessPrefixIsPopulated(configured_prefix) == 0) {
+        "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_PREFIX_UNPOPULATED);
+        "HARNESS_REASON_DETAIL\tthe configured prefix %s does not supply "
+          "include/tos.HH\n", configured_prefix;
+        Free(configured_prefix);
+        return HARNESS_PREFIX_UNPOPULATED;
+      }
+    }
   }
 
   // --- STEP 1: VALIDATE THE INPUTS BEFORE THE INVOCATION. ----------------
@@ -1907,10 +2223,24 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   //   * The STDOUT emission (`-o-`) is an EXPLICITLY MODELLED SPECIAL
   //     CASE. It is not a filesystem path, so the runner writes no output
   //     option and the artifact is absent by construction.
-  I64 stdout_mode = 0;
-  if (out_value != NULL) {
-    if (StrCmp(out_value, "-") == 0) stdout_mode = 1;
-  }
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-03 -- THE MODE COMES FROM THE SCAN, NOT FROM THE VALUE.
+  //
+  // The previous revision derived the mode from the option's VALUE:
+  //
+  //   if (StrCmp(out_value, "-") == 0) stdout_mode = 1;
+  //
+  // That conflated the two CLI forms. `-o -` names a FILE whose name is
+  // "-", and the compiler writes that file; `-o-` is the compiler's own
+  // zero-argument option and it writes to the standard output. The
+  // value "-" does not distinguish them, but the SPELLING does, and the
+  // scan has already reported it.
+  //
+  // The mode is therefore taken from the scan's report. A `-o -` request
+  // is now the FILE mode: the runner owns the output path, and the
+  // child's `-o -` is rewritten into the runner's own destination.
+  I64 stdout_mode = out_stdout_mode;
   // The runner's BASENAME. The runner OWNS the basename, and the
   // caller's output option, when it supplies one, must AGREE with it.
   //
@@ -2162,6 +2492,13 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   ctx.output_path = artifact_path;
   ctx.output_basename = artifact_name;
   ctx.stdout_mode = stdout_mode;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX ENTERS THE EXECUTION CONTEXT.
+  //
+  // The prefix is the CONFIGURED one, and it is handed to the builder
+  // only when the caller supplied none of its own.
+  ctx.install_dir = configured_prefix;
+  ctx.install_dir_supplied = caller_supplied_install;
   ctx.envv = envv;
   ctx.nenv = nenv;
   // The caller's ARGUMENTS, with the executable name restored at the
@@ -2478,6 +2815,20 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   schema_text[schema_len] = 0;
   MemCpy(schema_text, schema_rev, schema_len + 1);
   RecField("EVENT_ID_SCHEMA", schema_text);
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE PREFIX THE CHILD RECEIVED IS RECORDED.
+  //
+  // The field names the prefix that the EXECUTED argument vector carried.
+  // A reviewer reads it to confirm that the child was pointed at the
+  // CONFIGURED local prefix and not at the host's ambient installation.
+  //
+  // The value is `NONE` when the child received no `--install-dir` at
+  // all, which happens only when no prefix was configured AND the caller
+  // supplied none.
+  U8 *install_dir_text = "NONE";
+  if (configured_prefix != NULL) install_dir_text = configured_prefix;
+  if (caller_supplied_install == 1) install_dir_text = "CALLER_SUPPLIED";
+  RecField("INSTALL_DIR", install_dir_text);
   RecBlock("ARGV", exec_argv, exec_argc);
   RecBlock("ENV", envv, nenv);
 

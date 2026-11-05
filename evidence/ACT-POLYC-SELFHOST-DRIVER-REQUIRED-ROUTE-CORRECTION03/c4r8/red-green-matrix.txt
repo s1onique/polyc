@@ -1,0 +1,138 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8.
+#
+# THE RED/GREEN MATRIX FOR THE THREE REPRODUCED FINDINGS.
+#
+# The entry identity is 9f472e5ef20018b32923744e267f56e5530c50cd. The
+# RED observations were made against the COMMITTED tree at that commit,
+# in an isolated `git worktree` whose build directory started EMPTY.
+# The GREEN observations were made against the C4 ROUND 8 subject.
+#
+# Every RED below was REPRODUCED by the executor before the repair, and
+# every GREEN below was OBSERVED after the repair. No RED is inherited
+# from a historical label.
+#
+# COLUMNS: FINDING | RED OBSERVATION | REPAIR | GREEN OBSERVATION
+
+R8_01_HERMETIC_INSTALL_PREFIX
+    RED:    An isolated checkout at the entry head, with an EMPTY build
+            directory, fails `make driver-wp001-correction03-test` with
+            ELEVEN of the thirty-three positive controls failing.
+            The compiler child's captured stderr is
+
+              ERROR: Failed to open file: /usr/local/include/tos.HH
+
+            The child's ACTUAL argument vector, read from the capture
+            record's ARGV block, is
+
+              <staged-producer>
+              -c
+              -o
+              artifact.bin
+              <staged-source>
+
+            -- there is NO `--install-dir` option, so the compiler fell
+            back to its compile-time default, `/usr/local`.
+            The child's exit status was 1 and the artifact was absent.
+            (red-p1-1-fresh-isolated-suite.log)
+    REPAIR: The HARNESS -- the execution owner -- resolves the
+            CONFIGURED test prefix and INJECTS `--install-dir <prefix>`
+            into the child's argument vector when the caller supplied
+            none. The prefix is read from the runner's own BINDING LIST
+            (`HCC_TEST_PREFIX`), which is the repository's existing
+            convention, and the PROBES forward the Makefile's exported
+            `HCC_TEST_PREFIX` to the harness in that binding list.
+            A CONFIGURED but UNPOPULATED prefix is a REFUSAL with the
+            new reason token `HARNESS_PREFIX_UNPOPULATED`: the runner
+            never degrades to `/usr/local`.
+            The option is emitted in the compiler's OWN two-element form,
+            because the production option table declares `--install-dir`
+            with arity ONE and refuses the inline `--install-dir=<path>`
+            spelling.
+            The capture record carries a new `INSTALL_DIR` field, so the
+            prefix the child received is directly readable.
+    GREEN: The child receives `--install-dir <prefix>`, and the capture
+            record's ARGV block names it. The child reads
+            `<prefix>/include/tos.HH` and `<prefix>/lib/libtos.a`.
+            All thirty-three positive controls PASS and all six
+            anti-controls PASS.
+
+R8_02_ANTICONTROL_SENSITIVITY
+    RED:    The independent reviewer replaced the positive digest
+            comparison with `same = 1;` -- which disables the
+            comparator's staged-source validation -- and all six
+            advertised anti-controls still PASSED.
+            The cause: the anti-controls AC_05 and AC_06 performed their
+            OWN comparisons (`StrCmp(actual, false_hex) != 0` and
+            `StrCmp(actual, claimed) != 0`) instead of calling the
+            production check. They tested THEMSELVES.
+    REPAIR: The staged-source digest check is EXTRACTED into the SHARED
+            CONTRACT's `ContractStagedDigestMatches`, and BOTH paths
+            call it: the COMPARATOR calls it with the record's claim and
+            the file's ACTUAL bytes, and the anti-controls call it with
+            a DELIBERATELY WRONG claim and the SAME ACTUAL bytes.
+            The comparator's own `DigestMatches` is now the contract's
+            byte-oriented form, so there is exactly ONE digest
+            comparison in the CORRECTION03 evidence path.
+            The contract's SELF-CHECK exercises the checker in BOTH
+            directions: it accepts the correct digest and rejects an
+            incorrect one.
+    GREEN: With the mutant `same = 1;` substituted, the anti-control
+            target returns NONZERO:
+              AC_05_FALSE_STAGED_DIGEST    FAIL
+              AC_06_COPIED_CAPTURE_FIELD   FAIL
+              PROBE_FAILURES 2
+              EXIT=2
+            and the contract's self-check also fails:
+              CONTRACT_SELFTEST STAGED_DIGEST_REJECT         FAIL
+              CONTRACT_SELFTEST STAGED_DIGEST_BYTES_REJECT   FAIL
+              CONTRACT_SELFTEST_FAILURES 2
+            (p1-2-mutant-same-equals-1.log,
+             p1-2-mutant-contract-selftest.log)
+
+R8_03_OUTPUT_DASH_CLASSIFICATION
+    RED:    The harness derived the output MODE from the output option's
+            VALUE:
+
+              if (StrCmp(out_value, "-") == 0) stdout_mode = 1;
+
+            The two CLI forms are DIFFERENT, and the review confirmed it
+            against the production compiler:
+
+              -o-    284 bytes on stdout, NO file artifact
+              -o -   0 bytes on stdout, a FILE named "-"
+
+            The scan set `out_value = "-"` for BOTH, because the `-o-`
+            spelling was modelled as an inline value. A genuine `-o -`
+            request was therefore classified as a STDOUT emission, and
+            the runner REWROTE the child's option.
+    REPAIR: The output MODE is a property of the option's SPELLING, and
+            the SCAN now reports it: only the compiler's own
+            zero-argument stdout spellings (`-o-`, `--output=-`) select
+            the stdout mode; every other spelling -- including `-o -`,
+            whose VALUE is "-" -- selects the file mode.
+            The probe's new `outmode` mode verifies BOTH forms against
+            the DIRECT compiler invocation, and it accounts for the
+            runner's output-path rewriting explicitly: the `-o -`
+            control requires the record to name the FILE mode, the
+            artifact to be present on the disk, and the artifact's
+            ACTUAL digest to equal the digest the record claims.
+    GREEN: Nineteen new controls PASS:
+              R8_03_DIRECT_STDOUT_EXIT                    OK
+              R8_03_DIRECT_STDOUT_NONEMPTY               OK
+              R8_03_DIRECT_STDOUT_NO_FILE                 OK
+              R8_03_STDOUT_RUN                            OK
+              R8_03_STDOUT_EXIT_STATUS                    OK
+              R8_03_STDOUT_MODE                           OK
+              R8_03_STDOUT_CAPTURED_NONEMPTY              OK
+              R8_03_STDOUT_DIGEST_MATCHES_CAPTURED        OK
+              R8_03_STDOUT_NO_FILE_ARTIFACT               OK
+              R8_03_DIRECT_FILE_EXIT                      OK
+              R8_03_DIRECT_FILE_STDOUT_EMPTY              OK
+              R8_03_DIRECT_FILE_PRESENT                   OK
+              R8_03_DIRECT_FILE_NONEMPTY                  OK
+              R8_03_FILE_RUN                              OK
+              R8_03_FILE_EXIT_STATUS                      OK
+              R8_03_FILE_MODE                             OK
+              R8_03_FILE_ARTIFACT_PRESENT                 OK
+              R8_03_FILE_ARTIFACT_ON_DISK                 OK
+              R8_03_FILE_DIGEST_MATCHES_ARTIFACT          OK

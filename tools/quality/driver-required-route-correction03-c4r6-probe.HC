@@ -59,6 +59,65 @@ extern "c" U8 *realpath(U8 *path, U8 *resolved);
 // The platform's own mode change. The R5-04 fixture's copy of the
 // producer must be EXECUTABLE, exactly as the original is.
 extern "c" I32 chmod(U8 *path, I32 mode);
+// The platform's own environment reader. It carries the CONFIGURED test
+// prefix from the Makefile into the probe, so the probe can forward it
+// to the harness.
+extern "c" I8 *getenv(U8 *buf);
+// The platform's own working-directory calls. The DIRECT compiler
+// invocation must run in the directory whose file it is expected to
+// produce, because the compiler resolves a relative output path against
+// its own current working directory.
+extern "c" U8 *getcwd(U8 *buf, I64 size);
+extern "c" I32 chdir(U8 *path);
+
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-01 -- THE CONFIGURED PREFIX, AS A HARNESS BINDING.
+//
+// THE ORIGINAL DEFECT.
+//
+// The probe spawned the harness with a single environment binding,
+// `C4R6_PROBE=1`, and the harness spawned the compiler with NO
+// `--install-dir` option. The compiler therefore fell back to its
+// compile-time default, `/usr/local`, and the child failed with
+//
+//     ERROR: Failed to open file: /usr/local/include/tos.HH
+//
+// In an isolated checkout with an EMPTY build directory, ELEVEN of the
+// thirty-three positive controls failed.
+//
+// THE REPAIR.
+//
+// The probe reads the CONFIGURED prefix from its OWN process environment
+// -- the Makefile exports `HCC_TEST_PREFIX=$(TEST_PREFIX)` -- and it
+// forwards it to the harness as a `NAME=VALUE` binding.
+//
+// The probe never INVENTS a prefix: when the variable is absent, the
+// helper returns NULL and the probe forwards nothing.
+//
+// The returned binding is a fresh allocation, so the caller owns it.
+// ---------------------------------------------------------------------------
+
+// The environment variable that carries the CONFIGURED test prefix.
+#define R6_PREFIX_ENV "HCC_TEST_PREFIX"
+
+// The prefix binding builder.
+//
+// It returns the `NAME=VALUE` binding that carries the CONFIGURED
+// prefix, or NULL when no prefix is configured.
+static U8 *R6PrefixBinding() {
+  U8 *value = getenv(R6_PREFIX_ENV);
+  if (value == NULL) return NULL;
+  I64 len = StrLen(value);
+  if (len <= 0) return NULL;
+  I64 nlen = StrLen(R6_PREFIX_ENV);
+  U8 *binding = MAlloc(nlen + len + 2);
+  MemCpy(binding, R6_PREFIX_ENV, nlen);
+  binding[nlen] = 61;
+  MemCpy(binding + nlen + 1, value, len);
+  binding[nlen + 1 + len] = 0;
+  return binding;
+}
 
 // ---------------------------------------------------------------------------
 // THE PROBE'S OWN HELPERS.
@@ -299,7 +358,25 @@ static U8 *R6RunHarnessFull(R6RunCtx *ctx, U8 **out_output) {
   //
   // The harness's `Main` reads the verb at `argv[1]` and passes the REST
   // to `HarnessRun`, whose `argv[0]` is therefore the run directory.
-  I64 total = 2 + 10 + 1 + 1 + ctx->nargv + 1;
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX IS FORWARDED TO THE HARNESS.
+  //
+  // The harness INJECTS `--install-dir=<prefix>` into the child's
+  // argument vector, so it must KNOW the configured prefix. The probe
+  // reads it from its OWN process environment -- the Makefile exports
+  // `HCC_TEST_PREFIX=$(TEST_PREFIX)` for the probe -- and it forwards it
+  // to the harness in the BINDING LIST, which is the harness's explicit
+  // channel.
+  //
+  // The forwarding is UNCONDITIONAL in its FORM and CONDITIONAL in its
+  // EFFECT: when the variable is absent the probe forwards nothing, and
+  // the harness's ambient fallback applies. The probe never invents a
+  // prefix.
+  U8 *prefix_binding = R6PrefixBinding();
+  I64 nbindings = 1;
+  if (prefix_binding != NULL) nbindings = 2;
+  I64 total = 2 + 10 + nbindings + 1 + ctx->nargv + 1;
   U8 **args = MAlloc(sizeof(U8 *) * total);
   I64 n = 0;
   args[n] = ctx->harness;                 n = n + 1;
@@ -315,6 +392,9 @@ static U8 *R6RunHarnessFull(R6RunCtx *ctx, U8 **out_output) {
   args[n] = ctx->artifact_dir;             n = n + 1;
   args[n] = ctx->arch;                     n = n + 1;
   args[n] = "C4R6_PROBE=1";                n = n + 1;
+  if (prefix_binding != NULL) {
+    args[n] = prefix_binding;              n = n + 1;
+  }
   args[n] = "--";                          n = n + 1;
   I64 k = 0;
   while (k < ctx->nargv) {
@@ -1700,18 +1780,38 @@ static U0 R6AntiControlMode(U8 *harness, U8 *producer, U8 *work_dir, U8 *arch) {
   //
   // The control must reject a record whose COMPILED_SOURCE_SHA256 does not
   // match the ACTUAL bytes of the staged file.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-02 -- THE CONTROL EXERCISES THE PRODUCTION CHECK.
+  //
+  // The control calls the SHARED CONTRACT's
+  // `ContractStagedDigestMatches` -- the SAME function the comparator
+  // calls -- with a DELIBERATELY WRONG digest and the ACTUAL digest of
+  // the staged file's bytes.
+  //
+  // The previous revision performed its OWN comparison, so it tested
+  // ITSELF. The reviewer's mutation of the comparator's comparison
+  // (`same = 1;`) disabled the comparator's staged-source validation,
+  // and this control still PASSED. A control that does not call the
+  // production check cannot detect the production check's failure.
   {
     I64 rejected = 0;
     U8 *false_hex = MAlloc(65);
     I64 i = 0;
     while (i < 64) { false_hex[i] = 48; i = i + 1; }
     false_hex[64] = 0;
-    // The staged file's ACTUAL digest is computed here.
+    // The staged file's ACTUAL digest is computed here, from the bytes on
+    // the disk. The EXPECTED digest is therefore derived from the actual
+    // staged-source bytes.
     U8 *actual = MAlloc(65);
     I64 present = 0;
     if (Sha256File(src_a, actual) == 1) {
       present = 1;
-      if (StrCmp(actual, false_hex) != 0) rejected = 1;
+      // THE PRODUCTION CHECK, CALLED WITH A WRONG DIGEST.
+      //
+      // The check must REJECT the false digest. A mutant that accepts it
+      // makes this control FAIL, which is the required sensitivity.
+      if (ContractStagedDigestMatches(false_hex, actual) == 0) rejected = 1;
     }
     Free(actual);
     Free(false_hex);
@@ -1724,6 +1824,14 @@ static U0 R6AntiControlMode(U8 *harness, U8 *producer, U8 *work_dir, U8 *arch) {
   //
   // The control must reject a record whose recorded digest is copied from
   // ANOTHER field, rather than computed from the bytes.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-02 -- THE CONTROL EXERCISES THE PRODUCTION CHECK.
+  //
+  // The control calls the SHARED CONTRACT's
+  // `ContractStagedDigestMatches` -- the SAME function the comparator
+  // calls -- with the COPIED digest and the ACTUAL digest of the staged
+  // file's bytes. The check must REJECT the copied digest.
   {
     I64 rejected = 0;
     // The record copies the PRODUCER's digest into the COMPILED SOURCE's
@@ -1742,7 +1850,8 @@ static U0 R6AntiControlMode(U8 *harness, U8 *producer, U8 *work_dir, U8 *arch) {
     }
     U8 *actual = MAlloc(65);
     if (Sha256File(staged, actual) == 1) {
-      if (StrCmp(actual, claimed) != 0) rejected = 1;
+      // THE PRODUCTION CHECK, CALLED WITH THE COPIED DIGEST.
+      if (ContractStagedDigestMatches(claimed, actual) == 0) rejected = 1;
     }
     Free(actual);
     Free(claimed);
@@ -1995,11 +2104,450 @@ static I64 R6BlockStatusMode(U8 *work) {
   return 0;
 }
 
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-03 -- THE OUTPUT-MODE CLASSIFICATION MODE.
+//
+// THE ORIGINAL DEFECT.
+//
+// The harness derived the output MODE from the output option's VALUE:
+//
+//   if (StrCmp(out_value, "-") == 0) stdout_mode = 1;
+//
+// The two CLI forms are DIFFERENT:
+//
+//   -o-     the compiler's OWN zero-argument option. The assembly goes to
+//           the STANDARD OUTPUT. There is NO filesystem artifact.
+//
+//   -o -    the ordinary output option whose VALUE is "-". The compiler
+//           writes a FILE whose name is "-". The standard output is EMPTY.
+//
+// The harness therefore classified a genuine `-o -` request as a STDOUT
+// emission, and it REWROTE the child's option: the child wrote a file
+// named "-", the capture recorded `OUTPUT_MODE STDOUT`, and the record
+// claimed that the standard output carried the artifact.
+//
+// THE REPAIR.
+//
+// The mode is a PROPERTY OF THE OPTION'S SPELLING, and the harness now
+// reports it from the scan. This mode PROVES the distinction, and it
+// proves it against the DIRECT COMPILER INVOCATION, so the harness's
+// classification is compared with the compiler's own behaviour rather
+// than with the harness's own opinion.
+//
+// The runner OWNS the output path, so the child's `-o -` is REWRITTEN
+// into the runner's own destination. The rewrite PRESERVES the FILE
+// classification, and it is EXPLICITLY ACCOUNTED FOR: the control
+// requires the record's mode to be FILE, and it requires the artifact to
+// be a real file on the disk whose digest matches the record.
+// ---------------------------------------------------------------------------
+
+// The DIRECT COMPILER INVOCATION.
+//
+// It runs the compiler with the given argument vector, in the given
+// working directory, and returns the captured standard output.
+//
+// The compiler is the PRODUCTION compiler: the producer the caller
+// named. The direct invocation is the INDEPENDENT WITNESS, and the
+// harness's classification is compared with it.
+//
+// The WORKING DIRECTORY matters: the compiler resolves a RELATIVE output
+// path against its own current working directory, so the direct
+// invocation must run in the directory whose file it is expected to
+// produce.
+static U8 *R6DirectCompile(U8 *producer, U8 *dir, U8 **argv, I64 nargv,
+                            I64 *out_size, I64 *exit_status) {
+  I64 total = nargv + 1;
+  U8 **args = MAlloc(sizeof(U8 *) * total);
+  I64 n = 0;
+  I64 k = 0;
+  while (k < nargv) {
+    args[n] = argv[k];
+    n = n + 1;
+    k = k + 1;
+  }
+  args[n] = NULL;
+  // The working directory is changed for the invocation and RESTORED
+  // afterwards, so the probe's own directory is unchanged.
+  U8 *cwd_buf = MAlloc(4096);
+  I64 saved_cwd = 0;
+  if (getcwd(cwd_buf, 4096) != NULL) saved_cwd = 1;
+  if (chdir(dir) != 0) {
+    Free(cwd_buf);
+    Free(args);
+    if (out_size != NULL) *out_size = 0;
+    if (exit_status != NULL) *exit_status = -1;
+    return NULL;
+  }
+  U8 *out = NULL;
+  U8 *err = NULL;
+  I64 rc = SpawnAndCapture(producer, args, &out, &err);
+  if (saved_cwd == 1) chdir(cwd_buf);
+  Free(cwd_buf);
+  Free(err);
+  Free(args);
+  if (out_size != NULL) *out_size = StrLen(out);
+  if (exit_status != NULL) *exit_status = rc;
+  return out;
+}
+
+// The RECORD'S ARTIFACT PATH.
+//
+// The harness prints `HARNESS_ARTIFACT_PATH`, which is the RUNNER'S OWN
+// destination -- the path the runner intends to write. In the STDOUT mode
+// the produced artifact is the CAPTURED STDOUT, and the capture record
+// names THAT path in its `ARTIFACT_PATH` field.
+//
+// The two are different paths, and the control needs the RECORD's path:
+// it is the path of the artifact that the record claims.
+static U8 *R6RecordArtifactPath(U8 *out) {
+  I64 csize = 0;
+  U8 *cap = R6Capture(out, &csize);
+  if (cap == NULL) return NULL;
+  U8 *path = R6Field(cap, csize, "ARTIFACT_PATH");
+  Free(cap);
+  return path;
+}
+
+// The STDOUT-FORM controls.
+//
+// The `-o-` request, observed both DIRECTLY and THROUGH the harness.
+//
+// It returns the digest of the DIRECT invocation's standard output, so
+// the caller can compare it with the harness's captured bytes.
+static U8 *R8_03StdoutForm(U8 *harness, U8 *producer, U8 *dir, U8 *arch,
+                            U8 *src_a, U8 *fixture) {
+  U8 *cd = R6Path(dir, "OUTMODE_STDOUT");
+  R6MakeDirs(cd);
+  // The DIRECT invocation, in its own directory.
+  U8 *direct_dir = R6Path(cd, "direct");
+  R6MakeDirs(direct_dir);
+  U8 *direct_src = R6Path(direct_dir, "source.HC");
+  U8 *src_text = R6SourceZero();
+  R6Write(direct_src, src_text, StrLen(src_text));
+  U8 *dargv[5];
+  dargv[0] = producer;
+  dargv[1] = "-S";
+  dargv[2] = "-o-";
+  dargv[3] = direct_src;
+  dargv[4] = NULL;
+  I64 dsize = 0;
+  I64 dexit = 0;
+  U8 *dout = R6DirectCompile(producer, direct_dir, dargv, 4, &dsize, &dexit);
+  I64 direct_exit_ok = 0;
+  if (dexit == 0) direct_exit_ok = 1;
+  R6Verdict("R8_03_DIRECT_STDOUT_EXIT", direct_exit_ok, 1,
+            "THE_DIRECT_INVOCATION_EXITED_ZERO");
+  I64 direct_nonempty = 0;
+  if (dsize > 0) direct_nonempty = 1;
+  R6Verdict("R8_03_DIRECT_STDOUT_NONEMPTY", direct_nonempty, 1,
+            "THE_DIRECT_INVOCATION_WROTE_TO_STDOUT");
+  // The direct invocation must NOT have produced a file artifact.
+  U8 *direct_artifact = R6Path(direct_dir, "-");
+  I64 stray_present = 0;
+  if (FileExists(direct_artifact) == 1) stray_present = 1;
+  R6Verdict("R8_03_DIRECT_STDOUT_NO_FILE", stray_present, 0,
+            "THE_DIRECT_INVOCATION_PRODUCED_NO_FILE");
+  // The digest of the direct invocation's standard output.
+  U8 *direct_hex = MAlloc(65);
+  I64 direct_ok = 0;
+  if (dsize > 0) {
+    U8 *ddigest = MAlloc(32);
+    Sha256Bytes(dout, dsize, ddigest);
+    Sha256Hex(direct_hex, ddigest);
+    Free(ddigest);
+    direct_ok = 1;
+  }
+  if (dout != NULL) Free(dout);
+  // The HARNESS's run of the SAME request.
+  U8 *run_dir = R6Path(cd, "run");
+  R6MakeDirs(run_dir);
+  U8 *ledger = R6Path(cd, "ledger.txt");
+  R6Write(ledger, "", 0);
+  U8 *art_dir = R6Path(cd, "art");
+  R6MakeDirs(art_dir);
+  U8 *argv[4];
+  argv[0] = producer;
+  argv[1] = "-S";
+  argv[2] = "-o-";
+  argv[3] = NULL;
+  R6RunCtx ctx;
+  ctx.harness = harness;
+  ctx.run_dir = run_dir;
+  ctx.ledger = ledger;
+  ctx.case_id = "R8_03_STDOUT_FORM";
+  ctx.producer = producer;
+  ctx.source = src_a;
+  ctx.fixture = fixture;
+  ctx.artifact_name = "artifact.bin";
+  ctx.artifact_dir = art_dir;
+  ctx.arch = arch;
+  ctx.argv = argv;
+  ctx.nargv = 3;
+  U8 *out = NULL;
+  U8 *reason = R6RunHarnessFull(&ctx, &out);
+  I64 ok = 0;
+  if (StrCmp(reason, "NO_REASON_TOKEN") == 0) ok = 1;
+  R6Verdict("R8_03_STDOUT_RUN", ok, 1, reason);
+  I64 exit_present = 0;
+  I64 exit_value = R6ExitStatus(out, &exit_present);
+  I64 stdout_exit_ok = 0;
+  if (exit_present == 1 && exit_value == 0) stdout_exit_ok = 1;
+  R6Verdict("R8_03_STDOUT_EXIT_STATUS", stdout_exit_ok, 1,
+            "THE_CHILD_EXITED_ZERO");
+  // The record must name the STDOUT mode.
+  I64 csize = 0;
+  U8 *cap = R6Capture(out, &csize);
+  I64 mode_is_stdout = 0;
+  if (cap != NULL) {
+    U8 *m = R6Field(cap, csize, "OUTPUT_MODE");
+    if (m != NULL) {
+      if (StrCmp(m, "STDOUT") == 0) mode_is_stdout = 1;
+      Free(m);
+    }
+  }
+  R6Verdict("R8_03_STDOUT_MODE", mode_is_stdout, 1,
+            "THE_RECORD_NAMES_THE_STDOUT_MODE");
+  // The captured stdout must be NONEMPTY, and the record's artifact digest
+  // must be the digest of those ACTUAL captured bytes.
+  //
+  // In the STDOUT mode the artifact IS the captured stdout stream, so the
+  // artifact path names the capture file. The digest is therefore
+  // recomputed from the bytes the harness actually captured.
+  I64 captured_nonempty = 0;
+  I64 digest_agrees = 0;
+  if (cap != NULL) {
+    U8 *apath = R6RecordArtifactPath(out);
+    if (apath != NULL) {
+      I64 asize = 0;
+      U8 *abuf = FileRead(apath, &asize);
+      if (abuf != NULL) {
+        if (asize > 0) {
+          captured_nonempty = 1;
+          U8 *ahex = MAlloc(65);
+          U8 *adigest = MAlloc(32);
+          Sha256Bytes(abuf, asize, adigest);
+          Sha256Hex(ahex, adigest);
+          Free(adigest);
+          U8 *claimed = R6Field(cap, csize, "ARTIFACT_SHA256");
+          if (claimed != NULL) {
+            if (StrCmp(claimed, ahex) == 0) digest_agrees = 1;
+            Free(claimed);
+          }
+          // The digest must ALSO equal the DIRECT invocation's digest:
+          // the two invocations compiled the SAME source, so their
+          // standard outputs carry the SAME bytes.
+          if (direct_ok == 1) {
+            if (StrCmp(direct_hex, ahex) != 0) digest_agrees = 0;
+          }
+          Free(ahex);
+        }
+        Free(abuf);
+      }
+      Free(apath);
+    }
+  }
+  R6Verdict("R8_03_STDOUT_CAPTURED_NONEMPTY", captured_nonempty, 1,
+            "THE_CAPTURED_STDOUT_CARRIES_BYTES");
+  R6Verdict("R8_03_STDOUT_DIGEST_MATCHES_CAPTURED", digest_agrees, 1,
+            "THE_RECORDED_DIGEST_IS_THE_DIGEST_OF_THE_CAPTURED_BYTES");
+  // NO filesystem artifact may exist in the runner's output directory.
+  I64 stray = R6ArtifactExists(out);
+  R6Verdict("R8_03_STDOUT_NO_FILE_ARTIFACT", stray, 0,
+            "NO_FILESYSTEM_ARTIFACT_WAS_PRODUCED");
+  Free(out);
+  Free(reason);
+  Free(cap);
+  Free(direct_artifact);
+  Free(direct_src);
+  Free(direct_dir);
+  Free(art_dir);
+  Free(ledger);
+  Free(run_dir);
+  Free(cd);
+  if (direct_ok == 1) return direct_hex;
+  Free(direct_hex);
+  return NULL;
+}
+
+// The FILE-FORM controls.
+//
+// The `-o -` request, observed both DIRECTLY and THROUGH the harness.
+//
+// The runner REWRITES the child's `-o -` into its own destination. The
+// rewrite PRESERVES the FILE classification, and the controls require
+// the artifact to be a real file on the disk whose ACTUAL digest equals
+// the digest the record claims.
+static U0 R8_03FileForm(U8 *harness, U8 *producer, U8 *dir, U8 *arch,
+                         U8 *src_a, U8 *fixture) {
+  U8 *cd = R6Path(dir, "OUTMODE_FILE");
+  R6MakeDirs(cd);
+  // The DIRECT invocation, in its own directory.
+  U8 *direct_dir = R6Path(cd, "direct");
+  R6MakeDirs(direct_dir);
+  U8 *direct_src = R6Path(direct_dir, "source.HC");
+  U8 *src_text = R6SourceZero();
+  R6Write(direct_src, src_text, StrLen(src_text));
+  U8 *dargv[6];
+  dargv[0] = producer;
+  dargv[1] = "-S";
+  dargv[2] = "-o";
+  dargv[3] = "-";
+  dargv[4] = direct_src;
+  dargv[5] = NULL;
+  I64 dsize = 0;
+  I64 dexit = 0;
+  U8 *dout = R6DirectCompile(producer, direct_dir, dargv, 5, &dsize, &dexit);
+  I64 file_exit_ok = 0;
+  if (dexit == 0) file_exit_ok = 1;
+  R6Verdict("R8_03_DIRECT_FILE_EXIT", file_exit_ok, 1,
+            "THE_DIRECT_INVOCATION_EXITED_ZERO");
+  // The direct invocation's standard output must be EMPTY.
+  I64 file_stdout_empty = 0;
+  if (dsize == 0) file_stdout_empty = 1;
+  R6Verdict("R8_03_DIRECT_FILE_STDOUT_EMPTY", file_stdout_empty, 1,
+            "THE_DIRECT_INVOCATION_WROTE_NOTHING_TO_STDOUT");
+  // The direct invocation MUST have produced a file named "-".
+  U8 *direct_artifact = R6Path(direct_dir, "-");
+  I64 direct_file_present = 0;
+  I64 direct_file_bytes = 0;
+  if (FileExists(direct_artifact) == 1) {
+    direct_file_present = 1;
+    I64 fsize = 0;
+    U8 *fbuf = FileRead(direct_artifact, &fsize);
+    if (fbuf != NULL) {
+      direct_file_bytes = fsize;
+      Free(fbuf);
+    }
+  }
+  R6Verdict("R8_03_DIRECT_FILE_PRESENT", direct_file_present, 1,
+            "THE_DIRECT_INVOCATION_WROTE_THE_FILE_NAMED_DASH");
+  I64 direct_file_nonempty = 0;
+  if (direct_file_bytes > 0) direct_file_nonempty = 1;
+  R6Verdict("R8_03_DIRECT_FILE_NONEMPTY", direct_file_nonempty, 1,
+            "THE_FILE_NAMED_DASH_CARRIES_BYTES");
+  if (dout != NULL) Free(dout);
+  // The HARNESS's run of the SAME request.
+  U8 *run_dir = R6Path(cd, "run");
+  R6MakeDirs(run_dir);
+  U8 *ledger = R6Path(cd, "ledger.txt");
+  R6Write(ledger, "", 0);
+  U8 *art_dir = R6Path(cd, "art");
+  R6MakeDirs(art_dir);
+  U8 *argv[5];
+  argv[0] = producer;
+  argv[1] = "-S";
+  argv[2] = "-o";
+  argv[3] = "-";
+  argv[4] = NULL;
+  R6RunCtx ctx;
+  ctx.harness = harness;
+  ctx.run_dir = run_dir;
+  ctx.ledger = ledger;
+  ctx.case_id = "R8_03_FILE_FORM";
+  ctx.producer = producer;
+  ctx.source = src_a;
+  ctx.fixture = fixture;
+  ctx.artifact_name = "artifact.bin";
+  ctx.artifact_dir = art_dir;
+  ctx.arch = arch;
+  ctx.argv = argv;
+  ctx.nargv = 4;
+  U8 *out = NULL;
+  U8 *reason = R6RunHarnessFull(&ctx, &out);
+  I64 ok = 0;
+  if (StrCmp(reason, "NO_REASON_TOKEN") == 0) ok = 1;
+  R6Verdict("R8_03_FILE_RUN", ok, 1, reason);
+  I64 exit_present = 0;
+  I64 exit_value = R6ExitStatus(out, &exit_present);
+  I64 file_child_exit_ok = 0;
+  if (exit_present == 1 && exit_value == 0) file_child_exit_ok = 1;
+  R6Verdict("R8_03_FILE_EXIT_STATUS", file_child_exit_ok, 1,
+            "THE_CHILD_EXITED_ZERO");
+  // The record must name the FILE mode.
+  I64 csize = 0;
+  U8 *cap = R6Capture(out, &csize);
+  I64 mode_is_file = 0;
+  if (cap != NULL) {
+    U8 *m = R6Field(cap, csize, "OUTPUT_MODE");
+    if (m != NULL) {
+      if (StrCmp(m, "FILE") == 0) mode_is_file = 1;
+      Free(m);
+    }
+  }
+  R6Verdict("R8_03_FILE_MODE", mode_is_file, 1,
+            "THE_RECORD_NAMES_THE_FILE_MODE");
+  // The artifact must be PRESENT, and it must be a real file on the disk.
+  I64 present = R6ArtifactPresent(out);
+  R6Verdict("R8_03_FILE_ARTIFACT_PRESENT", present, 1,
+            "THE_ARTIFACT_IS_PRESENT");
+  I64 exists = R6ArtifactExists(out);
+  R6Verdict("R8_03_FILE_ARTIFACT_ON_DISK", exists, 1,
+            "THE_ARTIFACT_EXISTS_ON_THE_DISK");
+  // The recorded artifact's ACTUAL digest must equal the digest the
+  // record claims.
+  I64 actual_agrees = 0;
+  if (cap != NULL) {
+    U8 *apath = R6ArtifactPath(out);
+    if (apath != NULL) {
+      I64 asize = 0;
+      U8 *abuf = FileRead(apath, &asize);
+      if (abuf != NULL) {
+        U8 *ahex = MAlloc(65);
+        U8 *adigest = MAlloc(32);
+        Sha256Bytes(abuf, asize, adigest);
+        Sha256Hex(ahex, adigest);
+        Free(adigest);
+        U8 *claimed = R6Field(cap, csize, "ARTIFACT_SHA256");
+        if (claimed != NULL) {
+          if (StrCmp(claimed, ahex) == 0) actual_agrees = 1;
+          Free(claimed);
+        }
+        Free(ahex);
+        Free(abuf);
+      }
+      Free(apath);
+    }
+  }
+  R6Verdict("R8_03_FILE_DIGEST_MATCHES_ARTIFACT", actual_agrees, 1,
+            "THE_RECORDED_DIGEST_IS_THE_DIGEST_OF_THE_ARTIFACT");
+  Free(cap);
+  Free(out);
+  Free(reason);
+  Free(direct_artifact);
+  Free(direct_src);
+  Free(direct_dir);
+  Free(art_dir);
+  Free(ledger);
+  Free(run_dir);
+  Free(cd);
+}
+
+// The output-mode classification mode.
+//
+//   probe outmode <harness> <producer> <work-dir> <arch>
+static U0 R6OutModeMode(U8 *harness, U8 *producer, U8 *work_dir, U8 *arch) {
+  U8 *rbuf = MAlloc(4096);
+  U8 *resolved = realpath(work_dir, rbuf);
+  U8 *dir = work_dir;
+  if (resolved != NULL) dir = resolved;
+  R6MakeDirs(dir);
+  U8 *src_a = R6Path(dir, "outmode_source.HC");
+  U8 *fixture = R6Path(dir, "outmode_fixture.bin");
+  U8 *src_text = R6SourceZero();
+  R6Write(src_a, src_text, StrLen(src_text));
+  R6Write(fixture, "fixture\n", 8);
+  R8_03StdoutForm(harness, producer, dir, arch, src_a, fixture);
+  R8_03FileForm(harness, producer, dir, arch, src_a, fixture);
+  Free(src_a);
+  Free(fixture);
+}
+
 I32 Main(I32 argc, U8 **argv) {
   r6_checks = 0;
   r6_failures = 0;
   if (argc < 3) {
-    "PROBE_USAGE\tprobe exec|macho|envbind <args...>\n";
+    "PROBE_USAGE\tprobe exec|macho|envbind|outmode <args...>\n";
     return 2;
   }
   U8 *mode = argv[1];
@@ -2009,6 +2557,12 @@ I32 Main(I32 argc, U8 **argv) {
       return 2;
     }
     R6ExecMode(argv[2], argv[3], argv[4], argv[5]);
+  } else if (StrCmp(mode, "outmode") == 0) {
+    if (argc < 6) {
+      "PROBE_USAGE\tprobe outmode <harness> <producer> <work-dir> <arch>\n";
+      return 2;
+    }
+    R6OutModeMode(argv[2], argv[3], argv[4], argv[5]);
   } else if (StrCmp(mode, "macho") == 0) {
     if (argc < 5) {
       "PROBE_USAGE\tprobe macho <fixture-dir> <mixed-zerofill.o> <tls.o>\n";

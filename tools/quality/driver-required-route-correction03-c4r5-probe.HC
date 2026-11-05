@@ -1039,6 +1039,43 @@ extern "c" I32 symlink(U8 *target, U8 *linkpath);
 // The platform's own unlink, used to remove a link that a previous run
 // planted.
 extern "c" I32 unlink(U8 *path);
+// The platform's own environment reader. It carries the CONFIGURED test
+// prefix from the Makefile into the probe.
+extern "c" I8 *getenv(U8 *buf);
+
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+// R8-01 -- THE CONFIGURED PREFIX, FORWARDED TO THE HARNESS.
+//
+// The harness INJECTS `--install-dir=<prefix>` into the child's argument
+// vector, so it must KNOW the configured prefix. The probe reads it from
+// its OWN process environment -- the Makefile exports
+// `HCC_TEST_PREFIX=$(TEST_PREFIX)` -- and it forwards it to the harness
+// in the BINDING LIST.
+//
+// The probe never INVENTS a prefix: when the variable is absent, the
+// helper returns NULL and the probe forwards nothing.
+//
+// The returned binding is a fresh allocation, so the caller owns it.
+// ---------------------------------------------------------------------------
+
+// The environment variable that carries the CONFIGURED test prefix.
+#define R5_PREFIX_ENV "HCC_TEST_PREFIX"
+
+// The prefix binding builder.
+static U8 *R5PrefixBinding() {
+  U8 *value = getenv(R5_PREFIX_ENV);
+  if (value == NULL) return NULL;
+  I64 len = StrLen(value);
+  if (len <= 0) return NULL;
+  I64 nlen = StrLen(R5_PREFIX_ENV);
+  U8 *binding = MAlloc(nlen + len + 2);
+  MemCpy(binding, R5_PREFIX_ENV, nlen);
+  binding[nlen] = 61;
+  MemCpy(binding + nlen + 1, value, len);
+  binding[nlen + 1 + len] = 0;
+  return binding;
+}
 
 // The platform's own process spawner. The probe uses the runtime's
 // `SpawnAndCapture`, which is the SAME spawner the production harness
@@ -1137,7 +1174,7 @@ static U0 R5HarnessControl(R5HarnessCtx *ctx) {
   // The harness reads its verb from `argv[1]`, so the FIRST element of the
   // vector is the harness's own path, exactly as it is when the harness is
   // launched from a shell.
-  U8 *args[19];
+  U8 *args[20];
   I64 n = 0;
   args[n] = harness;                  n = n + 1;
   args[n] = "run";                    n = n + 1;
@@ -1152,6 +1189,12 @@ static U0 R5HarnessControl(R5HarnessCtx *ctx) {
   args[n] = artifact_dir;             n = n + 1;
   args[n] = arch;                     n = n + 1;
   args[n] = "C4R5_PROBE=1";           n = n + 1;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX IS FORWARDED.
+  U8 *prefix_binding = R5PrefixBinding();
+  if (prefix_binding != NULL) {
+    args[n] = prefix_binding;         n = n + 1;
+  }
   args[n] = "--";                     n = n + 1;
   args[n] = named_exec;               n = n + 1;
   args[n] = "--help";                 n = n + 1;
@@ -1310,7 +1353,7 @@ static U0 R5StaleOutputControl(U8 *dir, U8 *control, U8 *harness,
   U8 *artifact_name = "artifact.bin";
 
   // The run is driven through the SAME argument vector in both phases.
-  U8 *args[19];
+  U8 *args[20];
   I64 n = 0;
   args[n] = harness;                  n = n + 1;
   args[n] = "run";                    n = n + 1;
@@ -1325,6 +1368,12 @@ static U0 R5StaleOutputControl(U8 *dir, U8 *control, U8 *harness,
   args[n] = artifact_dir;             n = n + 1;
   args[n] = arch;                     n = n + 1;
   args[n] = "C4R5_PROBE=1";           n = n + 1;
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8,
+  // R8-01 -- THE CONFIGURED PREFIX IS FORWARDED.
+  U8 *prefix_binding = R5PrefixBinding();
+  if (prefix_binding != NULL) {
+    args[n] = prefix_binding;         n = n + 1;
+  }
   args[n] = "--";                     n = n + 1;
   args[n] = producer;                 n = n + 1;
   args[n] = "--help";                 n = n + 1;
