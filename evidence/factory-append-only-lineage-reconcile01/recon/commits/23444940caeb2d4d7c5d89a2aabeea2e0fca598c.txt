@@ -1,0 +1,44 @@
+tree 037c419d29656fa2aaf27fa65b091f9981188307
+parent df35e5452d91d70f976a5c42078dfa660a158723
+author Cline Agent <cline@polyc.local> 1793719205 +0300
+committer Cline Agent <cline@polyc.local> 1793719205 +0300
+
+IMPL: fix the `case` pattern that made the runtime-archive rule fail in a PRISTINE checkout
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 REMEDIATION ROUND 3.
+
+THE PRISTINE ISOLATED CHECKOUT FOUND A REAL DEFECT.
+
+The new pristine-suite runner materializes the repository at the subject
+commit into an isolated `git worktree` with an EMPTY build directory and
+runs every CORRECTION03 target there. EVERY target failed.
+
+The cause was the `test-prefix-libtos` rule's architecture check:
+
+    case "$$_arch" in
+        *current ar archive*) ;;
+        ...
+
+The pattern `*current ar archive*` is THREE shell words, not one. POSIX
+`sh` -- which is `dash` on macOS and is `/bin/sh` -- parses the `case`
+patterns as separate words, so the second word, `ar`, is a SYNTAX ERROR:
+
+    /bin/sh: -c: line 0: syntax error near unexpected token `ar'
+
+The rule therefore CANNOT run under the shell that `/bin/sh` names. The
+working tree did not expose the defect, because the target's artifact was
+already present and the recipe never ran.
+
+The pattern is now quoted as ONE word:
+
+    *"current ar archive"*) ;;
+
+and the recipe runs to completion under `/bin/sh`.
+
+The defect was found by the F9 doctrine's fresh-tree requirement: a build
+that only passes in the working tree is a WARM-TREE result.
+
+No production semantics are changed. No historical evidence is modified.
+
+ACT: ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03
+ACT-Phase: IMPL

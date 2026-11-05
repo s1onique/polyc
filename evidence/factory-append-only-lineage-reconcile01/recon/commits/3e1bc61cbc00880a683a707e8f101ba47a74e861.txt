@@ -1,0 +1,96 @@
+tree 23fdd0ebaceacc0996c36c23344d63342f12689c
+parent 525374202a96d5d4235e25ed76cdff5504d65e7b
+author Cline Agent <cline@polyc.local> 1793194845 +0300
+committer Cline Agent <cline@polyc.local> 1793194845 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C1: the live parser/AST census, the dependency graph and the structural sub-slices
+
+This is the C1 phase of ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.
+It introduces NO production semantic change and NO seventh PolyC
+parser authority.  No ranking or winner claim is made here.
+
+THE LIVE CENSUS
+----------------
+  CENSUS_FUNCTIONS=270
+  src/parser.c=60  src/prslib.c=41  src/prsutil.c=27  src/ast.c=142
+
+The census is DERIVED from the live source bytes by
+tools/quality/parser-surface-recon05-verify.HC and is CROSS-VALIDATED
+against the CLOSED predecessor verifier
+tools/quality/parser-surface-recon04-verify.HC, which is used
+READ-ONLY and is NOT modified.  The two tools produce BYTE-IDENTICAL
+census output.
+
+THE RECON04 RECONCILIATION, IN BOTH DIRECTIONS
+-----------------------------------------------
+  ADDED=2  REMOVED=0  CHANGED=22  UNCHANGED=246
+
+  ADDED: parseSwitchArmTerminates (the SLICE06 C DELEGATION
+         ADAPTER) and ParserLegacySwitchArmTerminatesOracle (the SLICE06
+         G0 STAGE0 ORACLE).  NEITHER is a remaining legacy C semantic
+         authority.
+  CHANGED: all 22 are in src/parser.c.  18 moved by exactly +101
+         lines (the SLICE06 insertion); 4 kept their line numbers but
+         changed their digest, because the census range convention
+         (declarator line to last body line) makes the SAME line span
+         cover different bytes after the insertion.  Their function
+         BODIES are byte-identical.  This is reported, not hidden.
+  UNCHANGED: 142 ast.c + 41 prslib.c + 27 prsutil.c + 36 parser.c,
+         each with an IDENTICAL range AND digest.
+
+SUB-SLICES, RE-BOUND TO THE LIVE SOURCE
+----------------------------------------
+  STRUCTURAL_BOUNDARY   = 3   (SUB-002, SUB-003, SUB-004)
+  INELIGIBLE_STRUCTURAL = 8   (SUB-005 .. SUB-012)
+  ALREADY_SELFHOSTED    = 1   (SUB-001)
+  TOTAL SUB-SLICES      = 12
+  UNCLASSIFIED_SUBSLICES = 0
+
+Every sub-slice carries a live SHA-256 digest.  Two historical ranges
+were re-partitioned so the sub-slices are DISJOINT: SUB-006 now binds
+the setjmp/rollback region (1968..1986) and SUB-007 the compound body
+loop (1987..2059).
+
+SUB-005 REMAINS INELIGIBLE, ON LIVE EVIDENCE
+---------------------------------------------
+cctrlGetKeyWord consults the MUTABLE cc->symbol_table, cc->clsdefs and
+cc->uniondefs.  The dependence is CONFIRMED in the live source, so
+SUB-005 stays excluded.
+
+THE DEPENDENCE CHECKER
+----------------------
+  DEPENDS_CHECKED=24
+  MUTABLE_HOST_STATE_DEPENDENCE=1   (SUB-008, the whole statement
+                                     parser, which writes
+                                     cc->current_recovery -- exactly
+                                     why it is ineligible)
+  NO_MUTABLE_HOST_STATE_DEPENDENCE=23
+  UNBOUND_DEPENDENCY=0
+
+CALLBACK AND RECOVERY OWNERSHIP
+-------------------------------
+  TOTAL_PARSER_CALLBACKS=0
+  TOTAL_SEMANTIC_CALLBACKS=0
+  OWNERS_TRANSFERRING_RECOVERY=0
+  CANDIDATES_TRANSFERRING_HOST_GRAPH_WRITES=0
+  CANDIDATES_TRANSFERRING_HOST_ALLOCATION=0
+  UNCLASSIFIED_DEPENDENCIES=0
+
+THE CANDIDATE REGISTRY
+----------------------
+  RECON04_CANDIDATES_RECONCILED=ALL (24 of 24)
+  CANDIDATE_ID_REUSE=0
+  NEW_CANDIDATES=0
+
+No new candidate was discovered: a source-census difference alone does
+not authorize an added candidate, and no bounded sub-decision outside
+the historical registry met the bar.
+
+THE ELIGIBILITY FACTS TABLE
+---------------------------
+c1/eligibility-input-facts.tsv carries NO `eligible` column, so the
+eligibility flag cannot be hand-authored.  The facts are source-bound
+to the live ranges above.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

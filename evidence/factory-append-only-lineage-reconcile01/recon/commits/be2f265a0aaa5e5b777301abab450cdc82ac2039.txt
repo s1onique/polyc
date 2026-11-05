@@ -1,0 +1,90 @@
+tree 8e2fc5b6515800c714d10b9b3b3e42e30d8e2476
+parent ff48436bd3b3e0ccfac2d979556623cb0e3dc6fd
+author Cline Agent <cline@polyc.local> 1793117205 +0300
+committer Cline Agent <cline@polyc.local> 1793117205 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C3: four-generation qualification, causal mutation and conservation
+
+Qualify the migrated AST operator decision across four independently
+built generations, prove it is causally load-bearing in the REAL
+production compiler, and conserve every established behaviour.
+
+THE FOUR GENERATIONS
+  G0  the LEGACY C reference: src/ast.c compiled WITHOUT the
+      delegation flag.  Its producer is the HOST C COMPILER
+      (/usr/bin/cc, sha 9b11ead1...), NOT the PolyC compiler.
+  G1  the stage-1 PolyC path, built by ./hcc.
+  G2  an INDEPENDENT stage2, built by ./build/hcc-bootstrap02.
+  G3  an INDEPENDENT stage3, built by ./build/hcc-bootstrap03.
+
+  The four producing compilers are DISTINCT binaries, and each
+  generation was compiled and executed independently.  The three
+  PolyC generations produce BYTE-IDENTICAL objects and all SIX
+  generation pairs are SEMANTICALLY EQUIVALENT, with the G0-versus-
+  PolyC comparison running the REAL legacy mapping.
+
+THE EXECUTION-LINKED PROVENANCE WITNESS
+  G1/G2/G3 produce byte-identical objects, so a finished object could
+  be substituted for another WITHOUT changing the output bytes, and a
+  check comparing only (object SHA, compiler SHA) could not see it.
+  So each generation's build also produces a witness bound to an
+  ACTUAL EXECUTION: a probe built by that generation's OWN compiler,
+  linked against that generation's OWN object, and run.
+
+  The five provenance negative controls corrupt or substitute that
+  witness and each is REJECTED with a concrete reason:
+    CASE-1 a substituted witness        -> REJECT_STAGE_LABELS
+    CASE-2 an omitted execution receipt -> REJECT_OMITTED_EXECUTION_RECEIPT
+    CASE-3 a changed compiler SHA       -> REJECT_COMPILER_SHA_MISMATCH
+    CASE-4 a substituted object         -> REJECT_OBJECT_SHA_MISMATCH
+    CASE-5 swapped stage labels         -> REJECT_EXECUTION_RECEIPT_MISMATCH
+
+  The G0 producer is resolved and hashed FROM THE ACTUAL INVOKED
+  COMMAND, and the raw receipt, the manifest and the summary are
+  generated from ONE recording, so they are single-valued.
+
+THE PRODUCTION-CAUSAL MUTATION
+  A mapping differential alone is not sufficient.  The '+' token (43)
+  was mapped to AST_BIN_OP_SUB instead of AST_BIN_OP_ADD, in an
+  ISOLATED SCRATCH WORKSPACE; the tracked subject was never mutated.
+
+    p0_OUTPUT=13      pristine:  6 + 7
+    p1_OUTPUT=-1      mutated:   6 - 7
+    p2_OUTPUT=13      restored:  6 + 7
+
+  The mutant BUILD SUCCEEDED, and the restored component is a REBUILD
+  of the pristine source with the SAME sha as the pristine one.
+
+  PRODUCTION_DELEGATION=LOAD_BEARING
+  PRODUCTION_CAUSAL_MUTATION=PASS
+  PRISTINE_RESTORATION=PASS
+
+THE CONSERVATION
+  The parser suite was run against a compiler built from the ENTRY
+  tree and against this tree: 87 passed / 3 failed on BOTH, and the
+  failure IDENTITY sets are byte identical.  The three failures are
+  the pre-existing /usr/local/include/tos.HH issue and are recorded
+  as measured, not relabelled PASS.
+
+  The LEXER02/07/08/09 differentials report 89 / 45 / 23 rows with 0
+  failures, and the LEXER07 broad corpus is identical to the
+  canonical baseline registry (REGRESSION=0, DIVERGED=0) with its
+  historical STATUS=FAIL preserved.
+
+  The three previous PolyC parser authorities are conserved with zero
+  source-hash changes, and the unselected astUnaryOpFromToken is
+  byte-identical and still the legacy C authority.
+
+THE GATES
+  gate-fast PASS, gate-push PASS, factory-v2 PASS (53/0),
+  append-only PASS (11/0), F14 PASS, patch hygiene PASS.
+  The F-NO-PYTHON checker reports its 12 PRE-EXISTING findings, none
+  of which is in this ACT's diff.
+
+THE ACCEPTANCE LEDGER
+  50 rows, produced by an EXACT ACCEPTANCE-ID JOIN against the frozen
+  C1 contract: AC_PASS=49, AC_FAIL=0, AC_UNPROVEN=1 (AC50, deferred
+  to close exactly as the ACT permits).
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: EVIDENCE

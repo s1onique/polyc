@@ -1,0 +1,117 @@
+tree 96afc9664c80aa2374debb9a97dae20f7f08e365
+parent 3e1bc61cbc00880a683a707e8f101ba47a74e861
+author Cline Agent <cline@polyc.local> 1793195934 +0300
+committer Cline Agent <cline@polyc.local> 1793195934 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C2: the eligibility, the ranking, the executable causality and the frozen successor contract
+
+This is the C2 phase of ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.
+It introduces NO production semantic change and NO seventh PolyC
+parser authority.
+
+THE CANONICAL CHECKER AND RANKER, UNMODIFIED
+---------------------------------------------
+  tools/quality/parser-slice-recon03-eligibility.HC  sha256=2df5554a...
+  tools/quality/parser-slice-recon03-ranking.HC       sha256=c5861ded...
+
+Both are CLOSED predecessor artifacts, used READ-ONLY and NOT
+modified.
+
+  ELIGIBLE=15   INELIGIBLE=9
+  ELIGIBLE_STRUCTURAL=3   ELIGIBLE_SCALAR=12
+  INELIGIBLE_STRUCTURAL=8   INELIGIBLE_ALREADY_SELFHOSTED=1
+
+SUB-001 IS CORRECTLY EXCLUDED: the already-selfhosted clause rejects
+it, and the live production object carries U _BootstrapSwitchArmTerminates
+and does not define it.
+
+R0 CONSISTENCY CORRECTION
+--------------------------
+The RECON04 ranking table VIOLATED its own stated invariant that "R0
+is MECHANICALLY the same value the eligibility checker used as its
+clause 03 input": CAND-022 and CAND-023 had facts_r0=1 but
+dims_r0=0.  RECON05 CORRECTS both to R0=1, so the ranking and the
+eligibility fact cannot drift apart.  The correction is recorded in
+c2/ranking-dimensions.tsv.
+
+THE SELECTION, AND WHY IT IS NOT SUB-002
+-----------------------------------------
+The canonical ranker selected SUB-002.  The EXECUTABLE CAUSALITY GATE
+then FAILED for SUB-002, so it was removed from the feasible subset by
+a machine-verifiable reason and the selection was RE-RUN.
+
+SUB-002's live condition tests FIVE AstKind values (AST_COMPOUND_STMT,
+AST_CASE, AST_BREAK, AST_RETURN, AST_GOTO).  The already-migrated
+SUB-001 decision tests the SAME FIVE plus AST_DEFAULT.  AST_DEFAULT is
+UNREACHABLE at that position: a nested default raises "Duplicate
+default case" and the inner parseDefaultStatement never returns.
+
+THIS WAS PROVED BY EXECUTION, NOT BY ARGUMENT.  A mutant that ADDS
+AST_DEFAULT to the SUB-002 condition was built into the REAL compiler
+in a disposable worktree and the full 90-file production suite was run
+with it:
+
+  PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+  MUTANT    376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+
+The assertion sequences are BYTE-IDENTICAL.  The mutation has ZERO
+observable effect, so SUB-002 is DUPLICATED CODE, not a distinct
+decision.  Transferring it would create a SECOND PolyC authority for a
+decision the first authority already owns.
+
+THE SELECTED CANDIDATE
+-----------------------
+  SELECTED_CANDIDATE=SUB-003
+  SELECTED_CLASS=STRUCTURAL_BOUNDARY
+  SELECTED_SOURCE=src/parser.c:2049
+  SELECTED_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+  SELECTED_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+
+Its EXECUTABLE causal proof: a mutant that REMOVES the skip makes the
+REAL compiler fail to compile a program the pristine compiler accepts
+("ERROR: Mapping exists for 1 -> %l2 i64 local"), and drops the
+90-file suite from 376 to 371 assertions with the MD5 changing from
+b6f117eb1386ca80f81bc06226e2a741 to dc2f36f1bd63bca22fc7ea57359a770d.
+The two affected tests are 33_static.HC and 34_global_array.HC.
+
+The runner-up SUB-004 was also tested: routing KW_WHILE to
+parseDoWhileStatement makes the real compiler fail to parse every
+while loop.
+
+THE NINETEEN NEGATIVE CONTROLS
+------------------------------
+  CONTROL_TOTAL=19  CONTROL_INTENDED_PASS=19  CONTROL_UNPROVEN=0
+
+Every control fired for its INTENDED reason.  Three verifier GAPS were
+found and CLOSED during this phase rather than papered over:
+
+  IC-01  a per-row checker cannot see a DELETED row, so the RECON05
+         verifier gained a REGISTRY mode that compares the EXPECTED-ID
+         set against the CLAIMED-ID set.
+  EC-06  the canonical checker has no UNKNOWN-ID concept, so the
+         REGISTRY mode supplies it.
+  EC-05  a dependence search over the candidate's own bytes cannot see
+         a TRANSITIVE dependence, so the DEPENDS mode now expands the
+         search through the functions the candidate CALLS, two levels
+         deep, and into the host-control TU.
+
+THE C3 INDEPENDENT RECOMPUTER
+------------------------------
+tools/quality/parser-surface-recon05-independent.HC is a SECOND,
+INDEPENDENT PolyC implementation.  It reads the raw C1 facts and the
+dimension facts; it does NOT read the C2 eligible decision, the C2
+ranked list or the C2 winner.
+
+  ELIGIBILITY_MISMATCH=0
+  RANK_ORDER_MISMATCH=0
+  RANK_COMPLETE_ORDER_MISMATCH=0
+  RANK_MISSING=0
+  RANK_EXTRA=0
+  INDEPENDENT_SELECTED=SUB-002
+
+The RC-01 adverse side (an order-dependent reported ranking) is
+REJECTED with RANK_ORDER_MISMATCH, and the authentic ranker is
+invariant under shuffling.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

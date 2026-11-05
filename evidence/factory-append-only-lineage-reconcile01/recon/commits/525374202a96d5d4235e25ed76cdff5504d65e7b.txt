@@ -1,0 +1,100 @@
+tree 15021e5f42f32cedadbd5af99bee664225a04a7d
+parent 005790c53bb4e4798d58809940548552f0993d47
+author Cline Agent <cline@polyc.local> 1793194270 +0300
+committer Cline Agent <cline@polyc.local> 1793194270 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C0: AUTH, entry identity and the live conservation baseline
+
+This is the C0 phase of ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.
+It introduces NO production semantic change and NO seventh PolyC
+parser authority.
+
+ENTRY IDENTITY (F1)
+-------------------
+  BRANCH=main
+  ENTRY_HEAD=005790c53bb4e4798d58809940548552f0993d47
+  ENTRY_TREE=5734052f648d486ca9cc822601079fbafdbdd5e1
+  HEAD_MATCHES_EXPECTED=YES
+  TREE_MATCHES_EXPECTED=YES
+  TRACKED_STATE_CLEAN=YES
+  GIT_REPLACE_REFS=0
+
+The entry state is EXACTLY the ACT's declared ENTRY_HEAD and
+ENTRY_TREE.  The predecessor
+ACT-POLYC-SELFHOST-PARSER-SLICE06-AC11-CORRECTION01 is CLOSED at
+that very commit with verdict PASS_CORRECTED, and its four-commit
+range is verified (C0 -> RED, C1 -> EVIDENCE, C3 -> EVIDENCE,
+C4 -> CLOSE).  The RECON04 and SLICE06 CLOSE commits are verified
+ancestors.  156 closed predecessor artifact paths are frozen by
+SHA-256 in c0/predecessor-freeze.tsv.
+
+THE SIX POLYC PARSER AUTHORITIES ARE LIVE
+------------------------------------------
+All six are verified against the LIVE PRODUCTION OBJECTS, not
+against source comments:
+
+  BootstrapCalcPadding                 MACRO=YES  U=YES  T=NO
+  BootstrapValidPostControlFlowToken   MACRO=YES  U=YES  T=NO
+  BootstrapOperatorPrecedence           MACRO=YES  U=YES  T=NO
+  BootstrapAstBinOpFromToken            MACRO=YES  U=YES  T=NO
+  BootstrapAstUnaryOpFromToken          MACRO=YES  U=YES  T=NO
+  BootstrapSwitchArmTerminates          MACRO=YES  U=YES  T=NO
+
+  AUTHORITIES_EXPECTED=6
+  AUTHORITIES_VERIFIED=6
+
+The strong form is used: each production object carries the PolyC
+symbol as an UNDEFINED reference and does NOT define it, so the
+legacy C decision body is compiled out.
+
+THE NEW VERIFIER IS POLYC
+-------------------------
+tools/quality/parser-surface-recon05-verify.HC is authored in PolyC
+and is compiled by the real PolyC compiler (F-POLYC-TOOLS).  It has
+five modes: CENSUS, IDENTITY, DEPENDS, AUTHORITY, RANGE.
+
+It is CROSS-VALIDATED against the CLOSED predecessor verifier
+tools/quality/parser-surface-recon04-verify.HC, which is used
+READ-ONLY and is NOT modified: both tools produce BYTE-IDENTICAL
+census output over the same live sources.
+
+  CENSUS_FUNCTIONS=270
+
+The census delta from the historical 268 is EXACTLY TWO functions,
+both added by SLICE06 and NEITHER a remaining legacy C authority:
+parseSwitchArmTerminates (the C delegation adapter) and
+ParserLegacySwitchArmTerminatesOracle (the G0 stage0 oracle).
+
+FROZEN CONTRACTS
+----------------
+The 50-ID acceptance contract and the 19-ID negative-control
+contract are FROZEN IN C0, BEFORE any C1/C2/C3 measurement.  Their
+observed-outcome columns are deliberately ABSENT: no observed
+outcome may be backfilled into a pre-existing contract.
+
+BASELINE, MEASURED HONESTLY
+---------------------------
+  make gate-fast               PASS
+  make gate-push               PASS
+  parser host arch             376/376, assertion-sequence MD5
+                               b6f117eb1386ca80f81bc06226e2a741
+                               (IDENTICAL to the historical value)
+  lexer07 direct differential  PASS
+  lexer08 direct differential  45/45 PASS
+  lexer09 direct differential  23/23 PASS
+  cross-target                 67 attempted / 67 failed-to-open-file
+                               / 0 passed -- the HISTORICAL ENVIRONMENT
+                               condition, preserved honestly and NOT
+                               relabelled PASS
+  F-NO-PYTHON                  STATUS=FAIL with exactly the 12
+                               PRE-EXISTING violations (reported, not
+                               waived)
+  append-only                  PASS 11/11
+  factory-v2 range check       PASS (4 commits, PASS_CORRECTED)
+  closure-status               PASS (38 pairs)
+
+F-POLYC-TOOLS: the authoritative checker is still NOT LANDED.  It is
+reported UNAVAILABLE and is NOT reported PASS.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

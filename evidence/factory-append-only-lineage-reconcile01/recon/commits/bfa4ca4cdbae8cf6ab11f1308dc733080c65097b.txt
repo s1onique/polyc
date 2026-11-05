@@ -1,0 +1,46 @@
+tree 4fa43809c647f0818117252c54500100ff01697b
+parent 0d45e36850b77a06c370289967bf3c832ae49ab0
+author Cline Agent <cline@polyc.local> 1793117946 +0300
+committer Cline Agent <cline@polyc.local> 1793117946 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04: repair the differential link line (duplicate PolyC subjects)
+
+The SLICE04 differential's link line listed the three existing PolyC
+subject objects TWICE: once explicitly and once through the transitive
+object set that the C-side fix for the errno shim had added.  The
+link therefore failed with
+
+  ld: 3 duplicate symbols
+    _BootstrapCalcPadding
+    _BootstrapOperatorPrecedence
+    _BootstrapValidPostControlFlowToken
+
+The defect was MASKED during the C2 and C3 phases by a warm build
+state: the objects were linked in an order in which the linker
+resolved the duplicate references.  It became visible only after the
+libtos archive was rebuilt and the link resolution order changed.
+
+WHAT IT AFFECTS
+===============
+
+  * NO production artifact.  The production compiler is built by the
+    CMake graph (src/CMakeLists.txt), which does not use this link
+    line.
+  * ONLY the qualification tool's link.  The C3 evidence was measured
+    with a WORKING link, and the corrected link reproduces the same
+    result exactly: SLICE04_DIFF_PASS=322, SLICE04_DIFF_FAIL=0,
+    SLICE04_DIFF_STATUS=PASS.  The eight negative controls likewise
+    still fire: SLICE04_NEGATIVE_CONTROLS=8/8 PASS.
+
+THE FIX
+SECTION_UNDERLINE
+
+The three subject objects are listed ONCE, through the transitive
+object set that already carries them.  This is the minimal change that
+removes the duplicate without altering the link's semantics.
+
+This is a FORWARD, APPEND-ONLY repair.  The history is NOT rewritten:
+no amend, no reset, no rebase, no force-push.
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: IMPL

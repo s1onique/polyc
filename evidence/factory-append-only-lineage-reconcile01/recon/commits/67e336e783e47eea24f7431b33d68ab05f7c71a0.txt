@@ -1,0 +1,124 @@
+tree b0f040796ccbf1490da099ede2f06e34ff6831ac
+parent 0c7a014fe52909da4f862233b28ebc20fb3ad2f8
+author Cline Agent <cline@polyc.local> 1793196418 +0300
+committer Cline Agent <cline@polyc.local> 1793196418 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C4: CLOSE -- the compound-block statement routing is the next parser migration
+
+This is the CLOSE of ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.  It is
+a RECONNAISSANCE and successor-contract ACT.  It introduces NO seventh
+PolyC parser authority and NO production semantic change.
+
+THE SINGLE SELECTED CANDIDATE
+==============================
+  SELECTED_CANDIDATE_ID=SUB-003
+  SELECTED_CLASS=STRUCTURAL_BOUNDARY
+  SELECTED_SOURCE=src/parser.c:2049..2049
+  SELECTED_SOURCE_SHA256=378a39d71eed7aaf673bde3857cc08df6f9c95c776723832e6e460553be361e8
+  SELECTED_ABI=I64 BootstrapCompoundBlockAppendsStatement(I64 stmt_kind, I64 declvar_kind) -> I64
+  SELECTED_LEGACY_C_ORACLE=OBJECT_LEVEL
+  SELECTED_CAUSAL_FEASIBILITY=EXECUTED
+  SELECTED_SUCCESSOR_CONTRACT=FROZEN
+
+THE DECISION
+============
+Given a parsed statement, decide whether it is APPENDED to the
+compound block's statement list or SKIPPED because it is a
+global-variable declaration.  It reads exactly TWO bounded AstKind
+values (stmt->kind and stmt->declvar->kind), both copied out of the
+host AST node, and produces ONE bounded boolean.  The C side keeps the
+AST graph, the allocation, the diagnostics, the recovery point, the
+token stream, the scope tables and the list structures.
+
+WHY NOT SUB-002, THE RANK-1 CANDIDATE
+=====================================
+SUB-002's live condition tests the SAME FIVE AstKind values as the
+already-migrated SUB-001 decision, and AST_DEFAULT is unreachable at
+that position: src/parser.c:1669 raises "Duplicate default case", so
+the inner parseDefaultStatement never returns.
+
+THIS WAS PROVED BY EXECUTION.  A mutant that ADDS AST_DEFAULT to the
+SUB-002 condition was built into the REAL compiler in a disposable
+detached worktree and the full 90-file production suite was run with
+it:
+
+  PRISTINE  376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+  MUTANT    376/376  md5=b6f117eb1386ca80f81bc06226e2a741
+
+The assertion sequences are BYTE-IDENTICAL.  The mutation has ZERO
+observable effect, so SUB-002 is DUPLICATED CODE rather than a
+distinct decision, and transferring it would create a SECOND PolyC
+authority for a decision the first authority already owns.  It was
+removed from the feasible subset by that machine-verifiable reason and
+the selection was re-run.
+
+SUB-003 WAS THEN PROVEN CAUSALLY LOAD-BEARING.  A mutant that removes
+its decision makes the REAL compiler fail to compile a program the
+pristine compiler accepts ("ERROR: Mapping exists for 1 -> %l2 i64
+local"), and drops the 90-file suite from 376 to 371 assertions with
+the MD5 changing to dc2f36f1bd63bca22fc7ea57359a770d.
+
+THE EVIDENCE
+============
+  LIVE_FUNCTIONS=270 (cross-validated byte-identically against the
+  CLOSED RECON04 verifier, which was used read-only and not modified)
+  RECON04_FUNCTIONS_ADDED=2 REMOVED=0 CHANGED=22 UNCHANGED=246
+  UNCLASSIFIED_FUNCTIONS=0 UNCLASSIFIED_SUBSLICES=0
+  UNCLASSIFIED_DEPENDENCIES=0
+  ELIGIBLE_CANDIDATES=15 (3 structural, 12 scalar)
+  ELIGIBLE_STRUCTURAL_CANDIDATES=3
+  ELIGIBLE_SCALAR_CANDIDATES=12
+  NEGATIVE_CONTROLS_TOTAL=19 NEGATIVE_CONTROLS_INTENDED_PASS=19
+  NEGATIVE_CONTROLS_UNPROVEN=0
+  MANDATORY_AC_TOTAL=50 MANDATORY_AC_PASS=49
+  MANDATORY_AC_DEFERRED_TO_CLOSE=1 MANDATORY_AC_FAIL=0
+  MANDATORY_AC_UNPROVEN=0
+
+The canonical 13-clause checker and the canonical R0..R6 ranker were
+executed UNMODIFIED, and the C3 independent PolyC recomputer
+reproduced every eligibility clause and the COMPLETE ordered rank
+list with zero mismatches.  Three verifier gaps were found and closed
+during the reconnaissance rather than papered over: a per-row checker
+cannot see a DELETED row, the canonical checker has no UNKNOWN-ID
+concept, and a dependence search over the candidate's own bytes cannot
+see a TRANSITIVE dependence.
+
+THE CONSERVATION, MEASURED
+==========================
+  PARSER HOST ARCH   376/376, assertion-sequence MD5
+                     b6f117eb1386ca80f81bc06226e2a741   (IDENTICAL to entry)
+  LEXER07/08/09      PASS / 45/45 / 23/23
+  LEXER07 BROAD      failure-identity MD5
+                     7ee761440de83552e751e3c3976c1683   (IDENTICAL to entry)
+  CROSS-TARGET       67 attempted / 67 failed-to-open-file / 0 passed
+                     -- the HISTORICAL environment condition, reported
+                     honestly and NOT silently waived
+  GATE-FAST          PASS
+  GATE-PUSH          PASS
+  APPEND-ONLY        11/11 PASS
+  FACTORY-V2 RANGE   PASS
+  F14                PASS
+  CLOSURE-STATUS     PASS (39 pairs)
+  F-NO-PYTHON        FAIL with EXACTLY the 12 PRE-EXISTING violations
+  F-POLYC-TOOLS      UNAVAILABLE (the checker is STILL NOT LANDED)
+
+A NOTE ON THE FIRST C3 GATE-PUSH ATTEMPT: it FAILED in the JIT #link
+test with an undefined _main.  The cause was a CONCURRENCY ARTIFACT:
+that attempt ran concurrently with the unit-test and both used the
+shared /tmp/holyc-asm.s temporary.  Re-run ALONE, gate-push PASSES.
+The observation is recorded in c3/gate-push.txt rather than hidden.
+
+THE SINGLE-VALUED SUCCESSOR AUTHORIZATION
+=========================================
+  PROPOSED_NEXT_ACT=ACT-POLYC-SELFHOST-PARSER-SLICE07
+  PROPOSED_NEXT_ACT_TARGET=SUB-003
+  PROPOSED_NEXT_ACT_STATUS=INACTIVE_UNTIL_TERMINALITY
+
+This authorization is CONDITIONAL.  It becomes active only after this
+CLOSE and the external post-CLOSE terminality check have both passed.
+If that external check fails, the proposed successor remains INACTIVE
+and is NOT authorized to execute.  This ACT does not create that ACT
+and does not implement it.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

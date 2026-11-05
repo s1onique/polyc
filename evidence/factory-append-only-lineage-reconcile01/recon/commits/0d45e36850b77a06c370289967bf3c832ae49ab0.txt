@@ -1,0 +1,72 @@
+tree a7c6d496ea744a57ae03142da0c0c652847eea8c
+parent be2f265a0aaa5e5b777301abab450cdc82ac2039
+author Cline Agent <cline@polyc.local> 1793117444 +0300
+committer Cline Agent <cline@polyc.local> 1793117444 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C4: CLOSE -- the AST binary-operator classification is PolyC-owned
+
+The binary-operator classification of the PolyC parser is now owned by
+the qualified PolyC component BootstrapAstBinOpFromToken, and the
+legacy C decision has been retired from the production path.
+
+THE SELECTION
+  CAND-019 astBinOpFromToken was selected MECHANICALLY: both
+  candidates passed all thirteen eligibility clauses under the
+  existing, closed RECON03 checker, both carried the IDENTICAL
+  RECON03 R0..R5 vector (0, 2, 3, 2, 0, 0), and the existing, closed
+  RECON03 ranker decided the winner by the R6 source-order dimension
+  alone.  No score was changed and neither tool was rewritten.
+  Controls: 7/7 plus the closed ranker's own 4/4.
+
+THE PRODUCTION DELEGATION
+  src/ast.c's astBinOpFromToken now delegates under the dedicated
+  selector HCC_USE_SELFHOST_PARSER_AST_BINOP, keeping its exact C ABI.
+  The production object's disassembly is now call / test / conditionally
+  store / return, with NO jump table and NO enum immediate: the C
+  decision left the production path.  The unselected
+  astUnaryOpFromToken is byte-identical and still the legacy C
+  authority.
+
+THE DELEGATION IS CAUSALLY LOAD-BEARING
+  p0_OUTPUT=13 (pristine 6+7), p1_OUTPUT=-1 (mutated 6-7),
+  p2_OUTPUT=13 (restored 6+7).  The mutant BUILD SUCCEEDED and the
+  restored component is a REBUILD with the SAME sha as the pristine
+  one.  The tracked subject was never mutated.
+
+THE PROVENANCE IS SINGLE-VALUED AND EXECUTION-LINKED
+  Because G1/G2/G3 produce byte-identical objects, a finished object
+  could be substituted for another without changing the output bytes.
+  Each generation therefore also produced a witness bound to an actual
+  EXECUTION, and all five provenance negative controls are rejected
+  with a concrete reason.  The G0 producer is the host C compiler,
+  resolved and hashed from the actual invoked command.
+
+THE CONSERVATION
+  The parser suite was run against a compiler built from the ENTRY
+  tree and against this tree: 87 passed / 3 failed on BOTH, with
+  byte-identical failure identities.  The LEXER02/07/08/09
+  differentials report 89/45/23 rows with 0 failures, and the LEXER07
+  broad corpus is identical to the canonical baseline registry
+  (REGRESSION=0, DIVERGED=0) with its historical STATUS=FAIL preserved.
+  The three previous PolyC parser authorities are conserved with zero
+  source-hash changes.
+
+THE GATES
+  gate-fast PASS, gate-push PASS, factory-v2 PASS (53/0), append-only
+  PASS (11/0), F14 PASS, patch hygiene PASS, closure-status PASS
+  (34/0).  The F-NO-PYTHON checker's 12 findings are pre-existing and
+  none is in this ACT's diff.
+
+THE ACCEPTANCE LEDGER
+  50 rows, produced by an EXACT ACCEPTANCE-ID JOIN against the frozen
+  C1 contract: AC_PASS=50, AC_FAIL=0, AC_UNPROVEN=0.  AC50's
+  post-CLOSE satisfaction is established by the external terminality
+  checks of ACT section 17.
+
+THE REMAINING UNMIGRATED AST MAPPING
+  astUnaryOpFromToken (CAND-020) remains LEGACY_C and is the natural
+  candidate for a later ACT-POLYC-SELFHOST-PARSER-SLICE05.
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: CLOSE
+ACT-Verdict: PASS

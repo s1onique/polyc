@@ -1,0 +1,108 @@
+tree 10283a545dc2cfeaf3764bd1cc8d470a5a798771
+parent 66649f9afd6fd0dbd8e5e8f6558eb198075eea09
+author Cline Agent <cline@polyc.local> 1793196296 +0300
+committer Cline Agent <cline@polyc.local> 1793196296 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05 C3: the independent witness, the conservation and the Factory qualification
+
+This is the C3 phase of ACT-POLYC-SELFHOST-PARSER-SURFACE-RECON05.
+It introduces NO production semantic change and NO seventh PolyC
+parser authority.
+
+THE CENSUS, RE-RUN ON THE SAME TREE
+------------------------------------
+  CENSUS_FUNCTIONS=270
+  The C1 census and the C3 recompute are BYTE-IDENTICAL (270 rows).
+
+THE RECON04 RECONCILIATION
+---------------------------
+  ADDED=2 REMOVED=0 CHANGED=22 UNCHANGED=246
+  Every difference is explained individually in
+  c1/recon04-function-difference.tsv.
+
+THE INDEPENDENT RECOMPUTATION
+------------------------------
+  ELIGIBILITY_JOINED=24   ELIGIBILITY_MISMATCH=0
+  RANK_JOINED=15          RANK_ORDER_MISMATCH=0
+  RANK_COMPLETE_ORDER_MISMATCH=0
+  RANK_MISSING=0          RANK_EXTRA=0
+  INDEPENDENT_SELECTED=SUB-002
+
+The independent recomputer reads the RAW C1 facts and the dimension
+facts.  It does NOT read the C2 eligible decision, the C2 ranked list
+or the C2 winner as an oracle.  The COMPLETE 15-candidate order is
+reproduced and joined BY ID.
+
+THE CONSERVATION, MEASURED
+---------------------------
+  PARSER HOST ARCH   376/376, assertion-sequence MD5
+                     b6f117eb1386ca80f81bc06226e2a741  (IDENTICAL to entry)
+  LEXER07/08/09      PASS / 45/45 / 23/23
+  LEXER07 BROAD      TOTAL=181, FAIL_S0=15, REGRESSION=0, DIVERGED=0,
+                     failure-identity MD5 7ee761440de83552e751e3c3976c1683
+                     (IDENTICAL to entry and to the historical value)
+  CROSS-TARGET       67 attempted / 67 failed-to-open-file / 0 passed
+                     -- the HISTORICAL environment condition, reported
+                     honestly and NOT silently waived
+  GATE-FAST          PASS
+  GATE-PUSH          PASS
+  APPEND-ONLY        11/11 PASS
+  FACTORY-V2 RANGE   PASS
+  CLOSURE-STATUS     PASS (38 pairs)
+
+A NOTE ON THE FIRST C3 GATE-PUSH ATTEMPT
+-----------------------------------------
+The first C3 gate-push attempt FAILED in the JIT #link test with an
+undefined _main.  The cause was a CONCURRENCY ARTIFACT: that attempt
+ran CONCURRENTLY with the unit-test, and both used the shared
+/tmp/holyc-asm.s temporary, so one of them deleted the file the other
+was about to link.  Re-run ALONE, gate-push PASSES with
+CHECK=aot STATUS=PASS, CHECK=jit STATUS=PASS and VERDICT=PASS.  The
+observation is recorded in c3/gate-push.txt rather than hidden.
+
+THE TOOL POLICIES, REPORTED HONESTLY
+-------------------------------------
+  F-NO-PYTHON    STATUS=FAIL with EXACTLY the 12 PRE-EXISTING
+                 violations.  NEW violations = 0.
+  F-POLYC-TOOLS  UNAVAILABLE.  The authoritative checker is STILL NOT
+                 LANDED.  It is NEVER reported PASS.
+
+THE PREDECESSOR EVIDENCE IS UNTOUCHED
+--------------------------------------
+  156 closed predecessor artifact paths RE-HASHED: ZERO changed.
+  The canonical checker and the canonical ranker are UNMODIFIED.
+  NO file under src/** or tools/bootstrap/** was changed.
+
+THE CAUSAL EXPERIMENTS, INDEPENDENTLY REPLAYED
+-----------------------------------------------
+  SUB-003 (SELECTED): the mutant compiler FAILS TO COMPILE a program
+    the pristine compiler accepts ("ERROR: Mapping exists for 1 -> %l2
+    i64 local"), and the 90-file suite drops 376 -> 371 with the MD5
+    changing to dc2f36f1bd63bca22fc7ea57359a770d.  The two affected
+    tests are 33_static.HC and 34_global_array.HC.
+  SUB-002 (DISQUALIFIED): the mutant that ADDS AST_DEFAULT produces a
+    BYTE-IDENTICAL 376/376 assertion sequence.  ZERO observable
+    effect.
+
+  CAUSAL_RESTORATION_BYTE_IDENTICAL=YES
+  TRACKED_MAIN_WORKTREE_MUTATED=NO
+  MUTATION_MERGED_OR_COMMITTED=NO
+
+THE GENERATIONS, HONESTLY
+-------------------------
+  G0, G1, G2 and G3 are all AVAILABLE and PAIRWISE DISTINCT, with
+  their digests recorded.  A four-generation PolyC candidate semantic
+  differential was NOT executed, because the candidate component does
+  not exist yet.  That is the successor's job.
+
+THE ACCEPTANCE LEDGER
+----------------------
+  AC_TOTAL=50  AC_PASS=49  AC_DEFERRED_TO_CLOSE=1  AC_FAIL=0
+  AC_UNPROVEN=0
+
+AC50 is DEFERRED_TO_CLOSE: the exactly-one terminal C4 CLOSE has not
+been executed yet.  It is discharged by the external post-CLOSE
+verification.
+
+PRODUCTION_SEMANTIC_DELTA=0
+SUCCESSOR_IMPLEMENTATION_DELTA=0

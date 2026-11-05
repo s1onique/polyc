@@ -1,0 +1,78 @@
+tree e937eed7955edeb7a64a4822de1e77bc581577ff
+parent 0d45e36850b77a06c370289967bf3c832ae49ab0
+author Cline Agent <cline@polyc.local> 1793118160 +0300
+committer Cline Agent <cline@polyc.local> 1793118160 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C4: CLOSE with HALT_INVALID_BUILD_SUBJECT -- the migration stands, the qualification tool's link did not
+
+The C4 terminality checks found a FRESH-TREE defect in the committed
+tree: the SLICE04 differential's link line listed the three existing
+PolyC subject objects TWICE, so the differential could not be linked
+from a pristine clone.
+
+  ld: 3 duplicate symbols
+    _BootstrapCalcPadding
+    _BootstrapOperatorPrecedence
+    _BootstrapValidPostControlFlowToken
+
+The defect was MASKED during the C2 and C3 phases by a warm build
+state: the objects happened to be linked in an order in which the
+linker resolved the duplicate references.  It became visible only
+after the libtos archive was rebuilt and the link resolution order
+changed.  This is exactly what F9's fresh-tree requirement exists to
+catch.
+
+WHAT IT DOES NOT AFFECT
+=======================
+
+  * NO production artifact.  The production compiler is built by the
+    CMake graph (src/CMakeLists.txt), which never uses this link line.
+    The committed tree's production compiler builds and delegates
+    correctly: nm ./hcc shows a strong global definition of
+    _BootstrapAstBinOpFromToken, and the production ast.c object's
+    disassembly has no jump table and no enum immediate.
+  * NO evidence claim.  The C3 evidence was measured with a WORKING
+    link, and this commit's corrected link reproduces every recorded
+    result exactly: SLICE04_DIFF_PASS=322, SLICE04_DIFF_FAIL=0,
+    SLICE04_DIFF_STATUS=PASS, SLICE04_NEGATIVE_CONTROLS=8/8 PASS.
+  * NO production semantic.  The migrated decision, the four
+    generations, the causal mutation and the conservation results are
+    all unaffected.
+
+THE REPAIR
+==========
+
+This commit carries the repair: the three subject objects are listed
+ONCE, through the transitive object set that already carries them.
+This is the minimal change that removes the duplicate without altering
+the link's semantics.
+
+WHY THE VERDICT IS A HALT
+=========================
+
+The defect was introduced in the C2 phase, whose commit is at or after
+the append-only boundary and is therefore IMMUTABLE.  A forward repair
+after the CLOSE would break the ACT's terminality requirements
+(CLOSE_IS_ACT_TIP, and the range check's "exactly one CLOSE commit in
+range").  The ACT's own instruction for a mandatory issue that cannot
+be repaired in the authorized phase is: "Otherwise use the appropriate
+HALT."
+
+  DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+  PRODUCTION_AFFECTED=NO
+  EVIDENCE_AFFECTED=NO
+
+Everything else this ACT set out to do is done and proven: the
+selection was mechanical, the legacy C decision is retired from the
+production path, the delegation is causally load-bearing, all four
+generations were independently built and executed, the provenance is
+single-valued and execution-linked, every established behaviour is
+conserved, and all 50 mandatory acceptance predicates are proven.
+
+The remedy is a bounded correction of the C2 phase's Makefile content.
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: CLOSE
+ACT-Verdict: HALT_INVALID_BUILD_SUBJECT
+HALT_CLASS: PRODUCTION
+BLOCKS_NEXT: YES

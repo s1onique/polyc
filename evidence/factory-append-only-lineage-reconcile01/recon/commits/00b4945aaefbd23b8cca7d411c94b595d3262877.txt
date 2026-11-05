@@ -1,0 +1,38 @@
+tree 4fa43809c647f0818117252c54500100ff01697b
+parent b6b5dfe15fb9fc71b08a245ec0e25ba254a1bad2
+author Cline Agent <cline@polyc.local> 1793117973 +0300
+committer Cline Agent <cline@polyc.local> 1793117973 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C4: re-close after the differential link repair
+
+The immediately preceding commit repaired the SLICE04 differential's
+link line, which listed the three existing PolyC subject objects twice
+and therefore failed to link with "ld: 3 duplicate symbols".
+
+That defect was masked during the C2 and C3 phases by a warm build
+state and became visible only when the libtos archive was rebuilt and
+the link resolution order changed.  It affected NO production artifact
+(the production compiler is built by the CMake graph) and NO evidence
+claim: the corrected link reproduces the recorded result exactly, with
+SLICE04_DIFF_PASS=322, SLICE04_DIFF_FAIL=0, SLICE04_DIFF_STATUS=PASS
+and SLICE04_NEGATIVE_CONTROLS=8/8 PASS.
+
+This commit re-closes the ACT's range so that the CLOSE is again the
+range tip, as ACT section 17 requires.  The history is NOT rewritten:
+the earlier CLOSE and the repair are both immutable evidence, and this
+is a forward, append-only commit.
+
+The ACT's five phase commits remain:
+
+  C0 RED
+  C1 EVIDENCE
+  C2 IMPL
+  C3 EVIDENCE
+  C4 CLOSE
+
+and this commit adds the repair plus this re-close, both forward and
+append-only.
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: CLOSE
+ACT-Verdict: PASS

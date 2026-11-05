@@ -1,0 +1,88 @@
+tree f1e74b49315cdd00218dec0c94f3fb6983e1272a
+parent 6b87036c428c0ea0a791555274ff4a2f170c2b80
+author Cline Agent <cline@polyc.local> 1793118378 +0300
+committer Cline Agent <cline@polyc.local> 1793118378 +0300
+
+ACT-POLYC-SELFHOST-PARSER-SLICE04 C2: the PolyC AST-operator component and the production delegation
+
+Migrate the selected candidate's decision into production-authoritative
+PolyC, and prove it against the REAL legacy C function.
+
+THE POLYC COMPONENT
+  tools/bootstrap/selfhost-parser-slice04.HC implements ONLY the
+  selected mapping, as a pure scalar function:
+
+    I64 BootstrapAstBinOpFromToken(I64 token_value) -> I64
+
+  19 mappings transcribed from the legacy switch, -1 as the failure
+  sentinel.  No host AST pointers, no allocation, no global state, no
+  callbacks, no recovery dependency.  It is compiled by the STAGE-0
+  compiler, so the bootstrap chain stays acyclic.
+
+THE PRODUCTION DELEGATION
+  src/ast.c's astBinOpFromToken now delegates to the component under
+  the dedicated selector HCC_USE_SELFHOST_PARSER_AST_BINOP, keeping its
+  exact C ABI: boolean success and conditional output storage.  The
+  adapter owns argument projection, success conversion and output
+  storage; PolyC owns the DECISION.
+
+  The production object's DISASSEMBLY is the proof that the C decision
+  left the production path: the function is now call / test /
+  conditionally store / return, with NO jump table and NO enum
+  immediates.  The unselected astUnaryOpFromToken still carries its C
+  switch and is byte-identical to the entry version.
+
+THE BUILD FAILS CLOSED
+  src/cmake/VerifyAstTokenMapObject.cmake resolves the symbol spelling
+  from the TARGET object format, rejects an undefined-only, local-only,
+  weak-only, empty or missing object, and requires exactly one strong
+  global text definition.  All seven controls were EXECUTED and each
+  was rejected.  The verification is a custom target, so no stale stamp
+  can bypass the current object check.
+
+THE REAL DIFFERENTIAL
+  The oracle is src/ast.c compiled WITHOUT the delegation flag.  Its
+  object is BYTE-IDENTICAL to the entry production ast.c object
+  (sha 144c9836...), it does NOT reference the PolyC symbol, and the
+  driver contains no mapping table.
+
+    SLICE04_DIFF_TOTAL=322  PASS=322  FAIL=0
+    PARSE_ERRORS=0  ORACLE_VS_EXPECTED_MISMATCH=0
+    OUTPUT_PRESERVATION_FAILURES=0  ENUM_MAPPING_MISMATCHES=0
+
+  The eight negative controls each MUTATE a copy of the fixture and
+  require the real verifier to REJECT it: 8/8 PASS.
+
+THE FIXTURE IS DERIVED, NOT CHOSEN
+  322 rows across 9 partitions.  The signed-I64 extremes are written
+  with an exact 64-bit conversion and the differential's integer
+  parser is exact over the whole I64 domain, so INT64_MIN and
+  INT64_MAX are exercised rather than wrapped.
+
+A FRESH-TREE DEFECT IN THE QUALIFICATION TOOL'S LINK, REPAIRED HERE
+===================================================================
+
+The first version of the differential's link line listed the three
+existing PolyC subject objects TWICE, so the link failed with "ld: 3
+duplicate symbols".  The defect did NOT fail the C2 measurement
+because a warm build state happened to link them in an order the
+linker could resolve; it is reproducible from a PRISTINE CLONE.
+
+The three subject objects are now listed ONCE.  The repair is in THIS
+phase, which is the phase that introduced the defect and the phase
+ACT section 16 authorizes for it.  The full detail, including the
+pristine-clone reproduction, is in c2/build-subject-defect.txt.
+
+  DEFECT_SCOPE=QUALIFICATION_TOOL_LINK_ONLY
+  PRODUCTION_AFFECTED=NO
+  EVIDENCE_AFFECTED=NO
+
+  DIRECT_DIFFERENTIAL=PASS
+  FIXTURE_INTEGRITY=PASS
+  FIXTURE_NEGATIVE_CONTROLS=PASS
+  G0_REAL_C_ORACLE=YES
+  PRODUCTION_DELEGATION=LOAD_BEARING
+  EXISTING_PARSER_POLYC_COMPONENTS=CONSERVED
+
+ACT: ACT-POLYC-SELFHOST-PARSER-SLICE04
+ACT-Phase: IMPL
