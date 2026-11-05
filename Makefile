@@ -2683,36 +2683,38 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  exit 1; \
 	fi; \
 	for spec in \
-	  'ZERO_BYTE_ARTIFACT:the PolyC artifact is NONEMPTY' \
-	  'MISSING_ARTIFACT:the PolyC artifact is PRESENT' \
-	  'IDENTICAL_GARBAGE:the PolyC artifact has the EXPECTED class' \
-	  'GARBAGE_BOTH_SIDES:the PolyC artifact has the EXPECTED class' \
-	  'MISSING_SYMBOL:CAPTURE_DIGEST_MISMATCH' \
-	  'MISSING_STDERR:the stderr transcripts are PRESENT' \
-	  'EXTRA_STDERR:the stderr transcripts are EQUAL' \
-	  'MISSING_EXECUTABLE:the PolyC exit status is a VALID record' \
-	  'FORGED_EXIT_TRAILING_TEXT:EXIT_STATUS_TRAILING_TEXT' \
-	  'OVERFLOWING_EXIT:EXIT_STATUS_INTEGER_OVERFLOW' \
-	  'NEGATIVE_EXIT:EXIT_STATUS_NEGATIVE' \
-	  'STALE_BOTH_SIDES:CAPTURE_INVOCATION_NOT_REGISTERED' \
-	  'STALE_STDOUT_BOTH_SIDES:CAPTURE_DIGEST_MISMATCH' \
-	  'STALE_STDOUT_ON_ONLY:CAPTURE_DIGEST_MISMATCH' \
-	  'MISSING_CAPTURE:CAPTURE_RECORD_MISSING' \
-	  'ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH' \
-	  'OUT_OF_BOUNDS_NSYMS:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
-	  'UNDERSIZED_SYMBOL_TABLE:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
-	  'OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS' \
-	  'FORGED_EVENT_SOURCE:CAPTURE_EVENT_ID_MISMATCH' \
-	  'FORGED_EVENT_ARGV:CAPTURE_EVENT_ID_MISMATCH' \
-	  'FORGED_EVENT_ENV:CAPTURE_EVENT_ID_MISMATCH' \
-	  'FORGED_EVENT_COUNTER:CAPTURE_EVENT_ID_MISMATCH' \
-	  'FORGED_EVENT_PRODUCER:CAPTURE_PRODUCER_IDENTITY_MISMATCH' \
-	  'DUPLICATE_LEDGER_ENTRY:CAPTURE_DUPLICATE_EVENT_ID' \
-	  'MISSING_ENV_APPLIED:CAPTURE_FIELD_MISSING' \
-	  'MISSING_EVENT_COUNTER:CAPTURE_FIELD_MISSING' \
-	  'MISSING_PRODUCER_ARCH:CAPTURE_FIELD_MISSING'; do \
-	  mutation=$${spec%%:*}; \
-	  reason=$${spec#*:}; \
+	  'N01:ZERO_BYTE_ARTIFACT:the PolyC artifact is NONEMPTY' \
+	  'N02:MISSING_ARTIFACT:the PolyC artifact is PRESENT' \
+	  'N03:IDENTICAL_GARBAGE:the PolyC artifact has the EXPECTED class' \
+	  'N04:GARBAGE_BOTH_SIDES:the PolyC artifact has the EXPECTED class' \
+	  'N05:MISSING_SYMBOL:CAPTURE_DIGEST_MISMATCH' \
+	  'N06:MISSING_STDERR:the stderr transcripts are PRESENT' \
+	  'N07:EXTRA_STDERR:the stderr transcripts are EQUAL' \
+	  'N08:MISSING_EXECUTABLE:the PolyC exit status is a VALID record' \
+	  'N09:FORGED_EXIT_TRAILING_TEXT:EXIT_STATUS_TRAILING_TEXT' \
+	  'N10:OVERFLOWING_EXIT:EXIT_STATUS_INTEGER_OVERFLOW' \
+	  'N11:NEGATIVE_EXIT:EXIT_STATUS_NEGATIVE' \
+	  'N12:STALE_BOTH_SIDES:CAPTURE_INVOCATION_NOT_REGISTERED' \
+	  'N13:STALE_STDOUT_BOTH_SIDES:CAPTURE_DIGEST_MISMATCH' \
+	  'N14:STALE_STDOUT_ON_ONLY:CAPTURE_DIGEST_MISMATCH' \
+	  'N15:MISSING_CAPTURE:CAPTURE_RECORD_MISSING' \
+	  'N16:ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH' \
+	  'N17:OUT_OF_BOUNDS_NSYMS:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
+	  'N18:UNDERSIZED_SYMBOL_TABLE:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
+	  'N19:OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS' \
+	  'N20:FORGED_EVENT_SOURCE:CAPTURE_EVENT_ID_MISMATCH' \
+	  'N21:FORGED_EVENT_ARGV:CAPTURE_EVENT_ID_MISMATCH' \
+	  'N22:FORGED_EVENT_ENV:CAPTURE_EVENT_ID_MISMATCH' \
+	  'N23:FORGED_EVENT_COUNTER:CAPTURE_EVENT_ID_MISMATCH' \
+	  'N24:FORGED_EVENT_PRODUCER:CAPTURE_PRODUCER_IDENTITY_MISMATCH' \
+	  'N25:DUPLICATE_LEDGER_ENTRY:CAPTURE_DUPLICATE_EVENT_ID' \
+	  'N26:MISSING_ENV_APPLIED:CAPTURE_FIELD_MISSING' \
+	  'N27:MISSING_EVENT_COUNTER:CAPTURE_FIELD_MISSING' \
+	  'N28:MISSING_PRODUCER_ARCH:CAPTURE_FIELD_MISSING'; do \
+	  probe_id=$${spec%%:*}; \
+	  rest=$${spec#*:}; \
+	  mutation=$${rest%%:*}; \
+	  reason=$${rest#*:}; \
 	  rm -rf $$W/$$mutation; \
 	  mkdir -p $$W/$$mutation; \
 	  cp $$W/good/artifact.bin $$W/$$mutation/artifact.bin; \
@@ -2729,7 +2731,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  cp $$W/good/run-id.txt $$W/$$mutation/run-id.txt; \
 	  cp $$W/good/producer-sha.txt $$W/$$mutation/producer-sha.txt; \
 	  cp $$W/good/on-producer-sha.txt $$W/$$mutation/on-producer-sha.txt; \
-	  $(DRIVER_ROUTE03_ADVERSE_BIN) $$mutation $$mutation $$W/$$mutation \
+	  $(DRIVER_ROUTE03_ADVERSE_BIN) $$probe_id $$mutation $$W/$$mutation \
 	    $$W/$$mutation/artifact.bin \
 	    $$W/$$mutation/oracle-artifact.bin \
 	    $$W/good/garbage.bin \
@@ -2753,7 +2755,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $$W/good/stale-on.bin \
 	    $$W/$$mutation/ledger.txt; \
 	  set +e; \
-	  $(DRIVER_ROUTE03_COMPARE_BIN) $$mutation \
+	  $(DRIVER_ROUTE03_COMPARE_BIN) $$probe_id \
 	    $$W/$$mutation/oracle-artifact.bin \
 	    $$W/$$mutation/artifact.bin \
 	    $$W/$$mutation/oracle-stdout.txt \
@@ -2770,16 +2772,16 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  rc=$$?; \
 	  set -e; \
 	  if [ $$rc -eq 0 ]; then \
-	    echo "ADVERSE_PROBE_REJECTION_FAILED $$mutation: the comparator ACCEPTED a mutated observation" >&2; \
+	    echo "ADVERSE_PROBE_REJECTION_FAILED $$probe_id $$mutation: the comparator ACCEPTED a mutated observation" >&2; \
 	    cat $$W/$$mutation/out.txt >&2; \
 	    exit 1; \
 	  fi; \
 	  if ! grep -qF "$$reason" $$W/$$mutation/out.txt; then \
-	    echo "ADVERSE_PROBE_REASON_FAILED $$mutation: the expected reason '$$reason' did NOT appear" >&2; \
+	    echo "ADVERSE_PROBE_REASON_FAILED $$probe_id $$mutation: the expected reason '$$reason' did NOT appear" >&2; \
 	    cat $$W/$$mutation/out.txt >&2; \
 	    exit 1; \
 	  fi; \
-	  echo "ADVERSE_PROBE_REJECTED $$mutation reason=$$reason"; \
+	  printf 'ADVERSE_PROBE_REJECTED\t%s\t%s\t%s\n' "$$probe_id" "$$mutation" "$$reason"; \
 	done
 	@echo "DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS"
 
