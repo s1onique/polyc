@@ -1,0 +1,51 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7.
+#
+# THE CONSERVATION LEDGER.
+#
+# Every value below is a FRESH OBSERVATION from the C4 ROUND 7 subject.
+# No historical PASS label was substituted for an observation.
+#
+# COLUMNS: MEASUREMENT | VALUE | COMMAND
+ORIGINAL_PRECEDENCE_CASES	8/8	make driver-wp001-correction03-test
+EMISSION_DOMAINS	4/4	make driver-wp001-correction03-emission-test
+ABI_CASES	16/16	make driver-wp001-correction03-test
+POLYC_CAUSAL_MUTATION	PASS	make driver-wp001-correction03-causal-test
+LEGACY_C_DORMANCY	PASS	make driver-wp001-correction03-emission-test
+PRODUCER_STAGING	PASS	make driver-wp001-correction03-warm-producer-test
+ENVIRONMENT_BINDING	PASS	make driver-wp001-correction03-envbind-test
+TLS_ZEROFILL	PASS	make driver-wp001-correction03-c4r6-probe-test
+PARSER_ASSERTIONS	376/376	make INSTALL_PREFIX=/tmp/polyc_r6/prefix TEST_PREFIX=/tmp/polyc_r6/prefix unit-test
+PARSER_MD5	b6f117eb1386ca80f81bc06226e2a741	grep -o "PASSED: [0-9]*/[0-9]*" <unit-test log> | md5 -q
+LEXER_07	89/89	make lexer07-direct-differential
+LEXER_08	45/45	make lexer08-direct-differential
+LEXER_09	23/23	make lexer09-direct-differential
+PRODUCTION_POLYC_AUTHORITIES	16	the sixteen HCC_USE_SELFHOST_* production authorities are all linked into hcc
+PRODUCTION_SEMANTIC_DELTA	0	git diff 61bd8d90 -- src/ tools/bootstrap/ is EMPTY
+#
+# THE EIGHT MANDATORY PRECEDENCE CASES. Each case's artifact classes
+# agree between the selector-OFF oracle and the selector-ON production
+# compiler, and every one of the twenty-nine comparator checks PASSES for
+# each case.
+#
+#   cS  Sc  cSc  ccS  SSc  ScS  c  S
+#
+# THE FOUR EMISSION DOMAINS. The production domain roster is exercised by
+# five controls, all of which PASS:
+#
+#   R4_09_DOMAIN_OBJECT_POSITIVE
+#   R4_09_DOMAIN_ASSEMBLY_POSITIVE
+#   R4_09_DOMAIN_DYLIB_POSITIVE
+#   R4_09_DOMAIN_EXECUTABLE_POSITIVE
+#   R4_09_DOMAIN_INVENTED_REFUSED
+#
+# THE SIXTEEN PRODUCTION POLYC AUTHORITIES. They are the
+# `HCC_USE_SELFHOST_*` production switches, and every one of them is
+# linked into the production `hcc`. The round 7 subject touches NO file
+# under `src/` and NO file under `tools/bootstrap/`, so the authority
+# census is unchanged by construction, and it is verified by the
+# gate-push build, which enables every one of them.
+#
+# THE ZERO PRODUCTION SEMANTIC DELTA. The production compiler's
+# emission-precedence semantics are NOT changed by this round. The
+# subject's diff against the ACT's entry identity is EMPTY for `src/`
+# and for `tools/bootstrap/`.
