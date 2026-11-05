@@ -1269,13 +1269,29 @@ I64 WpDriverEmitLlvmConflict() {
 // The FIRST argument that is a SOURCE file.
 //
 // The compile route acts on a source file, so the plan records which
-// argument it acts on. The scan is in argv order and it does not
-// consume option values: the compile route is selected only when NO
-// option route won, so the argv has no route option at all.
+// argument it acts on. The scan is in argv order.
+//
+// THE SCAN CONSUMES AN OPTION'S VALUE, exactly as the live parser
+// did. An option whose value is the NEXT argument (for example -o,
+// --install-dir, -lib, --target) hands that argument to the option,
+// and a value that happens to end in ".HC" is NOT a source file. The
+// scan therefore skips it, so the plan records the argument the
+// compile route really acts on.
+//
+// The scan is only reached when NO option route won, so the argv has
+// no route option at all; it can still carry the artifact and
+// installation options.
 static I64 WpDriverFirstSourceArg() {
   I64 argc = WpDriverHostArgc();
   I64 i = 1;                    // argv[0] is the program name
   while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
     if (WpDriverClassifyFile(i) == WP_FILE_SOURCE) return i;
     i = i + 1;
   }
