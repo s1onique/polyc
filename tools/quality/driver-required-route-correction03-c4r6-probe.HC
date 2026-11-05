@@ -2155,9 +2155,37 @@ static I64 R6BlockStatusMode(U8 *work) {
 // path against its own current working directory, so the direct
 // invocation must run in the directory whose file it is expected to
 // produce.
+//
+// The CONFIGURED PREFIX matters too: the direct invocation must read
+// the SAME runtime header the harness's child reads, or the comparison
+// would be between two different compilations. The prefix is therefore
+// APPENDED to the direct vector in the compiler's own two-element form,
+// `--install-dir <prefix>`.
+//
+// The prefix is read from the probe's own process environment, which the
+// Makefile exports. When no prefix is configured, the direct invocation
+// is left alone and the compiler uses its compile-time default.
 static U8 *R6DirectCompile(U8 *producer, U8 *dir, U8 **argv, I64 nargv,
                             I64 *out_size, I64 *exit_status) {
-  I64 total = nargv + 1;
+  // The CONFIGURED prefix, when there is one.
+  U8 *prefix = R6PrefixBinding();
+  U8 *prefix_value = NULL;
+  I64 has_prefix = 0;
+  if (prefix != NULL) {
+    U8 *name = NULL;
+    if (ContractSplitBinding(prefix, &name, &prefix_value) != 0) {
+      has_prefix = 1;
+      Free(name);
+    } else {
+      Free(prefix_value);
+      prefix_value = NULL;
+    }
+    Free(prefix);
+  }
+  // The vector is the caller's, plus the two prefix elements.
+  I64 extra = 0;
+  if (has_prefix == 1) extra = 2;
+  I64 total = nargv + extra + 1;
   U8 **args = MAlloc(sizeof(U8 *) * total);
   I64 n = 0;
   I64 k = 0;
@@ -2165,6 +2193,12 @@ static U8 *R6DirectCompile(U8 *producer, U8 *dir, U8 **argv, I64 nargv,
     args[n] = argv[k];
     n = n + 1;
     k = k + 1;
+  }
+  if (has_prefix == 1) {
+    args[n] = "--install-dir";
+    n = n + 1;
+    args[n] = prefix_value;
+    n = n + 1;
   }
   args[n] = NULL;
   // The working directory is changed for the invocation and RESTORED
@@ -2175,6 +2209,7 @@ static U8 *R6DirectCompile(U8 *producer, U8 *dir, U8 **argv, I64 nargv,
   if (chdir(dir) != 0) {
     Free(cwd_buf);
     Free(args);
+    if (prefix_value != NULL) Free(prefix_value);
     if (out_size != NULL) *out_size = 0;
     if (exit_status != NULL) *exit_status = -1;
     return NULL;
@@ -2186,6 +2221,7 @@ static U8 *R6DirectCompile(U8 *producer, U8 *dir, U8 **argv, I64 nargv,
   Free(cwd_buf);
   Free(err);
   Free(args);
+  if (prefix_value != NULL) Free(prefix_value);
   if (out_size != NULL) *out_size = StrLen(out);
   if (exit_status != NULL) *exit_status = rc;
   return out;
