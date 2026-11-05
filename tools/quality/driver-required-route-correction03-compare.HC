@@ -177,6 +177,13 @@ static I64 TextEqual(U8 *a, I64 asize, U8 *b, I64 bsize) {
 // so a duplicate means the ledger was written twice from one execution, or
 // that one event was replayed as two.
 #define CAPTURE_DUPLICATE_EVENT    15
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01.
+//
+// CAPTURE_BLOCK_TOO_LARGE -- the record's ARGV or ENV block carries more
+// entries than the DOCUMENTED LIMIT. The block is refused rather than
+// truncated, because a truncated block would silently describe a
+// different execution.
+#define CAPTURE_BLOCK_TOO_LARGE   16
 
 static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_OK) return "OK";
@@ -195,6 +202,7 @@ static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_ARTIFACT_ABSENT) return "CAPTURE_ARTIFACT_ABSENT";
   if (code == CAPTURE_EVENT_ID_MISMATCH) return "CAPTURE_EVENT_ID_MISMATCH";
   if (code == CAPTURE_DUPLICATE_EVENT) return "CAPTURE_DUPLICATE_EVENT_ID";
+  if (code == CAPTURE_BLOCK_TOO_LARGE) return "CAPTURE_BLOCK_TOO_LARGE";
   return "CAPTURE_UNKNOWN";
 }
 
@@ -295,6 +303,32 @@ static I64 DigestMatches(U8 *recorded, U8 *buf, I64 size) {
 //
 // A prefix, a suffix, a one-character identity, an extended line and a
 // line with a trailing NUL are all REJECTED.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-04
+// -- THE TERMINATOR IS PART OF THE RECORD.
+//
+// THE ORIGINAL DEFECT. The scan found the end of a record by looking for
+// the record separator, and it compared the record's LENGTH and BYTES
+// BEFORE it established that the separator was there at all:
+//
+//     I64 end = i;
+//     while (end < size && buf[end] != 10) end = end + 1;
+//     if (end - i == idlen) { ...match... }
+//     if (end >= size) break;
+//
+// When the LAST line of the ledger was not terminated, `end` reached
+// `size`, and the length comparison `end - i == idlen` was TRUE for an
+// unterminated sixty-four-byte tail. The record was therefore ACCEPTED
+// even though it carried no terminator. The `break` that was supposed to
+// reject the unterminated tail came AFTER the acceptance.
+//
+// THE REPAIR. The terminator is checked FIRST, and a record without one
+// is not a record at all. The scan stops at the first unterminated tail,
+// and the record is not compared.
+//
+// The two functions are the PRODUCTION ones: the comparator's membership
+// check and its occurrence counter. They are not duplicated inside the
+// probe; the probe calls THEM.
 static I64 LedgerHas(U8 *ledger_path, U8 *id) {
   I64 size = 0;
   U8 *buf = FileRead(ledger_path, &size);
@@ -305,10 +339,13 @@ static I64 LedgerHas(U8 *ledger_path, U8 *id) {
   I64 i = 0;
   I64 found = 0;
   while (i < size) {
-    // The record runs to the next record separator. A record that is not
-    // terminated is NOT a complete record, and it is rejected.
+    // The record runs to the next record separator.
     I64 end = i;
     while (end < size && buf[end] != 10) end = end + 1;
+    // The TERMINATOR IS REQUIRED. A record that runs to the end of the
+    // file without a separator is NOT a complete record, and it is not
+    // compared at all.
+    if (end >= size) break;
     // The record MUST have EXACTLY the identity's length.
     if (end - i == idlen) {
       I64 k = 0;
@@ -319,10 +356,7 @@ static I64 LedgerHas(U8 *ledger_path, U8 *id) {
       }
       if (same == 1) found = 1;
     }
-    // The next record begins after the separator. A record that runs to
-    // the end of the file without a separator is not a complete record,
-    // so the scan stops.
-    if (end >= size) break;
+    // The next record begins after the separator.
     i = end + 1;
   }
   return found;
@@ -338,6 +372,11 @@ static I64 LedgerHas(U8 *ledger_path, U8 *id) {
 // carries the run id and the MONOTONIC event counter -- so an identity that
 // appears twice means that one execution was registered twice, or that a
 // single event was replayed as two. Both are rejected.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-04.
+//
+// The same terminator requirement applies here: a record that is not
+// terminated is not counted.
 static I64 LedgerCount(U8 *ledger_path, U8 *id) {
   I64 size = 0;
   U8 *buf = FileRead(ledger_path, &size);
@@ -349,6 +388,8 @@ static I64 LedgerCount(U8 *ledger_path, U8 *id) {
   while (i < size) {
     I64 end = i;
     while (end < size && buf[end] != 10) end = end + 1;
+    // The TERMINATOR IS REQUIRED.
+    if (end >= size) break;
     if (end - i == idlen) {
       I64 k = 0;
       I64 same = 1;
@@ -358,7 +399,6 @@ static I64 LedgerCount(U8 *ledger_path, U8 *id) {
       }
       if (same == 1) count = count + 1;
     }
-    if (end >= size) break;
     i = end + 1;
   }
   return count;
@@ -373,6 +413,28 @@ static I64 LedgerCount(U8 *ledger_path, U8 *id) {
 // The event identity is computed over the ARGUMENT VECTOR and the
 // ENVIRONMENT. The comparator therefore has to read those two block
 // fields back out of the capture record, exactly as the runner wrote them.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01
+// -- THE CAPACITY IS CHECKED BEFORE THE COUNT IS RETURNED.
+//
+// THE ORIGINAL DEFECT. The extractor allocated a FIXED array of sixty-four
+// pointers, wrote a value into the array only while the index was below
+// sixty-four, and then returned the TRUE count -- which could be larger
+// than the array. Every caller then walked the returned count, so a capture
+// record carrying a block of more than sixty-four entries caused an
+// OUT-OF-BOUNDS READ of the pointer array and a SEGMENTATION FAULT.
+//
+// THE REPAIR. The array GROWS as the block is read, so the storage is
+// always large enough for the complete block that is present. The count
+// that is returned is therefore always the number of entries that were
+// actually stored.
+//
+// The block is bounded by the DOCUMENTED LIMIT, so a malformed record
+// cannot make the extractor allocate without bound. A block that exceeds
+// the limit is REJECTED with a DEFINED reason rather than being
+// truncated: `CAPTURE_BLOCK_TOO_LARGE`.
+#define CaptureBlockLimit 4096
+
 static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
   *count = 0;
   I64 klen = StrLen(key);
@@ -392,17 +454,36 @@ static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
         // the block ends at the FIRST EMPTY line.
         I64 j = lend + 1;
         I64 n = 0;
-        U8 **vals = MAlloc(sizeof(U8 *) * 64);
+        I64 cap = 64;
+        U8 **vals = MAlloc(sizeof(U8 *) * cap);
         while (j < size) {
           I64 bend = j;
           while (bend < size && buf[bend] != 10) bend = bend + 1;
           if (bend == j) break;
-          if (n < 64) {
-            U8 *v = MAlloc(bend - j + 1);
-            MemCpy(v, buf + j, bend - j);
-            v[bend - j] = 0;
-            vals[n] = v;
+          // The limit is checked BEFORE the entry is stored, so a block
+          // that exceeds it is rejected rather than truncated.
+          if (n >= CaptureBlockLimit) {
+            I64 k = 0;
+            while (k < n) { Free(vals[k]); k = k + 1; }
+            Free(vals);
+            *count = 0;
+            return NULL;
           }
+          // The storage GROWS before the entry is written, so the write is
+          // always inside the allocation.
+          if (n >= cap) {
+            I64 newcap = cap * 2;
+            while (n >= newcap) newcap = newcap * 2;
+            U8 **bigger = MAlloc(sizeof(U8 *) * newcap);
+            MemCpy(bigger, vals, sizeof(U8 *) * n);
+            Free(vals);
+            vals = bigger;
+            cap = newcap;
+          }
+          U8 *v = MAlloc(bend - j + 1);
+          MemCpy(v, buf + j, bend - j);
+          v[bend - j] = 0;
+          vals[n] = v;
           n = n + 1;
           if (bend >= size) { j = size; break; }
           j = bend + 1;
@@ -457,44 +538,40 @@ static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
 // The recomputation is INDEPENDENT of the harness: the comparator has its
 // own copy of the construction, so a defect in the harness's copy cannot
 // make a forged record pass.
-static U8 *RecomputeEventId(U8 *run_id, U8 *counter, U8 *case_id,
-                             U8 *selector, U8 *producer_hex,
-                             U8 *source_hex, U8 *fixture_hex,
-                             U8 **argv, I64 nargv,
-                             U8 **envv, I64 nenv) {
-  Sha256Ctx c;
-  Sha256Init(&c);
-  Sha256Update(&c, run_id, 64);
-  Sha256Update(&c, counter, StrLen(counter));
-  Sha256Update(&c, "\n", 1);
-  Sha256Update(&c, case_id, StrLen(case_id));
-  Sha256Update(&c, "\n", 1);
-  Sha256Update(&c, selector, StrLen(selector));
-  Sha256Update(&c, "\n", 1);
-  Sha256Update(&c, producer_hex, 64);
-  Sha256Update(&c, "\n", 1);
-  Sha256Update(&c, source_hex, 64);
-  Sha256Update(&c, "\n", 1);
-  Sha256Update(&c, fixture_hex, 64);
-  Sha256Update(&c, "\n", 1);
-  I64 i = 0;
-  while (i < nargv) {
-    Sha256Update(&c, argv[i], StrLen(argv[i]));
-    Sha256Update(&c, "\n", 1);
-    i = i + 1;
-  }
-  i = 0;
-  while (i < nenv) {
-    Sha256Update(&c, envv[i], StrLen(envv[i]));
-    Sha256Update(&c, "\n", 1);
-    i = i + 1;
-  }
-  U8 *digest = MAlloc(32);
-  U8 *hex = MAlloc(65);
-  Sha256Final(&c, digest);
-  Sha256Hex(hex, digest);
-  Free(digest);
-  return hex;
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-05.
+//
+// THE RECOMPUTATION USES THE SHARED CONTRACT'S CANONICAL ENCODING.
+//
+// THE ORIGINAL DEFECT. The comparator's own copy of the construction
+// CONCATENATED the argument vector and the environment with a single
+// record separator. That encoding has no UNAMBIGUOUS field boundary, so
+// the same byte stream could be produced by more than one (ARGV, ENV)
+// pair. The concrete attack: move the last ARGV element into the ENV
+// block and the identity is UNCHANGED, so the record still satisfies the
+// recomputation while describing an execution that did not happen.
+//
+// THE REPAIR. Both the producer and the comparator call the shared
+// contract's `ContractEventId`. There is ONE specified encoding, and it
+// is unambiguous: every field and every element carries an explicit
+// length.
+//
+// The recomputation remains INDEPENDENT in the sense that matters: it is
+// computed from the record's OWN fields, not from anything the producer
+// said about the record.
+static U8 *RecomputeEventId(EventIdCtx *ctx, EventIdEnvCtx *env) {
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-05.
+  //
+  // THE PARAMETER LIST OF THIS FUNCTION IS TWO.
+  //
+  // The production compiler's calling convention does not agree with
+  // itself about a POINTER-TO-POINTER argument at parameter position
+  // EIGHT or later: the call site places it on the STACK while the
+  // callee's prologue reads it from a REGISTER, and the arguments that
+  // follow are shifted. The reason is recorded in the shared contract.
+  //
+  // The recomputation therefore takes the shared contract's contexts, and
+  // the caller fills them BY NAME.
+  return ContractEventIdWithEnv(ctx, env);
 }
 
 // The capture-record validator.
@@ -656,11 +733,32 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   I64 nenv = 0;
   U8 **argv_values = CaptureBlock(buf, size, "ARGV", &nargv);
   U8 **env_values = CaptureBlock(buf, size, "ENV", &nenv);
-  if (argv_values == NULL || env_values == NULL) return CAPTURE_FIELD_MISSING;
-  U8 *recomputed = RecomputeEventId(run_id, counter_field, case_field,
-                                    selector, producer_sha, source_sha,
-                                    fixture_sha, argv_values, nargv,
-                                    env_values, nenv);
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-01.
+  //
+  // A block that exceeds the DOCUMENTED LIMIT is refused with its OWN
+  // reason. It is NOT reported as a missing field: the field is present,
+  // and the distinction matters to a reviewer reading the ledger.
+  if (argv_values == NULL || env_values == NULL) {
+    return CAPTURE_BLOCK_TOO_LARGE;
+  }
+  // The recomputation contexts are filled BY NAME, so that no argument
+  // can be shifted by the production compiler's calling convention.
+  EventIdCtx rc_ctx;
+  rc_ctx.run_id = run_id;
+  rc_ctx.counter = counter_field;
+  rc_ctx.case_id = case_field;
+  rc_ctx.selector = selector;
+  rc_ctx.producer_hex = producer_sha;
+  rc_ctx.source_hex = source_sha;
+  rc_ctx.fixture_hex = fixture_sha;
+  rc_ctx.argv = argv_values;
+  rc_ctx.nargv = nargv;
+  rc_ctx.envv = NULL;
+  rc_ctx.nenv = 0;
+  EventIdEnvCtx rc_env;
+  rc_env.envv = env_values;
+  rc_env.nenv = nenv;
+  U8 *recomputed = RecomputeEventId(&rc_ctx, &rc_env);
   I64 same = 0;
   if (StrLen(event_id) == 64 && StrCmp(event_id, recomputed) == 0) same = 1;
   if (same == 0) return CAPTURE_EVENT_ID_MISMATCH;
@@ -686,6 +784,75 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
 // the genuine selector-OFF C ORACLE. The comparator VALIDATES both sides
 // against those expectations and only then COMPARES the two sides.
 // ---------------------------------------------------------------------------
+// The EVENT-IDENTITY RECOMPUTATION DIAGNOSTIC.
+//
+// It reads the capture record, recomputes the event identity from the
+// record's OWN fields, and prints the recorded identity and the
+// recomputed one. The diagnostic exists so that a reviewer can see WHICH
+// side of the comparison differs, without reading the comparator's source.
+// It performs NO acceptance decision: it prints and returns.
+//
+// It is a SEPARATE function because a large frame in `Main` overflows the
+// runtime's process stack on this host.
+static I32 RecomputeDiagnostic(U8 *path) {
+  I64 rsize = 0;
+  U8 *rbuf = FileRead(path, &rsize);
+  if (rbuf == NULL) {
+    "RECOMPUTE\tCAPTURE_RECORD_MISSING\n";
+    return 1;
+  }
+  U8 *r_run = CaptureField(rbuf, rsize, "RUN_ID");
+  U8 *r_event = CaptureField(rbuf, rsize, "EVENT_ID");
+  U8 *r_counter = CaptureField(rbuf, rsize, "EVENT_COUNTER");
+  U8 *r_case = CaptureField(rbuf, rsize, "CASE_ID");
+  U8 *r_sel = CaptureField(rbuf, rsize, "SELECTOR");
+  U8 *r_prod = CaptureField(rbuf, rsize, "PRODUCER_SHA256");
+  U8 *r_src = CaptureField(rbuf, rsize, "SOURCE_SHA256");
+  U8 *r_fix = CaptureField(rbuf, rsize, "FIXTURE_SHA256");
+  I64 rnargv = 0;
+  I64 rnenv = 0;
+  U8 **rargv = CaptureBlock(rbuf, rsize, "ARGV", &rnargv);
+  U8 **renv = CaptureBlock(rbuf, rsize, "ENV", &rnenv);
+  "RECOMPUTE\tRECORDED\t%s\n", r_event;
+  "RECOMPUTE\tRUN_ID\t%s\n", r_run;
+  "RECOMPUTE\tCOUNTER\t%s\n", r_counter;
+  "RECOMPUTE\tCASE\t%s\n", r_case;
+  "RECOMPUTE\tSELECTOR\t%s\n", r_sel;
+  "RECOMPUTE\tPRODUCER\t%s\n", r_prod;
+  "RECOMPUTE\tSOURCE\t%s\n", r_src;
+  "RECOMPUTE\tFIXTURE\t%s\n", r_fix;
+  "RECOMPUTE\tNARGV\t%lld\n", rnargv;
+  "RECOMPUTE\tNENV\t%lld\n", rnenv;
+  I64 k = 0;
+  while (k < rnargv) {
+    "RECOMPUTE\tARGV_%lld\t%s\n", k, rargv[k];
+    k = k + 1;
+  }
+  k = 0;
+  while (k < rnenv) {
+    "RECOMPUTE\tENV_%lld\t%s\n", k, renv[k];
+    k = k + 1;
+  }
+  EventIdCtx dc_ctx;
+  dc_ctx.run_id = r_run;
+  dc_ctx.counter = r_counter;
+  dc_ctx.case_id = r_case;
+  dc_ctx.selector = r_sel;
+  dc_ctx.producer_hex = r_prod;
+  dc_ctx.source_hex = r_src;
+  dc_ctx.fixture_hex = r_fix;
+  dc_ctx.argv = rargv;
+  dc_ctx.nargv = rnargv;
+  dc_ctx.envv = NULL;
+  dc_ctx.nenv = 0;
+  EventIdEnvCtx dc_env;
+  dc_env.envv = renv;
+  dc_env.nenv = rnenv;
+  U8 *rc = RecomputeEventId(&dc_ctx, &dc_env);
+  "RECOMPUTE\tRECOMPUTED\t%s\n", rc;
+  return 0;
+}
+
 I32 Main(I32 argc, U8 **argv) {
   failures = 0;
   checks = 0;
@@ -729,6 +896,21 @@ I32 Main(I32 argc, U8 **argv) {
   // The self-check is EXECUTED, not merely compiled: a membership rule
   // whose guarantees are never exercised is not a rule.
   // -----------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // THE EVENT-IDENTITY RECOMPUTATION DIAGNOSTIC.
+  //
+  //   recompute <capture-path>
+  //
+  // It reads the capture record, recomputes the event identity from the
+  // record's OWN fields, and prints the recorded identity and the
+  // recomputed one. The diagnostic exists so that a reviewer can see WHICH
+  // side of the comparison differs, without reading the comparator's
+  // source. It performs NO acceptance decision: it prints and returns.
+  // -----------------------------------------------------------------------
+  if (argc == 3 && StrCmp(argv[1], "recompute") == 0) {
+    return RecomputeDiagnostic(argv[2]);
+  }
+
   if (argc == 3 && StrCmp(argv[1], "ledgercheck") == 0) {
     I64 lf = 0;
     I64 lc = 0;

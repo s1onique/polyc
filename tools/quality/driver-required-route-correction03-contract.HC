@@ -445,16 +445,58 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       // THE REPAIR. Every table the command declares is validated, with the
       // entry width that the format actually uses for that table:
       //
-      //   the table of contents        4 bytes per entry
-      //   the module table              4 bytes per entry
+      //   the table of contents        8 bytes per entry
+      //   the module table             56 bytes per entry
       //   the external reference table  4 bytes per entry
       //   the indirect symbol table     4 bytes per entry
       //   the external relocation table 8 bytes per entry
       //   the local relocation table    8 bytes per entry
       //
-      // The comparison form cannot overflow: each count is checked against
-      // the number of entries that fit in the REMAINING bytes, and the
-      // division is exact.
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5,
+      // R4-06 -- THE AUTHORITATIVE ON-DISK WIDTHS.
+      //
+      // THE ORIGINAL DEFECT. The table of contents was validated with a
+      // FOUR-BYTE entry width and the module table with a FOUR-BYTE entry
+      // width as well. The platform's own definitions are:
+      //
+      //   struct dylib_table_of_contents {
+      //     uint32_t symbol_index;   // 4
+      //     uint32_t module_index;   // 4
+      //   };                         // 8 bytes total
+      //
+      //   struct dylib_module_64 {
+      //     uint32_t module_name;            // 4
+      //     uint32_t iextdefsym;             // 4
+      //     uint32_t nextdefsym;             // 4
+      //     uint32_t irefsym;                // 4
+      //     uint32_t nrefsym;                // 4
+      //     uint32_t ilocalsym;              // 4
+      //     uint32_t nlocalsym;              // 4
+      //     uint16_t iextrel;                // 2
+      //     uint16_t nextrel;                // 2
+      //     uint16_t ilocalrel;              // 2
+      //     uint16_t nlocalrel;              // 2
+      //     uint32_t extrefsymoff;           // 4
+      //     uint32_t nextrefsyms;            // 4
+      //     uint32_t indirectsymoff;         // 4
+      //     uint32_t nindirectsyms;          // 4
+      //     uint32_t extreloff;              // 4
+      //     uint32_t nextrel;                // 4
+      //     uint32_t locreloff;              // 4
+      //     uint32_t nlocrel;                // 4
+      //   };                                // 56 bytes total
+      //
+      // With the FOUR-BYTE width, a table whose extent was placed at the
+      // very end of the file and whose count was ONE was accepted, because
+      // ONE four-byte entry was thought to fit in the four remaining bytes.
+      // The real entry is EIGHT bytes wide (the table of contents) or
+      // FIFTY-SIX bytes wide (the module table), so the table ran past the
+      // end of the file.
+      //
+      // THE REPAIR. Every table is validated with the entry width the
+      // platform's own structure definitions use. The comparison form
+      // cannot overflow: each count is checked against the number of
+      // entries that fit in the REMAINING bytes, and the division is exact.
       I64 extents[6];
       extents[0] = ContractWordAt(buf, size, off + 32);   // table of contents
       extents[1] = ContractWordAt(buf, size, off + 40);   // module table
@@ -470,8 +512,8 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       counts[4] = ContractWordAt(buf, size, off + 60);
       counts[5] = ContractWordAt(buf, size, off + 76);
       I64 widths[6];
-      widths[0] = 4;   // the table of contents
-      widths[1] = 4;   // the module table
+      widths[0] = 8;   // the table of contents -- dylib_table_of_contents
+      widths[1] = 56;  // the module table -- dylib_module_64
       widths[2] = 4;   // the external reference table
       widths[3] = 4;   // the indirect symbol table
       widths[4] = 8;   // the external relocation table
@@ -514,22 +556,34 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       }
       // The three ranges must not overlap and must not exceed the symbol
       // table's symbol count.
-      if (vm_nsyms > 0) {
-        // The local range.
-        if (ranges[1] > 0) {
-          if (ranges[0] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
-          if (ranges[1] > vm_nsyms - ranges[0]) return MV_DYSYMTAB_BOUNDS;
-        }
-        // The external definition range.
-        if (ranges[3] > 0) {
-          if (ranges[2] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
-          if (ranges[3] > vm_nsyms - ranges[2]) return MV_DYSYMTAB_BOUNDS;
-        }
-        // The undefined range.
-        if (ranges[5] > 0) {
-          if (ranges[4] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
-          if (ranges[5] > vm_nsyms - ranges[4]) return MV_DYSYMTAB_BOUNDS;
-        }
+      //
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5,
+      // R4-07 -- THE RANGE CHECK IS NOT CONDITIONAL ON A NON-ZERO COUNT.
+      //
+      // THE ORIGINAL DEFECT. The whole range check was guarded by
+      // `vm_nsyms > 0`. A symbol table that declared ZERO symbols therefore
+      // disabled the check ENTIRELY, and the dysymtab could declare a local
+      // range of one symbol -- `nlocalsym == 1` -- against an empty symbol
+      // table without complaint.
+      //
+      // The guard was a mistake, not a shortcut: a range that claims a
+      // symbol MUST lie inside the symbol table, and an EMPTY symbol table
+      // admits NO range at all. The check is therefore performed
+      // UNCONDITIONALLY, and the `nlocalsym > 0` test inside it decides
+      // whether a particular range claims anything.
+      if (ranges[1] > 0) {
+        if (ranges[0] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+        if (ranges[1] > vm_nsyms - ranges[0]) return MV_DYSYMTAB_BOUNDS;
+      }
+      // The external definition range.
+      if (ranges[3] > 0) {
+        if (ranges[2] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+        if (ranges[3] > vm_nsyms - ranges[2]) return MV_DYSYMTAB_BOUNDS;
+      }
+      // The undefined range.
+      if (ranges[5] > 0) {
+        if (ranges[4] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+        if (ranges[5] > vm_nsyms - ranges[4]) return MV_DYSYMTAB_BOUNDS;
       }
       found_dysymtab = 1;
       vm_has_dysymtab = 1;
@@ -633,24 +687,46 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
         //   0x01 S_ZEROFILL                       NO file bytes
         //   0x02 S_CSTRING_LITERALS               file-backed
         //   0x0c S_GB_ZEROFILL                    NO file bytes
+        //   0x11 S_THREAD_LOCAL_REGULAR           file-backed
         //   0x12 S_THREAD_LOCAL_ZEROFILL          NO file bytes
-        //   0x13 S_THREAD_LOCAL_VARIABLES         NO file bytes
-        //   0x14 S_THREAD_LOCAL_VARIABLE_POINTERS NO file bytes
-        //   0x15 S_THREAD_LOCAL_INIT_FUNCTION_PTRS NO file bytes
-        //   0x16 S_INIT_FUNC_OFFSETS              NO file bytes
+        //   0x13 S_THREAD_LOCAL_VARIABLES         file-backed
+        //   0x14 S_THREAD_LOCAL_VARIABLE_POINTERS file-backed
+        //   0x15 S_THREAD_LOCAL_INIT_FUNCTION_PTRS file-backed
+        //   0x16 S_INIT_FUNC_OFFSETS              file-backed
         //
         // Every OTHER type is treated as file-backed, so an unknown type
         // cannot smuggle an unbounded file extent past the bound. The
         // rule is therefore CONSERVATIVE in the direction that matters:
         // an unrecognised type is validated, not waved through.
+        //
+        // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5,
+        // R4-10 -- THE ZERO-FILL CLASSIFICATION IS EXACT, NOT A RANGE.
+        //
+        // THE ORIGINAL DEFECT. The previous revision treated the four
+        // thread-local types `0x13`, `0x14`, `0x15` and `0x16` as if they
+        // carried NO file bytes. They do not. Only `S_ZEROFILL` (0x01),
+        // `S_GB_ZEROFILL` (0x0c) and `S_THREAD_LOCAL_ZEROFILL` (0x12) are
+        // virtual; the remaining thread-local types are FILE-BACKED:
+        //
+        //   S_THREAD_LOCAL_VARIABLES               the TLV descriptors
+        //   S_THREAD_LOCAL_VARIABLE_POINTERS       the pointers to them
+        //   S_THREAD_LOCAL_INIT_FUNCTION_POINTERS  the initialiser pointers
+        //   S_INIT_FUNC_OFFSETS                    the initialiser offsets
+        //
+        // The classification was a mistake about the FORMAT, not a
+        // conservative choice: a section that carries real bytes was
+        // declared to carry none, so a file extent that ran past the end
+        // of the file was never checked.
+        //
+        // THE REPAIR. The virtual class is stated EXACTLY, by name, and
+        // every other type -- including every thread-local type that is
+        // not `S_THREAD_LOCAL_ZEROFILL` -- is file-backed. The rule is
+        // therefore conservative in the direction that matters: an
+        // unrecognised type is validated, not waved through.
         I64 file_backed = 1;
         if (sec_type == 1) file_backed = 0;   // S_ZEROFILL
         if (sec_type == 12) file_backed = 0;  // S_GB_ZEROFILL
         if (sec_type == 18) file_backed = 0;  // S_THREAD_LOCAL_ZEROFILL
-        if (sec_type == 19) file_backed = 0;  // S_THREAD_LOCAL_VARIABLES
-        if (sec_type == 20) file_backed = 0;  // S_THREAD_LOCAL_VARIABLE_POINTERS
-        if (sec_type == 21) file_backed = 0;  // S_THREAD_LOCAL_INIT_FUNCTION_POINTERS
-        if (sec_type == 22) file_backed = 0;  // S_INIT_FUNC_OFFSETS
         // A section with CONTENT must lie inside the file. The subtraction
         // form cannot overflow: the offset is checked against the file size
         // first, so the remainder is non-negative.
@@ -690,7 +766,13 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
   //
   // The check is repeated here, after the walk, so that it is performed
   // even when the LC_DYSYMTAB precedes the LC_SYMTAB in the file.
-  if (found_dysymtab == 1 && found_symtab == 1 && vm_nsyms > 0) {
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-07.
+  //
+  // The `vm_nsyms > 0` guard is REMOVED. An empty symbol table admits NO
+  // symbol range, so the ranges must be checked against it exactly as they
+  // are checked against a non-empty one.
+  if (found_dysymtab == 1 && found_symtab == 1) {
     if (vm_dysym_nlocalsym > 0) {
       if (vm_dysym_ilocalsym > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
       if (vm_dysym_nlocalsym > vm_nsyms - vm_dysym_ilocalsym) {
@@ -1427,12 +1509,20 @@ static I64 ContractArRequireMember(ArArchive *ar, U8 *name, I64 namelen) {
 #define ARV_MEMBER_INVALID     1
 #define ARV_NO_REAL_MEMBER     2
 #define ARV_MEMBER_PAYLOAD_EMPTY 3
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-08.
+//
+// ARV_MEMBER_NOT_OBJECT -- the member's payload is a structurally valid
+// Mach-O image, but it is NOT a relocatable object. An archive member is
+// required to be an `MH_OBJECT`; an embedded executable or shared library
+// is not one.
+#define ARV_MEMBER_NOT_OBJECT  4
 
 static U8 *ContractArValidReason(I64 code) {
   if (code == ARV_OK) return "OK";
   if (code == ARV_MEMBER_INVALID) return "ARCHIVE_EMBEDDED_OBJECT_INVALID";
   if (code == ARV_NO_REAL_MEMBER) return "ARCHIVE_HAS_NO_REAL_MEMBER";
   if (code == ARV_MEMBER_PAYLOAD_EMPTY) return "ARCHIVE_MEMBER_PAYLOAD_EMPTY";
+  if (code == ARV_MEMBER_NOT_OBJECT) return "ARCHIVE_MEMBER_IS_NOT_AN_OBJECT";
   return "ARCHIVE_UNKNOWN";
 }
 
@@ -1466,6 +1556,25 @@ static I64 ContractArIsBookkeeping(U8 *name, I64 namelen) {
 //
 // It requires at least one REAL member, and it requires every real
 // member's payload to be a valid Mach-O object.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-08
+// -- THE MEMBER MUST BE A RELOCATABLE OBJECT.
+//
+// THE ORIGINAL DEFECT. The member's payload was required to be a
+// STRUCTURALLY VALID Mach-O image, and the shared validator accepts an
+// executable and a shared library as well as an object. An archive member
+// whose header was mutated from `MH_OBJECT` to `MH_EXECUTE` therefore
+// passed, even though an archive member is required to be a RELOCATABLE
+// OBJECT and an embedded executable is not one.
+//
+// THE REPAIR. A member's payload must carry the `MH_OBJECT` file type.
+// The check is on the DECLARED file type in the member's own header, and
+// it is performed IN ADDITION TO the structural validation: an embedded
+// executable that is otherwise structurally valid is still refused.
+//
+// The bookkeeping members -- the symbol index -- are excluded, and their
+// distinct treatment is unchanged: they are not objects, and they are not
+// required to be.
 static I64 ContractArValidateMembers(ArArchive *ar) {
   I64 real_members = 0;
   I64 i = 0;
@@ -1478,6 +1587,13 @@ static I64 ContractArValidateMembers(ArArchive *ar) {
       // The member's payload MUST be a valid Mach-O object.
       I64 mv = ContractValidateMachO(ar->m[i].payload, ar->m[i].paylen, 1);
       if (mv != MV_OK) return ARV_MEMBER_INVALID;
+      // The member's payload MUST BE AN OBJECT. An archive member is a
+      // relocatable object; an embedded executable or shared library is
+      // not one, even when it is structurally valid.
+      if (ar->m[i].paylen < MACHO_HEADER_SIZE) return ARV_MEMBER_INVALID;
+      if (ContractWordAt(ar->m[i].payload, ar->m[i].paylen, 12) != MH_OBJECT) {
+        return ARV_MEMBER_NOT_OBJECT;
+      }
     }
     i = i + 1;
   }
@@ -1523,6 +1639,308 @@ static I64 ContractBytesEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
     i = i + 1;
   }
   return 1;
+}
+
+// ---------------------------------------------------------------------------
+// THE CANONICAL EVENT-IDENTITY ENCODING.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-05.
+//
+// THE ORIGINAL DEFECT. The event identity was computed over the argument
+// vector and the environment by CONCATENATING their values with a single
+// record separator between them. That encoding has no UNAMBIGUOUS field
+// boundary: the same byte stream can be produced by more than one
+// (ARGV, ENV) pair.
+//
+// The concrete attack. Take a genuine capture record whose ARGV block ends
+// with the element "X". Move that element into the ENV block, at its end.
+// The concatenated byte stream is unchanged, so the event identity is
+// unchanged, so the record still satisfies the identity recomputation --
+// while describing an execution whose argument vector and environment are
+// NOT the ones that were executed.
+//
+// THE REPAIR. A VERSIONED CANONICAL ENCODING with explicit field tags,
+// explicit counts and explicit element lengths.
+//
+//   DOMAIN              the fixed domain tag
+//   SCHEMA_VERSION      the decimal schema version
+//   RUN_ID              the sixty-four character run digest
+//   EVENT_COUNTER       the decimal event counter
+//   CASE_ID             the case identity
+//   SELECTOR            the selector
+//   PRODUCER_ID         the sixty-four character producer digest
+//   SOURCE_ID           the sixty-four character source digest
+//   FIXTURE_ID          the sixty-four character fixture digest
+//   ARGV_COUNT          the number of argument elements
+//   ARGV_ELEMENT        the element's byte length, then its bytes
+//   ENV_COUNT           the number of environment elements
+//   ENV_ELEMENT         the element's byte length, then its bytes
+//   OUTPUT_IDENTITIES   the observed output identities
+//
+// THE ENCODING IS BYTE-EXACT AND UNAMBIGUOUS.
+//
+//   * Every field is introduced by its TAG, a fixed ASCII byte sequence,
+//     followed by the tag's byte length and then the field's byte length,
+//     and then the field's bytes.
+//   * Every length is a FIXED-WIDTH, BIG-ENDIAN, UNSIGNED 64-BIT integer.
+//     It is written BEFORE the bytes it describes, so a reader knows
+//     exactly how many bytes belong to what it reads.
+//   * Every ELEMENT of a COUNTED collection is written as an ELEMENT
+//     LENGTH -- the same fixed-width 64-bit big-endian integer -- followed
+//     by the element's bytes.
+//
+// Because every field and every element carries its own explicit length,
+// NO concatenation of the values can produce the same byte stream as a
+// different assignment of the values. The boundary between the last ARGV
+// element and the first ENV element is therefore explicit.
+//
+// THE PRODUCER AND THE COMPARATOR BOTH CALL THIS FUNCTION. There is one
+// implementation of the encoding, and it is the shared contract's.
+//
+// HISTORICAL RECORDS. Earlier capture records were written under the
+// previous, WHITESPACE-DELIMITED schema. They are NOT rewritten. The
+// schema version is part of the identity input, so a record written under
+// the old schema is treated under the schema it was written under, and the
+// identity it carries is the one its own schema defines.
+// ---------------------------------------------------------------------------
+
+// The domain tag. It is the FIRST field of every identity input, so an
+// identity computed over this encoding cannot collide with an identity
+// computed over any other domain's encoding.
+#define EVENT_ID_DOMAIN "POLYC-DRIVER-CORRECTION03-EVENT"
+#define EVENT_ID_SCHEMA_VERSION 2
+
+// The field tags. Each is a fixed ASCII sequence; its LENGTH is written
+// explicitly, so the tag itself is self-delimiting.
+#define EVENT_TAG_DOMAIN        "DOMAIN"
+#define EVENT_TAG_SCHEMA        "SCHEMA_VERSION"
+#define EVENT_TAG_RUN_ID        "RUN_ID"
+#define EVENT_TAG_COUNTER       "EVENT_COUNTER"
+#define EVENT_TAG_CASE          "CASE_ID"
+#define EVENT_TAG_SELECTOR      "SELECTOR"
+#define EVENT_TAG_PRODUCER      "PRODUCER_ID"
+#define EVENT_TAG_SOURCE        "SOURCE_ID"
+#define EVENT_TAG_FIXTURE       "FIXTURE_ID"
+#define EVENT_TAG_ARGV_COUNT    "ARGV_COUNT"
+#define EVENT_TAG_ARGV_ELEMENT  "ARGV_ELEMENT"
+#define EVENT_TAG_ENV_COUNT     "ENV_COUNT"
+#define EVENT_TAG_ENV_ELEMENT   "ENV_ELEMENT"
+#define EVENT_TAG_OUTPUTS       "OUTPUT_IDENTITIES"
+
+// The fixed-width unsigned 64-bit big-endian writer. It is the ONLY
+// integer encoding used inside the identity input.
+static U0 ContractPutU64BE(U8 *buf, I64 off, I64 v) {
+  I64 i = 0;
+  while (i < 8) {
+    buf[off + i] = (v >> ((7 - i) * 8)) & 255;
+    i = i + 1;
+  }
+}
+
+// The IDENTITY-INPUT CONTEXT.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-05.
+//
+// WHY A CONTEXT AND NOT A LONG PARAMETER LIST.
+//
+// The first revision of the canonical encoding passed the fourteen inputs
+// as fourteen separate parameters. The production compiler's code
+// generator mis-handles that shape: a function with thirteen parameters
+// produces a PROLOGUE that reads SIX stack arguments while the CALL SITE
+// supplies FIVE, so the callee reads one argument beyond what the caller
+// passed. The thirteenth parameter is therefore an UNINITIALISED STACK
+// VALUE, and the identity it produces is NOT DETERMINISTIC: the same
+// inputs produce a different digest on the second call.
+//
+// The measurement is in the evidence for this round.
+//
+// The defect is in the PRODUCTION COMPILER, and this ACT does not change
+// production compiler semantics. The repair is therefore in the QUALITY
+// TOOL: the inputs are carried in ONE context object, and every helper
+// takes the context and at most two further parameters.
+//
+// The context is a CLASS, so it is one pointer on the stack and the
+// fields are reached through it. The encoding itself is UNCHANGED: the
+// bytes that are hashed are exactly the bytes the specification above
+// describes.
+//
+// THE SHA-256 STATE IS NOT A MEMBER.
+//
+// The first revision embedded the `Sha256Ctx` class in this context. The
+// production compiler's layout for a class that CONTAINS another class
+// with ARRAY members computes the embedded member's fields against the
+// wrong base, so the context's own fields are written to the wrong
+// offsets. The state is therefore carried SEPARATELY, and the context
+// holds only POINTERS and COUNTS.
+class EventIdCtx
+{
+  U8 *run_id;
+  U8 *counter;
+  U8 *case_id;
+  U8 *selector;
+  U8 *producer_hex;
+  U8 *source_hex;
+  U8 *fixture_hex;
+  U8 **argv;
+  I64 nargv;
+  U8 **envv;
+  I64 nenv;
+};
+
+// The ENVIRONMENT context. It is SEPARATE from the main context for the
+// reason stated at `ContractEventIdWithEnv`: the ARGV and the ENV are
+// both pointer-to-pointer collections, and the production compiler's
+// calling convention does not agree with itself about a pointer-to-pointer
+// at parameter position eight or later.
+class EventIdEnvCtx
+{
+  U8 **envv;
+  I64 nenv;
+};
+
+// The IDENTITY-INPUT BUILDER. It appends the canonical encoding to the
+// SHA-256 context.
+//
+// The helper writes one tagged field: the tag's bytes, the tag's length,
+// the value's length, and the value's bytes. The helper writes one
+// counted collection: the count tag, the count, and then each element
+// with its own length.
+static U0 ContractPutTagged(Sha256Ctx *h, U8 *tag, U8 *val) {
+  U8 lenbuf[8];
+  I64 tl = StrLen(tag);
+  I64 vl = 0;
+  if (val != NULL) vl = StrLen(val);
+  ContractPutU64BE(lenbuf, 0, tl);
+  Sha256Update(h, tag, tl);
+  Sha256Update(h, lenbuf, 8);
+  ContractPutU64BE(lenbuf, 0, vl);
+  Sha256Update(h, lenbuf, 8);
+  if (vl > 0) Sha256Update(h, val, vl);
+}
+
+static U0 ContractPutCountTag(Sha256Ctx *h, U8 *tag, I64 count) {
+  U8 lenbuf[8];
+  I64 tl = StrLen(tag);
+  ContractPutU64BE(lenbuf, 0, tl);
+  Sha256Update(h, tag, tl);
+  Sha256Update(h, lenbuf, 8);
+  ContractPutU64BE(lenbuf, 0, count);
+  Sha256Update(h, lenbuf, 8);
+}
+
+static U0 ContractPutElements(Sha256Ctx *h, U8 *tag, U8 **items, I64 n) {
+  U8 lenbuf[8];
+  I64 tl = StrLen(tag);
+  I64 i = 0;
+  while (i < n) {
+    I64 el = 0;
+    if (items[i] != NULL) el = StrLen(items[i]);
+    ContractPutU64BE(lenbuf, 0, tl);
+    Sha256Update(h, tag, tl);
+    Sha256Update(h, lenbuf, 8);
+    ContractPutU64BE(lenbuf, 0, el);
+    Sha256Update(h, lenbuf, 8);
+    if (el > 0) Sha256Update(h, items[i], el);
+    i = i + 1;
+  }
+}
+
+// The identity-input builder. It appends the canonical encoding to the
+// context's SHA-256 state.
+//
+// The OUTPUT_IDENTITIES field is the observed output identities. It MAY
+// be empty, in which case the field carries a count of zero.
+static U0 ContractEventIdUpdate(Sha256Ctx *h, EventIdCtx *ctx) {
+  // The DOMAIN. It is the first field, so an identity computed over this
+  // encoding cannot collide with one computed over another domain.
+  ContractPutTagged(h, EVENT_TAG_DOMAIN, EVENT_ID_DOMAIN);
+  // The SCHEMA VERSION, as a decimal byte string with an explicit length.
+  //
+  // The buffer IS TERMINATED. The first revision of this encoding built
+  // the reversed digits into a local buffer and did NOT terminate it, and
+  // the tagged-field writer measures the value's length with `StrLen`.
+  // The length was therefore the distance to the first NUL BYTE in
+  // UNINITIALISED STACK MEMORY, and the identity it produced was NOT
+  // DETERMINISTIC: the same inputs produced a different digest on the
+  // second call in the same process.
+  U8 ver[8];
+  I64 vlen = 0;
+  I64 v = EVENT_ID_SCHEMA_VERSION;
+  if (v == 0) { ver[0] = 48; vlen = 1; }
+  while (v > 0) { ver[vlen] = 48 + (v % 10); v = v / 10; vlen = vlen + 1; }
+  U8 rev[8];
+  I64 r = 0;
+  while (r < vlen) { rev[r] = ver[vlen - 1 - r]; r = r + 1; }
+  rev[vlen] = 0;
+  ContractPutTagged(h, EVENT_TAG_SCHEMA, rev);
+  // The scalar fields.
+  ContractPutTagged(h, EVENT_TAG_RUN_ID, ctx->run_id);
+  ContractPutTagged(h, EVENT_TAG_COUNTER, ctx->counter);
+  ContractPutTagged(h, EVENT_TAG_CASE, ctx->case_id);
+  ContractPutTagged(h, EVENT_TAG_SELECTOR, ctx->selector);
+  ContractPutTagged(h, EVENT_TAG_PRODUCER, ctx->producer_hex);
+  ContractPutTagged(h, EVENT_TAG_SOURCE, ctx->source_hex);
+  ContractPutTagged(h, EVENT_TAG_FIXTURE, ctx->fixture_hex);
+  // The counted collections.
+  ContractPutCountTag(h, EVENT_TAG_ARGV_COUNT, ctx->nargv);
+  ContractPutElements(h, EVENT_TAG_ARGV_ELEMENT, ctx->argv, ctx->nargv);
+  ContractPutCountTag(h, EVENT_TAG_ENV_COUNT, ctx->nenv);
+  ContractPutElements(h, EVENT_TAG_ENV_ELEMENT, ctx->envv, ctx->nenv);
+  // The OUTPUT IDENTITIES. The identity is allocated BEFORE the execution,
+  // so the outputs do not exist yet and the field carries a count of zero.
+  ContractPutCountTag(h, EVENT_TAG_OUTPUTS, 0);
+}
+
+// The complete identity computation. It is the ONE implementation that
+// both the producer and the comparator use.
+//
+// The inputs are carried in ONE context object, and the context is FILLED
+// by the caller before the computation. The parameter list of this
+// function is short BY DESIGN.
+//
+// WHY THE CONTEXT IS FILLED BY THE CALLER.
+//
+// The production compiler's code generator mis-handles a function with
+// EXACTLY THIRTEEN parameters: the callee's prologue reads the ninth,
+// eleventh and thirteenth parameters from the wrong stack slots -- it
+// reads `[x29+16]`, `[x29+32]` and `[x29+48]` and SKIPS `[x29+24]` and
+// `[x29+40]` -- so the thirteenth parameter is an UNINITIALISED STACK
+// VALUE. The identity it produces is therefore NOT DETERMINISTIC: the
+// same inputs produce a different digest on the second call.
+//
+// The defect is in the PRODUCTION COMPILER, and this ACT does not change
+// production compiler semantics. The repair is therefore in the QUALITY
+// TOOL: every function in this encoding carries its inputs in ONE
+// context object, so no function has the parameter shape that the
+// compiler mis-handles.
+//
+// The measurement is in the evidence for this round.
+static U8 *ContractEventIdCompute(EventIdCtx *ctx) {
+  Sha256Ctx h;
+  Sha256Init(&h);
+  ContractEventIdUpdate(&h, ctx);
+  U8 *digest = MAlloc(32);
+  U8 *hex = MAlloc(65);
+  Sha256Final(&h, digest);
+  Sha256Hex(hex, digest);
+  Free(digest);
+  return hex;
+}
+
+// THE EVENT IDENTITY, WITH THE ENVIRONMENT.
+//
+// The environment is carried in a SECOND context object, and the two
+// contexts are combined by the computation. The reason is the ABI
+// defect described above: the ARGV and the ENV are both
+// POINTER-TO-POINTER collections, and carrying both of them in ONE
+// parameter list puts one of them at position eight or later.
+//
+// The caller fills the two contexts. Each field is assigned by name, so
+// the assignment cannot be shifted.
+static U8 *ContractEventIdWithEnv(EventIdCtx *ctx, EventIdEnvCtx *env) {
+  ctx->envv = env->envv;
+  ctx->nenv = env->nenv;
+  return ContractEventIdCompute(ctx);
 }
 
 // ---------------------------------------------------------------------------

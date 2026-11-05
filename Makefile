@@ -1241,18 +1241,20 @@ driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-w
 	    fi; \
 	    if [ "$$side" = off ]; then offdir=$$evdir; else ondir=$$evdir; fi; \
 	  done; \
-	  $(DRIVER_ROUTE03_COMPARE_BIN) derive \
-	    $$ROOT/$$id/off/artifact.bin \
-	    > $$ROOT/$$id/off/derived.txt; \
-	  eclass=$$(grep "^DERIVED_CLASS" $$ROOT/$$id/off/derived.txt | cut -f2); \
-	  earch=$$(grep "^DERIVED_ARCH" $$ROOT/$$id/off/derived.txt | cut -f2); \
 	  offfiles=$$offdir; \
 	  onfiles=$$ondir; \
 	  osha=$$(grep "^PRODUCER_SHA256" $$offfiles/capture.txt | cut -d" " -f2); \
 	  psha=$$(grep "^PRODUCER_SHA256" $$onfiles/capture.txt | cut -d" " -f2); \
+	  offart=$$(grep "^ARTIFACT_PATH" $$offfiles/capture.txt | cut -d" " -f2); \
+	  onart=$$(grep "^ARTIFACT_PATH" $$onfiles/capture.txt | cut -d" " -f2); \
+	  $(DRIVER_ROUTE03_COMPARE_BIN) derive \
+	    $$offart \
+	    > $$ROOT/$$id/off/derived.txt; \
+	  eclass=$$(grep "^DERIVED_CLASS" $$ROOT/$$id/off/derived.txt | cut -f2); \
+	  earch=$$(grep "^DERIVED_ARCH" $$ROOT/$$id/off/derived.txt | cut -f2); \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$id \
-	    $$ROOT/$$id/off/artifact.bin \
-	    $$ROOT/$$id/on/artifact.bin \
+	    $$offart \
+	    $$onart \
 	    $$offfiles/stdout.txt \
 	    $$onfiles/stdout.txt \
 	    $$offfiles/stderr.txt \
@@ -1514,22 +1516,86 @@ $(DRIVER_ROUTE03_ENVPROBE_BIN): $(DRIVER_ROUTE03_ENVPROBE_OBJ) $(TEST_PREFIX_LIB
 		exit 1; \
 	fi
 
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5, R4-11.
+#
+# THE ENVIRONMENT-APPLICATION SELF-TEST -- THE FOUR MANDATORY CASES.
+#
+# The self-test now checks the EXACT observed value, not a substring. The
+# four cases are:
+#
+#   the ambient BAD=NEEDLE, asked about GOOD, expected NEEDLE
+#       -> REJECTED: the probe reported a DIFFERENT variable name
+#   the ambient GOOD=NEEDLE, asked about GOOD, expected NEEDLE
+#       -> ACCEPTED
+#   the ambient EMPTY=, asked about EMPTY, expected ""
+#       -> ACCEPTED
+#   the ambient GOOD=NEEDLE=EXTRA, asked about GOOD, expected NEEDLE
+#       -> REJECTED: the observed value is not EXACTLY the expected one
+#
+# The first and the fourth are the counterexamples: under the previous
+# SUBSTRING CONTAINS check, both were ACCEPTED, because the output
+# contained the expected text either way. The second and the third are the
+# positive controls.
+#
+# Each case runs in a CLEAN ENVIRONMENT, so a binding from one case cannot
+# satisfy the next one. The REJECT cases are checked by the ABSENCE of
+# the PASS marker and by the PRESENCE of the expected reason token.
+DRIVER_ROUTE03_ENVCHECK_OUT = $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt
+DRIVER_ROUTE03_ENVCHECK_PROBE = $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN)
+DRIVER_ROUTE03_ENVCHECK_HARNESS = $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN)
 .PHONY: driver-wp001-correction03-envcheck-test
 driver-wp001-correction03-envcheck-test: $(DRIVER_ROUTE03_ENVPROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN)
-	@set -e; \
-	$(DRIVER_ROUTE03_HARNESS_BIN) envcheck \
-	  $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN) F1_ENVIRONMENT_PROBE THE_BINDING_WAS_APPLIED \
-	  > $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt 2>&1 || { \
-	  echo "driver-wp001-correction03: the environment-application self-test FAILED" >&2; \
-	  cat $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt >&2; \
-	  exit 1; \
-	}; \
-	if ! grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt; then \
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
+	@rm -f $(DRIVER_ROUTE03_ENVCHECK_OUT)
+	@env -u F1_ENVIRONMENT_PROBE -u F1_ENVIRONMENT_BAD -u F1_ENVIRONMENT_GOOD -u F1_ENVIRONMENT_EMPTY \
+	  F1_ENVIRONMENT_BAD=NEEDLE \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envcheck \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) F1_ENVIRONMENT_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVCHECK_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_ENVCHECK_OUT); then \
+	    echo "driver-wp001-correction03: the R4-11 BAD=NEEDLE case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; \
+	  fi
+	@grep -q 'HARNESS_ENV_NOT_IN_FORCE' $(DRIVER_ROUTE03_ENVCHECK_OUT) || { \
+	  echo "driver-wp001-correction03: the R4-11 BAD=NEEDLE case did not report the expected reason" >&2; \
+	  cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; }
+	@env -u F1_ENVIRONMENT_PROBE -u F1_ENVIRONMENT_BAD -u F1_ENVIRONMENT_GOOD -u F1_ENVIRONMENT_EMPTY \
+	  F1_ENVIRONMENT_GOOD=NEEDLE \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envcheck \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) F1_ENVIRONMENT_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVCHECK_OUT) 2>&1
+	@grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_ENVCHECK_OUT) || { \
+	  echo "driver-wp001-correction03: the R4-11 GOOD=NEEDLE case was REJECTED" >&2; \
+	  cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; }
+	@env -u F1_ENVIRONMENT_PROBE -u F1_ENVIRONMENT_BAD -u F1_ENVIRONMENT_GOOD -u F1_ENVIRONMENT_EMPTY \
+	  F1_ENVIRONMENT_EMPTY= \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envcheck \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) F1_ENVIRONMENT_EMPTY "" \
+	  > $(DRIVER_ROUTE03_ENVCHECK_OUT) 2>&1
+	@grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_ENVCHECK_OUT) || { \
+	  echo "driver-wp001-correction03: the R4-11 EMPTY case was REJECTED" >&2; \
+	  cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; }
+	@env -u F1_ENVIRONMENT_PROBE -u F1_ENVIRONMENT_BAD -u F1_ENVIRONMENT_GOOD -u F1_ENVIRONMENT_EMPTY \
+	  F1_ENVIRONMENT_GOOD=NEEDLE=EXTRA \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envcheck \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) F1_ENVIRONMENT_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVCHECK_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_ENVCHECK_OUT); then \
+	    echo "driver-wp001-correction03: the R4-11 GOOD=NEEDLE=EXTRA case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; \
+	  fi
+	@grep -q 'HARNESS_ENV_NOT_IN_FORCE' $(DRIVER_ROUTE03_ENVCHECK_OUT) || { \
+	  echo "driver-wp001-correction03: the R4-11 GOOD=NEEDLE=EXTRA case did not report the expected reason" >&2; \
+	  cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; }
+	@env -u F1_ENVIRONMENT_PROBE -u F1_ENVIRONMENT_BAD -u F1_ENVIRONMENT_GOOD -u F1_ENVIRONMENT_EMPTY \
+	  F1_ENVIRONMENT_PROBE=THE_BINDING_WAS_APPLIED \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envcheck \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) F1_ENVIRONMENT_PROBE THE_BINDING_WAS_APPLIED \
+	  > $(DRIVER_ROUTE03_ENVCHECK_OUT) 2>&1
+	@grep -q 'HARNESS_ENVCHECK_STATUS=PASS' $(DRIVER_ROUTE03_ENVCHECK_OUT) || { \
 	  echo "driver-wp001-correction03: the environment-application self-test did not PASS" >&2; \
-	  cat $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt >&2; \
-	  exit 1; \
-	fi; \
-	echo "DRIVER_WP001_CORRECTION03_ENVCHECK_STATUS=PASS"
+	  cat $(DRIVER_ROUTE03_ENVCHECK_OUT) >&2; exit 1; }
+	@echo "DRIVER_WP001_CORRECTION03_ENVCHECK_STATUS=PASS"
 
 .PHONY: driver-wp001-correction03-contract-test
 driver-wp001-correction03-contract-test: $(DRIVER_ROUTE03_COMPARE_BIN)
