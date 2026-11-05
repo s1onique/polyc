@@ -251,15 +251,49 @@ static I64 DigestMatches(U8 *recorded, U8 *buf, I64 size) {
 // The ledger check. The event id MUST appear in the run ledger. The ledger
 // is APPENDED to by the harness during THIS run, so it contains only the
 // invocations THIS run performed.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F2.
+//
+// THE ORIGINAL DEFECT. The check compared the identity as a PREFIX of any
+// line:
+//
+//     while (k < idlen) {
+//       if (buf[i + k] != id[k]) { same = 0; break; }
+//       k = k + 1;
+//     }
+//
+// There was no check that the LINE was exactly the identity. A genuine
+// sixty-four character event identity therefore satisfied a SIXTEEN
+// character query, and any shorter prefix of a genuine identity was
+// accepted as a membership. The harness's event identities are FIXED
+// LENGTH, so a shorter or longer query is not a member of the ledger at
+// all, and a longer identity whose first characters match a genuine
+// identity is a DIFFERENT identity.
+//
+// THE REPAIR. The check requires an EXACT record:
+//
+//   * the line must have EXACTLY the identity's length;
+//   * the bytes must match in full;
+//   * the line must be terminated by the record separator.
+//
+// A prefix, a suffix, a one-character identity, an extended line and a
+// line with a trailing NUL are all REJECTED.
 static I64 LedgerHas(U8 *ledger_path, U8 *id) {
   I64 size = 0;
   U8 *buf = FileRead(ledger_path, &size);
   if (buf == NULL) return 0;
   I64 idlen = StrLen(id);
+  // An EMPTY identity cannot be a member: every ledger record is non-empty.
+  if (idlen <= 0) return 0;
   I64 i = 0;
   I64 found = 0;
   while (i < size) {
-    if (size - i >= idlen) {
+    // The record runs to the next record separator. A record that is not
+    // terminated is NOT a complete record, and it is rejected.
+    I64 end = i;
+    while (end < size && buf[end] != 10) end = end + 1;
+    // The record MUST have EXACTLY the identity's length.
+    if (end - i == idlen) {
       I64 k = 0;
       I64 same = 1;
       while (k < idlen) {
@@ -268,8 +302,11 @@ static I64 LedgerHas(U8 *ledger_path, U8 *id) {
       }
       if (same == 1) found = 1;
     }
-    while (i < size && buf[i] != 10) i = i + 1;
-    if (i < size) i = i + 1;
+    // The next record begins after the separator. A record that runs to
+    // the end of the file without a separator is not a complete record,
+    // so the scan stops.
+    if (end >= size) break;
+    i = end + 1;
   }
   return found;
 }
@@ -436,6 +473,118 @@ I32 Main(I32 argc, U8 **argv) {
   if (argc == 2 && StrCmp(argv[1], "selfcheck") == 0) {
     I64 sc_failures = ContractSelfCheck();
     if (sc_failures != 0) return 1;
+    return 0;
+  }
+
+  // -----------------------------------------------------------------------
+  // THE LEDGER-MEMBERSHIP SELF-CHECK MODE.
+  //
+  //   ledgercheck <ledger-path>
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F2.
+  //
+  // It exercises the COMPARATOR'S OWN `LedgerHas`, which is the function
+  // that decides whether an event identity is a member of the run ledger.
+  // The self-check writes a ledger that carries ONE genuine record and
+  // then asks about several queries:
+  //
+  //   the genuine identity            it MUST be a member
+  //   a prefix of the identity         it MUST NOT be a member
+  //   the identity with a suffix       it MUST NOT be a member
+  //   a one-character identity         it MUST NOT be a member
+  //   the identity with a tab and a    it MUST NOT be a member
+  //     trailing column
+  //
+  // The self-check is EXECUTED, not merely compiled: a membership rule
+  // whose guarantees are never exercised is not a rule.
+  // -----------------------------------------------------------------------
+  if (argc == 3 && StrCmp(argv[1], "ledgercheck") == 0) {
+    I64 lf = 0;
+    I64 lc = 0;
+    // The genuine identity. It is sixty-four hexadecimal characters.
+    U8 *genuine = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    I64 glen = 64;
+    // The ledger: the genuine record, terminated.
+    U8 *ledger = MAlloc(glen + 2);
+    MemCpy(ledger, genuine, glen);
+    ledger[glen] = 10;
+    ledger[glen + 1] = 0;
+    FileWrite(argv[2], ledger, glen + 1);
+    // The genuine identity IS a member.
+    lc = lc + 1;
+    if (LedgerHas(argv[2], genuine) != 1) {
+      "LEDGER_SELFTEST\tGENUINE_IDENTITY_IS_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // A PREFIX of the genuine identity is NOT a member.
+    lc = lc + 1;
+    if (LedgerHas(argv[2], "0123456789abcdef") != 0) {
+      "LEDGER_SELFTEST\tPREFIX_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // The genuine identity with a SUFFIX is NOT a member.
+    lc = lc + 1;
+    if (LedgerHas(argv[2],
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdefX") != 0) {
+      "LEDGER_SELFTEST\tSUFFIX_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // A ONE-CHARACTER identity is NOT a member.
+    lc = lc + 1;
+    if (LedgerHas(argv[2], "0") != 0) {
+      "LEDGER_SELFTEST\tONE_CHARACTER_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // An EMPTY identity is NOT a member.
+    lc = lc + 1;
+    if (LedgerHas(argv[2], "") != 0) {
+      "LEDGER_SELFTEST\tEMPTY_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // A ledger with an EXTRA COLUMN: the genuine identity is not a member
+    // of a ledger whose record carries more than the identity.
+    lc = lc + 1;
+    U8 *extended = MAlloc(glen + 16);
+    MemCpy(extended, genuine, glen);
+    MemCpy(extended + glen, "\tEXTRA\n", 7);
+    FileWrite(argv[2], extended, glen + 7);
+    if (LedgerHas(argv[2], genuine) != 0) {
+      "LEDGER_SELFTEST\tEXTRA_COLUMN_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // A ledger with NO TRAILING SEPARATOR: the record is incomplete, so
+    // the identity is not a member.
+    lc = lc + 1;
+    U8 *unterminated = MAlloc(glen + 1);
+    MemCpy(unterminated, genuine, glen);
+    unterminated[glen] = 0;
+    FileWrite(argv[2], unterminated, glen);
+    if (LedgerHas(argv[2], genuine) != 0) {
+      "LEDGER_SELFTEST\tUNTERMINATED_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // A ledger with an EMBEDDED NUL inside the record: the record is
+    // longer than the identity, so it is not a member.
+    lc = lc + 1;
+    U8 *embedded = MAlloc(glen + 4);
+    MemCpy(embedded, genuine, glen);
+    embedded[glen] = 0;
+    embedded[glen + 1] = 10;
+    FileWrite(argv[2], embedded, glen + 2);
+    if (LedgerHas(argv[2], genuine) != 0) {
+      "LEDGER_SELFTEST\tEMBEDDED_NUL_IS_NOT_A_MEMBER\tFAIL\n";
+      lf = lf + 1;
+    }
+    // The genuine ledger is restored, so the file the caller named holds a
+    // well-formed ledger when the self-check finishes.
+    FileWrite(argv[2], ledger, glen + 1);
+    Free(ledger);
+    Free(extended);
+    Free(unterminated);
+    Free(embedded);
+    "LEDGER_SELFTEST_CHECKS\t%lld\n", lc;
+    "LEDGER_SELFTEST_FAILURES\t%lld\n", lf;
+    if (lf != 0) return 1;
     return 0;
   }
 

@@ -83,6 +83,46 @@ static I64 ContractWordAt(U8 *buf, I64 size, I64 off) {
   return v;
 }
 
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F3.
+//
+// THE 64-BIT LITTLE-ENDIAN READER.
+//
+// THE ORIGINAL DEFECT. Every field was read through `ContractWordAt`, which
+// reads only the FOUR low bytes. The Mach-O structures that this validator
+// inspects carry SEVERAL 64-bit fields:
+//
+//   segment_command_64.fileoff    the segment's file offset
+//   segment_command_64.filesize   the segment's file extent
+//   segment_command_64.vmaddr     the segment's virtual address
+//   segment_command_64.vmsize     the segment's virtual extent
+//   section_64.size               the section's file-backed size
+//   section_64.offset             the section's file offset
+//
+// A 32-bit reader therefore IGNORED the upper half of each of those
+// fields. A file whose segment declared a file offset of 0x100000000 --
+// four gigabytes -- was accepted, because the reader saw the low half,
+// which was zero, and the bound check passed.
+//
+// THE REPAIR. The 64-bit fields are read through `ContractQwordAt`, which
+// reads all EIGHT bytes and returns -1 when the field is not inside the
+// buffer.
+//
+// The virtual address and the virtual size are NOT bounded by the file
+// size: a segment may be mapped far above the end of the file. They are
+// bounded by the ADDRESS SPACE instead. The file-backed extent -- the
+// file offset and the file size -- IS bounded by the file.
+static I64 ContractQwordAt(U8 *buf, I64 size, I64 off) {
+  if (off < 0) return -1;
+  if (size < off + 8) return -1;
+  I64 v = 0;
+  I64 i = off + 7;
+  while (i >= off) {
+    v = v * 256 + buf[i];
+    i = i - 1;
+  }
+  return v;
+}
+
 // The class of a byte run.
 static I64 ContractClassify(U8 *buf, I64 size) {
   if (buf == NULL) return CLS_ABSENT;
@@ -218,6 +258,18 @@ static I64 vm_has_dysymtab;
 
 // The section count seen across all segments.
 static I64 vm_nsections;
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F4.
+//
+// The dysymtab's SYMBOL INDEX RANGES. They are recorded when the
+// LC_DYSYMTAB is walked, and the relationship to the LC_SYMTAB's symbol
+// count is checked after the walk, because the two load commands may
+// appear in either order.
+static I64 vm_dysym_ilocalsym;
+static I64 vm_dysym_nlocalsym;
+static I64 vm_dysym_iextdefsym;
+static I64 vm_dysym_nextdefsym;
+static I64 vm_dysym_iundefsym;
+static I64 vm_dysym_nundefsym;
 
 // The section extents that were validated. They are checked for OVERLAP so a
 // pair of sections that claim the same bytes is rejected.
@@ -292,6 +344,12 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
   vm_nsegments = 0;
   vm_has_dysymtab = 0;
   vm_nsections = 0;
+  vm_dysym_ilocalsym = 0;
+  vm_dysym_nlocalsym = 0;
+  vm_dysym_iextdefsym = 0;
+  vm_dysym_nextdefsym = 0;
+  vm_dysym_iundefsym = 0;
+  vm_dysym_nundefsym = 0;
 
   if (buf == NULL) return MV_ABSENT;
   if (size == 0) return MV_EMPTY;
@@ -365,31 +423,124 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       if (found_dysymtab == 1) return MV_DYSYMTAB_BOUNDS;
       // The LC_DYSYMTAB load command is EXACTLY 80 bytes.
       if (cmdsize != DYSYMTAB_CMDSZ) return MV_DYSYMTAB_BOUNDS;
-      // The three table extents the dysymtab declares. Each of them must
-      // lie inside the file. The comparison form cannot overflow because
-      // each count is checked against the remaining bytes.
-      I64 extents[3];
+      //
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4,
+      // F4 -- THE COMPLETE TABLE VALIDATION.
+      //
+      // THE ORIGINAL DEFECT. The previous revision validated only THREE of
+      // the SIX tables the dysymtab declares, and it used the FOUR-BYTE
+      // entry width for all three:
+      //
+      //     extents[0] = the table of contents      (off + 32)
+      //     extents[1] = the module table            (off + 40)
+      //     extents[2] = the external relocations    (off + 56)
+      //
+      // The EXTERNAL REFERENCE table (off + 48), the INDIRECT SYMBOL table
+      // (off + 64) and the LOCAL RELOCATION table (off + 72) were NOT
+      // validated at all, and the EXTERNAL and LOCAL RELOCATION entries are
+      // EIGHT bytes wide, not four. An undersized relocation table whose
+      // count only overflowed the file under the correct width was
+      // therefore accepted.
+      //
+      // THE REPAIR. Every table the command declares is validated, with the
+      // entry width that the format actually uses for that table:
+      //
+      //   the table of contents        4 bytes per entry
+      //   the module table              4 bytes per entry
+      //   the external reference table  4 bytes per entry
+      //   the indirect symbol table     4 bytes per entry
+      //   the external relocation table 8 bytes per entry
+      //   the local relocation table    8 bytes per entry
+      //
+      // The comparison form cannot overflow: each count is checked against
+      // the number of entries that fit in the REMAINING bytes, and the
+      // division is exact.
+      I64 extents[6];
       extents[0] = ContractWordAt(buf, size, off + 32);   // table of contents
       extents[1] = ContractWordAt(buf, size, off + 40);   // module table
-      extents[2] = ContractWordAt(buf, size, off + 56);   // external reloc
-      I64 counts[3];
+      extents[2] = ContractWordAt(buf, size, off + 48);   // external references
+      extents[3] = ContractWordAt(buf, size, off + 64);   // indirect symbols
+      extents[4] = ContractWordAt(buf, size, off + 56);   // external relocations
+      extents[5] = ContractWordAt(buf, size, off + 72);   // local relocations
+      I64 counts[6];
       counts[0] = ContractWordAt(buf, size, off + 36);
       counts[1] = ContractWordAt(buf, size, off + 44);
-      counts[2] = ContractWordAt(buf, size, off + 60);
+      counts[2] = ContractWordAt(buf, size, off + 52);
+      counts[3] = ContractWordAt(buf, size, off + 68);
+      counts[4] = ContractWordAt(buf, size, off + 60);
+      counts[5] = ContractWordAt(buf, size, off + 76);
+      I64 widths[6];
+      widths[0] = 4;   // the table of contents
+      widths[1] = 4;   // the module table
+      widths[2] = 4;   // the external reference table
+      widths[3] = 4;   // the indirect symbol table
+      widths[4] = 8;   // the external relocation table
+      widths[5] = 8;   // the local relocation table
       I64 e = 0;
-      while (e < 3) {
+      while (e < 6) {
         if (extents[e] < 0 || counts[e] < 0) return MV_DYSYMTAB_BOUNDS;
         if (extents[e] > size) return MV_DYSYMTAB_BOUNDS;
         // A count of zero places no requirement on the extent.
         if (counts[e] > 0) {
-          if (counts[e] > (size - extents[e]) / 4) {
+          if (counts[e] > (size - extents[e]) / widths[e]) {
             return MV_DYSYMTAB_BOUNDS;
           }
         }
         e = e + 1;
       }
+      // The dysymtab's SYMBOL INDEX RANGES must lie inside the LC_SYMTAB's
+      // symbol table.
+      //
+      // F4 -- The dysymtab partitions the symbol table into a local range,
+      // an external definition range and an undefined range. Each range is
+      // a (first index, count) pair, and each must lie inside the symbol
+      // table that the LC_SYMTAB declares.
+      //
+      // The check is performed only when an LC_SYMTAB has already been
+      // seen. The load commands are walked in file order, and the
+      // LC_SYMTAB normally precedes the LC_DYSYMTAB; when it does not, the
+      // relationship is checked after the walk, below.
+      I64 ranges[6];
+      ranges[0] = ContractWordAt(buf, size, off + 8);    // ilocalsym
+      ranges[1] = ContractWordAt(buf, size, off + 12);   // nlocalsym
+      ranges[2] = ContractWordAt(buf, size, off + 16);   // iextdefsym
+      ranges[3] = ContractWordAt(buf, size, off + 20);   // nextdefsym
+      ranges[4] = ContractWordAt(buf, size, off + 24);   // iundefsym
+      ranges[5] = ContractWordAt(buf, size, off + 28);   // nundefsym
+      I64 r = 0;
+      while (r < 6) {
+        if (ranges[r] < 0) return MV_DYSYMTAB_BOUNDS;
+        r = r + 1;
+      }
+      // The three ranges must not overlap and must not exceed the symbol
+      // table's symbol count.
+      if (vm_nsyms > 0) {
+        // The local range.
+        if (ranges[1] > 0) {
+          if (ranges[0] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+          if (ranges[1] > vm_nsyms - ranges[0]) return MV_DYSYMTAB_BOUNDS;
+        }
+        // The external definition range.
+        if (ranges[3] > 0) {
+          if (ranges[2] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+          if (ranges[3] > vm_nsyms - ranges[2]) return MV_DYSYMTAB_BOUNDS;
+        }
+        // The undefined range.
+        if (ranges[5] > 0) {
+          if (ranges[4] > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+          if (ranges[5] > vm_nsyms - ranges[4]) return MV_DYSYMTAB_BOUNDS;
+        }
+      }
       found_dysymtab = 1;
       vm_has_dysymtab = 1;
+      // The dysymtab's symbol ranges are recorded so that the relationship
+      // can be checked after the walk, when the LC_SYMTAB may come first.
+      vm_dysym_ilocalsym = ranges[0];
+      vm_dysym_nlocalsym = ranges[1];
+      vm_dysym_iextdefsym = ranges[2];
+      vm_dysym_nextdefsym = ranges[3];
+      vm_dysym_iundefsym = ranges[4];
+      vm_dysym_nundefsym = ranges[5];
     }
 
     if (cmd == LC_SEGMENT_64) {
@@ -403,11 +554,14 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       if (cmdsize < SEGMENT64_SIZE) return MV_SEGMENT_STRUCT;
       if (vm_nsegments >= MV_MAX_SEGMENTS) return MV_SEGMENT_STRUCT;
       // The segment's file extent.
-      I64 fileoff = ContractWordAt(buf, size, off + 40);
-      I64 filesize = ContractWordAt(buf, size, off + 48);
+      //
+      // F3 -- THE FILE-BACKED FIELDS ARE 64 BITS WIDE. They are read
+      // through `ContractQwordAt`, so the upper half is not ignored.
+      I64 fileoff = ContractQwordAt(buf, size, off + 40);
+      I64 filesize = ContractQwordAt(buf, size, off + 48);
       // The segment's in-memory extent.
-      I64 vmaddr = ContractWordAt(buf, size, off + 24);
-      I64 vmsize = ContractWordAt(buf, size, off + 32);
+      I64 vmaddr = ContractQwordAt(buf, size, off + 24);
+      I64 vmsize = ContractQwordAt(buf, size, off + 32);
       I64 maxprot = ContractWordAt(buf, size, off + 56);
       I64 initprot = ContractWordAt(buf, size, off + 60);
       if (fileoff < 0 || filesize < 0) return MV_SEGMENT_STRUCT;
@@ -418,6 +572,11 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       if (fileoff > size) return MV_SEGMENT_BOUNDS;
       if (filesize > size - fileoff) return MV_SEGMENT_BOUNDS;
       // The in-memory extent must not wrap the address space.
+      //
+      // F3 -- A LARGE VIRTUAL ADDRESS OR VIRTUAL SIZE IS NOT A DEFECT. A
+      // segment may be mapped far above the end of the file, so these
+      // fields are bounded by the ADDRESS SPACE and not by the file size.
+      // Only the FILE-BACKED extent is bounded by the file.
       if (vmsize > 0) {
         if (vmaddr > 0x7FFFFFFFFFFF - vmsize) return MV_SEGMENT_STRUCT;
       }
@@ -431,7 +590,18 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
       I64 s = 0;
       while (s < nsects) {
         I64 soff = off + SEGMENT64_SIZE + s * 80;
-        I64 sec_size = ContractWordAt(buf, size, soff + 40);
+        // F3 -- THE SECTION'S SIZE IS 64 BITS WIDE. It is read through
+        // `ContractQwordAt`, so the upper half is not ignored.
+        I64 sec_size = ContractQwordAt(buf, size, soff + 40);
+        // The section's file OFFSET is THIRTY-TWO bits wide. It is read
+        // through `ContractWordAt`, because reading eight bytes here would
+        // consume the `align` field as well and produce a value that is not
+        // an offset.
+        //
+        // The platform's own `section_64` structure is:
+        //
+        //   sectname[16]  segname[16]  addr:u64  size:u64  offset:u32
+        //   align:u32  reloff:u32  nreloc:u32  flags:u32  reserved1..3
         I64 sec_offset = ContractWordAt(buf, size, soff + 48);
         I64 sec_align = ContractWordAt(buf, size, soff + 52);
         I64 reloff = ContractWordAt(buf, size, soff + 56);
@@ -440,8 +610,51 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
         if (sec_size < 0 || sec_offset < 0) return MV_SECTION_BOUNDS;
         if (reloff < 0 || nreloc < 0) return MV_SECTION_BOUNDS;
         if (sec_align < 0) return MV_SECTION_BOUNDS;
-        // A section with CONTENT must lie inside the file.
-        if (sec_size > 0) {
+        // The section TYPE is the low byte of the section's flags.
+        I64 sec_type = sec_flags & 255;
+        //
+        // F3 -- THE FILE-BACKED EXTENT AND THE VIRTUAL EXTENT ARE DIFFERENT.
+        //
+        // A section's `size` and `offset` are its FILE-BACKED extent, and
+        // they are bounded by the file. A section whose type claims NO file
+        // bytes -- the zero-fill types -- has no file-backed extent at all,
+        // and its `size` is a VIRTUAL size that is NOT bounded by the file.
+        //
+        // The previous revision applied the file bound to EVERY section,
+        // which rejected the valid zero-fill sections. It also rejected
+        // every section whose virtual address or virtual size was merely
+        // large, which is a different mistake with the same root cause:
+        // a virtual extent was treated as a file extent.
+        //
+        // The section types are the platform's own values, taken from
+        // `<mach-o/loader.h>`:
+        //
+        //   0x00 S_REGULAR                         file-backed
+        //   0x01 S_ZEROFILL                       NO file bytes
+        //   0x02 S_CSTRING_LITERALS               file-backed
+        //   0x0c S_GB_ZEROFILL                    NO file bytes
+        //   0x12 S_THREAD_LOCAL_ZEROFILL          NO file bytes
+        //   0x13 S_THREAD_LOCAL_VARIABLES         NO file bytes
+        //   0x14 S_THREAD_LOCAL_VARIABLE_POINTERS NO file bytes
+        //   0x15 S_THREAD_LOCAL_INIT_FUNCTION_PTRS NO file bytes
+        //   0x16 S_INIT_FUNC_OFFSETS              NO file bytes
+        //
+        // Every OTHER type is treated as file-backed, so an unknown type
+        // cannot smuggle an unbounded file extent past the bound. The
+        // rule is therefore CONSERVATIVE in the direction that matters:
+        // an unrecognised type is validated, not waved through.
+        I64 file_backed = 1;
+        if (sec_type == 1) file_backed = 0;   // S_ZEROFILL
+        if (sec_type == 12) file_backed = 0;  // S_GB_ZEROFILL
+        if (sec_type == 18) file_backed = 0;  // S_THREAD_LOCAL_ZEROFILL
+        if (sec_type == 19) file_backed = 0;  // S_THREAD_LOCAL_VARIABLES
+        if (sec_type == 20) file_backed = 0;  // S_THREAD_LOCAL_VARIABLE_POINTERS
+        if (sec_type == 21) file_backed = 0;  // S_THREAD_LOCAL_INIT_FUNCTION_POINTERS
+        if (sec_type == 22) file_backed = 0;  // S_INIT_FUNC_OFFSETS
+        // A section with CONTENT must lie inside the file. The subtraction
+        // form cannot overflow: the offset is checked against the file size
+        // first, so the remainder is non-negative.
+        if (file_backed == 1 && sec_size > 0) {
           if (sec_offset > size) return MV_SECTION_BOUNDS;
           if (sec_size > size - sec_offset) return MV_SECTION_BOUNDS;
         }
@@ -451,9 +664,11 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
           if (reloff > size) return MV_RELOCATION_BOUNDS;
           if (nreloc > (size - reloff) / 8) return MV_RELOCATION_BOUNDS;
         }
-        // A ZERO-FILL section claims no file bytes.
-        if ((sec_flags & 255) == 1) {
-          if (sec_size > 0 && sec_offset != 0) return MV_SECTION_BOUNDS;
+        // A section that claims NO file bytes must not claim a file-backed
+        // extent either. Its offset is meaningless, so a non-zero offset
+        // is an inconsistent declaration.
+        if (file_backed == 0) {
+          if (sec_offset != 0) return MV_SECTION_BOUNDS;
         }
         // Record the extent for the overlap check.
         if (vm_nsections >= MV_MAX_SECTIONS) return MV_SECTION_BOUNDS;
@@ -470,6 +685,31 @@ static I64 ContractValidateMachO(U8 *buf, I64 size, I64 require_symtab) {
   }
   // The load commands must exactly fill the declared extent.
   if (off != limit) return MV_BAD_SIZEOFCMDS;
+
+  // F4 -- THE DYSYMTAB'S SYMBOL RANGES AGAINST THE SYMTAB'S SYMBOL COUNT.
+  //
+  // The check is repeated here, after the walk, so that it is performed
+  // even when the LC_DYSYMTAB precedes the LC_SYMTAB in the file.
+  if (found_dysymtab == 1 && found_symtab == 1 && vm_nsyms > 0) {
+    if (vm_dysym_nlocalsym > 0) {
+      if (vm_dysym_ilocalsym > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+      if (vm_dysym_nlocalsym > vm_nsyms - vm_dysym_ilocalsym) {
+        return MV_DYSYMTAB_BOUNDS;
+      }
+    }
+    if (vm_dysym_nextdefsym > 0) {
+      if (vm_dysym_iextdefsym > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+      if (vm_dysym_nextdefsym > vm_nsyms - vm_dysym_iextdefsym) {
+        return MV_DYSYMTAB_BOUNDS;
+      }
+    }
+    if (vm_dysym_nundefsym > 0) {
+      if (vm_dysym_iundefsym > vm_nsyms) return MV_DYSYMTAB_BOUNDS;
+      if (vm_dysym_nundefsym > vm_nsyms - vm_dysym_iundefsym) {
+        return MV_DYSYMTAB_BOUNDS;
+      }
+    }
+  }
 
   // Two sections that claim the same file bytes are an inconsistent
   // structural declaration.
@@ -830,6 +1070,9 @@ static I64 ContractReadExitStatusFile(U8 *path, I64 *value, I64 *code) {
 #define AR_MAGIC_LEN      8
 #define AR_MEMBER_HDR_LEN 60
 #define AR_MAX_MEMBERS    256
+#define AR_NAME_FIELD_LEN 16
+#define AR_NAME_GUARD_LEN 32
+#define AR_NAME_GUARD_BYTE 165
 
 // The archive decoding result codes.
 #define AR_OK                  0
@@ -841,6 +1084,7 @@ static I64 ContractReadExitStatusFile(U8 *path, I64 *value, I64 *code) {
 #define AR_BAD_EXTENDED_NAME   6
 #define AR_TOO_MANY_MEMBERS    7
 #define AR_EMPTY_MEMBER        8
+#define AR_NAME_OVERRUN        9
 
 static U8 *ContractArReason(I64 code) {
   if (code == AR_OK) return "OK";
@@ -852,6 +1096,7 @@ static U8 *ContractArReason(I64 code) {
   if (code == AR_BAD_EXTENDED_NAME) return "ARCHIVE_EXTENDED_NAME_INVALID";
   if (code == AR_TOO_MANY_MEMBERS) return "ARCHIVE_TOO_MANY_MEMBERS";
   if (code == AR_EMPTY_MEMBER) return "ARCHIVE_MEMBER_PAYLOAD_EMPTY";
+  if (code == AR_NAME_OVERRUN) return "ARCHIVE_MEMBER_NAME_OUT_OF_BOUNDS";
   return "ARCHIVE_UNKNOWN";
 }
 
@@ -964,6 +1209,10 @@ static I64 ContractArNameEqual(U8 *a, I64 alen, U8 *b, I64 blen) {
 //
 // The extended form is the "alternative encoding" that MUST remain
 // semantically equivalent to the short form for the SAME decoded name.
+static I64 ContractDecodeMemberName(U8 *source, I64 source_len,
+                                     I64 short_form, I64 extlen,
+                                     U8 **out_name, I64 *out_len);
+
 static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
   ar->count = 0;
   if (buf == NULL) return AR_ABSENT;
@@ -1004,7 +1253,10 @@ static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
     I64 name_off = off;
     I64 namelen = 0;
     I64 extended = 0;
-    U8 *name = MAlloc(msize + 1);
+    // The extended name's declared length.
+    I64 extlen = 0;
+    // The destination of the decoded name.
+    U8 *name = NULL;
 
     // The extended form is signalled by "#1/".
     //
@@ -1013,64 +1265,59 @@ static I64 ContractDecodeArchive(U8 *buf, I64 size, ArArchive *ar) {
     // bytes of the member's data. The length is NOT a fixed-width field,
     // so it is read as a decimal run terminated by a space or by the end
     // of the name field.
+    I64 is_extended = 0;
     if (buf[name_off] == 35 && buf[name_off + 1] == 49 && buf[name_off + 2] == 47) {
+      is_extended = 1;
       extended = 1;
-      I64 extlen = 0;
       I64 e = name_off + 3;
       I64 edigits = 0;
-      while (e < name_off + 16) {
+      while (e < name_off + AR_NAME_FIELD_LEN) {
         I64 c = buf[e];
         if (c < 48 || c > 57) break;
+        if (extlen > 1000000) { return AR_BAD_EXTENDED_NAME; }
         extlen = extlen * 10 + (c - 48);
         edigits = edigits + 1;
         e = e + 1;
       }
-      if (edigits == 0 || extlen <= 0 || extlen > msize) {
+      if (edigits == 0 || extlen <= 0 || extlen > msize ||
+          extlen > AR_NAME_FIELD_LEN) {
         return AR_BAD_EXTENDED_NAME;
       }
+    }
+    // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4,
+    // F7 -- THE MEMORY-SAFETY REPAIR.
+    //
+    // THE ORIGINAL DEFECT. The name buffer was allocated from the MEMBER
+    // PAYLOAD size:
+    //
+    //     U8 *name = MAlloc(msize + 1);
+    //
+    // and the SHORT form then copied the SIXTEEN-byte name field into it:
+    //
+    //     MemCpy(name, buf + name_off, namelen);   // namelen may be 16
+    //
+    // A member whose payload was FOUR bytes therefore received a FIVE-byte
+    // allocation and a SIXTEEN-byte write. The write ran eleven bytes past
+    // the end of the allocation.
+    //
+    // THE REPAIR. The name decoding is delegated to
+    // `ContractDecodeMemberName`, which allocates the destination from the
+    // DECODED LENGTH, bounds the copy by the SOURCE slice, and carries an
+    // ALLOCATION GUARD that detects any write past the end of the name.
+    if (is_extended == 1) {
       // The extended name is the FIRST `extlen` bytes of the payload.
-      if (extlen > msize) return AR_BAD_EXTENDED_NAME;
-      MemCpy(name, buf + payload_off, extlen);
-      // The extended name area is NUL-PADDED to an eight-byte boundary:
-      // the name of a member named "good.o" is stored as "good.o" followed
-      // by a NUL and then by further NUL padding, and the DECLARED length
-      // covers the padding as well.
-      //
-      // The MEMBER IDENTITY is the name itself, WITHOUT the padding. The
-      // padding is an artefact of the extended encoding and is not part of
-      // the name, so it is trimmed here. Without the trim, the decoded
-      // identity of "good.o" would be the twelve bytes "good.o\0\0\0\0\0\0",
-      // and a requirement for the member "good.o" would NOT be satisfied.
-      I64 real = extlen;
-      while (real > 0 && name[real - 1] == 0) real = real - 1;
-      if (real == 0) return AR_BAD_EXTENDED_NAME;
-      namelen = real;
+      I64 mcode = ContractDecodeMemberName(buf + payload_off, msize, 0,
+                                            extlen, &name, &namelen);
+      if (mcode != AR_OK) return mcode;
       // The payload is the remainder AFTER the extended name.
       ar->m[ar->count].payload = buf + payload_off + extlen;
       ar->m[ar->count].paylen = msize - extlen;
     } else {
       // The short form. The name is the field up to the terminating slash,
       // and it is space-padded.
-      I64 n = 0;
-      while (n < 16) {
-        if (buf[name_off + n] == 47) break;
-        if (buf[name_off + n] == 32) break;
-        n = n + 1;
-      }
-      if (n > 0 && buf[name_off + n] == 47) {
-        // The trailing slash terminates the name. The name is the bytes
-        // BEFORE it.
-        namelen = n;
-        MemCpy(name, buf + name_off, namelen);
-      } else if (n > 0 && buf[name_off + n] == 32) {
-        // A space-padded name with no trailing slash.
-        namelen = n;
-        MemCpy(name, buf + name_off, namelen);
-      } else {
-        // A name that fills the whole field with no terminator.
-        namelen = 16;
-        MemCpy(name, buf + name_off, 16);
-      }
+      I64 scode = ContractDecodeMemberName(buf + name_off, AR_NAME_FIELD_LEN,
+                                            1, 0, &name, &namelen);
+      if (scode != AR_OK) return scode;
       ar->m[ar->count].payload = buf + payload_off;
       ar->m[ar->count].paylen = msize;
     }
@@ -1411,4 +1658,95 @@ static I64 ContractSelfCheck() {
   "CONTRACT_SELFTEST_CHECKS\t%lld\n", checks;
   "CONTRACT_SELFTEST_FAILURES\t%lld\n", failures;
   return failures;
+}
+//
+// It is a SEPARATE, SMALL function that decodes ONE member name from a
+// bounded source slice. The archive decoder calls it, and the self-check
+// calls it with the adversarial inputs.
+//
+// The function's CONTRACT is:
+//
+//   * the destination is allocated from the DECODED LENGTH, never from the
+//     payload size;
+//   * at most `decoded_length` bytes are copied;
+//   * the copy is bounded by the SOURCE slice as well as by the
+//     destination;
+//   * the terminator is written ONCE, at the decoded length.
+//
+// The allocation carries a GUARD after the name, and the guard is verified
+// before the function returns. A copy that ran past the end of the name
+// is therefore DETECTED and reported as AR_NAME_OVERRUN.
+//
+// `source` is the bounded source slice, `source_len` is its length,
+// `short_form` is 1 for the "name/" form and 0 for the "#1/N" form, and
+// `extlen` is the declared extended length for the "#1/N" form.
+static I64 ContractDecodeMemberName(U8 *source, I64 source_len,
+                                     I64 short_form, I64 extlen,
+                                     U8 **out_name, I64 *out_len) {
+  U8 *decoded = MAlloc(AR_NAME_FIELD_LEN + 1);
+  MemSet(decoded, 0, AR_NAME_FIELD_LEN + 1);
+  I64 decoded_length = 0;
+  I64 namelen = 0;
+  if (short_form == 0) {
+    // The extended form. The declared length must be positive, must fit
+    // in the source slice, and must fit in the name field's width.
+    if (extlen <= 0 || extlen > source_len || extlen > AR_NAME_FIELD_LEN) {
+      Free(decoded);
+      return AR_BAD_EXTENDED_NAME;
+    }
+    MemCpy(decoded, source, extlen);
+    decoded_length = extlen;
+    I64 real = decoded_length;
+    while (real > 0 && decoded[real - 1] == 0) real = real - 1;
+    if (real == 0) { Free(decoded); return AR_BAD_EXTENDED_NAME; }
+    namelen = real;
+  } else {
+    // The short form. The scan is bounded by the name field's width AND
+    // by the source slice's length.
+    I64 limit = AR_NAME_FIELD_LEN;
+    if (source_len < limit) limit = source_len;
+    I64 n = 0;
+    while (n < limit) {
+      if (source[n] == 47) break;
+      if (source[n] == 32) break;
+      n = n + 1;
+    }
+    if (n > 0 && n < limit && source[n] == 47) {
+      namelen = n;
+    } else if (n > 0 && n < limit && source[n] == 32) {
+      namelen = n;
+    } else {
+      namelen = limit;
+    }
+    if (namelen > limit) namelen = limit;
+    MemCpy(decoded, source, namelen);
+    decoded_length = namelen;
+  }
+  // The destination is allocated from the DECODED LENGTH.
+  I64 alloc_size = decoded_length + 1;
+  if (alloc_size <= 0) { Free(decoded); return AR_BAD_EXTENDED_NAME; }
+  U8 *name = MAlloc(alloc_size + AR_NAME_GUARD_LEN);
+  I64 gi = 0;
+  while (gi < AR_NAME_GUARD_LEN) {
+    name[alloc_size + gi] = AR_NAME_GUARD_BYTE;
+    gi = gi + 1;
+  }
+  MemCpy(name, decoded, decoded_length);
+  name[decoded_length] = 0;
+  // The guard is verified.
+  I64 guard_ok = 1;
+  gi = 0;
+  while (gi < AR_NAME_GUARD_LEN) {
+    if (name[alloc_size + gi] != AR_NAME_GUARD_BYTE) guard_ok = 0;
+    gi = gi + 1;
+  }
+  if (guard_ok == 0) {
+    Free(name);
+    Free(decoded);
+    return AR_NAME_OVERRUN;
+  }
+  Free(decoded);
+  *out_name = name;
+  *out_len = namelen;
+  return AR_OK;
 }

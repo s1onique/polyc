@@ -1180,7 +1180,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1482,6 +1482,63 @@ $(DRIVER_ROUTE03_COMPARE_BIN): $(DRIVER_ROUTE03_COMPARE_OBJ) $(TEST_PREFIX_LIBTO
 driver-wp001-correction03-contract-test: $(DRIVER_ROUTE03_COMPARE_BIN)
 	@$(DRIVER_ROUTE03_COMPARE_BIN) selfcheck
 	@echo "DRIVER_WP001_CORRECTION03_CONTRACT_TEST_STATUS=PASS"
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4.
+#
+# THE LEDGER-MEMBERSHIP SELF-CHECK. It exercises the COMPARATOR'S OWN
+# `LedgerHas`, which decides whether an event identity is a member of the
+# run ledger. The check is EXECUTED, not merely compiled.
+#
+# The ledger is written to a work directory that the rule owns, so the
+# check never touches a ledger that another rule is using.
+DRIVER_ROUTE03_LEDGER_CHECK = $(DRIVER_ROUTE03_WORKDIR)/ledger-selfcheck.txt
+.PHONY: driver-wp001-correction03-ledger-test
+driver-wp001-correction03-ledger-test: $(DRIVER_ROUTE03_COMPARE_BIN)
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
+	@$(DRIVER_ROUTE03_COMPARE_BIN) ledgercheck $(DRIVER_ROUTE03_LEDGER_CHECK)
+	@rm -f $(DRIVER_ROUTE03_LEDGER_CHECK)
+	@echo "DRIVER_WP001_CORRECTION03_LEDGER_TEST_STATUS=PASS"
+
+# THE STRUCTURAL COUNTEREXAMPLE PROBE.
+#
+# It exercises the SHARED VALIDATION CONTRACT with hand-built fixtures, so
+# that each of the seven P1 defects has an INDEPENDENT, REPRODUCIBLE
+# counterexample that does not depend on the production compiler having
+# misbehaved.
+#
+# The probe's exit status is the number of FAILED controls, so it is usable
+# directly as a gate.
+DRIVER_ROUTE03_C4R4_PROBE_SRC = tools/quality/driver-required-route-correction03-c4r4-probe.HC
+DRIVER_ROUTE03_C4R4_PROBE_OBJ = build/driver-required-route-correction03-c4r4-probe.o
+DRIVER_ROUTE03_C4R4_PROBE_BIN = build/driver-required-route-correction03-c4r4-probe
+DRIVER_ROUTE03_C4R4_PROBE_DIR = $(DRIVER_ROUTE03_WORKDIR)/c4r4-fixtures
+
+.PHONY: driver-wp001-correction03-c4r4-probe-test
+driver-wp001-correction03-c4r4-probe-test: $(DRIVER_ROUTE03_C4R4_PROBE_BIN)
+	@rm -rf $(DRIVER_ROUTE03_C4R4_PROBE_DIR)
+	@mkdir -p $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/macho \
+	          $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/archive \
+	          $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/ledger
+	@$(DRIVER_ROUTE03_C4R4_PROBE_BIN) macho $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/macho
+	@$(DRIVER_ROUTE03_C4R4_PROBE_BIN) archive $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/archive
+	@$(DRIVER_ROUTE03_C4R4_PROBE_BIN) ledger $(DRIVER_ROUTE03_C4R4_PROBE_DIR)/ledger
+	@echo "DRIVER_WP001_CORRECTION03_C4R4_PROBE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE03_C4R4_PROBE_OBJ): $(DRIVER_ROUTE03_C4R4_PROBE_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_C4R4_PROBE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_C4R4_PROBE_BIN): $(DRIVER_ROUTE03_C4R4_PROBE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_C4R4_PROBE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
+		exit 1; \
+	fi
 
 $(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
