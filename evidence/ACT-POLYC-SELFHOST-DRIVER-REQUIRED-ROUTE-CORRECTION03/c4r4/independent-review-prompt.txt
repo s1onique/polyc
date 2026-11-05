@@ -1,0 +1,103 @@
+# THE INDEPENDENT C4 REVIEW -- the review instructions.
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4.
+
+You are an INDEPENDENT reviewer. You did not write this code. Your job is
+to find the defects that remain, NOT to confirm that the work is good.
+
+THE SUBJECT.
+
+The changes under review are the commits of the ACT
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 from the ACT's entry
+identity up to HEAD. The changes are confined to:
+
+    tools/quality/driver-required-route-correction03-*.HC
+    Makefile
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/
+
+The production compiler under src/ and the production bootstrap under
+tools/bootstrap/ are BYTE-IDENTICAL to the ACT's entry identity. They are
+not part of the subject and a finding against them is out of scope.
+
+WHAT TO LOOK FOR.
+
+The subject is an EVIDENCE HARNESS. Its whole purpose is to produce
+observations that a reviewer can trust. A defect in it is a defect in the
+EVIDENCE, even when the harness itself works.
+
+Read the harness, the comparator, the contract, the emission verifier, the
+adverse probe and the structural probe, and ask, for each one:
+
+  1. Does it actually CHECK what it claims to check, or does it only
+     record it? A recorded observation is not a checked one.
+
+  2. Is there an input for which the check is SILENTLY SATISFIED? A
+     comparison of two values that agree is not a validation of either.
+
+  3. Are the reason tokens DISTINCT? If two different hazards report the
+     same token, the evidence cannot tell them apart, and a reviewer
+     cannot tell which hazard was actually exercised.
+
+  4. Are the BOUNDS correct? Read the width of every field read from a
+     Mach-O image, an archive header or a load command against the actual
+     on-disk layout.
+
+  5. Does any buffer write or read depend on a length that is computed
+     from the data it is about to copy?
+
+  6. Is the IDENTITY construction complete? If the identity is computed
+     over a set of fields, is EVERY field that distinguishes one
+     execution from another actually IN the set?
+
+  7. Are the indices into an argument vector correct? An off-by-one here
+     silently edits the wrong file.
+
+THE SPECIFIC CLAIMS TO ATTACK.
+
+The harness now claims:
+
+  * the trusted runner validates the producer it is about to execute -- it
+    must exist, be executable, and be a Mach-O image for the expected
+    architecture;
+
+  * the runner applies the recorded environment to the spawned child with
+    setenv BEFORE the spawn;
+
+  * the event directory is allocated EXCLUSIVELY;
+
+  * the comparator RECOMPUTES the event identity from the capture record's
+    own fields and requires it to match the recorded identity;
+
+  * the run ledger's membership is EXACT -- the same length, the same
+    bytes, a terminated line;
+
+  * the archive's real members' EMBEDDED objects are validated, and the
+    bookkeeping member is recognised and skipped;
+
+  * the runtime producer and the cached archive are REQUALIFIED at the
+    acceptance boundary on every run, whatever make believes about
+    freshness.
+
+Try to REFUTE each claim. Construct the concrete counterexample: the
+specific bytes, the specific command, and the specific observed output
+that shows the claim is false.
+
+REPORTING.
+
+Report each finding as:
+
+    FINDING <id>
+    SEVERITY   P0 | P1 | P2
+    LOCATION   file:line
+    CLAIM      the specific claim that is false
+    COUNTEREXAMPLE
+              the concrete input or command and the observed result
+    FIX        what would make the claim true
+
+Report a finding ONLY if you can state a concrete counterexample. A
+finding without a counterexample is not a finding.
+
+If you find no P0 or P1 finding, say so EXPLICITLY and state what you
+checked, so that the absence of a finding is itself evidence.
+
+DO NOT modify any file. This is a REVIEW, not an implementation.
