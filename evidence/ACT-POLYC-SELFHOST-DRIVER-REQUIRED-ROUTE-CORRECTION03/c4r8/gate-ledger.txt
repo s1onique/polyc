@@ -1,0 +1,129 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8.
+#
+# THE GATE LEDGER. Every command that was run against the C4 ROUND 8
+# subject, and its result.
+#
+# The entry identity is 9f472e5ef20018b32923744e267f56e5530c50cd. The
+# subject is the committed C4 ROUND 8 subject.
+#
+# COLUMNS: GATE\tCOMMAND\tRESULT\tNOTE
+#
+# --- THE THREE REPRODUCED FINDINGS. --------------------------------------
+r8-01-pristine-isolated	make driver-wp001-correction03-test in a FRESH worktree with an EMPTY build directory	PASS	DRIVER_WP001_CORRECTION03_TEST_STATUS_PASS_EXIT_0
+r8-01-pristine-probe	make driver-wp001-correction03-c4r6-probe-test in the same FRESH worktree	PASS	DRIVER_WP001_CORRECTION03_C4R6_PROBE_TEST_STATUS_PASS_EXIT_0
+r8-01-child-argv	the capture record's ARGV block	PASS	THE_CHILD_CARRIES_--install-dir_<local-prefix>_IN_THE_COMPILER_OWN_TWO_ELEMENT_FORM
+r8-01-no-usr-local	grep -r /usr/local/include over the capture records	PASS	NO_COMPILER_CAPTURE_READS_A_HEADER_FROM_USR_LOCAL
+r8-01-regeneration	rm the local prefix header, then make the prefix target	PASS	THE_HEADER_IS_REGENERATED_FROM_THE_CANONICAL_SOURCE
+r8-02-mutant-sensitivity	the mutant `same = 1;` substituted into ContractStagedDigestMatches	FAIL_AS_REQUIRED	AC_05_FALSE_STAGED_DIGEST_FAIL_AC_06_COPIED_CAPTURE_FIELD_FAIL_EXIT_2
+r8-02-mutant-selftest	the same mutant, against the contract's self-check	FAIL_AS_REQUIRED	STAGED_DIGEST_REJECT_FAIL_STAGED_DIGEST_BYTES_REJECT_FAIL_CONTRACT_SELFTEST_FAILURES_2
+r8-02-pristine-anticontrol	make driver-wp001-correction03-c4r6-probe-test (anticontrol mode)	PASS	6_CONTROLS_0_FAILURES
+r8-03-output-mode	make driver-wp001-correction03-c4r6-probe-test (outmode mode)	PASS	19_CONTROLS_0_FAILURES
+r8-03-direct-dash-dash	the DIRECT compiler invocation of `-o-` and of `-o -`	PASS	-o-_STDOUT_284_BYTES_NO_FILE_-o_-_STDOUT_0_BYTES_FILE_NAMED_DASH
+#
+# --- THE CORRECTION-OWNED GATES. -----------------------------------------
+c4r6-probe	make driver-wp001-correction03-c4r6-probe-test	PASS	EXEC_33_ANTICONTROL_6_OUTMODE_19_MACHO_5_ENVBIND_6_BLOCKSTATUS_5_ALL_0_FAILURES
+c4r5-probe	make driver-wp001-correction03-c4r5-probe-test	PASS	6_CONTROLS_0_FAILURES
+c4r4-probe	make driver-wp001-correction03-c4r4-probe-test	PASS	THE_ROUND_4_PROBE
+correction03	make driver-wp001-correction03-test	PASS	THE_WHOLE_CORRECTION03_SUITE
+adverse	make driver-wp001-correction03-adverse-test	PASS	28_OF_28_CONTROLS_PHYSICALLY_EXECUTED
+emission	make driver-wp001-correction03-emission-test	PASS	4_OF_4_DOMAINS
+causal	make driver-wp001-correction03-causal-test	PASS	THE_POLYC_CAUSAL_MUTATION_IS_DETECTED
+warm-producer	make driver-wp001-correction03-warm-producer-test	PASS	DRIVER_WP001_CORRECTION03_WARM_PRODUCER_STATUS_PASS
+envbind	make driver-wp001-correction03-envbind-test	PASS	DRIVER_WP001_CORRECTION03_ENVBIND_STATUS_PASS
+envbind-anticontrol	make driver-wp001-correction03-envbind-anticontrol-test	PASS	THE_MUTANT_IS_DETECTED
+ledger	make driver-wp001-correction03-ledger-test	PASS	THE_LEDGER_CHECKS
+contract	make driver-wp001-correction03-contract-test	PASS	33_SELFTEST_CHECKS_0_FAILURES
+required-route	make driver-wp001-required-route-test	PASS	DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS_PASS
+precedence	make driver-wp001-precedence-test	PASS	DRIVER_WP001_PRECEDENCE_TEST_STATUS_PASS
+gate-fast	make gate-fast	PASS	VERDICT_PASS
+gate-push	make gate-push	PASS	VERDICT_PASS_EXIT_0_BUILD_INSTALL_GEP01_AOT_JIT_LSP_DIFFCHECK_ALL_PASS
+gate-push-baseline	make gate-push at the ACT's entry identity dcefd625	PASS	VERDICT_PASS_EXIT_0_THE_SAME_GATE_IS_GREEN_ON_THE_BASELINE
+#
+# --- THE CONSERVATION MEASUREMENTS. ---------------------------------------
+parser-conservation	make unit-test	PASS	376/376_ASSERTIONS_0_FAILURES
+parser-md5	grep -o "PASSED: [0-9]*/[0-9]*" <unit-test log> | md5 -q	PASS	b6f117eb1386ca80f81bc06226e2a741_MATCHES_THE_FROZEN_VALUE
+lexer07	make lexer07-direct-differential	PASS	89/89
+lexer08	make lexer08-direct-differential	PASS	45/45
+lexer09	make lexer09-direct-differential	PASS	23/23
+production-delta	git diff dcefd625 -- src/ tools/bootstrap/	EMPTY	ZERO_PRODUCTION_SEMANTIC_DELTA
+authority-roster	git diff dcefd625 -- src/CMakeLists.txt	EMPTY	THE_SIXTEEN_AUTHORITIES_ARE_UNCHANGED_BY_CONSTRUCTION
+emission-domains	make driver-wp001-correction03-test	PASS	4_OF_4_DOMAINS
+abi-cases	make driver-wp001-correction03-test	PASS	16_CASES_0_FAILURES
+original-precedence	make driver-wp001-correction03-test	PASS	8_OF_8_CASES
+#
+# --- THE JIT GATE QUALIFICATION. -----------------------------------------
+jit-baseline-serial	20 serial invocations of 04_ptr_ptr.HC on the BASELINE with the configured prefix	PASS	RUNS_20_CRASHES_0
+jit-subject-serial	20 serial invocations of 04_ptr_ptr.HC on the SUBJECT with the configured prefix	PASS	RUNS_20_CRASHES_0
+jit-baseline-parallel	20 OVERLAPPING invocations on the BASELINE	PASS	PARALLEL_FAILURES_0_OF_20
+jit-production-delta	git diff dcefd625 -- src/ tools/bootstrap/	EMPTY	THE_JIT_CODE_PATH_IS_THE_SAME_BYTES_ON_BOTH_SIDES
+jit-classification	see jit-qualification.txt	UNPROVEN	THE_REVIEWERS_OBSERVATION_DID_NOT_REPRODUCE_ON_EITHER_SIDE
+#
+# ---------------------------------------------------------------------------
+# THE JIT GATE -- THE FULL DISPOSITION.
+#
+# JIT_FAILURE_PREEXISTING=UNPROVEN
+#
+#   The reviewer's observation (BASELINE_CRASHES=7/20, SUBJECT_CRASHES=3/20,
+#   FAILURE_EXIT=139) was NOT reproduced under the controlled conditions the
+#   ACT prescribes: the same input, the same prefix configuration, serial
+#   runs, and the shared scratch path removed before each invocation. The
+#   baseline and the subject both recorded 0 crashes in 20 runs.
+#
+#   An unreproduced observation supports NEITHER "pre-existing" NOR
+#   "regression", so the classification is UNPROVEN.
+#
+#   The structural fact is decisive for the regression question: the
+#   production compiler's bytes are IDENTICAL on the two sides, so no change
+#   made by CORRECTION03 can have altered the compiler's JIT behaviour.
+#
+# CURRENT_GATE_PUSH=PASS
+#
+#   The subject's own mandatory gate is GREEN, measured on the subject:
+#
+#     CHECK=build      STATUS=PASS
+#     CHECK=install    STATUS=PASS
+#     CHECK=gep01      STATUS=PASS
+#     CHECK=aot        STATUS=PASS
+#     CHECK=jit        STATUS=PASS
+#     CHECK=lsp        STATUS=PASS
+#     CHECK=diff-check STATUS=PASS
+#     VERDICT=PASS
+#     EXIT=0
+#
+#   (gate-push-subject-ddea91d8.log)
+#
+#   The SAME gate is GREEN on the BASELINE, measured on a clone at the
+#   ACT's entry identity dcefd625:
+#
+#     VERDICT=PASS
+#     EXIT=0
+#
+#   (gate-push-baseline-dcefd625.log)
+#
+#   The gate was NOT turned green by dropping `04_ptr_ptr.HC`, by altering
+#   its expected result, by increasing retries until success, or by
+#   ignoring exit 139. It was run as-is, twice on the subject (the first
+#   run failed in the BOOTSTRAP chain's link step, which is a build
+#   race on the shared assembly scratch path and not a semantic failure;
+#   the second run was green from `build` onward), and once on the
+#   baseline.
+#
+# THE RESIDUE THE INVESTIGATION EXPOSED.
+#
+#   src/tests/run_jit.HC, at the host-architecture branch, omits
+#   `--install-dir` from its compiler invocation. Outside the gate -- where
+#   the compiler's compile-time default is /usr/local -- every test in the
+#   JIT suite then reports "Failed to compile" with
+#
+#     ERROR: Failed to open file: /usr/local/include/tos.HH
+#
+#   This is the SAME defect CLASS as the R8-01 finding, but it lives in
+#   `src/`, which this ACT FORBIDS. It is RESIDUE, and it is the exact
+#   dependency that a following ACT must discharge. It does NOT make the
+#   current gate non-green, because the gate bakes its own prefix into the
+#   compiler as the compile-time default:
+#
+#     add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+#
+#   and the gate builds with INSTALL_PREFIX='$gate_prefix'.
+# ---------------------------------------------------------------------------

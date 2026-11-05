@@ -1,0 +1,245 @@
+# THE INDEPENDENT C4 ROUND 8 REVIEW -- the review instructions.
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8.
+
+You are an INDEPENDENT reviewer. You did not write this code. Your job is
+to find the defects that remain, NOT to confirm that the work is good.
+
+THE REVIEW IS READ-ONLY. Do NOT modify any file in the repository. Do NOT
+commit. Do NOT push. You may BUILD and RUN the gates and the probes. You
+MAY create a MUTANT in a scratch COPY of the tree to test a control's
+sensitivity -- but never in the repository itself.
+
+THE SUBJECT.
+
+The changes under review are the C4 ROUND 8 subject against the ACT's
+entry identity.
+
+THE BASE COMMIT IS 9f472e5ef20018b32923744e267f56e5530c50cd. The review
+range is exactly:
+
+    git diff 9f472e5ef20018b32923744e267f56e5530c50cd
+
+The changes are confined to:
+
+    tools/quality/driver-required-route-correction03-*.HC
+    Makefile
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r8/
+
+The production compiler under src/ and the production bootstrap under
+tools/bootstrap/ are BYTE-IDENTICAL to the ACT's entry identity. Verify
+this yourself:
+
+    git diff 9f472e5ef20018b32923744e267f56e5530c50cd -- src/ tools/bootstrap/
+
+That command MUST print NOTHING.
+
+WHAT YOU MUST INDEPENDENTLY REPRODUCE.
+
+Six things. Each is a claim the executor made. Reproduce each one; report
+each one as REPRODUCED or NOT REPRODUCED.
+
+--- 1. THE ORIGINAL MISSING-INSTALL-PREFIX FAILURE -------------------
+
+In an ISOLATED checkout at the BASE COMMIT, with an EMPTY build
+directory, `make driver-wp001-correction03-test` FAILS with eleven of the
+thirty-three positive controls failing, and the compiler child's stderr
+is
+
+    ERROR: Failed to open file: /usr/local/include/tos.HH
+
+and the child's argument vector, read from the capture record's ARGV
+block, has NO `--install-dir` element.
+
+Reproduce it:
+
+    git worktree add --detach /tmp/rev1/checkout 9f472e5ef20018b32923744e267f56e5530c50cd
+    rm -rf /tmp/rev1/checkout/build
+    cd /tmp/rev1/checkout && make driver-wp001-correction03-test
+
+Then confirm the child's stderr:
+
+    find /tmp/rev1/checkout/build/driver-wp001-correction03 -name stderr.txt | head -3 | while read f; do echo "== $f"; cat "$f"; done
+
+and the child's argv:
+
+    find /tmp/rev1/checkout/build/driver-wp001-correction03 -name capture.txt | head -1 | while read f; do grep -A 8 "^ARGV" "$f"; done
+
+--- 2. THE SUCCESSFUL HERMETIC CORRECTION ----------------------------
+
+At the SUBJECT commit, in a FRESH isolated checkout with an EMPTY build
+directory, BOTH of these exit 0:
+
+    make driver-wp001-correction03-test
+    make driver-wp001-correction03-c4r6-probe-test
+
+Then confirm the child's argument vector carries the CONFIGURED local
+prefix, in the compiler's OWN two-element form:
+
+    find <checkout>/build/driver-wp001-correction03 -name capture.txt | head -1 | while read f; do grep -A 10 "^ARGV" "$f"; done
+
+You must see
+
+    --install-dir
+    <checkout>/build/test-prefix
+
+and you must see that NO capture record reads a header from /usr/local:
+
+    grep -rl /usr/local/include <checkout>/build/driver-wp001-correction03 | grep capture
+
+That grep must print NOTHING.
+
+Then confirm the local prefix is POPULATED, and that removing it forces
+REGENERATION rather than an accidental use of an external installation:
+
+    ls <checkout>/build/test-prefix/include/tos.HH <checkout>/build/test-prefix/lib/libtos.a
+    rm <checkout>/build/test-prefix/include/tos.HH
+    make -n "<checkout>/build/test-prefix/include/tos.HH"
+
+--- 3. THE DEFECTIVE `same = 1;` POSITIVE CHECKER --------------------
+
+In a SCRATCH COPY of the subject tree (never in the repository), replace
+the positive digest comparison in
+tools/quality/driver-required-route-correction03-contract.HC:
+
+    if (StrCmp(recorded, actual) == 0) same = 1;
+
+with
+
+    same = 1;
+
+Then run:
+
+    make driver-wp001-correction03-c4r6-probe-test
+
+It MUST return NONZERO, and the transcript MUST contain
+
+    PROBE_CONTROL AC_05_FALSE_STAGED_DIGEST FAIL
+    PROBE_CONTROL AC_06_COPIED_CAPTURE_FIELD FAIL
+
+This is the property the C4 ROUND 7 subject did NOT have: with the same
+mutation, all six of its anti-controls still passed.
+
+Also run the contract's own self-check with the same mutant:
+
+    make driver-wp001-correction03-contract-test
+
+It MUST return NONZERO.
+
+--- 4. THE ANTI-CONTROL'S DETECTION OF THAT MUTANT -------------------
+
+The complement of 3: with the PRISTINE contract, the anti-control mode
+MUST pass.
+
+    make driver-wp001-correction03-c4r6-probe-test
+
+and the transcript MUST contain six anti-control lines with 0 failures.
+
+Also verify the STRUCTURAL property, not only the outcome: the
+anti-control MUST CALL the same function the comparator calls. Read
+tools/quality/driver-required-route-correction03-contract.HC and confirm
+that `ContractStagedDigestMatches` is called from BOTH
+tools/quality/driver-required-route-correction03-compare.HC AND
+tools/quality/driver-required-route-correction03-c4r6-probe.HC, and
+that the anti-control does NOT contain its own digest comparison. An
+anti-control that duplicates the comparison is NOT effective, however
+green its outcome is.
+
+--- 5. THE DISTINCTION BETWEEN `-o-` AND `-o -` ----------------------
+
+Verify against the PRODUCTION compiler directly, in a scratch directory:
+
+    cd /tmp && rm -rf d1 d2 && mkdir d1 d2
+    cd d1 && printf 'I32 Main(I32 argc, U8 **argv) { return 0; }\n' > s.HC
+    <subject>/hcc --install-dir=<subject>/build/test-prefix -S -o- s.HC > out.txt
+    # expect: stdout NONEMPTY, and NO file named "-" in the directory
+    cd ../d2 && printf 'I32 Main(I32 argc, U8 **argv) { return 0; }\n' > s.HC
+    <subject>/hcc --install-dir=<subject>/build/test-prefix -S -o - s.HC > out.txt
+    # expect: stdout EMPTY, and a FILE named "-" carrying the bytes
+
+Then run the probe's own mode:
+
+    make driver-wp001-correction03-c4r6-probe-test
+
+and confirm the transcript contains the NINETEEN `R8_03_*` controls, all
+OK, including
+
+    R8_03_STDOUT_MODE                      OK
+    R8_03_STDOUT_CAPTURED_NONEMPTY         OK
+    R8_03_STDOUT_DIGEST_MATCHES_CAPTURED   OK
+    R8_03_STDOUT_NO_FILE_ARTIFACT          OK
+    R8_03_FILE_MODE                        OK
+    R8_03_FILE_ARTIFACT_PRESENT            OK
+    R8_03_FILE_ARTIFACT_ON_DISK            OK
+    R8_03_FILE_DIGEST_MATCHES_ARTIFACT     OK
+
+--- 6. THE CURRENT JIT GATE STATUS AND ITS BASELINE CLASSIFICATION ---
+
+Read
+evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r8/jit-qualification.txt
+and
+evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r8/gate-ledger.txt.
+
+The reviewer's own observation was
+
+    TEST=04_ptr_ptr.HC
+    BASELINE_CRASHES=7/20
+    SUBJECT_CRASHES=3/20
+    FAILURE_EXIT=139
+
+Reproduce the executor's controlled measurement. Use a BASELINE tree at
+the ACT's entry identity dcefd625eb9f1924350c905dea5c1e5522949ec4 and a
+SUBJECT tree, run the test SERIALLY, remove /tmp/holyc-asm.s before each
+invocation, and use the CONFIGURED prefix:
+
+    for i in $(seq 1 20); do
+      rm -f /tmp/holyc-asm.s
+      (cd <tree>/src/tests && <tree>/hcc -jit --install-dir=<tree>/build/test-prefix 04_ptr_ptr.HC)
+      echo "exit=$?"
+    done
+
+Report the crash count on each side. Then state your OWN classification:
+is the failure PREEXISTING, a REGRESSION, or UNPROVEN?
+
+The decisive structural fact you must verify is that the production
+compiler is byte-identical on the two sides:
+
+    git diff dcefd625eb9f1924350c905dea5c1e5522949ec4 HEAD -- src/ tools/bootstrap/
+
+If that is empty, then NO change made by CORRECTION03 can have altered
+the compiler's JIT behaviour.
+
+Then measure the CURRENT gate:
+
+    make gate-push
+
+and report its result. Do NOT drop 04_ptr_ptr.HC, do NOT alter its
+expected result, do NOT retry until it passes, and do NOT ignore exit
+139. If the gate fails, report the failure and the EXACT dependency, and
+do NOT change any unrelated code.
+
+WHAT YOU MUST NOT DO.
+
+Do NOT broaden this review into a general-purpose security audit or a
+binary-format audit. Do NOT review the sixteen production authorities as
+a whole. Do NOT review the JIT compiler internals. The scope is the
+SIX items above, and the three corrections they correspond to.
+
+THE SCOPE OF THE CHANGES UNDER REVIEW.
+
+    R8-01  the hermetic install prefix reaches the compiler child
+    R8-02  the anti-controls exercise the production digest check
+    R8-03  the output mode is a property of the option's spelling
+
+THE ANSWER.
+
+Report, for each of the six items, REPRODUCED or NOT REPRODUCED, with
+the command you ran and the output you saw. Then report:
+
+    P0_FINDINGS=<n>
+    P1_FINDINGS=<n>
+    P2_FINDINGS=<n>
+    C4_READY=YES|NO
+
+C4_READY=YES is permitted only if there is NO unresolved substantive P0
+or P1 finding.

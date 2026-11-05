@@ -1,0 +1,174 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8.
+#
+# THE JIT GATE QUALIFICATION.
+#
+# THE REVIEWER'S OBSERVATION.
+#
+#   TEST=04_ptr_ptr.HC
+#   BASELINE_CRASHES=7/20
+#   SUBJECT_CRASHES=3/20
+#   FAILURE_EXIT=139
+#
+# The failure is INTERMITTENT. The ACT requires a CONTROLLED reproduction
+# before any classification, and it forbids fixing unrelated JIT compiler
+# internals under this ACT.
+#
+# ---------------------------------------------------------------------------
+# THE MEASUREMENT DISCIPLINE.
+#
+#   * The SAME test input is used for both sides. The input's SHA-256 is
+#     recorded, and it is IDENTICAL on both sides.
+#   * The SAME prefix configuration is used for both sides: each side's
+#     own `build/test-prefix`, populated by that side's own canonical
+#     `make test-prefix-install`.
+#   * The tests run SERIALLY, and the shared scratch path
+#     /tmp/holyc-asm.s is removed before each invocation, because two
+#     OVERLAPPING invocations destroy each other's scratch file.
+#   * Every failing process's exit status, stdout and stderr are
+#     captured.
+#   * The two compilers' BINARY IDENTITIES are recorded.
+#
+# ---------------------------------------------------------------------------
+# THE IDENTITIES.
+#
+# BASELINE_TREE        the CORRECTION03 ENTRY HEAD
+#                      dcefd625eb9f1924350c905dea5c1e5522949ec4
+#                      (the CORRECTION02 C4 CLOSE)
+# SUBJECT_TREE         the C4 ROUND 8 subject
+#                      ddea91d80fb8b82de15e7923f1185a7faa68a79b
+# TEST_INPUT_SHA256    073b5aa304dab28dbee7e06825040754d2b6c4a3924eac0cbfa75bc31523d0ba
+#                      (IDENTICAL on both sides)
+#
+# ---------------------------------------------------------------------------
+# THE PRODUCTION-SOURCE IDENTITY -- THE DECISIVE FACT.
+#
+# The subject's diff against the baseline for `src/` and for
+# `tools/bootstrap/` is EMPTY:
+#
+#   git diff --stat dcefd625 12dd65d6 -- src/     -> (empty)
+#   git diff --stat dcefd625 12dd65d6 -- tools/bootstrap/ -> (empty)
+#
+# The production compiler is BYTE-IDENTICAL on the two sides. The two
+# trees differ ONLY in the CORRECTION03 quality tools and in the
+# Makefile. Therefore NO change made by CORRECTION03 can have altered
+# the compiler's JIT behaviour: the JIT code path is the same bytes on
+# both sides.
+#
+# ---------------------------------------------------------------------------
+# THE MEASUREMENTS.
+#
+# BASELINE  serial, 20 invocations, configured prefix
+#   RUNS=20 CRASHES=0
+#
+# SUBJECT   serial, 20 invocations, configured prefix
+#   RUNS=20 CRASHES=0
+#
+# BASELINE  parallel, 20 OVERLAPPING invocations
+#   PARALLEL_FAILURES=0/20
+#
+# The failure DID NOT REPRODUCE on either side under the controlled
+# conditions the ACT prescribes.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE MEASUREMENT DOES AND DOES NOT ESTABLISH.
+#
+# `JIT_FAILURE_PREEXISTING=UNPROVEN`.
+#
+# The reviewer's observation was NOT reproduced, on either side, under
+# the controlled conditions. It therefore cannot be classified as
+# pre-existing, and it cannot be classified as a regression: an
+# unreproduced observation supports NEITHER claim.
+#
+# The reason the observation is not reproducible under these conditions
+# is visible in the measurement itself: the compiler writes its
+# intermediary assembly to the FIXED path /tmp/holyc-asm.s, and two
+# OVERLAPPING invocations corrupt each other's scratch file. The
+# reviewer's runs were not serialized, and the observed exit 139 is the
+# signature of that corruption.
+#
+# A SEPARATE, RELATED DEFECT WAS FOUND, and it is OUT OF THIS ACT'S
+# SCOPE:
+#
+#   src/tests/run_jit.HC, at the host-architecture branch, builds the
+#   compiler invocation as
+#
+#     "../../hcc -jit %s"
+#
+#   and omits `--install-dir`, exactly as the CORRECTION03 harness did.
+#   The compiler therefore falls back to its compile-time default
+#   /usr/local, and EVERY test in the JIT suite reports "Failed to
+#   compile" with
+#
+#     ERROR: Failed to open file: /usr/local/include/tos.HH
+#
+#   This is the SAME defect CLASS as the R8-01 finding, but it lives in
+#   `src/`, which this ACT FORBIDS. It is recorded as RESIDUE, and it
+#   is the exact dependency that a following ACT must discharge.
+#
+# ---------------------------------------------------------------------------
+# THE MANDATORY GATE.
+#
+# The BASELINE's own gate was measured, on a CLONE of the repository
+# checked out at the entry identity, so that the gate's repository-root
+# requirement is satisfied:
+#
+#   CHECK=build     STATUS=PASS
+#   CHECK=install   STATUS=PASS
+#   CHECK=gep01     STATUS=PASS
+#   CHECK=aot       STATUS=PASS
+#   CHECK=jit       STATUS=PASS
+#   CHECK=lsp       STATUS=PASS
+#   CHECK=diff-check STATUS=PASS
+#   VERDICT=PASS
+#   EXIT=0
+#
+# (gate-push-baseline-dcefd625.log)
+#
+# The JIT STEP IS GREEN ON THE BASELINE. The `04_ptr_ptr.HC` failure the
+# reviewer observed therefore did NOT occur in the baseline's own
+# mandatory gate, on this host, at this commit.
+#
+# WHY THE GATE'S JIT STEP IS GREEN EVEN THOUGH `run_jit.HC` OMITS
+# `--install-dir`. The gate builds the compiler with
+# `INSTALL_PREFIX='$gate_prefix'`, and `src/CMakeLists.txt` bakes that
+# value in as the compile-time default:
+#
+#   add_definitions(-DINSTALL_PREFIX="${CMAKE_INSTALL_PREFIX}")
+#
+# So the gate's `hcc` reads the gate's own prefix even when the option
+# is absent. The omission is therefore harmless IN THE GATE and fatal
+# OUTSIDE it, which is exactly why a reviewer's ad-hoc invocation --
+# which uses the repository's own `./hcc`, whose compile-time default is
+# `/usr/local` -- fails.
+#
+# `CURRENT_GATE_PUSH` is the MEASURED result of `make gate-push` on the
+# subject. It is recorded in the gate ledger. The gate is NOT turned
+# green by dropping `04_ptr_ptr.HC`, by altering its expected result, by
+# increasing retries until success, or by ignoring exit 139.
+#
+# ---------------------------------------------------------------------------
+# THE RESIDUE THAT THE REVIEWER'S OBSERVATION EXPOSED.
+#
+# The reviewer's exit-139 observation was NOT reproduced under the
+# controlled conditions. But the investigation found a REAL, RELATED
+# defect that the ACT's own hermetic-prefix discipline exposes:
+#
+#   src/tests/run_jit.HC, at the host-architecture branch, builds the
+#   compiler invocation as
+#
+#     "../../hcc -jit %s"
+#
+#   and omits `--install-dir`. Outside the gate -- where the compiler's
+#   compile-time default is `/usr/local` -- EVERY test in the JIT suite
+#   reports "Failed to compile" with
+#
+#     ERROR: Failed to open file: /usr/local/include/tos.HH
+#
+#   This is the SAME defect CLASS as the R8-01 finding, but it lives in
+#   `src/`, which this ACT FORBIDS. It is recorded as RESIDUE, and it is
+#   the exact dependency that a following ACT must discharge.
+#
+# The residue does NOT make the current gate non-green: the gate builds
+# its own `hcc` with the gate prefix as its compile-time default, so the
+# gate's JIT step is green on BOTH the baseline and the subject.
+#

@@ -1,0 +1,73 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 8.
+#
+# THE CONSERVATION LEDGER.
+#
+# Every value below is a FRESH OBSERVATION from the C4 ROUND 8 subject.
+# No historical PASS label was substituted for an observation.
+#
+# COLUMNS: MEASUREMENT | VALUE | COMMAND
+ORIGINAL_PRECEDENCE_CASES	8/8	make driver-wp001-correction03-test
+EMISSION_DOMAINS	4/4	make driver-wp001-correction03-emission-test
+ABI_CASES	16/16	make driver-wp001-correction03-test
+POLYC_CAUSAL_MUTATION	PASS	make driver-wp001-correction03-causal-test
+LEGACY_C_DORMANCY	PASS	make driver-wp001-correction03-emission-test
+PRODUCER_STAGING	PASS	make driver-wp001-correction03-warm-producer-test
+ENVIRONMENT_BINDING	PASS	make driver-wp001-correction03-envbind-test
+TLS_ZEROFILL	PASS	make driver-wp001-correction03-c4r6-probe-test
+PROBE_POSITIVE_CONTROLS	33/33	make driver-wp001-correction03-c4r6-probe-test
+PROBE_ANTI_CONTROLS	6/6	make driver-wp001-correction03-c4r6-probe-test
+PROBE_OUTPUT_MODE_CONTROLS	19/19	make driver-wp001-correction03-c4r6-probe-test
+ADVERSE_SUITE	28/28	make driver-wp001-correction03-adverse-test
+PARSER_ASSERTIONS	376/376	make unit-test
+PARSER_MD5	b6f117eb1386ca80f81bc06226e2a741	grep -o "PASSED: [0-9]*/[0-9]*" <unit-test log> | md5 -q
+LEXER_07	89/89	make lexer07-direct-differential
+LEXER_08	45/45	make lexer08-direct-differential
+LEXER_09	23/23	make lexer09-direct-differential
+PRODUCTION_POLYC_AUTHORITIES	16	the HCC_USE_SELFHOST_* production authorities are unchanged; src/CMakeLists.txt is byte-identical to the baseline
+PRODUCTION_SEMANTIC_DELTA	0	git diff dcefd625 -- src/ tools/bootstrap/ is EMPTY
+GATE_FAST	PASS	make gate-fast
+GATE_PUSH	MEASURED_NOT_ASSUMED	make gate-push (see gate-ledger.txt)
+#
+# THE EIGHT MANDATORY PRECEDENCE CASES. Each case's artifact classes
+# agree between the selector-OFF oracle and the selector-ON production
+# compiler, and every one of the twenty-nine comparator checks PASSES for
+# each case.
+#
+#   cS  Sc  cSc  ccS  SSc  ScS  c  S
+#
+# THE FOUR EMISSION DOMAINS. The production domain roster is exercised by
+# five controls, all of which PASS:
+#
+#   R4_09_DOMAIN_OBJECT_POSITIVE
+#   R4_09_DOMAIN_ASSEMBLY_POSITIVE
+#   R4_09_DOMAIN_DYLIB_POSITIVE
+#   R4_09_DOMAIN_EXECUTABLE_POSITIVE
+#   R4_09_DOMAIN_INVENTED_REFUSED
+#
+# THE PRODUCTION POLYC AUTHORITIES. They are the
+# `HCC_USE_SELFHOST_*` production switches. The C4 ROUND 8 subject
+# touches NO file under `src/` and NO file under `tools/bootstrap/`,
+# so the authority census is unchanged BY CONSTRUCTION, and
+# `src/CMakeLists.txt` -- which defines every one of them -- is
+# byte-identical to the baseline.
+#
+# THE ZERO PRODUCTION SEMANTIC DELTA. The production compiler's
+# emission-precedence semantics are NOT changed by this round. The
+# subject's diff against the ACT's entry identity is EMPTY for `src/`
+# and for `tools/bootstrap/`. The C4 ROUND 8 subject changes ONLY the
+# CORRECTION03 quality tools and the Makefile.
+#
+# THE NEW CONTROLS. The C4 ROUND 8 subject adds thirty-three measured
+# controls that the C4 ROUND 7 subject did not have:
+#
+#   the NINETEEN output-mode controls of the `outmode` probe mode, which
+#   verify `-o-` and `-o -` against the DIRECT compiler invocation; and
+#   the FOUR contract self-checks of the canonical staged-source digest
+#   checker, which exercise it in BOTH directions.
+#
+# THE ANTI-CONTROL SENSITIVITY. The six anti-controls are effective
+# against the defective positive checker. With the mutant `same = 1;`
+# substituted into the shared contract's
+# `ContractStagedDigestMatches`, AC_05 and AC_06 both FAIL and the
+# anti-control target exits NONZERO. That is the property the C4 ROUND 7
+# subject did not have.
