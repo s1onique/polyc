@@ -1180,7 +1180,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-warm-producer-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1541,6 +1541,79 @@ $(DRIVER_ROUTE03_C4R4_PROBE_BIN): $(DRIVER_ROUTE03_C4R4_PROBE_OBJ) $(TEST_PREFIX
 		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
 		exit 1; \
 	fi
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F6.
+#
+# THE WARM-BUILD PRODUCER REQUALIFICATION.
+#
+# THE ORIGINAL DEFECT. The runtime archive's rule declared the runtime
+# PRODUCER as an ORDER-ONLY prerequisite:
+#
+#     $(TEST_PREFIX_LIBTOS): ... | $(RUNTIME_PRODUCER_PATH)
+#
+# An order-only prerequisite says "this must EXIST before the rule runs",
+# not "this must be NEWER than the target". A producer whose CONTENT was
+# corrupted therefore left the cached archive up to date, and the rule's
+# own SHA-256 check never ran, because the rule never ran.
+#
+# THE REPAIR has two parts.
+#
+#   1. The producer is a CONTENT-SENSITIVE prerequisite, so a producer
+#      whose bytes changed makes the archive out of date.
+#
+#   2. The acceptance boundary REQUALIFIES the producer and the cached
+#      archive EVERY TIME the CORRECTION03 suite runs, whatever make
+#      believes about freshness. The check is INDEPENDENT of make's
+#      timestamp arithmetic: it re-reads the producer's bytes, re-reads
+#      the archive's bytes, and refuses to proceed when either does not
+#      carry the authorized identity.
+#
+# The check FAILS CLOSED. A producer that is missing, that is not the
+# authorized binary, or an archive that does not carry the producer's
+# identity, stops the suite with a hard error rather than being
+# accepted as up to date.
+.PHONY: driver-wp001-correction03-warm-producer-test
+driver-wp001-correction03-warm-producer-test: $(RUNTIME_PRODUCER_PATH)
+	@set -e; \
+	if [ ! -x "$(LIBTOS_HCC)" ]; then \
+		echo "driver-wp001-correction03: the runtime producer $(LIBTOS_HCC) is not executable" >&2; \
+		exit 1; \
+	fi; \
+	_actual=$$(shasum -a 256 "$(LIBTOS_HCC)" | cut -d' ' -f1); \
+	if [ "$$_actual" != "$(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" ]; then \
+		echo "driver-wp001-correction03: the runtime producer $(LIBTOS_HCC) has SHA-256 $$_actual" >&2; \
+		echo "driver-wp001-correction03:        which is NOT the authorized producer" >&2; \
+		echo "driver-wp001-correction03: expected: $(LIBTOS_BOOTSTRAP_EXPECTED_SHA)" >&2; \
+		exit 1; \
+	fi; \
+	if [ ! -f "$(TEST_PREFIX_LIBTOS)" ]; then \
+		echo "driver-wp001-correction03: the runtime archive $(TEST_PREFIX_LIBTOS) is absent" >&2; \
+		exit 1; \
+	fi; \
+	if ! strings "$(TEST_PREFIX_LIBTOS)" 2>/dev/null | grep -qF "$$_actual"; then \
+		echo "driver-wp001-correction03: the cached archive does not carry the producer's identity" >&2; \
+		echo "driver-wp001-correction03:        the archive was built by a DIFFERENT producer" >&2; \
+		exit 1; \
+	fi; \
+	_arch=$$(file -b "$(TEST_PREFIX_LIBTOS)" 2>/dev/null); \
+	case "$$_arch" in \
+		*"current ar archive"*) ;; \
+		*) echo "driver-wp001-correction03: the cached archive is not an ar archive ($$_arch)" >&2; \
+		   exit 1 ;; \
+	esac; \
+	_missing=0; \
+	for _sym in $(LIBTOS_REQUIRED_SYMBOLS); do \
+		if ! nm "$(TEST_PREFIX_LIBTOS)" 2>/dev/null | grep -q " T $$_sym$$"; then \
+			echo "driver-wp001-correction03: the cached archive is missing the required symbol $$_sym" >&2; \
+			_missing=$$((_missing + 1)); \
+		fi; \
+	done; \
+	if [ $$_missing -ne 0 ]; then \
+		echo "driver-wp001-correction03: the cached archive is missing $$_missing required symbol(s)" >&2; \
+		exit 1; \
+	fi; \
+	echo "DRIVER_WP001_CORRECTION03_WARM_PRODUCER_PRODUCER_SHA=$$_actual"; \
+	echo "DRIVER_WP001_CORRECTION03_WARM_PRODUCER_STATUS=PASS"
 
 $(DRIVER_ROUTE03_ABI_OBJ): $(DRIVER_ROUTE03_ABI_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
 	@rm -f $@
@@ -3057,7 +3130,7 @@ $(TEST_PREFIX_LIBTOS): src/holyc-lib/all.HC src/holyc-lib/errno_shim.c \
                        src/holyc-lib/tooling.HC \
                        src/holyc-lib/defs.HH src/holyc-lib/io_defs.HH \
                        src/holyc-lib/memory_defs.HH src/holyc-lib/tooling_defs.HH \
-                       src/holyc-lib/tos.HH $(TEST_PREFIX_HEADER) | $(RUNTIME_PRODUCER_PATH)
+                       src/holyc-lib/tos.HH $(TEST_PREFIX_HEADER) $(RUNTIME_PRODUCER_PATH)
 	@mkdir -p $(dir $@)
 	@if [ ! -x "$(LIBTOS_HCC)" ]; then \
 		echo "test-prefix-libtos: FAIL: builder '$(LIBTOS_HCC)' not found or not executable" >&2; \

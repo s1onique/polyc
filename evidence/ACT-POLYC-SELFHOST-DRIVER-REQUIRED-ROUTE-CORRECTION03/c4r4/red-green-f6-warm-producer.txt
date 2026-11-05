@@ -1,0 +1,61 @@
+# THE F6 WARM-BUILD PRODUCER REQUALIFICATION -- the RED and the GREEN.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F6.
+#
+# THE DEFECT. The runtime archive declared the runtime producer as an
+# ORDER-ONLY prerequisite:
+#
+#     $(TEST_PREFIX_LIBTOS): ... | $(RUNTIME_PRODUCER_PATH)
+#
+# An order-only prerequisite says "must EXIST", not "must be NEWER". The
+# producer CONTENT was therefore never re-examined by make, and the rule
+# body SHA-256 check never ran unless the rule happened to run for another
+# reason. A producer whose bytes were corrupted left the cached archive
+# accepted as up to date.
+#
+# THE RED -- the producer is corrupted and make accepts the cached archive.
+#
+$ printf "\xde\xad\xbe\xef" | dd of=build/runtime-producer/hcc-bootstrap04 bs=1 seek=0 conv=notrunc
+$ make build/test-prefix/lib/libtos.a
+make: Nothing to be done for `build/test-prefix/lib/libtos.a.
+#
+# The corrupt producer was accepted. The archive is stale by the producer
+# and the suite proceeded.
+#
+# THE GREEN -- the acceptance boundary requalifies the producer and the
+# cached archive on EVERY run, independently of make timestamp arithmetic.
+#
+$ make driver-wp001-correction03-warm-producer-test
+DRIVER_WP001_CORRECTION03_WARM_PRODUCER_PRODUCER_SHA=3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+DRIVER_WP001_CORRECTION03_WARM_PRODUCER_STATUS=PASS
+#
+# THE CORRUPT-PRODUCER EXPERIMENT -- the acceptance target now refuses.
+#
+$ printf "\xde\xad\xbe\xef" | dd of=build/runtime-producer/hcc-bootstrap04 bs=1 seek=0 conv=notrunc
+$ make driver-wp001-correction03-test
+driver-wp001-correction03: the runtime producer ./build/runtime-producer/hcc-bootstrap04 has SHA-256 22c79a8f5216f7e78b1d76958e4d370d34304ae17800adaf9d5e890864b5df69
+driver-wp001-correction03:        which is NOT the authorized producer
+driver-wp001-correction03: expected: 3b4474213efabcda30eb2d0c0610c6e23793f876896c8e21c5e18024b1ab40f6
+make: *** Error 1
+#
+# THE STALE-ARCHIVE EXPERIMENT -- the cached archive that carried NO
+# producer identity is refused by the requalification.
+#
+$ make driver-wp001-correction03-warm-producer-test
+driver-wp001-correction03: the cached archive does not carry the producer's identity
+driver-wp001-correction03:        the archive was built by a DIFFERENT producer
+make: *** Error 1
+#
+# The archive was rebuilt with the producer-id member and now passes:
+#
+$ ar t build/test-prefix/lib/libtos.a
+__.SYMDEF SORTED
+all.o
+errno_shim.o
+producer_id.o
+#
+# THE FULL SUITE, with the requalification wired in.
+#
+$ make driver-wp001-correction03-test
+DRIVER_WP001_CORRECTION03_WARM_PRODUCER_STATUS=PASS
+DRIVER_WP001_CORRECTION03_TEST_STATUS=PASS
