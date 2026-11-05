@@ -1,0 +1,178 @@
+# THE INDEPENDENT C4 ROUND 5 REVIEW -- the review instructions.
+
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5.
+
+You are an INDEPENDENT reviewer. You did not write this code. Your job is
+to find the defects that remain, NOT to confirm that the work is good.
+
+THE REVIEW IS READ-ONLY. Do NOT modify any file in the repository. Do NOT
+commit. Do NOT push. You may BUILD and RUN the gates and the probes.
+
+THE SUBJECT.
+
+The changes under review are the commits of the ACT
+ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 from the ACT's entry
+identity up to HEAD.
+
+THE BASE COMMIT IS c73e92f33fd61e9241c02d3ca4ea2250097e51b8. The review
+range is exactly:
+
+    git diff c73e92f33fd61e9241c02d3ca4ea2250097e51b8..HEAD
+
+The base commit is named HERE, in the instructions, because the reviewer's
+`--base` option cannot be combined with a prompt. Use the range above.
+
+The changes are confined to:
+
+    tools/quality/driver-required-route-correction03-*.HC
+    tools/quality/fixtures/driver-required-route-correction03-tls-fixture.*
+    Makefile
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/
+
+The production compiler under src/ and the production bootstrap under
+tools/bootstrap/ are BYTE-IDENTICAL to the ACT's entry identity:
+
+    git diff c73e92f33fd61e9241c02d3ca4ea2250097e51b8..HEAD -- src/ tools/bootstrap/
+
+must produce NO output. A finding against the production compiler is out
+of scope, EXCEPT that a finding which says "the evidence tooling cannot
+express what it needs because of a compiler defect" IS in scope, and must
+be classified as RESIDUE rather than as a fix.
+
+WHAT IS UNDER REVIEW.
+
+The C4 ROUND 4 review produced TEN P1 findings and ONE P2 finding, and
+its verdict was `C4_READY=NO`. The ten findings are:
+
+    R4-01  THE CAPTURE BLOCK'S CAPACITY.
+    R4-02  THE RUNNER OWNS THE EXECUTABLE.
+    R4-03  THE OUTPUT DESTINATION BELONGS TO THE RUNNER.
+    R4-04  THE LEDGER'S TERMINATION.
+    R4-05  THE EVENT IDENTITY'S ENCODING.
+    R4-06  THE DYSYMTAB'S TABLE WIDTHS.
+    R4-07  THE SYMBOL RANGE CHECK.
+    R4-08  THE ARCHIVE MEMBER'S CLASS.
+    R4-09  THE SUPPORTED EMISSION DOMAINS.
+    R4-10  THE SECTION CLASSIFICATION.
+    R4-11  THE ENVIRONMENT PROBE.
+
+The ROUND 5 subject claims to have repaired all eleven and to have a
+counterexample probe for each.
+
+THE PROBE.
+
+    tools/quality/driver-required-route-correction03-c4r5-probe.HC
+    make driver-wp001-correction03-c4r5-probe-test
+
+The probe exercises the PRODUCTION functions. It does not carry a
+duplicate of the function it exercises; it calls the production function
+and reports the production function's own reason token.
+
+THE PROBE'S INTEGRITY IS THE FIRST THING TO CHECK.
+
+The probe is the instrument that decides whether the repairs hold. If the
+probe is wrong, the repairs are unproven. Look for:
+
+  * a control whose EXPECTATION is inverted, so that it passes when the
+    production function is wrong;
+
+  * a control that does not exercise the function it claims to exercise;
+
+  * a control whose fixture does not actually carry the mutation it
+    claims to carry -- for example a section whose type was meant to be
+    0x13 but whose offset makes the PRE-REPAIR validator refuse it for an
+    UNRELATED reason, which would make the control pass on the
+    PRE-REPAIR tree for the wrong reason;
+
+  * a control whose positive control does not distinguish the repaired
+    behaviour from the unrepaired behaviour;
+
+  * a fixture that is read from a path the production code does not
+    actually consult.
+
+The RED matrix is in
+
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r5/red-c4r5-probe.txt
+
+and the GREEN matrix is in
+
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r5/green-c4r5-probe.txt
+
+and the regression matrix is in
+
+    evidence/ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03/c4r5/regression-matrix.tsv
+
+REPRODUCE THE RED YOURSELF. The RED witness was produced in a detached
+worktree at the entry HEAD. Reproduce it:
+
+    git worktree add --detach /tmp/c4r5-review c73e92f33fd61e9241c02d3ca4ea2250097e51b8
+
+The RED build uses `-DC4R5_RED_COMPAT`, under which the capture, ledger
+and event-identity primitives come from
+`tools/quality/driver-required-route-correction03-c4r5-red-primitives.HC`,
+which carries them EXTRACTED VERBATIM from the entry HEAD's comparator.
+Verify the extraction yourself: the extracted text and the source text
+must have the SAME SHA-256.
+
+WHAT TO LOOK FOR.
+
+The subject is an EVIDENCE HARNESS. Its whole purpose is to produce
+observations that a reviewer can trust. A defect in it is a defect in the
+EVIDENCE, even when the harness itself works.
+
+Read the harness, the comparator, the contract, the emission verifier and
+the probe, and ask, for each one:
+
+  * Does the code do what its comment says?
+
+  * Is there a path on which the code does something ELSE?
+
+  * Is there a bound that is computed in a way that can overflow?
+
+  * Is there a place where a value is read from uninitialised memory?
+
+  * Is there a place where the argument list exceeds the production
+    compiler's calling convention's limit?
+
+  * Is there a place where a REASON TOKEN is reported that does not
+    describe what actually happened?
+
+  * Is there a place where the production function is DUPLICATED, so that
+    the probe exercises the duplicate rather than the production code?
+
+The compiler's calling convention has a KNOWN defect: a pointer-to-
+pointer argument at parameter position eight or later is placed on the
+stack by the call site and read from a register by the callee, so the
+arguments that follow are shifted. Every function added or changed in
+this round therefore takes at most seven parameters, or carries its
+inputs in a context object that is filled BY NAME. Look for a function
+that VIOLATES that rule.
+
+The compiler's `&` operator does NOT behave as a bitwise AND on a hex
+literal: `0x18EB1AFA & 0xF000` evaluates to `0x1000`. The shared
+contract avoids the operator for this reason. Look for a new use of `&`
+on a hex literal.
+
+THE GATES.
+
+    make driver-wp001-correction03-test
+    make gate-fast
+    make gate-push
+
+THE VERDICT.
+
+Report the findings as:
+
+    FINDING-ID  P0|P1|P2  ONE-LINE-SUMMARY
+
+and the verdict as:
+
+    C4_READY=YES|NO
+    P0=<count>
+    P1=<count>
+    P2=<count>
+
+`C4_READY=YES` requires `P0=0` AND `P1=0`.
+
+Report the exact commands you ran and their results. A claim without a
+command is not a finding.

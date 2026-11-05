@@ -1,0 +1,19 @@
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 5.
+#
+# THE GATE LEDGER. Every command that was run against the SUBJECT tree,
+# and its result.
+#
+# The subject is 5dbfe12e9599f85bd9772d766e5a7a06f2f08422, the C4 ROUND 5
+# implementation commit. The entry identity is
+# c73e92f33fd61e9241c02d3ca4ea2250097e51b8.
+#
+# COLUMNS: GATE	COMMAND	RESULT	NOTE
+#
+c4r5-probe	make driver-wp001-correction03-c4r5-probe-test	PASS	42_CONTROLS_0_FAILURES
+c4r5-red	probe-at-entry-head	EXPECTED_FAIL	16_CONTROLS_FAIL_AT_c73e92f3
+correction03	make driver-wp001-correction03-test	PASS	THE_WHOLE_CORRECTION03_SUITE
+gate-fast	make gate-fast	PASS	VERDICT_PASS
+gate-push	make gate-push	PASS	VERDICT_PASS
+production-delta	git diff c73e92f3..HEAD -- src/ tools/bootstrap/	EMPTY	ZERO_PRODUCTION_SEMANTIC_DELTA
+authorities	16 production PolyC authorities	VERIFIED	ALL_SIXTEEN_PRESENT
+no-python	./scripts/quality/factory-no-python-check.sh	PRE_EXISTING_FAIL	THE_SAME_12_FAILURES_AT_THE_ENTRY_HEAD
