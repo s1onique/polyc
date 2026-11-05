@@ -818,6 +818,55 @@ else
     FAIL_COUNT=$((FAIL_COUNT+1))
 fi
 
+# T53: a valid ACT range with an unrelated second-parent merge is
+# accepted. The merge's second parent is historical ancestry, not an
+# ACT phase commit. This is the topology used by the forward-only
+# lineage reconciliation ACT.
+mk_synth_repo ACT-POLYC-RANGE-T53
+synth_act_commit ACT-POLYC-RANGE-T53 RED "" a
+git -C "$SYNTH/ACT-POLYC-RANGE-T53" checkout -q -b historical
+synth_ordinary_commit ACT-POLYC-RANGE-T53 unrelated-historical
+git -C "$SYNTH/ACT-POLYC-RANGE-T53" checkout -q main
+git -C "$SYNTH/ACT-POLYC-RANGE-T53" merge -s ours --no-ff --no-commit historical >/dev/null
+git -C "$SYNTH/ACT-POLYC-RANGE-T53" commit -q -m "$(cat <<MSG
+merge: preserve historical second-parent ancestry
+
+ACT: ACT-POLYC-RANGE-T53
+ACT-Phase: IMPL
+MSG
+)"
+synth_act_commit ACT-POLYC-RANGE-T53 CLOSE PASS c
+expect_range_pass T53 ACT-POLYC-RANGE-T53 \
+    "$(git -C $SYNTH/ACT-POLYC-RANGE-T53 rev-parse HEAD)"
+
+# T54: the merge side cannot hide an invalid ACT phase. A second-parent
+# commit carrying the same ACT id but an invalid phase must still fail
+# the range check.
+mk_synth_repo ACT-POLYC-RANGE-T54
+synth_act_commit ACT-POLYC-RANGE-T54 RED "" a
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" checkout -q -b historical
+printf '%s\n' 'ACT: ACT-POLYC-RANGE-T54' 'ACT-Phase: NOT-A-PHASE' > "$TMPROOT/msg-T54.txt"
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" add -f "$TMPROOT/msg-T54.txt" >/dev/null 2>&1 || true
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" commit -q --allow-empty -m "$(cat <<MSG
+historical same-ACT invalid phase
+
+ACT: ACT-POLYC-RANGE-T54
+ACT-Phase: NOT-A-PHASE
+MSG
+)"
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" checkout -q main
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" merge -s ours --no-ff --no-commit historical >/dev/null
+git -C "$SYNTH/ACT-POLYC-RANGE-T54" commit -q -m "$(cat <<MSG
+merge: historical second parent with invalid same-ACT phase
+
+ACT: ACT-POLYC-RANGE-T54
+ACT-Phase: IMPL
+MSG
+)"
+synth_act_commit ACT-POLYC-RANGE-T54 CLOSE PASS c
+expect_range_fail T54 ACT-POLYC-RANGE-T54 \
+    "$(git -C $SYNTH/ACT-POLYC-RANGE-T54 rev-parse HEAD)"
+
 echo
 echo "--- summary ---"
 echo "PASS=$PASS_COUNT"

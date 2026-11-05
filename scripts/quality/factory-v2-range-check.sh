@@ -192,9 +192,18 @@ if ! ENTRY=$(git rev-parse --verify "${FIRST}^" 2>/dev/null); then
     ENTRY="(root)"
 fi
 
-# Enumerate FIRST..CLOSE inclusive.
-if ! git rev-list --reverse "${FIRST}^..${CLOSE}" > "$tmp_full" 2>/dev/null; then
-    if ! git rev-list --reverse "${FIRST}..${CLOSE}" > "$tmp_full" 2>/dev/null; then
+# Enumerate the ACT's first-parent lineage from FIRST..CLOSE inclusive.
+#
+# ACT-POLYC-FACTORY-APPEND-ONLY-LINEAGE-RECONCILE01 E06:
+# `git rev-list FIRST^..CLOSE` enumerates every commit reachable from
+# CLOSE, including unrelated history introduced through a merge's second
+# parent. Such history is not part of this ACT's phase range. A true
+# merge may therefore introduce a valid governance ACT whose second
+# parent carries historical identities; the ACT range is the contiguous
+# first-parent lineage. This changes enumeration only. Trailer, phase,
+# closure-count, supersession, and continuation checks remain unchanged.
+if ! git rev-list --first-parent --reverse "${FIRST}^..${CLOSE}" > "$tmp_full" 2>/dev/null; then
+    if ! git rev-list --first-parent --reverse "${FIRST}..${CLOSE}" > "$tmp_full" 2>/dev/null; then
         fail "cannot enumerate ${FIRST}..${CLOSE}"
     fi
 fi
@@ -252,6 +261,33 @@ while IFS= read -r sha; do
     fi
 done < "$tmp_full"
 
+# The ACT's first-parent phase lineage must itself be valid. A merge's
+# second parent is historical ancestry, not an ACT phase commit, but it
+# cannot be used to hide a same-ACT commit with an invalid phase or a
+# premature CLOSE. Check the second-parent side separately so that a
+# malformed same-ACT commit is still rejected without broadening the
+# first-parent phase range.
+tmp_side=$(mktemp -t polyc-v2-range-side.XXXXXX)
+side_count=0
+while IFS= read -r sha; do
+    [ -z "$sha" ] && continue
+    parents=$(git rev-list --parents -n 1 "$sha" 2>/dev/null || true)
+    side_parent=$(printf '%s' "$parents" | awk '{ print $3 }')
+    [ -z "$side_parent" ] && continue
+    side_count=$((side_count + 1))
+    side_t=$(factory_trailer_parse_commit "$side_parent")
+    side_act_count=$(printf '%s\n' "$side_t" | grep -Ec "^ACT:[[:space:]]+${ACT_ID}\$" || true)
+    if [ "$side_act_count" -eq 1 ]; then
+        side_phase=$(printf '%s\n' "$side_t" | awk -F': ' '/^ACT-Phase:/ { print $2; exit }')
+        case "$side_phase" in
+            RED|IMPL|EVIDENCE|CLOSE)
+                ;;
+            *)
+                fail "merge second parent $side_parent carries ACT: $ACT_ID with invalid ACT-Phase='$side_phase'"
+                ;;
+        esac
+    fi
+done < "$tmp_full"
 # ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 C2 (Work package C).
 #
 # No commit after CLOSE may carry ACT=<id>.
