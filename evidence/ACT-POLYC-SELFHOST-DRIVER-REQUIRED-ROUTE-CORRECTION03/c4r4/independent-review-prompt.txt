@@ -9,7 +9,17 @@ THE SUBJECT.
 
 The changes under review are the commits of the ACT
 ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03 from the ACT's entry
-identity up to HEAD. The changes are confined to:
+identity up to HEAD.
+
+THE BASE COMMIT IS b7711f68f8a66ccd76278df5cbd1a0d0d0aace8b. The review
+range is exactly:
+
+    git diff b7711f68f8a66ccd76278df5cbd1a0d0d0aace8b..HEAD
+
+The base commit is named HERE, in the instructions, because the reviewer's
+`--base` option cannot be combined with a prompt. Use the range above.
+
+The changes are confined to:
 
     tools/quality/driver-required-route-correction03-*.HC
     Makefile
@@ -52,6 +62,18 @@ adverse probe and the structural probe, and ask, for each one:
   7. Are the indices into an argument vector correct? An off-by-one here
      silently edits the wrong file.
 
+  8. Does the ENVIRONMENT check prove what it claims? The `envcheck` mode
+     applies one binding and requires a spawned probe to print the value.
+     Can a binding be split, named or applied wrongly and still pass? Is
+     the probe actually the child of the harness, and does the harness
+     compare what the probe printed against what it INTENDED to set, or
+     only against what it recorded?
+
+  9. Is the SHARED binding split in the contract the SAME split the
+     harness uses, or are there two copies that can drift? If there is one
+     copy, is it exercised by the contract's self-check, and does that
+     self-check actually FAIL when the split is broken?
+
 THE SPECIFIC CLAIMS TO ATTACK.
 
 The harness now claims:
@@ -61,7 +83,10 @@ The harness now claims:
     architecture;
 
   * the runner applies the recorded environment to the spawned child with
-    setenv BEFORE the spawn;
+    setenv BEFORE the spawn, and the harness's `envcheck` mode proves it by
+    spawning a REAL probe executable and requiring the probe to observe the
+    value -- so a binding that is split or applied incorrectly is now
+    visible rather than merely recorded;
 
   * the event directory is allocated EXCLUSIVELY;
 

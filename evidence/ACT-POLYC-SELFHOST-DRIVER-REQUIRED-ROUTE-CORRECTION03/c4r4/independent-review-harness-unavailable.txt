@@ -123,3 +123,116 @@
 # reviewer can start, and to bring its findings back as a new
 # remediation round. The committed prompt is the subject of that review,
 # and the review's scope cannot be adjusted after its findings are known.
+
+# ---------------------------------------------------------------------------
+# A LATER ATTEMPT -- THE INVOCATION CONTRACT, PINNED DOWN EXACTLY
+# ---------------------------------------------------------------------------
+#
+# A subsequent attempt reached the reviewer further than any earlier
+# attempt, and it produced one REAL correction to this file's "paths that
+# were tried" list.
+#
+# The invocation used was
+#
+#   $ codex exec review --base main "<PROMPT>"
+#
+# and the reviewer REJECTED IT:
+#
+#   error: the argument '--base <BRANCH>' cannot be used with '[PROMPT]'
+#
+#   Usage: codex exec review --base <BRANCH> [PROMPT]
+#
+# That is a USAGE ERROR, and it is caught during ARGUMENT PARSING, which is
+# strictly BEFORE the configuration load. It is therefore NOT evidence that
+# the reviewer started, and it is NOT evidence that the environment
+# restriction was lifted. The earlier statement that `--base` "rejects a
+# prompt argument in combination with --base" is correct, but the reason
+# matters: the rejection happens before any of the blocked machinery is
+# reached.
+#
+# The exact contract, read from `codex exec review --help`:
+#
+#   Usage: codex exec review [OPTIONS] [PROMPT]
+#     [PROMPT]  Custom review instructions. If `-` is used, read from stdin
+#     --base <BRANCH>  Review changes against the given base branch
+#
+# The `--base` option and a prompt are MUTUALLY EXCLUSIVE, whether the
+# prompt is an argument or is read from stdin with `-`. The review must
+# therefore be run WITHOUT `--base`, and the base commit must be named IN
+# THE PROMPT -- which the committed prompt already does.
+#
+# The two correct invocation forms were both exercised, and BOTH reach the
+# configuration load and fail at exactly the same place:
+#
+#   $ printf '<PROMPT>' | codex exec --sandbox read-only review -
+#   Error: thread/start: thread/start failed: failed to load configuration:
+#          Failed to synchronize managed preferences (code -32600)
+#
+#   $ codex exec --sandbox read-only review "<PROMPT>"
+#   Error: thread/start: thread/start failed: failed to load configuration:
+#          Failed to synchronize managed preferences (code -32600)
+#
+# Note the flag PLACEMENT: `--sandbox` belongs to `codex exec`, so it must
+# precede the `review` subcommand. `codex exec review --sandbox ...` is
+# itself a usage error.
+#
+# ---------------------------------------------------------------------------
+# THE ROOT CAUSE IS A BLANKET DENIAL, NOT A CODEX-SPECIFIC ONE
+# ---------------------------------------------------------------------------
+#
+# A second C probe measured CFPreferencesAppSynchronize across SEVERAL
+# domains, including domains that have nothing to do with Codex:
+#
+#   sync(com.openai.codex)=0
+#   sync(com.apple.dock)=0
+#   sync(com.polyc.probe)=0
+#   sync(anyhost)=0
+#
+# The synchronization fails for EVERY domain. This is a blanket sandbox
+# denial of the macOS preferences write-back, not a malformed Codex
+# domain, not a Codex-specific bug, and not something a CLI flag can
+# route around.
+#
+# The supporting measurements are consistent with that conclusion:
+#
+#   * `defaults write com.openai.codex TestKey -string v`
+#       -> "Could not write domain com.openai.codex; exiting"
+#   * creating ANY file in ~/Library/Preferences
+#       -> "Operation not permitted" (the DIRECTORY is write-denied)
+#   * `com.openai.codex.plist` already exists, 608 bytes, mode 0600, and
+#     was NOT modified by any probe.
+#   * `cfprefsd` is not reachable in this context:
+#       "Could not find service \"com.apple.cfprefsd\" in domain for system"
+#
+# The following were also tried and all failed identically, at the same
+# configuration load:
+#
+#   * `codex exec --ignore-user-config review -`
+#   * `-c legacy_managed_config_file=<path>`
+#   * an empty `$CODEX_HOME/managed_config.toml`
+#   * `codex app-server --print-startup-config`, which reports the same
+#     code -32600 and the same "configLoad" reason;
+#   * HOME redirected to a writable directory, with a writable
+#     Library/Preferences beneath it;
+#   * the CoreFoundation environment overrides CFPREFERENCES_APP_VALUE_IS_FORCED,
+#     __CFPREFERENCES_USE_DAEMON and CFPREFERENCES_USE_CFDOMAINS;
+#   * the ChatGPT-bundled reviewer, 0.163.0-alpha.10.2, with the same
+#     writable CODEX_HOME.
+#
+# Every one of these routes through the same macOS loader, and the loader
+# fails before any review is attempted.
+#
+# ---------------------------------------------------------------------------
+# THE REVIEW INVOCATION, READY TO RUN
+# ---------------------------------------------------------------------------
+#
+# In an environment where the preferences write-back is permitted, the
+# committed review instructions are run as:
+#
+#   $ export CODEX_HOME=/tmp/codex-home
+#   $ codex exec --sandbox read-only review - \
+#       < evidence/.../c4r4/independent-review-prompt.txt
+#
+# The prompt names the base commit itself, so `--base` is neither needed
+# nor permitted. The reviewer MUST NOT modify any file; `--sandbox
+# read-only` enforces that.
