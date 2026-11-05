@@ -236,3 +236,45 @@
 # The prompt names the base commit itself, so `--base` is neither needed
 # nor permitted. The reviewer MUST NOT modify any file; `--sandbox
 # read-only` enforces that.
+
+# ---------------------------------------------------------------------------
+# THE TWO FAILURES ARE DISTINCT, AND THE ORDERING MATTERS
+# ---------------------------------------------------------------------------
+#
+# A later notification reported:
+#
+#   Reading additional input from stdin...
+#   Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)
+#
+# That is NOT the failure of the writable CODEX_HOME. It is the failure of
+# the DEFAULT CODEX_HOME, and the two are measured side by side here:
+#
+#   $ env -u CODEX_HOME codex exec --sandbox read-only review -
+#   Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)
+#
+#   $ CODEX_HOME=/tmp/codex-home codex exec --sandbox read-only review -
+#   Error: thread/start: thread/start failed: failed to load configuration:
+#          Failed to synchronize managed preferences (code -32600)
+#
+# The two failures are DISTINCT and REPRODUCIBLE, and they occur at
+# DIFFERENT LAYERS:
+#
+#   THE DEFAULT CODEX_HOME fails EARLIER, while the in-process app-server
+#   client is being initialized. It never reaches the configuration load.
+#
+#   THE WRITABLE CODEX_HOME passes the app-server client initialization,
+#   reads the prompt from stdin, and fails one layer deeper, at the
+#   macOS managed-preferences synchronization inside the configuration
+#   load.
+#
+# So the deeper failure is the WRITABLE-CODEX_HOME one, and the shallow
+# failure is the DEFAULT-CODEX_HOME one. A notification carrying the
+# app-server client error therefore means the invocation did NOT set the
+# writable CODEX_HOME, and it does NOT mean the preferences restriction
+# was lifted. The writable CODEX_HOME is required, and the preferences
+# restriction is still in force.
+#
+# The "Reading additional input from stdin..." line is printed by the
+# reviewer after it has ACCEPTED the invocation, and it appears in BOTH
+# configurations. It is therefore NOT evidence that a review began, and it
+# must not be read as such.
