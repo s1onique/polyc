@@ -1,0 +1,61 @@
+# THE CANONICAL GATES -- the C4 ROUND 4 measurement.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4.
+#
+# Every gate below was RUN against a named subject. No gate is reported
+# from a previous log.
+#
+## THE CONSERVATION GATES (the ACT's required-route and precedence checks)
+#
+$ make driver-wp001-required-route-test
+ROUTE_OBJECT	the required route produced an artifact	PASS
+ROUTE_OBJECT	the required route produced a real Mach-O OBJECT	PASS
+ROUTE_OBJECT	the required route did NOT produce an executable	PASS
+ROUTE_ALTERNATE	the alternate route produced an artifact	PASS
+ROUTE_ALTERNATE	the alternate route produced an EXECUTABLE	PASS
+ROUTE_ALTERNATE	the alternate route did NOT produce an object	PASS
+NEG_UNKNOWN_OPTION	the failing case produced no artifact	PASS
+DRIVER_ROUTE_TEST_FAILURES	0
+DRIVER_WP001_REQUIRED_ROUTE_TEST_STATUS=PASS
+#
+$ make driver-wp001-precedence-test
+DRIVER_WP001_PRECEDENCE_TEST_CASES=5
+DRIVER_WP001_PRECEDENCE_TEST_FAILURES	0
+DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS
+DRIVER_WP001_FAIL_CLOSED_STATUS=PASS
+DRIVER_WP001_PRECEDENCE_TEST_STATUS=PASS
+#
+## THE FACTORY V2 RANGE-CHECKER QUALIFICATION
+#
+# The range checker is qualified against SYNTHETIC GIT FIXTURES, which
+# is the only way to exercise a topology that has not happened yet.
+#
+$ sh scripts/quality/factory-v2-test.sh
+PASS=55
+FAIL=0
+STATUS=PASS
+#
+# The 55 cases include the INTERRUPTED-ACT and HISTORICAL-INVALID-
+# TOPOLOGY scenarios:
+#
+  T48-T51  the ACT-POLYC-FACTORY-V2-HALT-TRAILER-PARSER01 range matrix
+  T51      (historical invalid topology still rejected)
+  T53/T54  the merge-aware range enumeration and its rejection case
+#
+## THE CANONICAL GATES
+#
+$ make gate-fast
+CHECK=diff-check STATUS=PASS
+CHECK=shell-syntax STATUS=PASS
+CHECK=doc-invariants STATUS=PASS
+CHECK=large-file-guard STATUS=PASS
+CHECK=factory-closure-status STATUS=PASS
+VERDICT=PASS
+#
+$ make gate-push
+SUBJECT=9f030c1b8d05
+CHECK=jit STATUS=PASS
+CHECK=lsp STATUS=PASS
+CHECK=diff-check STATUS=PASS
+VERDICT=PASS
+GATE_PUSH_RC=0
