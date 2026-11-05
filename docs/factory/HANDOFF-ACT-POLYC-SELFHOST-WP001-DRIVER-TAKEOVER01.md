@@ -144,6 +144,41 @@ assemble the .HC SOURCE file, which failed at link. The 30-case G0/G1
 differential caught it; the driver now finds the assemble route by FILE
 TYPE and no option selects it.
 
+THE FINDING OF THE FOCUSED READ-ONLY REVIEW
+
+The review found one inaccuracy in the new source scan:
+`WpDriverFirstSourceArg` classified EVERY argument by file type, so an
+option whose value is the NEXT argument could hand it a value that
+happens to end in ".HC". For `hcc -c -o out.HC real.HC` the scan
+recorded "out.HC" -- the `-o` option's VALUE -- instead of "real.HC".
+
+THE IMPACT WAS NIL, and that is why review, not a failure, found it.
+The production host does not READ the plan's argument index: it uses
+the CliArgs fields, and the plan's argument is metadata. The case was
+measured directly with both builds and the observable behaviour was
+identical. The scan now consumes an option's value, exactly as the
+live parser does and exactly as `WpDriverFirstArgForStep` already
+did, so the plan is a truthful record for the first consumer that
+does read it. The whole suite was re-measured after the repair:
+parser 376/376 with the byte-identical MD5, lexers 89/89, 45/45 and
+23/23, the 30-case differential with 0 disagreements, gate-fast PASS,
+both fail-closed poisons still failing closed, and the bootstrap
+subject still byte-identical.
+
+THE FINAL OWNERSHIP TALLY, over all 44 sites of the re-measured
+inventory:
+
+    POLYC_OWNED    35
+    C_MECHANICAL    8
+    C_SEMANTIC      1
+
+The single C_SEMANTIC row is the LEGACY C PARSER, which is retained
+deliberately as the selector-OFF oracle. Seventeen sites carry the
+TRANSFERRED group: the twelve C-side route sites that now consume the
+driver's route code, the four PolyC-side sites that carry the
+decision, and the C-side domain guard that turns an invalid route into
+a fail-closed stop.
+
 GATES
 
 BUILD=PASS
@@ -173,7 +208,7 @@ THE MEASUREMENTS, each on the post-IMPL tree:
     BOOTSTRAP         the stage0 compiler compiles the PolyC driver
                       subject, and the result is BYTE-IDENTICAL to the
                       production subject:
-                      dd614e567cf3244596452b2693643723398c8623fc35e27f256be469018f3929
+                      76aa9fab02b0e8f0ae37b1abfd54b1fdafaf90ea043e6e787dd63d65833a1547
     MISSING SUBJECT   cmake -DDRIVER_WP001_OBJECT=<nonexistent> fails
                       with REJECT_MISSING_DRIVER_SUBJECT, exit 1. NO
                       silent fallback (F6).

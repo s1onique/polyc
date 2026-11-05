@@ -9905,14 +9905,36 @@ mutation changed G1; a C-side mutation changed G0; and the C-side
 mutation left G1's artifact **byte-identical**, so the legacy C chain
 is genuinely dormant under the selector. The stage0 compiler compiles
 the PolyC driver subject to a **byte-identical** object
-(`dd614e567cf3244596452b2693643723398c8623fc35e27f256be469018f3929`),
+(`76aa9fab02b0e8f0ae37b1abfd54b1fdafaf90ea043e6e787dd63d65833a1547`),
 and a missing production subject **fails the build** with
 `REJECT_MISSING_DRIVER_SUBJECT` — no silent fallback.
+
+**A focused read-only review found one inaccuracy and it was
+repaired.** `WpDriverFirstSourceArg` classified every argument by file
+type, so for `hcc -c -o out.HC real.HC` it recorded the `-o` option's
+**value** instead of the source. The impact was **nil** — the
+production host does not read the plan's argument index — and the case
+was measured directly with both builds to confirm that. The scan now
+consumes an option's value exactly as the live parser does. The whole
+suite was re-measured afterwards: parser **376/376** with the
+byte-identical MD5, lexers **89/89**, **45/45** and **23/23**, the
+**30**-case differential with **0** disagreements, `gate-fast` **PASS**,
+both fail-closed poisons still failing closed, and the bootstrap
+subject still byte-identical.
 
 **The driver symbol count is ACCOUNTED FOR, not merely conserved:** the
 entry selector-ON binary carried **30** driver PolyC symbols and the
 close binary carries **42**; the **12** added names are exactly the
 takeover's own machinery, and **no** entry symbol was removed.
+
+**The final ownership tally**, over all **44** sites of the re-measured
+inventory: **35** `POLYC_OWNED`, **8** `C_MECHANICAL`, **1**
+`C_SEMANTIC`. The single `C_SEMANTIC` row is the **legacy C parser**,
+retained deliberately as the selector-OFF oracle. **Seventeen** sites
+carry the `TRANSFERRED` group: the twelve C-side route sites that now
+consume the driver's route code, the four PolyC-side sites that carry
+the decision, and the C-side domain guard that turns an invalid route
+into a fail-closed stop.
 
 **One P2 residue is open and recorded:** the three ordered-plan exports
 (`WpDriverPlanActionCount`, `WpDriverPlanActionAt`,

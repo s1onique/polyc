@@ -22,7 +22,19 @@
 # against the route code the PolyC driver selected; it does not test
 # any args.<flag> to decide.
 #
-# TRANSFERRED_SITES	13	S16,S17,S18,S19,S20,S21,S22,S23,S24,S25,S26,S27,S32
+# TRANSFERRED_SITES	17	S16,S17,S18,S19,S20,S21,S22,S23,S24,S25,S26,S27,S37,S38,S39,S40,S44
+#
+# S16-S27 are the C-side sites that now CONSUME the driver's route code
+# instead of deciding it. S37, S38, S39 and S44 are the PolyC-side
+# sites that carry the decision. S40 is the C-side domain guard that
+# turns an invalid route into a fail-closed stop.
+#
+# THE TALLY, over all 44 sites:
+#
+#   POLYC_OWNED    35
+#   C_MECHANICAL    8
+#   C_SEMANTIC      1   (S03, the LEGACY C PARSER, retained
+#                         deliberately as the selector-OFF oracle)
 #
 # THE MEASUREMENT THAT PROVES THE TRANSFER, per site: the C host
 # imports the PolyC driver's route accessor, and the host's route
@@ -103,12 +115,13 @@ S34	target value resolution	src/cli.c:106 (cliApplyTarget)	CLI	YES	YES	POLYC_OWN
 S35	host byte accessors	src/selfhost-driver-wp001.c:43	CLI	YES	YES	C_MECHANICAL	argv	the raw bytes	ALREADY_MIGRATED
 S36	host value copier	src/selfhost-driver-wp001.c:67	CLI	YES	YES	C_MECHANICAL	the indices	the value bytes	ALREADY_MIGRATED
 S37	driver route precedence	tools/bootstrap/selfhost-driver-wp001.HC:1171	PLAN	YES	YES	POLYC_OWNED	the candidate steps	which route wins the legacy chain order	TRANSFERRED
-S38	driver plan build	tools/bootstrap/selfhost-driver-wp001.HC:1306	PLAN	YES	YES	POLYC_OWNED	the whole argv	the ordered plan	TRANSFERRED
-S39	driver selected route	tools/bootstrap/selfhost-driver-wp001.HC:1415	PLAN	YES	YES	POLYC_OWNED	the plan	the single selected route code	TRANSFERRED
+S38	driver plan build	tools/bootstrap/selfhost-driver-wp001.HC:1322	PLAN	YES	YES	POLYC_OWNED	the whole argv	the ordered plan	TRANSFERRED
+S39	driver selected route	tools/bootstrap/selfhost-driver-wp001.HC:1431	PLAN	YES	YES	POLYC_OWNED	the plan	the single selected route code	TRANSFERRED
 S40	route domain guard	src/main.c:603	EXEC	YES	YES	C_MECHANICAL	WP_DRIVER_STEP_COUNT	an invalid route fails closed	TRANSFERRED
-S41	plan action count export	tools/bootstrap/selfhost-driver-wp001.HC:1378	PLAN	YES	YES	POLYC_OWNED	the plan	the number of steps	UNCONSUMED_RESIDUE
-S42	plan action at export	tools/bootstrap/selfhost-driver-wp001.HC:1389	PLAN	YES	YES	POLYC_OWNED	the plan	the step code at an index	UNCONSUMED_RESIDUE
-S43	plan argument at export	tools/bootstrap/selfhost-driver-wp001.HC:1401	PLAN	YES	YES	POLYC_OWNED	the plan	the argument index at an index	UNCONSUMED_RESIDUE
+S41	plan action count export	tools/bootstrap/selfhost-driver-wp001.HC:1394	PLAN	YES	YES	POLYC_OWNED	the plan	the number of steps	UNCONSUMED_RESIDUE
+S42	plan action at export	tools/bootstrap/selfhost-driver-wp001.HC:1405	PLAN	YES	YES	POLYC_OWNED	the plan	the step code at an index	UNCONSUMED_RESIDUE
+S43	plan argument at export	tools/bootstrap/selfhost-driver-wp001.HC:1417	PLAN	YES	YES	POLYC_OWNED	the plan	the argument index at an index	UNCONSUMED_RESIDUE
+S44	driver source argument scan	tools/bootstrap/selfhost-driver-wp001.HC:1284	PLAN	YES	YES	POLYC_OWNED	the whole argv	the argument the compile route acts on	TRANSFERRED
 
 #
 
