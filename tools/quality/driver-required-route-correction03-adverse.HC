@@ -188,6 +188,138 @@ static I64 MutateMachO(U8 *path, U8 *mutation) {
   return done;
 }
 
+// The CAPTURE-RECORD mutator.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// It alters exactly ONE field of the capture record, and it locates the
+// field BY ITS KEY rather than by a fixed offset, so the mutation cannot
+// silently edit a DIFFERENT field when the record's shape changes.
+//
+// The FORGED mutations replace a field's value with a DIFFERENT value of
+// the same shape. The record therefore remains well formed -- it parses,
+// every field is present, and every digest is still sixty-four hexadecimal
+// digits -- but its CONTENTS no longer imply the EVENT_ID it carries.
+//
+// The MISSING mutations DELETE a field outright, so the record no longer
+// carries the evidence the recomputation needs.
+static I64 MutateCapture(U8 *path, U8 *mutation) {
+  I64 size = 0;
+  U8 *buf = FileRead(path, &size);
+  if (buf == NULL) return 0;
+  I64 result = 0;
+  I64 i = 0;
+  while (i < size) {
+    I64 lend = i;
+    while (lend < size && buf[lend] != 10) lend = lend + 1;
+    // The line is `KEY VALUE` or `KEY`.
+    I64 sp = -1;
+    I64 k = i;
+    while (k < lend) {
+      if (buf[k] == 32) { sp = k; break; }
+      k = k + 1;
+    }
+    if (sp > i) {
+      I64 klen = sp - i;
+      U8 *key = MAlloc(klen + 1);
+      MemCpy(key, buf + i, klen);
+      key[klen] = 0;
+      I64 hit = 0;
+      I64 delete_it = 0;
+      if (StrCmp(mutation, "FORGED_EVENT_SOURCE") == 0 &&
+          StrCmp(key, "SOURCE_SHA256") == 0) hit = 1;
+      if (StrCmp(mutation, "FORGED_EVENT_PRODUCER") == 0 &&
+          StrCmp(key, "PRODUCER_SHA256") == 0) hit = 1;
+      if (StrCmp(mutation, "FORGED_EVENT_COUNTER") == 0 &&
+          StrCmp(key, "EVENT_COUNTER") == 0) hit = 1;
+      if (StrCmp(mutation, "MISSING_ENV_APPLIED") == 0 &&
+          StrCmp(key, "ENV_APPLIED") == 0) { hit = 1; delete_it = 1; }
+      if (StrCmp(mutation, "MISSING_EVENT_COUNTER") == 0 &&
+          StrCmp(key, "EVENT_COUNTER") == 0) { hit = 1; delete_it = 1; }
+      if (StrCmp(mutation, "MISSING_PRODUCER_ARCH") == 0 &&
+          StrCmp(key, "PRODUCER_ARCH") == 0) { hit = 1; delete_it = 1; }
+      if (hit == 1) {
+        if (delete_it == 1) {
+          // The line is removed. The following lines are moved up.
+          I64 rest = lend + 1;
+          I64 restlen = size - rest;
+          U8 *joined = MAlloc(size);
+          MemCpy(joined, buf, i);
+          if (restlen > 0) MemCpy(joined + i, buf + rest, restlen);
+          FileWrite(path, joined, i + restlen);
+          Free(joined);
+          Free(buf);
+          return 1;
+        }
+        // The value's FIRST character is replaced by a different one. The
+        // value keeps its shape -- it is still a digest or a decimal --
+        // so the record remains well formed.
+        U8 *digit = "0123456789abcdef";
+        I64 d = 0;
+        while (d < 16 && digit[d] != buf[sp + 1]) d = d + 1;
+        if (d < 16) {
+          U8 *joined = MAlloc(size);
+          MemCpy(joined, buf, size);
+          joined[sp + 1] = digit[(d + 1) % 16];
+          FileWrite(path, joined, size);
+          Free(joined);
+          result = 1;
+        }
+        Free(key);
+        Free(buf);
+        return result;
+      }
+      Free(key);
+    }
+    if (lend >= size) break;
+    i = lend + 1;
+  }
+  // The FORGED_EVENT_ARGV and FORGED_EVENT_ENV mutations operate on the
+  // BLOCK fields, which are not `KEY VALUE` lines. They are handled here,
+  // because the loop above only finds the single-value fields.
+  if (StrCmp(mutation, "FORGED_EVENT_ARGV") == 0 ||
+      StrCmp(mutation, "FORGED_EVENT_ENV") == 0) {
+    U8 *blockkey = "ARGV";
+    if (StrCmp(mutation, "FORGED_EVENT_ENV") == 0) blockkey = "ENV";
+    I64 blen = StrLen(blockkey);
+    I64 at = -1;
+    I64 j = 0;
+    while (j + blen <= size) {
+      I64 match = 1;
+      I64 m = 0;
+      while (m < blen) {
+        if (buf[j + m] != blockkey[m]) { match = 0; break; }
+        m = m + 1;
+      }
+      // The key must START a line, and it must be the WHOLE line.
+      if (match == 1 && (j == 0 || buf[j - 1] == 10)) {
+        I64 e = j + blen;
+        if (e >= size || buf[e] == 10) { at = j; break; }
+      }
+      j = j + 1;
+    }
+    if (at >= 0) {
+      // The FIRST value line after the key is altered.
+      I64 v = at + blen + 1;
+      I64 vend = v;
+      while (vend < size && buf[vend] != 10) vend = vend + 1;
+      if (vend > v) {
+        U8 *joined = MAlloc(size);
+        MemCpy(joined, buf, size);
+        // The last character of the value is changed, so the value keeps
+        // its shape and its length.
+        joined[vend - 1] = 90;
+        FileWrite(path, joined, size);
+        Free(joined);
+        Free(buf);
+        return 1;
+      }
+    }
+  }
+  Free(buf);
+  return result;
+}
+
 I32 Main(I32 argc, U8 **argv) {
   if (argc < 4) {
     "REASON_DETAIL=usage: adverse <probe-id> <mutation> <work-dir>\n";
@@ -428,6 +560,86 @@ I32 Main(I32 argc, U8 **argv) {
       "ADVERSE_MUTATION_FAILED\tOUT_OF_BOUNDS_STRING_ENTRY\n";
       return 3;
     }
+  }
+  // --- THE F1 ADVERSE MUTATIONS --------------------------------------------
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // Each mutation attacks ONE trust-boundary property of the execution
+  // provenance, and each must be rejected with its OWN reason token.
+  //
+  //   FORGED_EVENT_SOURCE     the record's SOURCE digest is altered, so
+  //                           the record's contents no longer imply the
+  //                           identity it carries. The ledger membership
+  //                           check cannot see this, because the identity
+  //                           is still the genuine registered one.
+  //   FORGED_EVENT_ARGV       the record's ARGUMENT VECTOR is altered.
+  //   FORGED_EVENT_ENV        the record's ENVIRONMENT is altered.
+  //   FORGED_EVENT_COUNTER    the record's EVENT COUNTER is altered.
+  //   FORGED_EVENT_PRODUCER   the record's PRODUCER digest is altered.
+  //   DUPLICATE_LEDGER_ENTRY  the event identity is registered in the run
+  //                           ledger TWICE. Two executions in one run
+  //                           cannot share one identity.
+  //   MISSING_ENV_APPLIED     the record carries no ENVIRONMENT-APPLIED
+  //                           marker, so the environment it names cannot
+  //                           be shown to have been in force.
+  //   MISSING_EVENT_COUNTER   the record carries no EVENT COUNTER, so the
+  //                           identity cannot be recomputed from it.
+  //   MISSING_PRODUCER_ARCH   the record carries no PRODUCER ARCHITECTURE,
+  //                           so the evidence does not say which target
+  //                           the producer was.
+  //
+  // The PolyC capture record is argv[16] and the run ledger is argv[25].
+  if (StrCmp(mutation, "FORGED_EVENT_SOURCE") == 0 ||
+      StrCmp(mutation, "FORGED_EVENT_ARGV") == 0 ||
+      StrCmp(mutation, "FORGED_EVENT_ENV") == 0 ||
+      StrCmp(mutation, "FORGED_EVENT_COUNTER") == 0 ||
+      StrCmp(mutation, "FORGED_EVENT_PRODUCER") == 0 ||
+      StrCmp(mutation, "MISSING_ENV_APPLIED") == 0 ||
+      StrCmp(mutation, "MISSING_EVENT_COUNTER") == 0 ||
+      StrCmp(mutation, "MISSING_PRODUCER_ARCH") == 0) {
+    if (MutateCapture(argv[16], mutation) == 0) {
+      "ADVERSE_MUTATION_FAILED\t%s\n", mutation;
+      return 3;
+    }
+  }
+  if (StrCmp(mutation, "DUPLICATE_LEDGER_ENTRY") == 0) {
+    // The event identity is appended to the run ledger a SECOND time. The
+    // ledger is the runner's record of the executions THIS run performed,
+    // and one execution cannot be performed twice under one identity.
+    //
+    // The LAST COMPLETE record is duplicated. A record is complete only
+    // when it is terminated by the record separator, so the scan finds the
+    // final separator and the record runs from the separator before it.
+    I64 lsize = 0;
+    U8 *lbuf = FileRead(argv[25], &lsize);
+    if (lbuf == NULL || lsize <= 0) {
+      "ADVERSE_MUTATION_FAILED\tDUPLICATE_LEDGER_ENTRY\n";
+      return 3;
+    }
+    I64 end = lsize - 1;
+    while (end >= 0 && lbuf[end] != 10) end = end - 1;
+    if (end < 0) {
+      "ADVERSE_MUTATION_FAILED\tDUPLICATE_LEDGER_ENTRY\n";
+      return 3;
+    }
+    I64 start = end - 1;
+    while (start >= 0 && lbuf[start] != 10) start = start - 1;
+    start = start + 1;
+    I64 len = end - start;
+    if (len <= 0) {
+      "ADVERSE_MUTATION_FAILED\tDUPLICATE_LEDGER_ENTRY\n";
+      return 3;
+    }
+    // The duplicated record, terminated by the record separator, exactly
+    // as the runner writes it.
+    U8 *joined = MAlloc(lsize + len + 1);
+    MemCpy(joined, lbuf, lsize);
+    MemCpy(joined + lsize, lbuf + start, len);
+    joined[lsize + len] = 10;
+    FileWrite(argv[25], joined, lsize + len + 1);
+    Free(joined);
+    Free(lbuf);
   }
   return 0;
 }

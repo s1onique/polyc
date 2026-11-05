@@ -88,6 +88,26 @@
 #define HARNESS_CAPTURE_FAILED    6
 #define HARNESS_LEDGER_FAILED     7
 #define HARNESS_PRODUCER_MISSING  8
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// The three additional reasons are DISTINCT, so a reviewer can tell WHICH
+// trust-boundary property was violated.
+//
+//   HARNESS_PRODUCER_NOT_EXECUTABLE  the producer exists but is not an
+//                                     executable file. A producer that
+//                                     cannot be executed is not a producer.
+//   HARNESS_PRODUCER_ARCH_MISMATCH   the producer is not a Mach-O image
+//                                     for the expected architecture, so it
+//                                     is not the compiler this evidence
+//                                     claims to be about.
+//   HARNESS_EVENT_DIR_EXISTS        the event directory already existed.
+//                                     The runner allocates the event
+//                                     directory EXCLUSIVELY, so a
+//                                     pre-existing directory means the
+//                                     event identity was replayed.
+#define HARNESS_PRODUCER_NOT_EXECUTABLE 9
+#define HARNESS_PRODUCER_ARCH_MISMATCH  10
+#define HARNESS_EVENT_DIR_EXISTS        11
 
 static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_OK) return "OK";
@@ -99,6 +119,9 @@ static U8 *HarnessReason(I64 code) {
   if (code == HARNESS_CAPTURE_FAILED) return "HARNESS_CAPTURE_RECORD_FAILED";
   if (code == HARNESS_LEDGER_FAILED) return "HARNESS_RUN_LEDGER_FAILED";
   if (code == HARNESS_PRODUCER_MISSING) return "HARNESS_PRODUCER_MISSING";
+  if (code == HARNESS_PRODUCER_NOT_EXECUTABLE) return "HARNESS_PRODUCER_NOT_EXECUTABLE";
+  if (code == HARNESS_PRODUCER_ARCH_MISMATCH) return "HARNESS_PRODUCER_ARCH_MISMATCH";
+  if (code == HARNESS_EVENT_DIR_EXISTS) return "HARNESS_EVENT_DIR_EXISTS";
   return "HARNESS_UNKNOWN";
 }
 
@@ -193,13 +216,47 @@ static U8 *HarnessEventId(U8 *case_id, U8 *selector, U8 *producer_hex,
   Sha256Ctx c;
   Sha256Init(&c);
   Sha256Update(&c, run_id, 64);
-  // The event counter, as a fixed-width decimal field so that the
-  // separator is unambiguous.
+  // The event counter, as a DECIMAL field so that the separator is
+  // unambiguous.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // THE DEFECT. The digits were produced in REVERSE order and were never
+  // reversed back:
+  //
+  //     while (v > 0) { ctr[n] = 48 + (v % 10); v = v / 10; n = n + 1; }
+  //     ctr[n] = 10;
+  //
+  // For a one-digit counter the reversed and the true order coincide, so
+  // the defect was INVISIBLE until the tenth event of a run. For the
+  // tenth event the identity was computed over "01" while the capture
+  // record stated "10", so the identity did not describe the event the
+  // record claimed.
+  //
+  // THE REPAIR. The digits are produced in REVERSE order into a SEPARATE
+  // buffer and are then copied back in order, exactly as the shared
+  // contract's exit-status codec does. The counter field the identity is
+  // computed over is now the SAME decimal string the capture record
+  // states, so a reviewer can recompute the identity from the record.
   U8 ctr[24];
   I64 n = 0;
   I64 v = event_counter;
   if (v == 0) { ctr[0] = 48; n = 1; }
   while (v > 0) { ctr[n] = 48 + (v % 10); v = v / 10; n = n + 1; }
+  // The SEPARATE WRITE POSITION copies the digits back into order. The
+  // source and the destination are DIFFERENT buffers, so the copy cannot
+  // destroy a digit that has not yet been read.
+  U8 rev[24];
+  I64 w = 0;
+  while (w < n) {
+    rev[w] = ctr[n - 1 - w];
+    w = w + 1;
+  }
+  w = 0;
+  while (w < n) {
+    ctr[w] = rev[w];
+    w = w + 1;
+  }
   // The separator.
   ctr[n] = 10;
   Sha256Update(&c, ctr, n + 1);
@@ -297,24 +354,161 @@ static U8 *PathJoin(U8 *dir, U8 *name) {
   return p;
 }
 
+// ---------------------------------------------------------------------------
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// THE TRUSTED RUNNER'S OWN CHECKS ON THE PRODUCER.
+//
+// The runner OWNS the producer. Before the runner spawns anything it
+// establishes, FROM THE BYTES ON DISK, that the program it is about to
+// execute is the program this evidence claims to be about.
+//
+// Three properties are established, and each has its OWN reason token:
+//
+//   1. the producer EXISTS. A missing producer is a hard failure; it is
+//      never treated as an empty file, because an empty-file digest is
+//      what made a missing input acceptable in the first place.
+//
+//   2. the producer is an EXECUTABLE FILE. A file that is not executable
+//      cannot be the compiler.
+//
+//   3. the producer is a MACH-O IMAGE FOR THE EXPECTED ARCHITECTURE. The
+//      architecture is read from the Mach-O header, so the check is a
+//      property of the BYTES and not of the file name. A producer for a
+//      different architecture would produce artifacts for a different
+//      target, and the comparison would be meaningless.
+//
+// The expected architecture is supplied by the caller. It is the
+// architecture of the ARTIFACTS this evidence is about, so the producer
+// and the artifacts are known to belong to the same target.
+// ---------------------------------------------------------------------------
+
+// The executable-bit test. It asks the operating system whether the file
+// may be EXECUTED, which is the property the runner actually depends on:
+// a file whose mode carries no execute bit cannot be the compiler.
+extern "c" I32 access(U8 *path, I32 mode);
+
+static I64 HarnessIsExecutable(U8 *path) {
+  I32 rc = access(path, 1);
+  if (rc == 0) return 1;
+  return 0;
+}
+
+// The producer's architecture, read from its Mach-O header. It returns the
+// CPU type, or -1 when the producer is not a 64-bit Mach-O image.
+static I64 HarnessProducerArch(U8 *path) {
+  I64 size = 0;
+  U8 *buf = FileRead(path, &size);
+  if (buf == NULL) return -1;
+  return ContractArchOf(buf, size);
+}
+
+// The producer's own validation. It returns HARNESS_OK, or the reason the
+// producer was refused.
+static I64 HarnessValidateProducer(U8 *producer, I64 expected_arch) {
+  I64 size = 0;
+  U8 *buf = FileRead(producer, &size);
+  if (buf == NULL) return HARNESS_PRODUCER_MISSING;
+  if (HarnessIsExecutable(producer) == 0) {
+    "HARNESS_REASON_DETAIL\tthe producer %s is not an executable file\n", producer;
+    return HARNESS_PRODUCER_NOT_EXECUTABLE;
+  }
+  I64 arch = ContractArchOf(buf, size);
+  if (arch < 0) {
+    "HARNESS_REASON_DETAIL\tthe producer %s is not a Mach-O image\n", producer;
+    return HARNESS_PRODUCER_ARCH_MISMATCH;
+  }
+  if (expected_arch >= 0 && arch != expected_arch) {
+    "HARNESS_REASON_DETAIL\tthe producer %s has architecture %s, not %s\n",
+      producer, ContractArchName(arch), ContractArchName(expected_arch);
+    return HARNESS_PRODUCER_ARCH_MISMATCH;
+  }
+  return HARNESS_OK;
+}
+
+// The environment application.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// THE DEFECT. The harness RECORDED the environment bindings and hashed
+// them into the event identity, but it never APPLIED them to the spawned
+// compiler. The child therefore ran with the runner's ambient
+// environment, and the recorded environment was a DESCRIPTION of an
+// environment that was never in force. A binding that the evidence
+// claims was in effect -- the test prefix, for instance -- was not.
+//
+// THE REPAIR. Each binding is applied with setenv(3) BEFORE the spawn, so
+// the child observes exactly the environment the capture record names. The
+// bindings are set AFTER the fork-sensitive setup but BEFORE
+// SpawnAndCapture, and the runner restores the previous value of each
+// binding afterwards so that the runner's own environment is not
+// disturbed for the next case.
+//
+// The binding is a NAME=VALUE pair. A binding that is not a pair is a
+// hard failure: an unparseable binding would be recorded as though it
+// had been applied.
+extern "c" I32 setenv(U8 *name, U8 *value, I32 overwrite);
+
+// The environment applier. It returns HARNESS_OK, or HARNESS_USAGE when
+// a binding is not a NAME=VALUE pair.
+static I64 HarnessApplyEnv(U8 **envv, I64 nenv) {
+  I64 i = 0;
+  while (i < nenv) {
+    U8 *binding = envv[i];
+    I64 len = StrLen(binding);
+    I64 eq = 0;
+    I64 j = 0;
+    while (j < len) {
+      if (binding[j] == 61) { eq = 1; break; }
+      j = j + 1;
+    }
+    if (eq == 0 || eq == 0 || eq >= len) {
+      "HARNESS_REASON_DETAIL\tthe environment binding %s is not a NAME=VALUE pair\n",
+        binding;
+      return HARNESS_USAGE;
+    }
+    I64 namelen = eq;
+    U8 *name = MAlloc(namelen + 1);
+    MemCpy(name, binding, namelen);
+    name[namelen] = 0;
+    U8 *value = MAlloc(len - eq);
+    MemCpy(value, binding + eq + 1, len - eq - 1);
+    value[len - eq - 1] = 0;
+    if (setenv(name, value, 1) != 0) {
+      "HARNESS_REASON_DETAIL\tthe environment binding %s could not be applied\n",
+        binding;
+      Free(name);
+      Free(value);
+      return HARNESS_USAGE;
+    }
+    Free(name);
+    Free(value);
+    i = i + 1;
+  }
+  return HARNESS_OK;
+}
+
 // The main execution.
 //
 //   run <run-dir> <ledger> <selector> <case-id>
 //       <producer> <source> <fixture>
-//       <artifact-name> <artifact-dir>
+//       <artifact-name> <artifact-dir> <expected-arch>
 //       <env>... -- <argv>...
 //
 // The environment bindings are given as `NAME=VALUE` pairs before the `--`
 // separator, and the argument vector is given after it.
 //
-// `argv[0]` is the run directory. The fixed prefix occupies argv[0..8], the
-// environment bindings start at argv[9], and the argument vector follows the
-// `--` separator.
+// `argv[0]` is the run directory. The fixed prefix occupies argv[0..9], the
+// environment bindings start at argv[10], and the argument vector follows
+// the `--` separator.
 //
-// It prints the RESULT lines that the comparator and the harness consume.
+// The EXPECTED ARCHITECTURE is the architecture of the artifacts this
+// evidence is about. The runner requires the producer to be a Mach-O image
+// for that architecture, so the producer and the artifacts are known to
+// belong to the same target.
 static I64 HarnessRun(I32 argc, U8 **argv) {
   // The fixed argument prefix.
-  if (argc < 13) {
+  if (argc < 14) {
     "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_USAGE);
     return HARNESS_USAGE;
   }
@@ -327,10 +521,11 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   U8 *fixture = argv[6];
   U8 *artifact_name = argv[7];
   U8 *artifact_dir = argv[8];
+  U8 *expected_arch_arg = argv[9];
 
   // The environment bindings and the argument vector.
-  I64 sep = 9;
-  I64 i = 9;
+  I64 sep = 10;
+  I64 i = 10;
   I64 found_sep = 0;
   while (i < argc) {
     if (StrCmp(argv[i], "--") == 0) { sep = i; found_sep = 1; break; }
@@ -340,11 +535,11 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
     "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_USAGE);
     return HARNESS_USAGE;
   }
-  I64 nenv = sep - 9;
+  I64 nenv = sep - 10;
   U8 **envv = MAlloc(sizeof(U8 *) * (nenv + 1));
   I64 e = 0;
   while (e < nenv) {
-    envv[e] = argv[9 + e];
+    envv[e] = argv[10 + e];
     e = e + 1;
   }
   envv[nenv] = NULL;
@@ -385,6 +580,19 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
     "HARNESS_REASON_DETAIL\tthe producer %s is absent\n", producer;
     return HARNESS_PRODUCER_MISSING;
   }
+  // The TRUSTED RUNNER'S OWN CHECKS on the producer. The producer must be an
+  // executable Mach-O image for the expected architecture. These checks are
+  // made from the BYTES ON DISK, before anything is spawned.
+  I64 expected_arch = -1;
+  if (expected_arch_arg != NULL) {
+    if (StrCmp(expected_arch_arg, "arm64") == 0) expected_arch = CPU_TYPE_ARM64;
+    if (StrCmp(expected_arch_arg, "x86_64") == 0) expected_arch = CPU_TYPE_X86_64;
+  }
+  I64 pv = HarnessValidateProducer(producer, expected_arch);
+  if (pv != HARNESS_OK) {
+    "HARNESS_REASON\t%s\n", HarnessReason(pv);
+    return pv;
+  }
   if (Sha256File(source, source_hex) == 0) {
     "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_INPUT_MISSING);
     "HARNESS_REASON_DETAIL\tthe source %s is absent\n", source;
@@ -394,6 +602,15 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
     "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_INPUT_MISSING);
     "HARNESS_REASON_DETAIL\tthe fixture %s is absent\n", fixture;
     return HARNESS_INPUT_MISSING;
+  }
+
+  // The ENVIRONMENT is applied BEFORE the spawn, so the child observes
+  // exactly the environment the capture record names. A binding that is not
+  // a NAME=VALUE pair is a hard failure.
+  I64 envrc = HarnessApplyEnv(envv, nenv);
+  if (envrc != HARNESS_OK) {
+    "HARNESS_REASON\t%s\n", HarnessReason(envrc);
+    return envrc;
   }
 
   // --- STEP 2: ALLOCATE THE EVENT IDENTITY, BEFORE THE EXECUTION. ---------
@@ -406,10 +623,24 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   // The directory is FRESH: it is created with a name that carries the
   // event identity, so a REPLAYED artifact from an earlier event cannot
   // occupy it.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // The event directory is allocated EXCLUSIVELY. The previous revision
+  // ignored the result of mkdir, so a pre-existing directory -- left by an
+  // earlier run, or planted by a replay -- was silently REUSED, and the
+  // fresh capture could be written into a directory that already held an
+  // older event's bytes. The runner now REQUIRES mkdir to succeed, and a
+  // directory that already exists is a hard failure with its own reason
+  // token.
   U8 *case_dir = PathJoin(run_dir, case_id);
   mkdir(case_dir, 493);
   U8 *event_dir = PathJoin(case_dir, event_id);
-  mkdir(event_dir, 493);
+  if (mkdir(event_dir, 493) != 0) {
+    "HARNESS_REASON\t%s\n", HarnessReason(HARNESS_EVENT_DIR_EXISTS);
+    "HARNESS_REASON_DETAIL\tthe event directory %s already exists\n", event_dir;
+    return HARNESS_EVENT_DIR_EXISTS;
+  }
 
   // --- STEP 4: RUN THE COMPILER. -----------------------------------------
   U8 *out = NULL;
@@ -520,6 +751,19 @@ static I64 HarnessRun(I32 argc, U8 **argv) {
   RecField("CASE_ID", case_id);
   RecField("SELECTOR", selector);
   RecField("PRODUCER_SHA256", producer_hex);
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // The producer's ARCHITECTURE is recorded, so that the evidence says
+  // WHICH target the producer was, and not merely that some file with a
+  // digest was executed.
+  U8 *producer_arch = MAlloc(16);
+  I64 parch = HarnessProducerArch(producer);
+  MemCpy(producer_arch, ContractArchName(parch), StrLen(ContractArchName(parch)));
+  producer_arch[StrLen(ContractArchName(parch))] = 0;
+  RecField("PRODUCER_ARCH", producer_arch);
+  // The ENVIRONMENT THAT WAS ACTUALLY APPLIED. Before this revision the
+  // ENV block described an environment that was never in force.
+  RecField("ENV_APPLIED", "1");
   RecField("SOURCE_SHA256", source_hex);
   RecField("FIXTURE_SHA256", fixture_hex);
   RecField("EXIT_STATUS", exit_text);

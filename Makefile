@@ -1057,6 +1057,15 @@ DRIVER_ROUTE03_PUBLISH_BIN = build/driver-required-route-correction03-publish
 DRIVER_ROUTE03_PRISTINE_SRC = tools/quality/driver-required-route-correction03-pristine.HC
 DRIVER_ROUTE03_PRISTINE_OBJ = build/driver-required-route-correction03-pristine.o
 DRIVER_ROUTE03_PRISTINE_BIN = build/driver-required-route-correction03-pristine
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+#
+# The EXPECTED ARCHITECTURE of the producers and of the artifacts they
+# produce. The trusted runner requires the producer to be a Mach-O image
+# for this architecture, so the producer and the artifacts are known to
+# belong to the same target. The value is derived from the HOST, and the
+# runner refuses a producer whose own header disagrees with it.
+DRIVER_ROUTE03_EXPECTED_ARCH := $(shell uname -m)
 # The archive builder's ABSOLUTE PATH. The runtime spawns with `execv`,
 # which does NOT search the PATH, so the tool receives the path explicitly.
 AR_TOOL ?= /usr/bin/ar
@@ -1215,7 +1224,7 @@ driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-w
 	    ( cd $$ROOT/$$id/$$side && \
 	      $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt $$sel $$id \
 	        $$hcc $(CURDIR)/$$ROOT/$$id/$$side/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	        artifact.bin $(CURDIR)/$$ROOT/$$id/$$side/ \
+	        artifact.bin $(CURDIR)/$$ROOT/$$id/$$side/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	        HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	        -- $$hcc --install-dir=$(TEST_PREFIX) $$flags source.HC -o artifact.bin \
 	        > harness.txt 2>&1 ); \
@@ -2070,7 +2079,7 @@ driver-wp001-correction03-matrix-test: $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_RO
 	          $(CURDIR)/$(DRIVER_ROUTE03_WORKDIR)/run/ledger.txt \
 	          $$_sel $$_id $$_hcc \
 	          $(CURDIR)/$$_d/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	          artifact.bin $(CURDIR)/$$_d/ \
+	          artifact.bin $(CURDIR)/$$_d/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	          HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	          -- $$_hcc --install-dir=$(TEST_PREFIX) $$_flags source.HC -o artifact.bin \
 	          > harness.txt 2>&1 ); \
@@ -2549,7 +2558,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  cp ../source.HC source.HC; \
 	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt OFF ADVERSE_GOOD \
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	    artifact.bin $(CURDIR)/$$W/good/off/ \
+	    artifact.bin $(CURDIR)/$$W/good/off/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
 	    > harness.txt 2>&1 ); \
@@ -2564,7 +2573,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  cp ../source.HC source.HC; \
 	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$RUN/ledger.txt ON ADVERSE_GOOD \
 	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	    artifact.bin $(CURDIR)/$$W/good/on/ \
+	    artifact.bin $(CURDIR)/$$W/good/on/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
 	    > harness.txt 2>&1 ); \
@@ -2621,7 +2630,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	( cd $$W/good && \
 	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-ledger.txt OFF ADVERSE_GOOD \
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	    stale-valid.bin $(CURDIR)/$$W/good/ \
+	    stale-valid.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
 	    > stale-harness.txt 2>&1 ); \
@@ -2637,7 +2646,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	( cd $$W/good && \
 	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-on-ledger.txt ON ADVERSE_GOOD \
 	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	    stale-on.bin $(CURDIR)/$$W/good/ \
+	    stale-on.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-on.bin \
 	    > stale-on-harness.txt 2>&1 ); \
@@ -2654,7 +2663,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	( cd $$W/good && \
 	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-text-ledger.txt OFF ADVERSE_GOOD \
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
-	    stale-text.bin $(CURDIR)/$$W/good/ \
+	    stale-text.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
 	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -S other.HC -o- \
 	    > stale-text-harness.txt 2>&1 ); \
@@ -2692,7 +2701,16 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  'ALTERED_CAPTURE:CAPTURE_DIGEST_MISMATCH' \
 	  'OUT_OF_BOUNDS_NSYMS:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
 	  'UNDERSIZED_SYMBOL_TABLE:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
-	  'OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS'; do \
+	  'OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS' \
+	  'FORGED_EVENT_SOURCE:CAPTURE_EVENT_ID_MISMATCH' \
+	  'FORGED_EVENT_ARGV:CAPTURE_EVENT_ID_MISMATCH' \
+	  'FORGED_EVENT_ENV:CAPTURE_EVENT_ID_MISMATCH' \
+	  'FORGED_EVENT_COUNTER:CAPTURE_EVENT_ID_MISMATCH' \
+	  'FORGED_EVENT_PRODUCER:CAPTURE_PRODUCER_IDENTITY_MISMATCH' \
+	  'DUPLICATE_LEDGER_ENTRY:CAPTURE_DUPLICATE_EVENT_ID' \
+	  'MISSING_ENV_APPLIED:CAPTURE_FIELD_MISSING' \
+	  'MISSING_EVENT_COUNTER:CAPTURE_FIELD_MISSING' \
+	  'MISSING_PRODUCER_ARCH:CAPTURE_FIELD_MISSING'; do \
 	  mutation=$${spec%%:*}; \
 	  reason=$${spec#*:}; \
 	  rm -rf $$W/$$mutation; \
@@ -2732,7 +2750,8 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $$W/good/stale-on-capture.txt \
 	    $$W/good/stale-on-stdout.txt \
 	    $$W/good/stale-on-stderr.txt \
-	    $$W/good/stale-on.bin; \
+	    $$W/good/stale-on.bin \
+	    $$W/$$mutation/ledger.txt; \
 	  set +e; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$mutation \
 	    $$W/$$mutation/oracle-artifact.bin \

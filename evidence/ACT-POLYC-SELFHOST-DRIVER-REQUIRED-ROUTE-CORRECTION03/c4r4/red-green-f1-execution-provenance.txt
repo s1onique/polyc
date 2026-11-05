@@ -1,0 +1,113 @@
+# THE F1 EXECUTION-PROVENANCE REPAIR -- the RED and the GREEN.
+#
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+#
+# ---------------------------------------------------------------------------
+# THE DEFECTS
+# ---------------------------------------------------------------------------
+#
+# D1 -- THE COMPARATOR NEVER RECOMPUTED THE EVENT IDENTITY.
+#
+# The comparator checked that the record's EVENT_ID was REGISTERED in the
+# run ledger, and it checked that the record's digests matched the observed
+# bytes. It never checked that the EVENT_ID was the identity that the
+# record's OWN CONTENTS imply.
+#
+# A FORGED record therefore passed. Take a genuine capture record, change
+# its contents, and leave its EVENT_ID alone. The digests still match the
+# forged bytes, and the EVENT_ID is still in the ledger -- because it is the
+# genuine event's identity. The ledger check cannot see the forgery,
+# because it never looks at the record's contents.
+#
+# D2 -- THE HARNESS RECORDED AN ENVIRONMENT IT NEVER APPLIED.
+#
+# The harness RECORDED the environment bindings and hashed them into the
+# event identity, but it never APPLIED them to the spawned compiler. The
+# child therefore ran with the runner's ambient environment, and the
+# recorded environment was a DESCRIPTION of an environment that was never
+# in force.
+#
+# D3 -- THE RUNNER DID NOT CHECK THE PRODUCER IT WAS ABOUT TO EXECUTE.
+#
+# The runner spawned whatever path it was given. It did not establish that
+# the program was an executable file, and it did not establish that the
+# program was a Mach-O image for the architecture of the artifacts the
+# evidence is about.
+#
+# D4 -- THE EVENT DIRECTORY WAS NOT ALLOCATED EXCLUSIVELY.
+#
+# The result of mkdir was ignored, so a pre-existing directory -- left by an
+# earlier run, or planted by a replay -- was silently REUSED.
+#
+# D5 -- THE EVENT IDENTITY WAS COMPUTED OVER A REVERSED COUNTER.
+#
+# The harness's event-counter field was produced in REVERSE digit order and
+# was never reversed back:
+#
+#     while (v > 0) { ctr[n] = 48 + (v % 10); v = v / 10; n = n + 1; }
+#     ctr[n] = 10;
+#
+# For a one-digit counter the reversed and the true order coincide, so the
+# defect was INVISIBLE until the tenth event of a run. For the tenth event
+# the identity was computed over "01" while the capture record stated "10",
+# so the identity did not describe the event the record claimed. This was
+# FOUND by the new recomputation check, which is why it is recorded here.
+#
+# ---------------------------------------------------------------------------
+# THE REPAIR
+# ---------------------------------------------------------------------------
+#
+# The comparator RECOMPUTES the event identity from the record's own
+# fields, using its own independent copy of the construction, and requires
+# the two to agree. A forged record now fails.
+#
+# The harness APPLIES the environment with setenv(3) BEFORE the spawn, so
+# the child observes exactly the environment the capture record names. A
+# binding that is not a NAME=VALUE pair is a hard failure.
+#
+# The runner VALIDATES the producer before the spawn: it must exist, it
+# must be an executable file, and it must be a Mach-O image for the
+# expected architecture. Each property has its own reason token.
+#
+# The event directory is allocated EXCLUSIVELY. mkdir must succeed.
+#
+# The event identity's counter field is now the SAME decimal string the
+# capture record states.
+#
+# ---------------------------------------------------------------------------
+# THE MEASURED GREEN
+# ---------------------------------------------------------------------------
+#
+# The trusted runner's own producer checks, each with its own reason:
+#
+#   HARNESS_PRODUCER_NOT_EXECUTABLE   a producer whose execute bit is clear
+#   HARNESS_PRODUCER_ARCH_MISMATCH    a producer that is not a Mach-O image,
+#                                     or is one for a different architecture
+#   HARNESS_EVENT_DIR_EXISTS          an event directory that already existed
+#
+# The comparator's new reasons:
+#
+#   CAPTURE_EVENT_ID_MISMATCH         the record's EVENT_ID is not the
+#                                     identity its own contents imply
+#   CAPTURE_DUPLICATE_EVENT_ID        the event identity is registered twice
+#   CAPTURE_FIELD_MISSING             a required field is absent
+#
+# ---------------------------------------------------------------------------
+# THE ADVERSE PROBES
+# ---------------------------------------------------------------------------
+#
+# Nine new probes, each with its OWN reason token:
+#
+#   FORGED_EVENT_SOURCE     -> CAPTURE_EVENT_ID_MISMATCH
+#   FORGED_EVENT_ARGV       -> CAPTURE_EVENT_ID_MISMATCH
+#   FORGED_EVENT_ENV        -> CAPTURE_EVENT_ID_MISMATCH
+#   FORGED_EVENT_COUNTER    -> CAPTURE_EVENT_ID_MISMATCH
+#   FORGED_EVENT_PRODUCER   -> CAPTURE_PRODUCER_IDENTITY_MISMATCH
+#   DUPLICATE_LEDGER_ENTRY  -> CAPTURE_DUPLICATE_EVENT_ID
+#   MISSING_ENV_APPLIED     -> CAPTURE_FIELD_MISSING
+#   MISSING_EVENT_COUNTER   -> CAPTURE_FIELD_MISSING
+#   MISSING_PRODUCER_ARCH   -> CAPTURE_FIELD_MISSING
+#
+# The decisive measurement: the GENUINE capture record PASSES the
+# recomputation, and every FORGERY of it is REJECTED. The check is not
+# simply always failing.

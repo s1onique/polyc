@@ -162,6 +162,21 @@ static I64 TextEqual(U8 *a, I64 asize, U8 *b, I64 bsize) {
 #define CAPTURE_CASE_MISMATCH      11
 #define CAPTURE_PRODUCER_MISMATCH  12
 #define CAPTURE_ARTIFACT_ABSENT    13
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// CAPTURE_EVENT_ID_MISMATCH -- the record's EVENT_ID is not the identity
+// that its OWN CONTENTS imply. The ledger membership check alone cannot
+// reject a FORGED record: a record whose contents were altered after the
+// event was registered keeps the registered EVENT_ID, so it satisfies the
+// ledger check while describing an execution that did not happen. The
+// comparator therefore RECOMPUTES the identity from the record's own
+// fields and requires the two to agree.
+#define CAPTURE_EVENT_ID_MISMATCH  14
+// CAPTURE_DUPLICATE_EVENT -- the record's EVENT_ID is registered in the
+// ledger MORE THAN ONCE. Two events in one run cannot share one identity,
+// so a duplicate means the ledger was written twice from one execution, or
+// that one event was replayed as two.
+#define CAPTURE_DUPLICATE_EVENT    15
 
 static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_OK) return "OK";
@@ -178,6 +193,8 @@ static U8 *CaptureReason(I64 code) {
   if (code == CAPTURE_CASE_MISMATCH) return "CAPTURE_CASE_ID_MISMATCH";
   if (code == CAPTURE_PRODUCER_MISMATCH) return "CAPTURE_PRODUCER_IDENTITY_MISMATCH";
   if (code == CAPTURE_ARTIFACT_ABSENT) return "CAPTURE_ARTIFACT_ABSENT";
+  if (code == CAPTURE_EVENT_ID_MISMATCH) return "CAPTURE_EVENT_ID_MISMATCH";
+  if (code == CAPTURE_DUPLICATE_EVENT) return "CAPTURE_DUPLICATE_EVENT_ID";
   return "CAPTURE_UNKNOWN";
 }
 
@@ -311,6 +328,175 @@ static I64 LedgerHas(U8 *ledger_path, U8 *id) {
   return found;
 }
 
+// The ledger OCCURRENCE counter. It returns the number of COMPLETE records
+// in the ledger that are EXACTLY the given identity.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// The membership check cannot distinguish ONE registration from SEVERAL.
+// Two executions in one run cannot share one identity -- the identity
+// carries the run id and the MONOTONIC event counter -- so an identity that
+// appears twice means that one execution was registered twice, or that a
+// single event was replayed as two. Both are rejected.
+static I64 LedgerCount(U8 *ledger_path, U8 *id) {
+  I64 size = 0;
+  U8 *buf = FileRead(ledger_path, &size);
+  if (buf == NULL) return 0;
+  I64 idlen = StrLen(id);
+  if (idlen <= 0) return 0;
+  I64 i = 0;
+  I64 count = 0;
+  while (i < size) {
+    I64 end = i;
+    while (end < size && buf[end] != 10) end = end + 1;
+    if (end - i == idlen) {
+      I64 k = 0;
+      I64 same = 1;
+      while (k < idlen) {
+        if (buf[i + k] != id[k]) { same = 0; break; }
+        k = k + 1;
+      }
+      if (same == 1) count = count + 1;
+    }
+    if (end >= size) break;
+    i = end + 1;
+  }
+  return count;
+}
+
+// The BLOCK-FIELD extractor. It returns the values of a block field -- a
+// key on its own line followed by one line per value -- as a NULL-terminated
+// array, together with the count.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// The event identity is computed over the ARGUMENT VECTOR and the
+// ENVIRONMENT. The comparator therefore has to read those two block
+// fields back out of the capture record, exactly as the runner wrote them.
+static U8 **CaptureBlock(U8 *buf, I64 size, U8 *key, I64 *count) {
+  *count = 0;
+  I64 klen = StrLen(key);
+  I64 i = 0;
+  while (i < size) {
+    I64 lend = i;
+    while (lend < size && buf[lend] != 10) lend = lend + 1;
+    if (lend - i == klen) {
+      I64 m = 0;
+      I64 same = 1;
+      while (m < klen) {
+        if (buf[i + m] != key[m]) { same = 0; break; }
+        m = m + 1;
+      }
+      if (same == 1) {
+        // The key is on its own line. The values follow, one per line, and
+        // the block ends at the FIRST EMPTY line.
+        I64 j = lend + 1;
+        I64 n = 0;
+        U8 **vals = MAlloc(sizeof(U8 *) * 64);
+        while (j < size) {
+          I64 bend = j;
+          while (bend < size && buf[bend] != 10) bend = bend + 1;
+          if (bend == j) break;
+          if (n < 64) {
+            U8 *v = MAlloc(bend - j + 1);
+            MemCpy(v, buf + j, bend - j);
+            v[bend - j] = 0;
+            vals[n] = v;
+          }
+          n = n + 1;
+          if (bend >= size) { j = size; break; }
+          j = bend + 1;
+        }
+        *count = n;
+        return vals;
+      }
+    }
+    if (lend >= size) break;
+    i = lend + 1;
+  }
+  return NULL;
+}
+
+// The EVENT IDENTITY RECOMPUTATION.
+//
+// ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+//
+// THE DEFECT. The comparator checked that the record's EVENT_ID was
+// REGISTERED in the run ledger, and it checked that the record's digests
+// matched the observed bytes. It never checked that the EVENT_ID was the
+// identity that the record's OWN CONTENTS imply.
+//
+// A FORGED record therefore passed: take a genuine capture record, change
+// its contents, and leave its EVENT_ID alone. The digests still match the
+// forged bytes, and the EVENT_ID is still in the ledger -- because it is
+// the genuine event's identity. The ledger check cannot see the forgery,
+// because it never looks at the record's contents.
+//
+// THE REPAIR. The comparator RECOMPUTES the event identity from the
+// record's own fields, using the SAME construction the runner used, and
+// requires the two to agree. A forged record now fails, because its
+// contents imply an identity that is not the one it carries.
+//
+// The construction is the runner's, byte for byte:
+//
+//   SHA-256 over
+//     the run id,
+//     the event counter as a DECIMAL field,
+//     the case identity,
+//     the selector,
+//     the producer digest,
+//     the source digest,
+//     the fixture digest,
+//     the argument vector, one element per line,
+//     the environment, one element per line.
+//
+// Every field after the run id is terminated by the record separator, so
+// the field boundaries are unambiguous. The run id is a fixed sixty-four
+// character digest, so it needs no terminator of its own.
+//
+// The recomputation is INDEPENDENT of the harness: the comparator has its
+// own copy of the construction, so a defect in the harness's copy cannot
+// make a forged record pass.
+static U8 *RecomputeEventId(U8 *run_id, U8 *counter, U8 *case_id,
+                             U8 *selector, U8 *producer_hex,
+                             U8 *source_hex, U8 *fixture_hex,
+                             U8 **argv, I64 nargv,
+                             U8 **envv, I64 nenv) {
+  Sha256Ctx c;
+  Sha256Init(&c);
+  Sha256Update(&c, run_id, 64);
+  Sha256Update(&c, counter, StrLen(counter));
+  Sha256Update(&c, "\n", 1);
+  Sha256Update(&c, case_id, StrLen(case_id));
+  Sha256Update(&c, "\n", 1);
+  Sha256Update(&c, selector, StrLen(selector));
+  Sha256Update(&c, "\n", 1);
+  Sha256Update(&c, producer_hex, 64);
+  Sha256Update(&c, "\n", 1);
+  Sha256Update(&c, source_hex, 64);
+  Sha256Update(&c, "\n", 1);
+  Sha256Update(&c, fixture_hex, 64);
+  Sha256Update(&c, "\n", 1);
+  I64 i = 0;
+  while (i < nargv) {
+    Sha256Update(&c, argv[i], StrLen(argv[i]));
+    Sha256Update(&c, "\n", 1);
+    i = i + 1;
+  }
+  i = 0;
+  while (i < nenv) {
+    Sha256Update(&c, envv[i], StrLen(envv[i]));
+    Sha256Update(&c, "\n", 1);
+    i = i + 1;
+  }
+  U8 *digest = MAlloc(32);
+  U8 *hex = MAlloc(65);
+  Sha256Final(&c, digest);
+  Sha256Hex(hex, digest);
+  Free(digest);
+  return hex;
+}
+
 // The capture-record validator.
 //
 // `expected_run` is the run id of THIS run, `expected_case` is the case
@@ -346,6 +532,9 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   U8 *exit_field = CaptureField(buf, size, "EXIT_STATUS");
   U8 *argv_field = CaptureField(buf, size, "ARGV");
   U8 *env_field = CaptureField(buf, size, "ENV");
+  U8 *counter_field = CaptureField(buf, size, "EVENT_COUNTER");
+  U8 *env_applied = CaptureField(buf, size, "ENV_APPLIED");
+  U8 *producer_arch = CaptureField(buf, size, "PRODUCER_ARCH");
 
   if (run_id == NULL || event_id == NULL || case_field == NULL ||
       selector == NULL || producer_sha == NULL || source_sha == NULL ||
@@ -354,6 +543,18 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
       exit_field == NULL || argv_field == NULL || env_field == NULL) {
     return CAPTURE_FIELD_MISSING;
   }
+
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // The EVENT COUNTER and the ENVIRONMENT-APPLIED marker are REQUIRED. The
+  // counter is what makes two identical executions distinguishable, and
+  // the marker says that the environment the record names was actually in
+  // force. A record without them cannot be checked against its own
+  // contents, so it is refused.
+  if (counter_field == NULL) return CAPTURE_FIELD_MISSING;
+  if (env_applied == NULL) return CAPTURE_FIELD_MISSING;
+  if (StrCmp(env_applied, "1") != 0) return CAPTURE_ENV_EMPTY;
+  if (producer_arch == NULL) return CAPTURE_FIELD_MISSING;
 
   // The selector must be one of the two supported modes, and it must be
   // the EXPECTED one for this side.
@@ -433,6 +634,36 @@ static I64 ValidateCapture(U8 *case_id, U8 *side, U8 *capture_path,
   if (LedgerHas(ledger_path, event_id) == 0) {
     return CAPTURE_NOT_REGISTERED;
   }
+
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 4, F1.
+  //
+  // The event must be registered EXACTLY ONCE. Two executions in one run
+  // cannot share one identity, because the identity carries the run id and
+  // the monotonic event counter.
+  if (LedgerCount(ledger_path, event_id) != 1) {
+    return CAPTURE_DUPLICATE_EVENT;
+  }
+
+  // THE EVENT IDENTITY MUST BE THE IDENTITY ITS OWN CONTENTS IMPLY.
+  //
+  // The membership check above cannot see a FORGED record: a record whose
+  // contents were changed after the event was registered keeps the
+  // REGISTERED identity, so it satisfies the membership check while
+  // describing an execution that did not happen. The comparator therefore
+  // RECOMPUTES the identity from the record's own fields and requires the
+  // two to agree.
+  I64 nargv = 0;
+  I64 nenv = 0;
+  U8 **argv_values = CaptureBlock(buf, size, "ARGV", &nargv);
+  U8 **env_values = CaptureBlock(buf, size, "ENV", &nenv);
+  if (argv_values == NULL || env_values == NULL) return CAPTURE_FIELD_MISSING;
+  U8 *recomputed = RecomputeEventId(run_id, counter_field, case_field,
+                                    selector, producer_sha, source_sha,
+                                    fixture_sha, argv_values, nargv,
+                                    env_values, nenv);
+  I64 same = 0;
+  if (StrLen(event_id) == 64 && StrCmp(event_id, recomputed) == 0) same = 1;
+  if (same == 0) return CAPTURE_EVENT_ID_MISMATCH;
 
   return CAPTURE_OK;
 }
