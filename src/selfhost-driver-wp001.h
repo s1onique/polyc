@@ -52,6 +52,59 @@ extern long long WpDriverDecide(void);
 extern long long WpDriverSelectedAction(void);
 extern long long WpDriverSelectedEmission(void);
 
+/* ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01.
+ *
+ * THE DRIVER PLAN.
+ *
+ * The plan is the WHOLE-CLI route decision, as an ORDERED list of
+ * steps. It is the compiled PolyC driver's decision, and the C host
+ * consumes it mechanically: the host executes the plan's step and
+ * never decides whether the step applies.
+ *
+ *   WpDriverPlanActionCount()  the number of steps in the plan
+ *   WpDriverPlanActionAt(i)    the step code at index i
+ *   WpDriverPlanArgAt(i)       the argument index that caused step i
+ *   WpDriverSelectedRoute()    the selected route, as a single code
+ *   WpDriverPlanStatus()       the status for the whole argv
+ *
+ * The plan is rebuilt on demand, so a caller always reads the CURRENT
+ * argv's plan. The plan is deterministic: identical argv yields an
+ * identical plan.
+ *
+ * The plan's step codes are DISJOINT from the action domain and from
+ * the status domain, so an out-of-domain step can never be confused
+ * with a valid one. */
+extern long long WpDriverPlanActionCount(void);
+extern long long WpDriverPlanActionAt(long long index);
+extern long long WpDriverPlanArgAt(long long index);
+extern long long WpDriverSelectedRoute(void);
+extern long long WpDriverPlanStatus(void);
+
+/* The plan's step codes, mirrored from the PolyC subject.
+ *
+ * The values are SOURCE VALUES of the driver's step encoding. They
+ * are DISJOINT from both the action domain and the status domain. */
+#define WP_DRIVER_STEP_INVALID        0
+#define WP_DRIVER_STEP_ASSEMBLE       1
+#define WP_DRIVER_STEP_REPL           2
+#define WP_DRIVER_STEP_PRINT_TOKENS   3
+#define WP_DRIVER_STEP_TRANSPILE      4
+#define WP_DRIVER_STEP_PRINT_AST      5
+#define WP_DRIVER_STEP_DUMP_IR        6
+#define WP_DRIVER_STEP_DUMP_IR_POOLED 7
+#define WP_DRIVER_STEP_CFG            8
+#define WP_DRIVER_STEP_EMIT_LLVM      9
+#define WP_DRIVER_STEP_JIT           10
+#define WP_DRIVER_STEP_COMPILE       11
+
+/* The step domain's member count. The bound exists so the C side can
+ * REJECT a step the driver did not select. Without it, an
+ * out-of-domain step matches none of the dispatch cases and the
+ * compiler would fall through to the default route -- a FAIL-OPEN in
+ * which the PolyC authority is silently absent and the legacy C
+ * policy runs anyway. */
+#define WP_DRIVER_STEP_COUNT 12
+
 /* The argument classification, mirrored from the PolyC subject so the
  * C side can route an argument without re-deciding what it is. The
  * values are SOURCE VALUES of the driver's classification encoding. */
@@ -101,7 +154,22 @@ extern long long WpDriverSelectedEmission(void);
  * AC36 requires an invalid status to FAIL CLOSED: no artifact, no
  * fallback. The bound is what makes that check expressible.
  */
-#define WP_DRIVER_STATUS_COUNT 7
+#define WP_DRIVER_STATUS_COUNT 8
+
+/* ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01.
+ *
+ * The emit-LLVM MUTUAL-EXCLUSION status.
+ *
+ * The live compiler decided that `--emit-llvm` may not be composed
+ * with -jit/-repl/-run/-S/-c/-lib/-transpile/-lsp, and it reported
+ * that condition with its own diagnostic and its own exit status.
+ * The condition is a decision about the argv, so it is the DRIVER's
+ * decision now, and the C host renders the diagnostic the driver
+ * selected.
+ *
+ * This member is the LARGEST value, so it is DISJOINT from every
+ * pre-existing status and cannot be confused with a valid one. */
+#define WP_DRIVER_STATUS_EMIT_LLVM_CONFLICT 7
 
 /* The action domain, mirrored the same way. */
 

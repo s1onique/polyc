@@ -764,8 +764,18 @@ int cliParseArgsPolyC(CliArgs *args, int argc, char **argv) {
      * order frozen at C1. The C side below PERFORMS the chosen
      * diagnostic; it does not decide anything.
      *
-     * The diagnostic TEXT and the exit status are unchanged. */
-    long long status = WpDriverDecide();
+     * The diagnostic TEXT and the exit status are unchanged.
+     *
+     * ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01.
+     *
+     * The status is the DRIVER PLAN's status. It is the same status
+     * the route selection consults, so the two can never disagree
+     * about the argv.
+     *
+     * The predecessor used WpDriverDecide(), which did not carry the
+     * emit-LLVM mutual-exclusion condition. The plan's status does.
+     */
+    long long status = WpDriverPlanStatus();
 
     /* ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION02, C3.
      *

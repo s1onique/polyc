@@ -1,0 +1,56 @@
+# ACT_ID=ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01
+# THE FROZEN G0/G1 DIFFERENTIAL CASE TABLE.
+#
+# case_id \t argv \t expected_artifact_class
+#
+# The class codes are the runner's own:
+#   0 NONE   1 OBJECT   2 EXEC   3 ASM   4 DYLIB
+#
+# The class is read from the produced artifact's BYTES, never from its
+# name.
+#
+# The %P placeholder is replaced by the hermetic install prefix at run
+# time.
+#
+# --- normal compiler-producing route ---------------------------------------
+D01_object	%P -c input.HC -o case.out.o	1
+D02_executable	%P input.HC -o case.out.o	2
+# --- assembly route ---------------------------------------------------------
+D03_assemble_S	%P -S input.HC -o case.out.o	3
+# --- mixed precedence: the eight verified cases ----------------------------
+D04_prec_obj_and_S	%P -c -S input.HC -o case.out.o	1
+D05_prec_S_and_obj	%P -S -c input.HC -o case.out.o	1
+D06_prec_obj_and_o	%P -c input.HC -o case.out.o	1
+D07_prec_o_and_obj	%P input.HC -o case.out.o -c	1
+D08_prec_tokens_and_ast	%P -tokens -ast input.HC	0
+D09_prec_ast_and_tokens	%P -ast -tokens input.HC	0
+D10_prec_repl_and_tokens	%P -repl -tokens input.HC	0
+D11_prec_dumpir_and_ast	%P --dump-ir -ast input.HC	0
+# --- stdout emission: the literal -o- --------------------------------------
+D12_stdout_dash	%P -S input.HC -o-	0
+# --- dash filename: the separate -o - --------------------------------------
+D13_dash_filename	%P -S input.HC -o -	0
+# --- dynamic library --------------------------------------------------------
+D14_dylib	%P -lib libtos.dylib input.HC -o case.out.o	0
+# --- invalid options --------------------------------------------------------
+D15_missing_value	%P -o	0
+D16_unknown_option	%P -z input.HC	0
+D17_invalid_combination	%P -o- input.HC	0
+# --- compiler failures ------------------------------------------------------
+D18_parse_error	%P -c broken.HC -o case.out.o	0
+# --- auxiliary modes --------------------------------------------------------
+D19_help	%P --help	0
+D20_version	%P --version	0
+D21_terry	%P --terry	0
+D22_mem_stats	%P --mem-stats input.HC	0
+D23_dump_ir	%P --dump-ir input.HC	0
+D24_print_ast	%P -ast input.HC	0
+D25_transpile	%P -transpile input.HC	0
+D26_cfg	%P -cfg input.HC	0
+D27_tokens	%P -tokens input.HC	0
+# --- AST pipeline: the compile_to_ast decision ------------------------------
+D28_ast_pipeline	%P -c input.HC -o case.out.o	1
+# --- multiple inputs --------------------------------------------------------
+D29_multiple_inputs	%P -c input.HC other.HC -o case.out.o	0
+# --- target / prefix --------------------------------------------------------
+D30_target	%P --target=aarch64-apple-darwin -c input.HC -o case.out.o	0

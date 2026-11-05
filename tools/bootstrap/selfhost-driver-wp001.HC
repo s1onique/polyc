@@ -1040,4 +1040,358 @@ I64 WpDriverSelectedEmission() {
   }
   return emission;
 }
+// ---------------------------------------------------------------------------
+// THE DRIVER PLAN -- OWNED BY POLYC
+//
+// ACT-POLYC-SELFHOST-WP001-DRIVER-TAKEOVER01.
+//
+// The plan is the WHOLE-CLI route decision, as an ORDERED list of steps.
+//
+// WHY A LIST AND NOT A SINGLE ACTION: the live compiler's route is a
+// SEQUENCE. The C main() selected it with a chain of independent
+// `if (args.<flag>)` statements, in a fixed order, and the FIRST
+// matching branch won. Modelling the route as a single action code
+// would lose the ORDER, and the order is load-bearing: `-tokens` beats
+// `-ast` beats the compile, and `-repl` beats all of them.
+//
+// The plan therefore reproduces the live order EXACTLY, as an explicit
+// list of steps. The C host walks the list and executes each step's
+// action; it never decides whether a step applies.
+//
+// THE PLAN IS DETERMINISTIC: the same argv always yields the same
+// plan, in the same order, with the same indices.
+// ---------------------------------------------------------------------------
+
+// The plan step codes.
+//
+// These are DISJOINT from the WP_ACTION_* domain (which selects the
+// whole-argv action) and from the WP_STATUS_* domain (which selects
+// the diagnostic). A step code is never an action code and never a
+// status code, so an out-of-domain step can never be confused with a
+// valid one.
+//
+//   0  invalid / absent
+//   1  ASSEMBLE       the .s input is assembled; the process ends
+//   2  REPL           the REPL runs; the process ends
+//   3  PRINT_TOKENS   the token stream is emitted; the process ends
+//   4  TRANSPILE      the transpiled C is emitted; the process ends
+//   5  PRINT_AST      the AST is printed; the process ends
+//   6  DUMP_IR        the IR is dumped; the process ends
+//   7  DUMP_IR_POOLED the pooled IR is dumped; the process ends
+//   8  CFG            the CFG is constructed; the process ends
+//   9  EMIT_LLVM      the LLVM IR is emitted; the process ends
+//  10  JIT            the program is JIT-compiled and run
+//  11  COMPILE        the compile proceeds to codegen and emission
+//
+#define WP_STEP_INVALID        0
+#define WP_STEP_ASSEMBLE       1
+#define WP_STEP_REPL           2
+#define WP_STEP_PRINT_TOKENS   3
+#define WP_STEP_TRANSPILE      4
+#define WP_STEP_PRINT_AST      5
+#define WP_STEP_DUMP_IR        6
+#define WP_STEP_DUMP_IR_POOLED 7
+#define WP_STEP_CFG            8
+#define WP_STEP_EMIT_LLVM      9
+#define WP_STEP_JIT           10
+#define WP_STEP_COMPILE       11
+
+// The maximum number of steps in a plan.
+//
+// The live route chain has at most ELEVEN mutually-exclusive branches,
+// and only ONE of them is ever taken, so the plan never exceeds a
+// handful of entries. The bound is generous and it is CHECKED.
+#define WP_PLAN_MAX 32
+
+// The plan's storage.
+//
+//   WP_PLAN_ACTION[i]  the step code
+//   WP_PLAN_ARG[i]     the argument index that caused the step
+//   WP_PLAN_COUNT      the number of steps
+//
+static I64 WP_PLAN_ACTION[WP_PLAN_MAX];
+static I64 WP_PLAN_ARG[WP_PLAN_MAX];
+static I64 WP_PLAN_COUNT;
+static I64 WP_PLAN_COUNT;
+
+// The step code for the option kind, or WP_STEP_INVALID when the kind
+// does not select a route.
+//
+// The mapping is the live main() chain, in the live order.
+//
+// NOTE ON THE ASSEMBLY ROUTE. The live chain's FIRST branch tested
+// args.assemble, and args.assemble is set by the FILE TYPE of the
+// input -- a .s file -- NOT by an option. The `-S` option sets
+// args.assemble_only, which is a different field: it selects the
+// ARTIFACT CLASS (assembly instead of an object), and that decision
+// belongs to WpDriverSelectedEmission.
+//
+// Mapping `-S` to the assemble route would make the driver assemble
+// the .HC SOURCE file, which is exactly the defect the G0/G1
+// differential caught: the compiler then ran `cc input.HC` and the
+// link failed.
+//
+// So NO option selects the assemble route. Only a .s input does, and
+// WpDriverFirstArgForStep finds it by FILE TYPE.
+static I64 WpDriverStepForKind(I64 kind) {
+  if (kind == WP_KIND_REPL)      return WP_STEP_REPL;
+  if (kind == WP_KIND_TOKENS)    return WP_STEP_PRINT_TOKENS;
+  if (kind == WP_KIND_TRANSPILE) return WP_STEP_TRANSPILE;
+  if (kind == WP_KIND_AST)       return WP_STEP_PRINT_AST;
+  if (kind == WP_KIND_DUMP_IR)   return WP_STEP_DUMP_IR;
+  if (kind == WP_KIND_DUMP_IRP)  return WP_STEP_DUMP_IR_POOLED;
+  if (kind == WP_KIND_CFG)       return WP_STEP_CFG;
+  if (kind == WP_KIND_LLVM)      return WP_STEP_EMIT_LLVM;
+  if (kind == WP_KIND_JIT)       return WP_STEP_JIT;
+  return WP_STEP_INVALID;
+}
+
+// The PRIORITY of a route step.
+//
+// The live main() chain is a sequence of `if` statements, so the
+// FIRST matching branch wins. This function gives each route step its
+// position in that chain. A LOWER number wins.
+//
+// The chain, in the live source order:
+//
+//   assemble
+//   repl
+//   print_tokens
+//   transpile
+//   print_ast
+//   dump_ir
+//   dump_ir_pooled
+//   emit_llvm
+//   jit
+//   cfg
+//   compile           (the default: codegen and emission)
+//
+// The priority is what the driver compares. It is a DECISION, so it
+// lives here and not in C.
+static I64 WpDriverStepPriority(I64 step) {
+  if (step == WP_STEP_ASSEMBLE)       return 10;
+  if (step == WP_STEP_REPL)           return 20;
+  if (step == WP_STEP_PRINT_TOKENS)   return 30;
+  if (step == WP_STEP_TRANSPILE)      return 40;
+  if (step == WP_STEP_PRINT_AST)      return 50;
+  if (step == WP_STEP_DUMP_IR)        return 60;
+  if (step == WP_STEP_DUMP_IR_POOLED) return 70;
+  if (step == WP_STEP_EMIT_LLVM)      return 80;
+  if (step == WP_STEP_JIT)            return 90;
+  if (step == WP_STEP_CFG)            return 100;
+  if (step == WP_STEP_COMPILE)        return 200;
+  return 1000;
+}
+
+// Append one step to the plan. A plan that would overflow the bound is
+// REJECTED: the count stops growing and the plan is marked invalid.
+static U0 WpDriverPlanPush(I64 action, I64 argIdx) {
+  if (WP_PLAN_COUNT >= WP_PLAN_MAX) return;
+  WP_PLAN_ACTION[WP_PLAN_COUNT] = action;
+  WP_PLAN_ARG[WP_PLAN_COUNT] = argIdx;
+  WP_PLAN_COUNT = WP_PLAN_COUNT + 1;
+}
+
+// The FIRST argument index that requests the given route step, or -1.
+//
+// The scan is over the whole argv, in argv order, and it CONSUMES the
+// option's value argument exactly as the live parser did, so that a
+// value which happens to look like an option is not mistaken for one.
+static I64 WpDriverFirstArgForStep(I64 step) {
+  I64 argc = WpDriverHostArgc();
+  I64 i = 1;                    // argv[0] is the program name
+  while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      if (WpDriverStepForKind(WpDriverOptKind(opt)) == step) return i;
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
+    // A .s ARGUMENT selects the assemble step, exactly as the live
+    // getASMFileName set args.assemble.
+    if (step == WP_STEP_ASSEMBLE) {
+      if (WpDriverClassifyFile(i) == WP_FILE_ASM) return i;
+    }
+    i = i + 1;
+  }
+  return -1;
+}
+
+// Does the argv request BOTH the LLVM emission and one of the modes it
+// is mutually exclusive with?
+//
+// The live check was:
+//
+//   if (args.jit || args.repl || args.run || args.assemble_only ||
+//       args.emit_object || args.emit_dylib || args.transpile || args.lsp)
+//
+// and the diagnostic was the "mutually exclusive" message.
+//
+// The DECISION is whether the combination is present, so it is the
+// driver's. The C host only renders the message the driver chose.
+I64 WpDriverEmitLlvmConflict() {
+  I64 argc = WpDriverHostArgc();
+  I64 i = 1;
+  while (i < argc) {
+    I64 opt = WpDriverClassifyOption(i);
+    if (opt >= 0) {
+      I64 kind = WpDriverOptKind(opt);
+      if (kind == WP_KIND_JIT) return 1;
+      if (kind == WP_KIND_REPL) return 1;
+      if (kind == WP_KIND_RUN) return 1;
+      if (kind == WP_KIND_ASSEMBLY) return 1;
+      if (kind == WP_KIND_EMIT_OBJ) return 1;
+      if (kind == WP_KIND_SOURCE) return 1;
+      if (kind == WP_KIND_TRANSPILE) return 1;
+      if (kind == WP_KIND_LSP) return 1;
+      I64 src = WpDriverValueSource(i, opt);
+      i = i + 1;
+      if (src == WP_VALUE_NEXT) i = i + 1;
+      continue;
+    }
+    i = i + 1;
+  }
+  return 0;
+}
+
+// The STATUS for the emit-LLVM mutual-exclusion condition.
+//
+// The live compiler reported this condition with a dedicated
+// diagnostic and exit status 1. The condition is now a DRIVER status,
+// so the C host renders it from the status rather than deciding it.
+//
+// This status is DISJOINT from every pre-existing status: it is the
+// LARGEST value, so it cannot collide with a valid status.
+#define WP_STATUS_EMIT_LLVM_CONFLICT 7
+
+// Build the plan.
+//
+// The plan is rebuilt from scratch on every call, so a stale plan can
+// never be observed.
+//
+// The plan holds the SELECTED ROUTE. It is built by finding, for each
+// route kind, the FIRST argument that requests it, and then choosing
+// the winning route by the live chain's priority.
+//
+// The build is deliberately CONSERVATIVE about the live chain's
+// special cases:
+//
+//   * The live chain tested args.assemble -- which is set by the .s
+//     file type, NOT by an option. The driver therefore looks for an
+//     argument whose FILE TYPE is the assembly type.
+//
+//   * The live chain tested args.cfg_create, args.cfg_create_png and
+//     args.cfg_create_svg as three separate flags that led to ONE
+//     branch. The driver maps all three CFG option kinds to the ONE
+//     CFG step, and keeps the PNG/SVG distinction in the CliArgs
+//     fields, which the C host reads for the RENDERING choice.
+static U0 WpDriverPlanBuild() {
+  WP_PLAN_COUNT = 0;
+  I64 i = 0;
+  while (i < WP_PLAN_MAX) {
+    WP_PLAN_ACTION[i] = WP_STEP_INVALID;
+    WP_PLAN_ARG[i] = -1;
+    i = i + 1;
+  }
+
+  // The winning route is the route with the LOWEST priority number
+  // among the routes the argv requests.
+  I64 best_step = WP_STEP_INVALID;
+  I64 best_arg = -1;
+  I64 best_prio = 10000;
+
+  // The route steps, in the live chain's order. The order of this
+  // list is the order of the live `if` chain.
+  I64 steps[10];
+  steps[0] = WP_STEP_ASSEMBLE;
+  steps[1] = WP_STEP_REPL;
+  steps[2] = WP_STEP_PRINT_TOKENS;
+  steps[3] = WP_STEP_TRANSPILE;
+  steps[4] = WP_STEP_PRINT_AST;
+  steps[5] = WP_STEP_DUMP_IR;
+  steps[6] = WP_STEP_DUMP_IR_POOLED;
+  steps[7] = WP_STEP_EMIT_LLVM;
+  steps[8] = WP_STEP_JIT;
+  steps[9] = WP_STEP_CFG;
+
+  i = 0;
+  while (i < 10) {
+    I64 step = steps[i];
+    I64 arg = WpDriverFirstArgForStep(step);
+    if (arg >= 0) {
+      I64 prio = WpDriverStepPriority(step);
+      if (prio < best_prio) {
+        best_prio = prio;
+        best_step = step;
+        best_arg = arg;
+      }
+    }
+    i = i + 1;
+  }
+
+  if (best_step == WP_STEP_INVALID) return;
+  WpDriverPlanPush(best_step, best_arg);
+}
+
+// The number of steps in the plan.
+//
+// The plan is built on demand, so a caller that asks for the count
+// always gets the count of the CURRENT argv's plan.
+I64 WpDriverPlanActionCount() {
+  WpDriverPlanBuild();
+  return WP_PLAN_COUNT;
+}
+
+// The step code at index `idx`, or WP_STEP_INVALID when the index is
+// outside the plan.
+//
+// The index is DOMAIN CHECKED. An out-of-range index is a domain
+// failure, not a silent zero that a caller could mistake for the
+// FIRST step.
+I64 WpDriverPlanActionAt(I64 idx) {
+  WpDriverPlanBuild();
+  if (idx < 0) return WP_STEP_INVALID;
+  if (idx >= WP_PLAN_COUNT) return WP_STEP_INVALID;
+  return WP_PLAN_ACTION[idx];
+}
+
+// The argument index that caused the step at index `idx`, or -1.
+//
+// The argument index is a VALIDATED INDEX into the host's argument
+// vector. It is never a pointer, so no raw host pointer crosses the
+// seam.
+I64 WpDriverPlanArgAt(I64 idx) {
+  WpDriverPlanBuild();
+  if (idx < 0) return -1;
+  if (idx >= WP_PLAN_COUNT) return -1;
+  return WP_PLAN_ARG[idx];
+}
+
+// The SELECTED ROUTE, as a single code.
+//
+// This is the one-step view of the plan: the route the argv selects.
+// It is 0 when the argv selects no route.
+//
+// It is the accessor the C host uses to dispatch, and it is derived
+// FROM THE PLAN, so the plan and the dispatch can never disagree.
+I64 WpDriverSelectedRoute() {
+  WpDriverPlanBuild();
+  if (WP_PLAN_COUNT < 1) return WP_STEP_INVALID;
+  return WP_PLAN_ACTION[0];
+}
+
+// The status for the WHOLE argv, INCLUDING the emit-LLVM conflict
+// status.
+//
+// The conflict is checked AFTER the three post-loop checks, because
+// the live compiler reached the emit-llvm branch only when those
+// checks had already succeeded.
+I64 WpDriverPlanStatus() {
+  I64 status = WpDriverMapStatus(WpDriverSelectAction());
+  if (status != WP_STATUS_OK) return status;
+  if (WpDriverEmitLlvmConflict() == 1) return WP_STATUS_EMIT_LLVM_CONFLICT;
+  return status;
+}
 }
