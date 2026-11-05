@@ -1012,9 +1012,32 @@ WP001_TAKEOVER_DIFF_BIN = build/wp001-takeover-diff
 
 WP001_TAKEOVER_CASES = tests/driver-wp001/takeover/cases.tsv
 
-.PHONY: wp001-takeover-red wp001-takeover-diff
+# The emit-LLVM conflict predicate RED. It links against the REAL
+# production driver subject and calls the REAL exported predicate.
+WP001_TAKEOVER_CONFLICT_SRC = tools/quality/wp001-driver-takeover01-conflict-red.HC
+WP001_TAKEOVER_CONFLICT_OBJ = build/wp001-takeover-conflict-red.o
+WP001_TAKEOVER_CONFLICT_BIN = build/wp001-takeover-conflict-red
+
+.PHONY: wp001-takeover-red wp001-takeover-diff wp001-takeover-conflict-red
 wp001-takeover-red: $(WP001_TAKEOVER_RED_BIN)
 wp001-takeover-diff: $(WP001_TAKEOVER_DIFF_BIN)
+wp001-takeover-conflict-red: $(WP001_TAKEOVER_CONFLICT_BIN)
+
+$(WP001_TAKEOVER_CONFLICT_OBJ): $(WP001_TAKEOVER_CONFLICT_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
+	@rm -f $@
+	$(PRODUCTION_HCC) \
+		--install-dir=$(TEST_PREFIX) \
+		-c $(WP001_TAKEOVER_CONFLICT_SRC) \
+		-o $@
+	@if [ ! -f "$@" ]; then \
+		echo "wp001-takeover-conflict-red: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(WP001_TAKEOVER_CONFLICT_BIN): $(WP001_TAKEOVER_CONFLICT_OBJ) $(DRIVER_WP001_OBJ) src/selfhost-driver-wp001.c $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(WP001_TAKEOVER_CONFLICT_OBJ) $(DRIVER_WP001_OBJ) \
+		src/selfhost-driver-wp001.c -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@echo "WP001_TAKEOVER_CONFLICT_RED=$@"
 
 $(WP001_TAKEOVER_RED_OBJ): $(WP001_TAKEOVER_RED_SRC) $(PRODUCTION_HCC) $(BOOTSTRAP_PREFIX_INC)/tos.HH
 	@rm -f $@
