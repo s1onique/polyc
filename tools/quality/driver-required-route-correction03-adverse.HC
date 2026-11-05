@@ -228,6 +228,22 @@ static I64 MutateCapture(U8 *path, U8 *mutation) {
       I64 delete_it = 0;
       if (StrCmp(mutation, "FORGED_EVENT_SOURCE") == 0 &&
           StrCmp(key, "SOURCE_SHA256") == 0) hit = 1;
+      // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+      // R6-03 -- THE COMPILED SOURCE'S DIGEST IS FORGED AS WELL.
+      //
+      // The event identity binds BOTH the ORIGINAL source's digest and the
+      // COMPILED snapshot's digest, in SEPARATE tagged fields. A mutation
+      // that alters only the ORIGINAL therefore no longer attacks the
+      // identity binding: the COMPILED digest still satisfies the
+      // compiled-source validation, and the run is rejected by a
+      // DIFFERENT check, with a different reason token.
+      //
+      // The mutation's STATED intent is to attack the identity binding,
+      // so it now alters BOTH digests. The identity recomputation then
+      // rejects the record with `CAPTURE_EVENT_ID_MISMATCH`, exactly as
+      // the mutation claims.
+      if (StrCmp(mutation, "FORGED_EVENT_SOURCE") == 0 &&
+          StrCmp(key, "COMPILED_SOURCE_SHA256") == 0) hit = 1;
       if (StrCmp(mutation, "FORGED_EVENT_PRODUCER") == 0 &&
           StrCmp(key, "PRODUCER_SHA256") == 0) hit = 1;
       if (StrCmp(mutation, "FORGED_EVENT_COUNTER") == 0 &&
@@ -250,6 +266,72 @@ static I64 MutateCapture(U8 *path, U8 *mutation) {
           Free(joined);
           Free(buf);
           return 1;
+        }
+        // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+        // R6-03 -- THE FORGED SOURCE DIGESTS ARE FORGED TOGETHER.
+        //
+        // The `FORGED_EVENT_SOURCE` mutation attacks the IDENTITY binding:
+        // the record's contents must no longer imply the identity it
+        // carries. The identity binds the ORIGINAL source's digest and
+        // the COMPILED snapshot's digest, and the record also states
+        // whether the two are EQUAL.
+        //
+        // When the two digests are forged to DIFFERENT values, the
+        // record's own equality statement becomes FALSE, and the record
+        // is rejected by the compiled-source consistency check instead
+        // of by the identity recomputation. The mutation would then be
+        // testing a DIFFERENT property than the one it claims.
+        //
+        // Both digests are therefore forged to the SAME wrong value, so
+        // that the equality statement remains true and the IDENTITY
+        // RECOMPUTATION is the check that rejects the record.
+        if (StrCmp(mutation, "FORGED_EVENT_SOURCE") == 0) {
+          // The forged value. It is a well-formed sixty-four character
+          // hexadecimal digest, so the record remains well formed.
+          U8 *forged = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+          I64 flen = 64;
+          // Every source-digest field is set to the SAME forged value.
+          U8 *keys[3];
+          keys[0] = "SOURCE_SHA256";
+          keys[1] = "COMPILED_SOURCE_SHA256";
+          keys[2] = "ORIGINAL_SOURCE_SHA256";
+          I64 ki = 0;
+          while (ki < 3) {
+            I64 klen = StrLen(keys[ki]);
+            I64 p = 0;
+            while (p < size) {
+              I64 l = p;
+              while (l < size && buf[l] != 10) l = l + 1;
+              if (l - p > klen) {
+                I64 same = 1;
+                I64 k = 0;
+                while (k < klen) {
+                  if (buf[p + k] != keys[ki][k]) { same = 0; break; }
+                  k = k + 1;
+                }
+                if (same == 1 && buf[p + klen] == 32) {
+                  // The field's VALUE begins after the key and the space.
+                  I64 vstart = p + klen + 1;
+                  if (vstart + flen <= l) {
+                    U8 *joined = MAlloc(size);
+                    MemCpy(joined, buf, size);
+                    MemCpy(joined + vstart, forged, flen);
+                    FileWrite(path, joined, size);
+                    Free(joined);
+                    buf = FileRead(path, &size);
+                    result = 1;
+                  }
+                  break;
+                }
+              }
+              if (l >= size) break;
+              p = l + 1;
+            }
+            ki = ki + 1;
+          }
+          Free(key);
+          Free(buf);
+          return result;
         }
         // The value's FIRST character is replaced by a different one. The
         // value keeps its shape -- it is still a digest or a decimal --

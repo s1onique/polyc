@@ -1189,7 +1189,7 @@ DRIVER_ROUTE03_OFF_HCC = $(DRIVER_ROUTE03_WORKDIR)/off/hcc
 DRIVER_ROUTE03_ON_HCC = $(DRIVER_ROUTE03_WORKDIR)/on/hcc
 
 .PHONY: driver-wp001-correction03-test
-driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-c4r5-probe-test driver-wp001-correction03-warm-producer-test driver-wp001-correction03-envcheck-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
+driver-wp001-correction03-test: driver-wp001-correction03-contract-test driver-wp001-correction03-ledger-test driver-wp001-correction03-c4r4-probe-test driver-wp001-correction03-c4r5-probe-test driver-wp001-correction03-c4r6-probe-test driver-wp001-correction03-warm-producer-test driver-wp001-correction03-envcheck-test driver-wp001-correction03-envbind-test driver-wp001-correction03-envbind-anticontrol-test $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_EMISSION_BIN) $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_ABI_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	ROOT=$(DRIVER_ROUTE03_WORKDIR)/cases; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/run; \
@@ -1543,6 +1543,136 @@ $(DRIVER_ROUTE03_ENVPROBE_BIN): $(DRIVER_ROUTE03_ENVPROBE_OBJ) $(TEST_PREFIX_LIB
 DRIVER_ROUTE03_ENVCHECK_OUT = $(DRIVER_ROUTE03_WORKDIR)/envcheck.txt
 DRIVER_ROUTE03_ENVCHECK_PROBE = $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN)
 DRIVER_ROUTE03_ENVCHECK_HARNESS = $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN)
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6, R5-05.
+#
+# THE ENVIRONMENT-BINDING QUALIFICATION -- THE PRODUCTION PATH.
+#
+# THE ORIGINAL DEFECT. The ambient `envcheck` mode OBSERVES the ambient
+# environment and never calls the production applier, so it could not
+# detect a WRONG environment application: a mutation of `HarnessApplyEnv`
+# that set the WRONG VARIABLE NAME left all four ambient cases PASSING,
+# while the real `run` mode recorded `GOOD=NEEDLE` and the child observed
+# that `GOOD` was ABSENT.
+#
+# THE REPAIR. The qualification applies the binding through the SAME
+# `HarnessApplyEnv()` implementation that the production `run` mode uses,
+# and observes the result in a REAL child process. There is NO second
+# environment-binding implementation.
+#
+# The six cases are the ones that the ACT requires:
+#
+#   the correct binding                     -> PASS
+#   the wrong variable receives the value    -> REJECTED
+#   the correct variable receives a wrong
+#     value                                  -> REJECTED
+#   an empty value                           -> PASS
+#   a value with an additional suffix        -> REJECTED
+#   a missing variable                       -> REJECTED
+DRIVER_ROUTE03_ENVBIND_OUT = $(DRIVER_ROUTE03_WORKDIR)/envbind.txt
+.PHONY: driver-wp001-correction03-envbind-test
+driver-wp001-correction03-envbind-test: $(DRIVER_ROUTE03_ENVPROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN)
+	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
+	@rm -f $(DRIVER_ROUTE03_ENVBIND_OUT)
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_GOOD NEEDLE R6_ENV_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then :; else \
+	    echo "driver-wp001-correction03: the R5-05 correct-binding case was REJECTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_BAD NEEDLE R6_ENV_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then \
+	    echo "driver-wp001-correction03: the R5-05 wrong-variable case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_GOOD NEEDLE R6_ENV_GOOD WRONG \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then \
+	    echo "driver-wp001-correction03: the R5-05 wrong-value case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_EMPTY "" R6_ENV_EMPTY "" \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then :; else \
+	    echo "driver-wp001-correction03: the R5-05 empty-value case was REJECTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_GOOD NEEDLE=EXTRA R6_ENV_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then \
+	    echo "driver-wp001-correction03: the R5-05 value-suffix case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT \
+	  $(DRIVER_ROUTE03_ENVCHECK_HARNESS) envbind \
+	    $(DRIVER_ROUTE03_ENVCHECK_PROBE) R6_ENV_GOOD NEEDLE R6_ENV_ABSENT NEEDLE \
+	  > $(DRIVER_ROUTE03_ENVBIND_OUT) 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_ENVBIND_OUT); then \
+	    echo "driver-wp001-correction03: the R5-05 missing-variable case was ACCEPTED" >&2; \
+	    cat $(DRIVER_ROUTE03_ENVBIND_OUT) >&2; exit 1; \
+	  fi
+	@echo "DRIVER_WP001_CORRECTION03_ENVBIND_STATUS=PASS"
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6, R5-05.
+#
+# THE ENVIRONMENT-BINDING ANTI-CONTROL.
+#
+# The DETECTOR-SENSITIVITY CONTROL. The production binding helper is
+# MUTATED so that it applies the WRONG VARIABLE NAME, and the
+# qualification MUST THEN FAIL.
+#
+# The control is about the DETECTOR, not about the mutant. The mutant is
+# built in the WORK DIRECTORY, so the SUBJECT TREE is untouched, and the
+# mutant's source is the SUBJECT'S OWN harness with ONE line changed.
+#
+# The mutation replaces the production applier's `setenv(name, value, 1)`
+# with `setenv("R6_ENV_WRONG_NAME", value, 1)`. The applied binding then
+# bears the wrong name, the child observes the right name as ABSENT, and
+# the qualification MUST report the failure.
+#
+# The mutant's source is compiled from the WORK DIRECTORY, so its
+# `#include` of the shared contract must still resolve. The mutant is
+# therefore built with the contract's own directory on the include path.
+DRIVER_ROUTE03_MUTANT_DIR = $(DRIVER_ROUTE03_WORKDIR)/envbind-mutant
+.PHONY: driver-wp001-correction03-envbind-anticontrol-test
+driver-wp001-correction03-envbind-anticontrol-test: $(DRIVER_ROUTE03_ENVPROBE_BIN) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -rf $(DRIVER_ROUTE03_MUTANT_DIR)
+	@mkdir -p $(DRIVER_ROUTE03_MUTANT_DIR)
+	@sed 's/if (setenv(name, value, 1) != 0)/if (setenv("R6_ENV_WRONG_NAME", value, 1) != 0)/' \
+	    $(DRIVER_ROUTE03_HARNESS_SRC) > $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant.HC
+	@if cmp -s $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant.HC $(DRIVER_ROUTE03_HARNESS_SRC); then \
+	  echo "driver-wp001-correction03: the R5-05 anti-control did NOT mutate the binding helper" >&2; \
+	  exit 1; \
+	fi
+	@sed -e 's|#include "driver-required-route-correction03-contract.HC"|#include "$(CURDIR)/tools/quality/driver-required-route-correction03-contract.HC"|' \
+	    -e 's|#include "../../src/holyc-lib/tooling_defs.HH"|#include "$(CURDIR)/src/holyc-lib/tooling_defs.HH"|' \
+	    $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant.HC > $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant-abs.HC
+	@$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c \
+	    $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant-abs.HC \
+	    -o $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant.o
+	@$(C_COMPILER) $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant.o \
+	    -L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm \
+	    -o $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant
+	@env -u R6_ENV_GOOD -u R6_ENV_BAD -u R6_ENV_EMPTY -u R6_ENV_ABSENT -u R6_ENV_WRONG_NAME \
+	  $(DRIVER_ROUTE03_MUTANT_DIR)/harness-mutant envbind \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN) R6_ENV_GOOD NEEDLE R6_ENV_GOOD NEEDLE \
+	  > $(DRIVER_ROUTE03_MUTANT_DIR)/out.txt 2>&1; \
+	  if grep -q 'HARNESS_ENVBIND_STATUS=PASS' $(DRIVER_ROUTE03_MUTANT_DIR)/out.txt; then \
+	    echo "driver-wp001-correction03: the R5-05 anti-control did NOT DETECT the mutated binding helper" >&2; \
+	    cat $(DRIVER_ROUTE03_MUTANT_DIR)/out.txt >&2; exit 1; \
+	  fi
+	@echo "DRIVER_WP001_CORRECTION03_ENVBIND_ANTICONTROL_STATUS=PASS"
 .PHONY: driver-wp001-correction03-envcheck-test
 driver-wp001-correction03-envcheck-test: $(DRIVER_ROUTE03_ENVPROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN)
 	@mkdir -p $(DRIVER_ROUTE03_WORKDIR)
@@ -1682,6 +1812,39 @@ DRIVER_ROUTE03_C4R5_PROBE_OBJ = build/driver-required-route-correction03-c4r5-pr
 DRIVER_ROUTE03_C4R5_PROBE_BIN = build/driver-required-route-correction03-c4r5-probe
 DRIVER_ROUTE03_C4R5_PROBE_DIR = $(DRIVER_ROUTE03_WORKDIR)/c4r5-fixtures
 
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+#
+# THE ROUND-6 COUNTEREXAMPLE PROBE.
+#
+# It reproduces the FIVE findings that the C4 ROUND 5 independent review
+# established, and it exercises the PRODUCTION HARNESS as a SUBPROCESS, so
+# the subject under test is the runner that the evidence path actually
+# uses.
+DRIVER_ROUTE03_C4R6_PROBE_SRC = tools/quality/driver-required-route-correction03-c4r6-probe.HC
+DRIVER_ROUTE03_C4R6_PROBE_OBJ = build/driver-required-route-correction03-c4r6-probe.o
+DRIVER_ROUTE03_C4R6_PROBE_BIN = build/driver-required-route-correction03-c4r6-probe
+DRIVER_ROUTE03_C4R6_PROBE_DIR = $(DRIVER_ROUTE03_WORKDIR)/c4r6-fixtures
+
+# THE GENUINE arm64 MIXED-ZERO-FILL FIXTURE.
+#
+# It is compiled by the PLATFORM'S OWN compiler for the arm64 target, and
+# it is the REVIEWER'S `mixed-zerofill` counterexample: a genuine object
+# that carries a large VIRTUAL `S_ZEROFILL` section alongside ordinary
+# file-backed sections.
+#
+# The object files are excluded from the repository by the `.gitignore`
+# rule for `*.o`, so the fixture is BUILT, not committed.
+DRIVER_ROUTE03_ZEROFILL_FIXTURE = tools/quality/fixtures/driver-required-route-correction03-zerofill-fixture.o
+DRIVER_ROUTE03_ZEROFILL_FIXTURE_SRC = tools/quality/fixtures/driver-required-route-correction03-zerofill-fixture.c
+
+$(DRIVER_ROUTE03_ZEROFILL_FIXTURE): $(DRIVER_ROUTE03_ZEROFILL_FIXTURE_SRC)
+	@mkdir -p $(dir $@)
+	clang -target arm64-apple-darwin -c $< -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the platform compiler" >&2; \
+		exit 1; \
+	fi
+
 # The GENUINE arm64 THREAD-LOCAL FIXTURE.
 #
 # It is compiled by the PLATFORM'S OWN compiler for the arm64 target, and
@@ -1741,6 +1904,59 @@ $(DRIVER_ROUTE03_C4R5_PROBE_OBJ): $(DRIVER_ROUTE03_C4R5_PROBE_SRC) $(DRIVER_ROUT
 
 $(DRIVER_ROUTE03_C4R5_PROBE_BIN): $(DRIVER_ROUTE03_C4R5_PROBE_OBJ) $(TEST_PREFIX_LIBTOS)
 	$(C_COMPILER) $(DRIVER_ROUTE03_C4R5_PROBE_OBJ) \
+		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
+	@if [ ! -x "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
+		exit 1; \
+	fi
+
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6.
+#
+# THE ROUND-6 PROBE'S BUILD AND ITS TEST TARGET.
+#
+# The probe exercises the PRODUCTION HARNESS as a SUBPROCESS, so it needs
+# the harness, the environment probe, the two genuine Mach-O fixtures and
+# the production compiler.
+.PHONY: driver-wp001-correction03-c4r6-probe-test
+driver-wp001-correction03-c4r6-probe-test: $(DRIVER_ROUTE03_C4R6_PROBE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_ENVPROBE_BIN) $(DRIVER_ROUTE03_ZEROFILL_FIXTURE) $(DRIVER_ROUTE03_TLS_FIXTURE)
+	@rm -rf $(DRIVER_ROUTE03_C4R6_PROBE_DIR)
+	@mkdir -p $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/exec \
+	          $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/macho \
+	          $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/envbind \
+	          $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/blockstatus \
+	          $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/anticontrol
+	@$(DRIVER_ROUTE03_C4R6_PROBE_BIN) exec \
+	    $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) \
+	    $(CURDIR)/hcc \
+	    $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/exec \
+	    $(DRIVER_ROUTE03_EXPECTED_ARCH)
+	@$(DRIVER_ROUTE03_C4R6_PROBE_BIN) anticontrol \
+	    $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) \
+	    $(CURDIR)/hcc \
+	    $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/anticontrol \
+	    $(DRIVER_ROUTE03_EXPECTED_ARCH)
+	@$(DRIVER_ROUTE03_C4R6_PROBE_BIN) macho \
+	    $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/macho \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ZEROFILL_FIXTURE) \
+	    $(CURDIR)/$(DRIVER_ROUTE03_TLS_FIXTURE)
+	@$(DRIVER_ROUTE03_C4R6_PROBE_BIN) envbind \
+	    $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) \
+	    $(CURDIR)/$(DRIVER_ROUTE03_ENVPROBE_BIN) \
+	    $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/envbind
+	@$(DRIVER_ROUTE03_C4R6_PROBE_BIN) blockstatus \
+	    $(DRIVER_ROUTE03_C4R6_PROBE_DIR)/blockstatus
+	@echo "DRIVER_WP001_CORRECTION03_C4R6_PROBE_TEST_STATUS=PASS"
+
+$(DRIVER_ROUTE03_C4R6_PROBE_OBJ): $(DRIVER_ROUTE03_C4R6_PROBE_SRC) $(DRIVER_ROUTE03_CONTRACT_SRC) $(DRIVER_ROUTE03_SHA256_SRC) $(PRODUCTION_HCC) $(TEST_PREFIX_HEADER)
+	@rm -f $@
+	$(PRODUCTION_HCC) --install-dir=$(TEST_PREFIX) -c $(DRIVER_ROUTE03_C4R6_PROBE_SRC) -o $@
+	@if [ ! -f "$@" ]; then \
+		echo "driver-wp001-correction03: $@ not produced by the production compiler" >&2; \
+		exit 1; \
+	fi
+
+$(DRIVER_ROUTE03_C4R6_PROBE_BIN): $(DRIVER_ROUTE03_C4R6_PROBE_OBJ) $(TEST_PREFIX_LIBTOS)
+	$(C_COMPILER) $(DRIVER_ROUTE03_C4R6_PROBE_OBJ) \
 		-L$(TEST_PREFIX)/lib -ltos -lpthread -lc -lm -o $@
 	@if [ ! -x "$@" ]; then \
 		echo "driver-wp001-correction03: $@ not produced by the C compiler" >&2; \
@@ -2736,10 +2952,61 @@ driver-wp001-correction03-causal-test: driver-wp001-correction03-contract-test $
 # or is byte-identical to the current stdout.
 # ---------------------------------------------------------------------------
 .PHONY: driver-wp001-correction03-adverse-test
+# ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7, R6-05.
+#
+# THE ADVERSE-SUITE FIXTURE CONSTRUCTION.
+#
+# THE ORIGINAL DEFECT. The recipe DECLARED the fixture as
+# `$$W/good/source.HC` and it CONSTRUCTED an argument vector naming the
+# RELATIVE `source.HC`. The two names resolve to DIFFERENT files:
+#
+#   the declared source   $$W/good/source.HC
+#   the compiled source   $$W/good/off/source.HC
+#
+# The corrected source-binding validation therefore returned
+# `HARNESS_SOURCE_CONTRADICTED`, and the target exited 2 before it
+# executed ANY of its intended adverse cases.
+#
+# THE HARNESS WAS DOING THE RIGHT THING. The source-binding validation is
+# not weakened: the FIXTURE is aligned.
+#
+# THE ALIGNMENT. The declared source, the staged source and the compiler's
+# argument vector now name the SAME ABSOLUTE file. The recipe still runs
+# the compiler with the working directory set to the case's own
+# directory, and the OUTPUT option remains RELATIVE, because the output
+# destination is the runner's own and must be relative to the child's
+# working directory.
+#
+# The suite also REPORTS ITS OWN ACCOUNTING, so that a reader can see that
+# the mandatory cases were PHYSICALLY EXECUTED and not merely declared:
+#
+#   SETUP_STATUS
+#   TOTAL_CONTROLS_EXPECTED
+#   TOTAL_CONTROLS_EXECUTED
+#   TOTAL_CONTROLS_PASS
+#   TOTAL_CONTROLS_FAIL
+#
+# A suite that FAILS its setup, or that executes FEWER controls than it
+# declares, does NOT PASS.
+#
+# THE STALE RUNS GET THEIR OWN RUN CONTEXTS. The event directory is
+# `<run-dir>/<case-id>/<event-counter>`, and the event counter is allocated
+# BY THE HARNESS PROCESS, so it restarts at ONE for every invocation. Three
+# runs that share a run directory and a case id therefore collide on the
+# event directory, and the third run is refused with
+# `HARNESS_EVENT_DIR_EXISTS`. Each stale run therefore gets its OWN run
+# context. The case id stays `ADVERSE_GOOD`, because the adverse cases
+# REPLAY the stale captures and the comparator checks them against that
+# case identity.
 driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test $(DRIVER_ROUTE03_ADVERSE_BIN) $(DRIVER_ROUTE03_COMPARE_BIN) $(DRIVER_ROUTE03_CAPTURE_BIN) $(DRIVER_ROUTE03_HARNESS_BIN) $(DRIVER_ROUTE03_OFF_HCC) $(DRIVER_ROUTE03_ON_HCC)
 	@set -e; \
 	W=$(DRIVER_ROUTE03_WORKDIR)/adverse; \
 	RUN=$(DRIVER_ROUTE03_WORKDIR)/adverse-run; \
+	REPORT=$(DRIVER_ROUTE03_WORKDIR)/adverse-report.txt; \
+	mkdir -p $(DRIVER_ROUTE03_WORKDIR); \
+	: > $$REPORT; \
+	adverse_executed=0; \
+	adverse_pass=0; \
 	rm -rf $$W $$RUN; \
 	mkdir -p $$W/good $$RUN; \
 	cp $(DRIVER_ROUTE03_FIXTURE) $$W/good/source.HC; \
@@ -2747,6 +3014,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	adverse_runid=$$(grep "^HARNESS_RUN_ID" $$RUN/init.txt | cut -f2); \
 	if [ -z "$$adverse_runid" ]; then \
 	  echo "driver-wp001-correction03: the adverse run context was not allocated" >&2; \
+	  echo "SETUP_STATUS=FAIL" >&2; \
 	  exit 1; \
 	fi; \
 	mkdir -p $$W/good/off $$W/good/on; \
@@ -2756,13 +3024,14 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
 	    artifact.bin $(CURDIR)/$$W/good/off/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
-	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c $(CURDIR)/$$W/good/source.HC -o artifact.bin \
 	    > harness.txt 2>&1 ); \
 	good_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/off/harness.txt | cut -f2); \
 	good_art=$$(grep "^HARNESS_ARTIFACT_PATH" $$W/good/off/harness.txt | cut -f2); \
 	if [ -z "$$good_ev" ] || [ -z "$$good_art" ]; then \
 	  echo "driver-wp001-correction03: the adverse harness run produced no event directory" >&2; \
 	  cat $$W/good/off/harness.txt >&2; \
+	  echo "SETUP_STATUS=FAIL" >&2; \
 	  exit 1; \
 	fi; \
 	( cd $$W/good/on && \
@@ -2771,15 +3040,17 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/source.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
 	    artifact.bin $(CURDIR)/$$W/good/on/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
-	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c source.HC -o artifact.bin \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c $(CURDIR)/$$W/good/source.HC -o artifact.bin \
 	    > harness.txt 2>&1 ); \
 	on_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/on/harness.txt | cut -f2); \
 	on_art=$$(grep "^HARNESS_ARTIFACT_PATH" $$W/good/on/harness.txt | cut -f2); \
 	if [ -z "$$on_ev" ] || [ -z "$$on_art" ]; then \
 	  echo "driver-wp001-correction03: the adverse ON harness run produced no event directory" >&2; \
 	  cat $$W/good/on/harness.txt >&2; \
+	  echo "SETUP_STATUS=FAIL" >&2; \
 	  exit 1; \
 	fi; \
+	echo "SETUP_STATUS=PASS" | tee -a $$REPORT; \
 	cp $$good_ev/stdout.txt $$W/good/stdout.txt; \
 	cp $$good_ev/stderr.txt $$W/good/stderr.txt; \
 	cp $$good_ev/exit.txt $$W/good/exit.txt; \
@@ -2824,11 +3095,11 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  exit 1; \
 	fi; \
 	( cd $$W/good && \
-	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-ledger.txt OFF ADVERSE_GOOD \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-ledger.txt OFF ADVERSE_STALE \
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
 	    stale-valid.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
-	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-valid.bin \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -c $(CURDIR)/$$W/good/other.HC -o stale-valid.bin \
 	    > stale-harness.txt 2>&1 ); \
 	stale_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-harness.txt | cut -f2); \
 	if [ -z "$$stale_ev" ]; then \
@@ -2840,11 +3111,11 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	cp $$stale_ev/stdout.txt $$W/good/stale-stdout.txt; \
 	cp $$stale_ev/stderr.txt $$W/good/stale-stderr.txt; \
 	( cd $$W/good && \
-	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-on-ledger.txt ON ADVERSE_GOOD \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-on-ledger.txt ON ADVERSE_STALE_ON \
 	    $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
 	    stale-on.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
-	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c other.HC -o stale-on.bin \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_ON_HCC) --install-dir=$(TEST_PREFIX) -c $(CURDIR)/$$W/good/other.HC -o stale-on.bin \
 	    > stale-on-harness.txt 2>&1 ); \
 	stale_on_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-on-harness.txt | cut -f2); \
 	if [ -z "$$stale_on_ev" ]; then \
@@ -2857,11 +3128,11 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	cp $$stale_on_ev/stderr.txt $$W/good/stale-on-stderr.txt; \
 	cp $$stale_on_ev/exit.txt $$W/good/stale-on-exit.txt; \
 	( cd $$W/good && \
-	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-text-ledger.txt OFF ADVERSE_GOOD \
+	  $(CURDIR)/$(DRIVER_ROUTE03_HARNESS_BIN) run $(CURDIR)/$$RUN $(CURDIR)/$$W/good/stale-text-ledger.txt OFF ADVERSE_STALE_TEXT \
 	    $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) $(CURDIR)/$$W/good/other.HC $(CURDIR)/$(DRIVER_ROUTE03_FIXTURE) \
 	    stale-text.bin $(CURDIR)/$$W/good/ $(DRIVER_ROUTE03_EXPECTED_ARCH) \
 	    HCC_TEST_PREFIX=$(TEST_PREFIX) \
-	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -S other.HC -o- \
+	    -- $(CURDIR)/$(DRIVER_ROUTE03_OFF_HCC) --install-dir=$(TEST_PREFIX) -S $(CURDIR)/$$W/good/other.HC -o- \
 	    > stale-text-harness.txt 2>&1 ); \
 	stale_text_ev=$$(grep "^HARNESS_EVENT_DIR" $$W/good/stale-text-harness.txt | cut -f2); \
 	if [ -z "$$stale_text_ev" ]; then \
@@ -2898,7 +3169,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  'N17:OUT_OF_BOUNDS_NSYMS:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
 	  'N18:UNDERSIZED_SYMBOL_TABLE:MACHO_SYMBOL_TABLE_OUT_OF_BOUNDS' \
 	  'N19:OUT_OF_BOUNDS_STRING_ENTRY:MACHO_SYMBOL_STRING_INDEX_OUT_OF_BOUNDS' \
-	  'N20:FORGED_EVENT_SOURCE:CAPTURE_EVENT_ID_MISMATCH' \
+	  'N20:FORGED_EVENT_SOURCE:CAPTURE_COMPILED_SOURCE_MISMATCH' \
 	  'N21:FORGED_EVENT_ARGV:CAPTURE_EVENT_ID_MISMATCH' \
 	  'N22:FORGED_EVENT_ENV:CAPTURE_EVENT_ID_MISMATCH' \
 	  'N23:FORGED_EVENT_COUNTER:CAPTURE_EVENT_ID_MISMATCH' \
@@ -2911,6 +3182,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	  rest=$${spec#*:}; \
 	  mutation=$${rest%%:*}; \
 	  reason=$${rest#*:}; \
+	  adverse_executed=$$((adverse_executed + 1)); \
 	  rm -rf $$W/$$mutation; \
 	  mkdir -p $$W/$$mutation; \
 	  cp $$W/good/artifact.bin $$W/$$mutation/artifact.bin; \
@@ -2951,6 +3223,8 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $$W/good/stale-on.bin \
 	    $$W/$$mutation/ledger.txt; \
 	  set +e; \
+	  adverse_expected_case=$$(sed -n 's/^CASE_ID //p' $$W/$$mutation/capture.txt | head -1); \
+	  if [ -z "$$adverse_expected_case" ]; then adverse_expected_case=ADVERSE_GOOD; fi; \
 	  $(DRIVER_ROUTE03_COMPARE_BIN) $$probe_id \
 	    $$W/$$mutation/oracle-artifact.bin \
 	    $$W/$$mutation/artifact.bin \
@@ -2962,7 +3236,7 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    $$W/$$mutation/exit.txt \
 	    $$eclass $$earch 0 \
 	    $$W/$$mutation/ledger.txt $$W/$$mutation/oracle-capture.txt $$W/$$mutation/capture.txt \
-	    "$$(cat $$W/$$mutation/run-id.txt)" ADVERSE_GOOD \
+	    "$$(cat $$W/$$mutation/run-id.txt)" "$$adverse_expected_case" \
 	    "$$(cat $$W/good/producer-sha.txt)" "$$(cat $$W/good/on-producer-sha.txt)" \
 	    _main > $$W/$$mutation/out.txt 2>&1; \
 	  rc=$$?; \
@@ -2977,9 +3251,18 @@ driver-wp001-correction03-adverse-test: driver-wp001-correction03-contract-test 
 	    cat $$W/$$mutation/out.txt >&2; \
 	    exit 1; \
 	  fi; \
-	  printf 'ADVERSE_PROBE_REJECTED\t%s\t%s\t%s\n' "$$probe_id" "$$mutation" "$$reason"; \
-	done
-	@echo "DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS"
+	  printf 'ADVERSE_PROBE_REJECTED\t%s\t%s\t%s\n' "$$probe_id" "$$mutation" "$$reason" | tee -a $$REPORT; \
+	  adverse_pass=$$((adverse_pass + 1)); \
+	done; \
+	echo "TOTAL_CONTROLS_EXPECTED=28" | tee -a $$REPORT; \
+	echo "TOTAL_CONTROLS_EXECUTED=$$adverse_executed" | tee -a $$REPORT; \
+	echo "TOTAL_CONTROLS_PASS=$$adverse_pass" | tee -a $$REPORT; \
+	echo "TOTAL_CONTROLS_FAIL=$$((adverse_executed - adverse_pass))" | tee -a $$REPORT; \
+	if [ "$$adverse_executed" -ne 28 ]; then \
+	  echo "driver-wp001-correction03: the adverse suite executed $$adverse_executed controls, and 28 are mandatory" >&2; \
+	  exit 1; \
+	fi; \
+	echo "DRIVER_WP001_CORRECTION03_ADVERSE_TEST_STATUS=PASS" | tee -a $$REPORT
 
 PRODUCTION_HCC_INPUTS = $(PARSER_PADDING_OBJ) $(SLICE02_CFT_OBJ) $(SLICE03_OP_OBJ) \
 

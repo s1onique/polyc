@@ -741,10 +741,28 @@ static U0 R5CaptureControl(U8 *dir, U8 *control, I64 n) {
   R5Write(path, b, size);
   // The PRODUCTION block extractor.
   I64 count = 0;
-  U8 **vals = CaptureBlock(b, size, "ENV", &count);
+  I64 bstatus = CAPTURE_BLOCK_ABSENT;
+  U8 **vals = CaptureBlock(b, size, "ENV", &count, &bstatus);
   // The count must be EXACTLY N, and the extractor must not have refused.
+  //
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 6,
+  // R5-06 -- THE BLOCK STATUS IS NOW DISTINGUISHED.
+  //
+  // A WELL-FORMED block reports `CAPTURE_BLOCK_OK` when it carries at
+  // least one entry and `CAPTURE_BLOCK_EMPTY` when it carries none. Both
+  // are ACCEPTED shapes, so both satisfy this control. The REFUSAL
+  // statuses (ABSENT, SCALAR, TOO_LARGE, MALFORMED) hand back no array at
+  // all, and the `vals != NULL` requirement already excludes them.
+  //
+  // The control is NOT WEAKENED: the count must still be EXACTLY N, the
+  // array must still be non-NULL, and every element must still be
+  // readable. Only the STATUS TOKEN that identifies a well-formed block
+  // is now two tokens instead of one.
+  I64 well_formed = 0;
+  if (bstatus == CAPTURE_BLOCK_OK) well_formed = 1;
+  if (bstatus == CAPTURE_BLOCK_EMPTY) well_formed = 1;
   I64 ok = 0;
-  if (vals != NULL && count == n) ok = 1;
+  if (vals != NULL && count == n && well_formed == 1) ok = 1;
   R5Verdict(control, ok, 1, "CAPTURE_BLOCK_COUNT");
   // The elements must be readable.
   I64 readable = 1;
@@ -818,6 +836,9 @@ static U0 R5IdentityControl(U8 *control, I64 move_last) {
   ctx.selector = "OFF";
   ctx.producer_hex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
   ctx.source_hex = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  // ACT-POLYC-SELFHOST-DRIVER-REQUIRED-ROUTE-CORRECTION03, C4 ROUND 7,
+  // R6-03 -- THE COMPILED SOURCE'S IDENTITY IS PART OF THE CONTEXT.
+  ctx.compiled_source_hex = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
   ctx.fixture_hex = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
   ctx.argv = argv;
   ctx.nargv = nargv;
@@ -891,6 +912,7 @@ static U0 R5IdentityAmbiguityControl(U8 *control) {
   ctx_a.selector = "OFF";
   ctx_a.producer_hex = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
   ctx_a.source_hex = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+  ctx_a.compiled_source_hex = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
   ctx_a.fixture_hex = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
   ctx_a.argv = argv_a;
   ctx_a.nargv = 1;
@@ -907,6 +929,7 @@ static U0 R5IdentityAmbiguityControl(U8 *control) {
   ctx_b.selector = ctx_a.selector;
   ctx_b.producer_hex = ctx_a.producer_hex;
   ctx_b.source_hex = ctx_a.source_hex;
+  ctx_b.compiled_source_hex = ctx_a.compiled_source_hex;
   ctx_b.fixture_hex = ctx_a.fixture_hex;
   ctx_b.argv = argv_b;
   ctx_b.nargv = 0;
